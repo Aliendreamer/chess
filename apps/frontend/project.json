@@ -1,0 +1,49 @@
+{
+  "name": "frontend",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/frontend/src",
+  "tags": ["scope:frontend", "lang:ts"],
+  "targets": {
+    "generate-routes": {
+      "executor": "nx:run-commands",
+      "options": { "cwd": "apps/frontend", "command": "pnpm generate-routes" }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/.output"],
+      "options": { "cwd": "apps/frontend", "command": "pnpm build" }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": { "cwd": "apps/frontend", "command": "pnpm test" }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/frontend",
+        "commands": ["pnpm typecheck", "pnpm lint", "pnpm check"],
+        "parallel": false
+      }
+    },
+    "e2e": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": { "command": "tools/e2e.sh" }
+    },
+    "push": {
+      "executor": "nx:run-commands",
+      "options": { "command": "tools/deploy/build.sh frontend" }
+    },
+    "validate": {
+      "executor": "nx:run-commands",
+      "options": { "command": "tools/deploy/build.sh frontend local" }
+    },
+    "deploy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'deploy target not implemented: take the tag printed by `nx push frontend` and roll the Docker service' && exit 1"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-board-light: #f0d9b5;
+  --color-board-dark: #b58863;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  @apply bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
+}

@@ -1,0 +1,9 @@
+dist
+.output
+.nitro
+.tanstack
+node_modules
+.git
+.env
+.env.*
+coverage
