@@ -4,10 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) intended to hold three apps:
-`apps/backend` (.NET API — built with the `dotnet-webapi` prompt), `apps/frontend` (TanStack Start
-SSR BFF — `fe-ssr-tanstack` prompt) and `apps/proxy` (nginx edge). Only `apps/proxy` exists so far;
-the local stack, release config and deploy tooling are already wired for all three.
+An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding three apps:
+
+- `apps/backend` — .NET 10 API (`Chess.Backend`): FastEndpoints + EF Core/Npgsql, Keycloak PKCE login,
+  **server-owned opaque cookie session** (`mp_sid`; tokens never leave the server; logout revokes).
+  Built from the `dotnet-webapi` prompt in "private behind an SSR BFF" mode.
+- `apps/frontend` — TanStack Start SSR app (`chess-frontend`) that **is the BFF**: proxies `/api/auth/*`
+  server-to-server, re-homes cookies, fetches page data via server functions. The browser only ever talks
+  to `app.chess.localhost`. Built from the `fe-ssr-tanstack` prompt.
+- `apps/proxy` — nginx edge for deployment (`/api/` → backend, `/` → frontend, `/hc` local 200).
 
 Node ≥ 24, pnpm pinned in `package.json#packageManager` (bump deliberately). Docker is required for
 the local stack and for proxy validation.
@@ -30,10 +35,31 @@ tools/coverage-report.sh                       # combined coverage
 tools/e2e.sh                                   # stack up → Playwright → down
 
 pnpm exec nx validate proxy                    # build proxy image, run `nginx -t` inside
-pnpm exec nx release version --dry-run         # errors until frontend+backend projects exist
+pnpm exec nx release version --dry-run
+
+# backend (apps/backend)
+dotnet build Chess.Backend.csproj              # warning-clean under AnalysisMode=All + TreatWarningsAsErrors
+./build_test.sh                                # xUnit + coverage gate (COVERAGE_THRESHOLD, default 90)
+dotnet test Chess.Backend.Tests --filter "FullyQualifiedName~SessionStoreTests"   # one class
+./build_migration.sh "AddSomething"            # EF migration (dotnet-ef 10.x)
+dotnet format Chess.Backend.slnx --verify-no-changes   # = nx lint backend
+
+# frontend (apps/frontend)
+pnpm generate-routes                           # after adding/renaming route files
+pnpm typecheck && pnpm lint && pnpm check      # = nx lint frontend
+pnpm test / pnpm test:watch                    # vitest;  `pnpm vitest run src/lib/server/cookies.test.ts` for one file
+pnpm build && API_URL=http://127.0.0.1:8080 pnpm start   # prod SSR server on :3000
+
+tools/localdev/verify-auth.sh                  # curl-only login→/me→logout→revocation check vs the live stack
+tools/e2e.sh                                   # Playwright against the live stack
 ```
 
-Local URLs (Traefik on :80, dashboard on :8080): `app.chess.localhost`, `api.chess.localhost`,
+Agent sandbox note: MSBuild worker nodes, `dotnet format`'s build host, coverlet's mutex and the Docker
+socket all need IPC the Claude Code sandbox blocks. Inside it: build with
+`-m:1 -nr:false -p:EnableSourceControlManagerQueries=false`; `build_test.sh` reports 0% coverage (tests still
+run); `dotnet format`, `stack.sh` and `verify-auth.sh` must be run by a human (`! <cmd>`).
+
+Local URLs (Traefik on :80, dashboard on 127.0.0.1:8090): `app.chess.localhost`, `api.chess.localhost`,
 `keycloak.chess.localhost` (admin/admin), `redisinsight.chess.localhost`. Postgres is on
 `127.0.0.1:5432` as `chess`/`chess`/`chess`.
 
@@ -47,6 +73,29 @@ bumps and per-project changelogs from these (`projectsRelationship: independent`
 to each app's own lint target). Keep `--no-stash`.
 
 ## Architecture notes that span files
+
+- **Auth flow (backend)** — `WebApi/Auth/`: `LoginEndpoint` sets a short-lived `mp_pkce` cookie
+  (`"<nonce>.<verifier>"`) and 302s to Keycloak; `CallbackEndpoint` → `CallbackValidator` (state nonce must match
+  the cookie) → `KeycloakOidcClient.ExchangeCodeAsync` → `ISessionStore.CreateAsync` (stores only the SHA-256
+  of the raw token) → `mp_sid` cookie → 302 to `{AppBaseUrl}{returnTo}` (`ReturnToSanitizer`: relative path
+  only). `CookieBearerTokenResolver.OnMessageReceivedAsync` turns `mp_sid` into the bearer token for
+  JwtBearer, refreshing at the IdP when the access token is within `SessionStore:AccessTokenLeeway` of
+  expiry; an `Authorization` header always wins. `LogoutEndpoint` revokes the row first, so the old cookie is
+  dead even if the IdP call fails. `UserProvisioningPreProcessor` (global) JIT-creates `users` rows by `sub`
+  and fills the scoped `ICurrentUser`; `KeycloakRolesClaimsTransformation` flattens `realm_access.roles`.
+- **Backend conventions** — everything `internal sealed` (tests via `InternalsVisibleTo`; Moq via
+  `DynamicProxyGenAssembly2`); logging through `Utils/Log.cs` `[LoggerMessage]` methods (CA1873 forbids boxing
+  args); config lives in `Config/appsettings*.json` (env vars override, `Keycloak__*` etc.); services named
+  `Xxx : BaseService, IXxx` where `IXxx : IService` are auto-registered scoped by `AddConventionServices`.
+  Endpoints are thin and `[ExcludeFromCodeCoverage]`; the logic they call is unit-tested.
+- **BFF (frontend)** — `lib/server/cookies.ts` is the whole cookie contract: outbound `rehomeSetCookie`
+  strips `Domain`, keeps lifetime, forces `Path=/; HttpOnly; SameSite=Lax`, adds `__Host-` + `Secure` when
+  `COOKIE_SECURE=true` (never `NODE_ENV`); inbound `forwardCookieHeader` forwards only `mp_sid`/`mp_pkce`,
+  mapping `__Host-` names back. `routes/api/auth/$.ts` is the public proxy route (outside `_authenticated`).
+  `_authenticated.tsx#beforeLoad` calls `getMe()` and 302s anonymous users to `/api/auth/login?returnTo=`;
+  route loaders call server functions (`lib/server/api.ts`) that re-attach the cookie and hit `API_URL`
+  server-side. Components are presentational. **No `VITE_API_URL` ever** — the client bundle must not
+  mention the API host.
 
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/
   `.slnx`/`Directory.*.props`/runsettings so JS edits don't bust the backend cache and vice versa.

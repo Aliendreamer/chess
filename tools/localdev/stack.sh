@@ -37,6 +37,7 @@ case "$cmd" in
     echo "  backend api  http://api.chess.localhost"
     echo "  keycloak     http://keycloak.chess.localhost (admin/admin)"
     echo "  redisinsight http://redisinsight.chess.localhost"
+    echo "  traefik ui   http://127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-8090}"
     ;;
   down)    compose down "$@" ;;
   restart) compose restart "$@" ;;

@@ -36,7 +36,9 @@ services:
       - --api.insecure=true
     ports:
       - "80:80"
-      - "8080:8080"
+      # Dashboard, loopback-only. 8080 is a popular port on dev machines, so it is overridable:
+      #   TRAEFIK_DASHBOARD_PORT=9090 tools/localdev/stack.sh up
+      - "127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-8090}:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik:/etc/traefik/dynamic:ro

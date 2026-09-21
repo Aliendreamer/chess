@@ -20,3 +20,7 @@ pnpm-lock.yaml
 .claude/launch.json
 .claude/scheduled_tasks.json
 .claude/settings.local.json
+
+# generated route tree + app build output
+apps/frontend/src/routeTree.gen.ts
+.output/

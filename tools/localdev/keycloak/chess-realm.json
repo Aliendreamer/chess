@@ -40,7 +40,7 @@
         "use.refresh.tokens": "true"
       },
       "defaultClientScopes": [
-        "openid",
+        "basic",
         "profile",
         "email",
         "roles",

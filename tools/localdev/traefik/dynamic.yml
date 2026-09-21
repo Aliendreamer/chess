@@ -1,0 +1,41 @@
+# Traefik FILE provider routes for the local stack.
+#
+# The compose services also carry docker labels for the same routes, but Traefik's docker provider needs
+# a daemon that still accepts API 1.24; Docker 29+ (min API 1.40) rejects it and the labels are inert.
+# This file is the fallback the compose `proxy` service watches; it defines the same routes by hand.
+# Upstreams are compose service names on the `chess` network.
+http:
+  routers:
+    app:
+      rule: Host(`app.chess.localhost`)
+      entryPoints: [web]
+      service: app
+    api:
+      rule: Host(`api.chess.localhost`)
+      entryPoints: [web]
+      service: api
+    keycloak:
+      rule: Host(`keycloak.chess.localhost`)
+      entryPoints: [web]
+      service: keycloak
+    redisinsight:
+      rule: Host(`redisinsight.chess.localhost`)
+      entryPoints: [web]
+      service: redisinsight
+  services:
+    app:
+      loadBalancer:
+        servers:
+          - url: http://frontend:3000
+    api:
+      loadBalancer:
+        servers:
+          - url: http://backend:8080
+    keycloak:
+      loadBalancer:
+        servers:
+          - url: http://keycloak:8080
+    redisinsight:
+      loadBalancer:
+        servers:
+          - url: http://redisinsight:5540

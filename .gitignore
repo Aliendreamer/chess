@@ -10,3 +10,13 @@ obj/
 .env
 .env.*
 !.env.example
+
+# app build outputs
+.output/
+.nitro/
+.tanstack/
+test-results/
+playwright-report/
+
+# Claude Code harness scratch
+**/.claude/.cc-writes/
