@@ -6,7 +6,6 @@
   "tags": ["scope:backend", "lang:dotnet"],
   "release": {
     "version": {
-      "currentVersionResolver": "disk",
       "versionActions": "./tools/nx-release/dotnet-version-actions.cjs",
       "manifestRootsToUpdate": ["apps/backend"]
     }
