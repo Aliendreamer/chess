@@ -1,0 +1,35 @@
+{
+  // Markdown lint config for THIS repo's authored docs. Run: pnpm lint:md (add :fix to auto-correct).
+  // Mirrors the DnD ruleset. Vendored caches, build outputs, and generated specs are ignored.
+  // `.claude/skills/**` is ignored: those are installed from the ai.skills store by setup-flow, not
+  // authored here. `.claude/commands/**` and CLAUDE.md are first-party and stay under the gate.
+  // `openspec/**` stays out — it is generated and is governed by `openspec validate --strict` instead.
+  "globs": ["**/*.md"],
+  "ignores": [
+    "node_modules",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.nx/**",
+    "**/bin/**",
+    "**/obj/**",
+    ".git",
+    ".claude/skills/**",
+    ".claude/loop.md",
+    ".github/**",
+    ".superpowers/**",
+    ".serena/**",
+    "openspec/**"
+  ],
+  "config": {
+    "default": true,
+    "MD013": false,
+    "MD033": false,
+    "MD041": false,
+    "MD024": { "siblings_only": true },
+    "MD029": false,
+    "MD036": false,
+    "MD040": false,
+    "MD026": false,
+    "MD060": false
+  }
+}

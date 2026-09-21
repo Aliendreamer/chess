@@ -1,0 +1,151 @@
+# Instrumented E2E-coverage stack. Same infra as docker-compose.yml, but the backend and SSR frontend
+# run as PRODUCTION builds under coverage collectors (dotnet-coverage / c8) that write reports to
+# ./coverage-e2e/{backend,ssr} on shutdown. Driven by tools/e2e-coverage.sh — do not run directly.
+#
+#   tools/e2e-coverage.sh          # build + up + run Playwright + collect + report
+#
+# Uses the standalone *.chess.localhost hosts and its own volumes (a distinct compose project
+# name), so it won't collide with the dev stack.
+
+name: chess-coverage
+
+services:
+  proxy:
+    image: traefik:v3.3
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --api.dashboard=true
+      - --api.insecure=true
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik:/etc/traefik/dynamic:ro
+    networks:
+      default:
+        aliases:
+          - app.chess.localhost
+          - api.chess.localhost
+          - keycloak.chess.localhost
+    depends_on:
+      - frontend
+      - backend
+      - keycloak
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: chess
+      POSTGRES_PASSWORD: chess
+      POSTGRES_DB: chess
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chess -d chess"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - redisdata:/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: http://keycloak.chess.localhost
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.keycloak.rule=Host(`keycloak.chess.localhost`)
+      - traefik.http.routers.keycloak.entrypoints=web
+      - traefik.http.services.keycloak.loadbalancer.server.port=8080
+
+  backend:
+    build:
+      context: ../../apps/backend
+      dockerfile: ../../tools/localdev/backend.coverage.Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: "8080"
+      Keycloak__Authority: http://keycloak.chess.localhost/realms/Chess
+      Keycloak__Audience: ""
+      Keycloak__ClientId: chess_api
+      Keycloak__ClientSecret: chess-dev-secret
+      Keycloak__CallbackUri: http://app.chess.localhost/api/auth/callback
+      Keycloak__PostLogoutRedirectUri: http://app.chess.localhost
+      Keycloak__AppBaseUrl: http://app.chess.localhost
+      SessionCookies__Domain: .chess.localhost
+      SessionCookies__SessionName: mp_sid
+      SessionCookies__PkceName: mp_pkce
+      AllowedCorsOrigins__0: http://app.chess.localhost
+      AllowedCorsOrigins__1: http://localhost:3000
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=chess;Username=chess;Password=chess"
+      ConnectionStrings__Redis: "redis:6379"
+    volumes:
+      - ./coverage-e2e/backend:/cov
+    extra_hosts:
+      - "keycloak.chess.localhost:host-gateway"
+    # dotnet-coverage needs a moment to flush the report on SIGTERM; give it a longer stop grace.
+    stop_grace_period: 40s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=Host(`api.chess.localhost`)
+      - traefik.http.routers.api.entrypoints=web
+      - traefik.http.services.api.loadbalancer.server.port=8080
+
+  frontend:
+    build:
+      context: ../..
+      dockerfile: tools/localdev/frontend.coverage.Dockerfile
+    environment:
+      API_URL: http://backend:8080
+      # IdP origin for the CSP form-action (logout redirect to Keycloak); see docker-compose.yml.
+      KEYCLOAK_ORIGIN: http://keycloak.chess.localhost
+    volumes:
+      # Host-built SSR output (with sourcemaps) + source, so c8 maps coverage to src.
+      - ../../apps/frontend/.output:/app/.output:ro
+      - ../../apps/frontend/src:/app/apps/frontend/src:ro
+      - ./coverage-e2e/ssr:/cov
+    stop_grace_period: 40s
+    depends_on:
+      - backend
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.app.rule=Host(`app.chess.localhost`)
+      - traefik.http.routers.app.entrypoints=web
+      - traefik.http.services.app.loadbalancer.server.port=3000
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  default:
+    name: chess-coverage

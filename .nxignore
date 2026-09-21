@@ -1,0 +1,12 @@
+.claude
+**/.claude
+.gitmodules
+.mcp.json
+.idea
+.profile
+.zprofile
+.zshrc
+.ripgreprc
+.gitconfig
+.bashrc
+.bash_profile

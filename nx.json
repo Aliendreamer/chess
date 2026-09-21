@@ -1,0 +1,65 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "maxCacheSize": "1GB",
+  "namedInputs": {
+    "default": [
+      "{projectRoot}/**/*",
+      "!{projectRoot}/.output/**",
+      "!{projectRoot}/dist/**",
+      "sharedGlobals"
+    ],
+    "dotnet": [
+      "{projectRoot}/**/*.cs",
+      "{projectRoot}/**/*.csproj",
+      "{projectRoot}/**/*.slnx",
+      "{projectRoot}/Directory.Build.props",
+      "{projectRoot}/Directory.Packages.props",
+      "{projectRoot}/coverage.runsettings",
+      "!{projectRoot}/bin/**/*",
+      "!{projectRoot}/obj/**/*",
+      "!{projectRoot}/TestResults/**/*"
+    ],
+    "sharedGlobals": ["{workspaceRoot}/nx.json"]
+  },
+  "targetDefaults": {
+    "build": {
+      "cache": true,
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "cache": true
+    },
+    "lint": {
+      "cache": true
+    }
+  },
+  "release": {
+    "projectsRelationship": "independent",
+    "releaseTag": {
+      "pattern": "{projectName}@{version}"
+    },
+    "version": {
+      "fallbackCurrentVersionResolver": "disk"
+    },
+    "changelog": {
+      "workspaceChangelog": false,
+      "projectChangelogs": true
+    },
+    "groups": {
+      "frontend": {
+        "projects": ["frontend"],
+        "version": {
+          "conventionalCommits": true
+        }
+      },
+      "backend": {
+        "projects": ["backend"],
+        "version": {
+          "conventionalCommits": true,
+          "versionActions": "./tools/nx-release/dotnet-version-actions.cjs"
+        }
+      }
+    }
+  },
+  "analytics": false
+}

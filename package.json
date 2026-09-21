@@ -1,0 +1,34 @@
+{
+  "name": "chess",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.3.4+sha512.961aa41fb077da3a04a441d9f8e15ebc0c96da8ef710b2eb67bf9ee7cb0610eabd48f1fd85f51cffe73846785fa0f87c56a3a872a1d893f8446741b5cce45457",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "pnpm:upgrade": "corepack prepare pnpm@latest --activate && corepack use pnpm@latest",
+    "lint:md": "markdownlint-cli2",
+    "lint:md:fix": "markdownlint-cli2 --fix",
+    "push": "nx run-many -t push",
+    "push:proxy": "nx push proxy",
+    "push:frontend": "nx push frontend",
+    "push:backend": "nx push backend",
+    "deploy:all": "nx run-many -t deploy",
+    "deploy:proxy": "nx deploy proxy",
+    "deploy:frontend": "nx deploy frontend",
+    "deploy:backend": "nx deploy backend"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.0.2",
+    "@commitlint/config-conventional": "21.0.2",
+    "@nx/js": "23.0.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.0.7",
+    "markdownlint-cli2": "0.22.1",
+    "nx": "23.0.0",
+    "prettier": "3.8.4"
+  }
+}

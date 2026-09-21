@@ -1,0 +1,4 @@
+REPLACE THIS FILE. Rename to dev-flow.full.txt and write the delta against your repo's
+always-loaded instruction file — the literal command names, the gate order, the definition of done.
+Anything CLAUDE.md already states on every turn does not belong here; you would pay for it twice.
+Keep it to a few lines: this is injected once per session, and every line is a line forever.

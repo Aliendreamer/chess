@@ -1,0 +1,24 @@
+packages:
+  - apps/*
+
+# Supply-chain guard: don't resolve package versions newer than 7 days (carried from frontend).
+minimumReleaseAge: 10080
+# Network resilience so the minimumReleaseAge registry lookups + package fetches survive slow/flaky
+# networks (esp. fresh Docker image builds); the default 60s fetch timeout aborts the frontend build.
+fetchRetries: 5
+fetchRetryMaxtimeout: 120000
+fetchTimeout: 600000
+verifyDepsBeforeRun: true
+strictDepBuilds: true
+onlyBuiltDependencies:
+  - esbuild
+  - lightningcss
+  - unrs-resolver
+  - nx
+  - "@parcel/watcher"
+allowBuilds:
+  "@parcel/watcher": true
+  esbuild: true
+  nx: true
+  lightningcss: true
+  unrs-resolver: true

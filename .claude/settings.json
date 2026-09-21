@@ -1,0 +1,111 @@
+{
+  "mcpServers": {
+    "serena": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "claude-code",
+        "--project-from-cwd",
+        "--open-web-dashboard",
+        "false"
+      ]
+    }
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": false,
+    "allowUnsandboxedCommands": false,
+    "network": {
+      "allowedDomains": [
+        "*.githubusercontent.com",
+        "*.npmjs.org",
+        "*.nuget.org",
+        "api.nuget.org",
+        "codeload.github.com",
+        "github.com",
+        "registry.npmjs.org",
+        "registry.yarnpkg.com"
+      ]
+    },
+    "filesystem": {
+      "allowWrite": [
+        "/usr/local/share/.yarn-global",
+        "~/.cache",
+        "~/.dotnet",
+        "~/.local/share/pnpm",
+        "~/.npm",
+        "~/.nuget"
+      ]
+    }
+  },
+  "permissions": {
+    "allow": ["Bash(git*)", "SKILL(*)", "mcp__plugin_serena_serena__*"],
+    "deny": [
+      "Bash(git branch --delete --force*)",
+      "Bash(git branch -D*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(rm -rf*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/claude-hooks/prefer-serena.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/claude-hooks/prefer-serena.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // .tool_response.filePath // empty' 2>/dev/null); case \"$f\" in *.ts|*.tsx|*.js|*.jsx|*.scss|*.css) [ -f \"$f\" ] && ./node_modules/.bin/prettier --ignore-unknown --write \"$f\" >/dev/null 2>&1 ;; esac; exit 0",
+            "statusMessage": "Formatting with prettier…"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "chrome-devtools-mcp@claude-plugins-official": false,
+    "claude-code-setup@claude-plugins-official": false,
+    "claude-md-management@claude-plugins-official": true,
+    "cloudflare@claude-plugins-official": false,
+    "code-review@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": false,
+    "csharp-lsp@claude-plugins-official": true,
+    "dotnet-aspnet@dotnet-agent-skills": true,
+    "dotnet-data@dotnet-agent-skills": true,
+    "dotnet-maui@dotnet-agent-skills": false,
+    "feature-dev@claude-plugins-official": false,
+    "huggingface-skills@claude-plugins-official": false,
+    "mcp-server-dev@claude-plugins-official": false,
+    "microsoft-docs@claude-plugins-official": true,
+    "qdrant-skills@claude-plugins-official": false,
+    "security-guidance@claude-plugins-official": true,
+    "serena@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true
+  }
+}

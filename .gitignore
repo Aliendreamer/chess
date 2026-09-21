@@ -1,0 +1,12 @@
+node_modules/
+.nx/
+dist/
+.output/
+coverage/
+TestResults/
+bin/
+obj/
+*.log
+.env
+.env.*
+!.env.example

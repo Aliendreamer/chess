@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  dotnet-coverage settings for the backend E2E run. Without this the report is dragged down by code that
+  isn't meaningfully E2E-testable: the EF Core migrations (thousands of generated lines, run once at
+  startup — the unit coverage already excludes them as generated_code) and framework/design-time modules.
+  Scope collection to the app assembly and drop the migrations + factory/seed so the number reflects the
+  request-handling code the Playwright journeys actually drive.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="Code Coverage">
+        <Configuration>
+          <CodeCoverage>
+            <ModulePaths>
+              <Include>
+                <ModulePath>.*Chess\.Backend\.dll$</ModulePath>
+              </Include>
+            </ModulePaths>
+            <Sources>
+              <Exclude>
+                <Source>.*[\\/]Migrations[\\/].*</Source>
+              </Exclude>
+            </Sources>
+            <Functions>
+              <Exclude>
+                <Function>.*ProjectDbContextFactory.*</Function>
+                <Function>.*SeedData.*</Function>
+              </Exclude>
+            </Functions>
+          </CodeCoverage>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

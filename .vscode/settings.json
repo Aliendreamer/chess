@@ -1,0 +1,13 @@
+{
+  "files.exclude": {
+    ".bashrc": true,
+    ".bash_profile": true,
+    ".profile": true,
+    ".zshrc": true,
+    ".zprofile": true,
+    ".gitconfig": true,
+    ".ripgreprc": true,
+    ".gitmodules": true,
+    ".idea": true
+  }
+}

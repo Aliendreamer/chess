@@ -1,0 +1,32 @@
+{
+  "name": "proxy",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/proxy/files",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tools/deploy/build.sh proxy"
+      }
+    },
+    "push": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tools/deploy/build.sh proxy"
+      }
+    },
+    "deploy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tools/deploy/build.sh proxy push | tools/deploy/update-deploy.sh proxy"
+      }
+    },
+    "validate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tools/deploy/build.sh proxy validate"
+      }
+    }
+  }
+}
