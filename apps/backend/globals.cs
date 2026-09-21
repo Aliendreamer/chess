@@ -1,0 +1,10 @@
+global using System.Diagnostics.CodeAnalysis;
+global using System.Security.Claims;
+global using Chess.Backend.Data;
+global using Chess.Backend.Data.Models;
+global using Chess.Backend.Services;
+global using Chess.Backend.Utils;
+global using Chess.Backend.WebApi.Auth;
+global using FastEndpoints;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.Options;

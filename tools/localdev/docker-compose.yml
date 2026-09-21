@@ -179,18 +179,16 @@ services:
       SessionCookies__Domain: .chess.localhost
       SessionCookies__SessionName: mp_sid
       SessionCookies__PkceName: mp_pkce
+      SessionStore__CleanupInterval: "00:05:00"
       AllowedCorsOrigins__0: http://app.chess.localhost
       AllowedCorsOrigins__1: http://localhost:3000
       ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=chess;Username=chess;Password=chess"
       ConnectionStrings__Redis: "redis:6379"
-      AppVersionStorage__RootPath: /data/app-versions
     volumes:
       - ../../apps/backend:/src
       # Keep host-built artifacts out of the container (and vice versa).
       - /src/bin
       - /src/obj
-      # Persist uploaded app-version artifacts across container restarts.
-      - appversions:/data/app-versions
     # The Keycloak issuer URL must resolve identically inside the container and in the browser.
     extra_hosts:
       - "keycloak.chess.localhost:host-gateway"
@@ -241,7 +239,6 @@ volumes:
   pgdata:
   redisdata:
   redisinsight:
-  appversions:
 
 networks:
   default:

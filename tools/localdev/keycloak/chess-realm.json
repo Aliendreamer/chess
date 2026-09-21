@@ -1,0 +1,78 @@
+{
+  "realm": "chess",
+  "enabled": true,
+  "displayName": "Chess",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      { "name": "Admin", "description": "Full access" },
+      { "name": "User", "description": "Signed-in player" }
+    ]
+  },
+  "defaultRoles": ["User"],
+  "clients": [
+    {
+      "clientId": "chess_api",
+      "name": "Chess API (confidential, PKCE)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "chess-dev-secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "redirectUris": ["http://app.chess.localhost/api/auth/callback"],
+      "webOrigins": ["http://app.chess.localhost"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://app.chess.localhost",
+        "use.refresh.tokens": "true"
+      },
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "web-origins"
+      ],
+      "optionalClientScopes": ["offline_access"]
+    }
+  ],
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "User",
+      "email": "testuser@chess.localhost",
+      "credentials": [
+        { "type": "password", "value": "Test123!", "temporary": false }
+      ],
+      "realmRoles": ["Admin", "User"]
+    },
+    {
+      "username": "player",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Plain",
+      "lastName": "Player",
+      "email": "player@chess.localhost",
+      "credentials": [
+        { "type": "password", "value": "Player123!", "temporary": false }
+      ],
+      "realmRoles": ["User"]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+**/TestResults/
+Chess.Backend.Tests/
+.claude/
+.serena/
+.mcp.json
+*.md
+.git/

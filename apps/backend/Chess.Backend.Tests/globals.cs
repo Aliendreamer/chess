@@ -1,0 +1,13 @@
+global using System.Security.Claims;
+global using Chess.Backend.Data;
+global using Chess.Backend.Data.Auth;
+global using Chess.Backend.Data.Models;
+global using Chess.Backend.Services;
+global using Chess.Backend.Tests.Support;
+global using Chess.Backend.Utils;
+global using Chess.Backend.WebApi.Auth;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.Logging.Abstractions;
+global using Microsoft.Extensions.Options;
+global using Moq;
+global using Xunit;
