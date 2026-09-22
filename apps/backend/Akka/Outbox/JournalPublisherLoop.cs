@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Akka;
 using Akka.Persistence.Query;
 using Akka.Streams;
@@ -112,6 +113,7 @@ internal sealed class JournalPublisherLoop(
             .SelectAsync(1, async batch =>
             {
                 long acked = batch.Max();
+                using Activity? activity = ActorTracing.StartOutboxBatch(streamId, batch.Count(), acked);
                 await lease.SaveOffsetAsync(streamId, acked, ct);
                 return acked;
             })

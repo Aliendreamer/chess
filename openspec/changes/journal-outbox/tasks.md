@@ -84,12 +84,12 @@ human-run gate.
 
 ## 7. Observability
 
-- [ ] 7.1 Failing test: `PublisherLagHealthCheck` returns _Degraded_ when lag is at least the threshold, and
+- [x] 7.1 Failing test: `PublisherLagHealthCheck` returns _Degraded_ when lag is at least the threshold, and
       _Healthy_ below it. It never returns _Unhealthy_.
-- [ ] 7.2 Implement it (offset row plus `max(ordering)` from `akka` journal on the primary). Add the
+- [x] 7.2 Implement it (offset row plus `max(ordering)` from `akka` journal on the primary). Add the
       `Outbox:LagDegradedAfter` option with default 30 s' worth of orderings, or a time-based variant if
       simpler. Add a batch Activity on `chess.actors`.
-- [ ] 7.3 Commit: `feat(backend): publisher lag health detail`.
+- [x] 7.3 Commit: `feat(backend): publisher lag health detail`.
 
 ## 8. Integration proof 🐳
 

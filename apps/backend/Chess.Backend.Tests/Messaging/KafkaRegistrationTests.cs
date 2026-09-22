@@ -103,6 +103,19 @@ public sealed class KafkaRegistrationTests
 
             bool registered = services.Any(d => d.ServiceType == typeof(KafkaHealthCheck) && d.Lifetime == ServiceLifetime.Singleton);
             Assert.Equal(expected, registered);
+
+            using ServiceProvider provider = services.AddSingleton(TimeProvider.System)
+                .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+                .BuildServiceProvider();
+            HealthCheckRegistration? lag = provider.GetRequiredService<IOptions<HealthCheckServiceOptions>>().Value.Registrations
+                .SingleOrDefault(r => r.Name == "journal-publisher");
+            Assert.Equal(expected, lag is not null);
+            if (lag is not null)
+            {
+                // A stalled publisher must never take the API out of rotation.
+                Assert.Equal(HealthStatus.Degraded, lag.FailureStatus);
+                Assert.IsType<PublisherLagHealthCheck>(lag.Factory(provider));
+            }
         }
     }
 }

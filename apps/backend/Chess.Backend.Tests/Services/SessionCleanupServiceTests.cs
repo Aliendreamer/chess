@@ -25,7 +25,8 @@ public sealed class SessionCleanupServiceTests
     public async Task ExecuteAsync_runs_immediately_and_stops_on_cancellation()
     {
         Mock<ISessionStore> store = new();
-        store.Setup(s => s.PurgeAsync(It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>())).ReturnsAsync(0);
+        TaskCompletionSource purged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        store.Setup(s => s.PurgeAsync(It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>())).Callback(() => purged.TrySetResult()).ReturnsAsync(0);
         ServiceProvider provider = new ServiceCollection().AddScoped(_ => store.Object).BuildServiceProvider();
         SessionCleanupService service = new(
             provider.GetRequiredService<IServiceScopeFactory>(),
@@ -34,7 +35,7 @@ public sealed class SessionCleanupServiceTests
         using CancellationTokenSource cts = new();
 
         await service.StartAsync(cts.Token);
-        await Task.Delay(50, CancellationToken.None);
+        await purged.Task.WaitAsync(TimeSpan.FromSeconds(10)); // the call itself, not a fixed sleep that loses under load
         await cts.CancelAsync();
         await service.StopAsync(CancellationToken.None);
 
@@ -46,7 +47,8 @@ public sealed class SessionCleanupServiceTests
     public async Task ExecuteAsync_survives_a_failing_purge()
     {
         Mock<ISessionStore> store = new();
-        store.Setup(s => s.PurgeAsync(It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>())).ThrowsAsync(new DbUpdateException("boom"));
+        TaskCompletionSource purged = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        store.Setup(s => s.PurgeAsync(It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>())).Callback(() => purged.TrySetResult()).ThrowsAsync(new DbUpdateException("boom"));
         ServiceProvider provider = new ServiceCollection().AddScoped(_ => store.Object).BuildServiceProvider();
         SessionCleanupService service = new(
             provider.GetRequiredService<IServiceScopeFactory>(),
@@ -55,7 +57,7 @@ public sealed class SessionCleanupServiceTests
         using CancellationTokenSource cts = new();
 
         await service.StartAsync(cts.Token);
-        await Task.Delay(50, CancellationToken.None);
+        await purged.Task.WaitAsync(TimeSpan.FromSeconds(10)); // the call itself, not a fixed sleep that loses under load
         await cts.CancelAsync();
         await service.StopAsync(CancellationToken.None);
 
