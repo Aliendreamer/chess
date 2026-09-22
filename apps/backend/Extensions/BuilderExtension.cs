@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Threading.RateLimiting;
 using Chess.Backend.Akka;
+using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Akka.Ping;
 using Chess.Backend.Data.Auth;
 using Chess.Backend.Messaging;
@@ -43,7 +44,14 @@ internal static class BuilderExtension
         services.AddObservability(configuration);
         AddMessaging(services, configuration);
         services.AddSignalR();
-        builder.AddActorSystem((akka, sp) => akka.WithPingSharding(sp.GetRequiredService<AkkaOptions>()));
+        builder.AddActorSystem((akka, sp) =>
+        {
+            akka.WithPingSharding(sp.GetRequiredService<AkkaOptions>());
+            if (sp.GetRequiredService<KafkaOptions>().Enabled)
+            {
+                akka.WithJournalPublisher();
+            }
+        });
 
         AddJwtBearer(services, configuration.GetSection(KeycloakOptions.SectionName).Get<KeycloakOptions>() ?? new(), isDevelopment);
         services.AddAuthorization();
@@ -82,8 +90,9 @@ internal static class BuilderExtension
     }
 
     /// <summary>
-    /// Empty <c>Kafka:BootstrapServers</c> ⇒ NullEventPublisher, no consumer host. Non-empty ⇒ the real Confluent
-    /// producer plus one Akka.Streams.Kafka consumer per registered <see cref="IProjection"/>.
+    /// Empty <c>Kafka:BootstrapServers</c> ⇒ NullEventPublisher, no consumer host, no journal publisher. Non-empty ⇒
+    /// the real Confluent producer, one Akka.Streams.Kafka consumer per registered <see cref="IProjection"/>, and
+    /// the services the journal publisher singleton needs (lease on the PRIMARY, event mappers).
     /// </summary>
     internal static IServiceCollection AddMessaging(this IServiceCollection services, IConfiguration configuration)
     {
@@ -99,6 +108,13 @@ internal static class BuilderExtension
             services.AddSingleton(_ => KafkaEventPublisher.CreateProducer(kafka));
             services.AddSingleton<IEventPublisher>(sp => new KafkaEventPublisher(sp.GetRequiredService<IProducer<string, string>>()));
             services.AddHostedService<KafkaConsumerHost>();
+            services.AddSingleton<IJournalEventMapper, PingedJournalMapper>();
+            services.AddSingleton<JournalEventMappers>();
+            services.AddSingleton(new JournalPublisherOptions());
+            services.AddSingleton<IPublisherLeaseProvider>(_ => new PostgresPublisherLeaseProvider(
+                configuration.GetConnectionString("Postgres") is { Length: > 0 } primary
+                    ? primary
+                    : throw new InvalidOperationException("ConnectionStrings:Postgres is required for the journal publisher.")));
         }
         else
         {

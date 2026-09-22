@@ -1,3 +1,4 @@
+using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Extensions;
 using Chess.Backend.Messaging;
 using Chess.Backend.Projections;
@@ -44,6 +45,24 @@ public sealed class KafkaRegistrationTests
         Assert.Contains(services, d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(KafkaConsumerHost));
         Assert.Contains(services, d => d.ServiceType == typeof(IProducer<string, string>));
         Assert.DoesNotContain(services, d => d.ServiceType == typeof(IEventPublisher) && d.ImplementationType == typeof(NullEventPublisher));
+    }
+
+    [Fact]
+    public void Journal_publisher_services_register_only_when_enabled()
+    {
+        ServiceCollection off = Base();
+        off.AddMessaging(Configuration(string.Empty));
+        Assert.DoesNotContain(off, d => d.ServiceType == typeof(IPublisherLeaseProvider));
+        Assert.DoesNotContain(off, d => d.ServiceType == typeof(JournalEventMappers));
+
+        ServiceCollection on = Base();
+        on.AddMessaging(Configuration("redpanda:9092"));
+        using ServiceProvider provider = on.BuildServiceProvider();
+        JournalEventMappers mappers = provider.GetRequiredService<JournalEventMappers>();
+        Assert.All(TopicTagger.BoundTypes, t => Assert.True(mappers.CanMap(t)));
+        Assert.NotNull(provider.GetRequiredService<JournalPublisherOptions>());
+        // No Postgres connection string in this configuration: the lease provider must say so, not NRE.
+        Assert.Throws<InvalidOperationException>(provider.GetRequiredService<IPublisherLeaseProvider>);
     }
 
     /// <summary>

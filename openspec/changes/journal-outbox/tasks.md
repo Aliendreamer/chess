@@ -43,21 +43,21 @@ human-run gate.
 
 ## 4. JournalPublisher stream (runs alongside the actor publish)
 
-- [ ] 4.1 Failing unit test (TestKit, in-memory journal, fake Kafka flow): persist 3 tagged pings, start
+- [x] 4.1 Failing unit test (TestKit, in-memory journal, fake Kafka flow): persist 3 tagged pings, start
       the publisher from offset 0, then assert 3 records in order and a stored offset equal to the third ordering.
       A second test restarts from the stored offset and asserts 0 re-sent records. This pins
       `Offset.Sequence(n)` as exclusive.
-- [ ] 4.2 Implement the `JournalPublisher` actor. Order of work: acquire the lock, load the offset, build
+- [x] 4.2 Implement the `JournalPublisher` actor. Order of work: acquire the lock, load the offset, build
       `EventsByTag` → map → `KafkaProducer.FlexiFlow` → `GroupedWithin(100, 200ms)` → save the offset on
       the lock connection. Run it with restart-with-backoff. Stop the stream on `LockLost`.
-- [ ] 4.3 Register it as a cluster singleton (`WithSingleton`, role `backend`), gated on
+- [x] 4.3 Register it as a cluster singleton (`WithSingleton`, role `backend`), gated on
       `Kafka:BootstrapServers` being non-empty. Extend `KafkaRegistrationTests` to cover both states of that switch.
 - [x] 4.4 Journal query tuning: `refresh-interval = 200ms`, `journal-sequence-retrieval.query-delay =
 200ms` (design D7).
 - [ ] 4.5 🐳 Human gate: `tools/localdev/stack.sh down -v && tools/localdev/stack.sh up`, then
       `tools/localdev/verify-part0.sh`. Pings still project, and duplicates from the double path are
       skipped (`ProjectionSkippedReplay` in the logs).
-- [ ] 4.6 Commit: `feat(backend): journal-tailing kafka publisher as a fenced cluster singleton`.
+- [x] 4.6 Commit: `feat(backend): journal-tailing kafka publisher as a fenced cluster singleton`.
 
 ## 5. Remove the dual write
 
