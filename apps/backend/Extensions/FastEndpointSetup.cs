@@ -19,7 +19,13 @@ internal static class FastEndpointSetup
         });
 
         string connectionString = builder.Configuration.GetConnectionString("Postgres") ?? string.Empty;
-        builder.Services.AddHealthChecks().AddNpgSql(connectionString, name: "postgres");
+        IHealthChecksBuilder health = builder.Services.AddHealthChecks().AddNpgSql(connectionString, name: "postgres");
+        string? redis = builder.Configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrEmpty(redis))
+        {
+            health.AddRedis(redis, name: "redis");
+        }
+
         return builder;
     }
 }
