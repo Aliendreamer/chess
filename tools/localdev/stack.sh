@@ -41,6 +41,8 @@ case "$cmd" in
     echo "  postgres     127.0.0.1:5432 primary · 127.0.0.1:5433 replica (chess/chess)"
     echo "  redpanda     127.0.0.1:19092 (kafka api)"
     echo "  traefik ui   http://127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-8090}"
+    echo "  cluster mode: 'cluster' compose profile adds a second Akka node (backend-2) —"
+    echo "    docker compose -f tools/localdev/docker-compose.yml --profile cluster up -d --build"
     ;;
   down)    compose down "$@" ;;
   restart) compose restart "$@" ;;

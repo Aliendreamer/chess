@@ -21,8 +21,39 @@
 # reuse the named caches. Dev secrets are non-sensitive local defaults.
 #
 # Paths below are relative to THIS file (tools/localdev/): repo-root assets use ../../.
+#
+# `cluster` profile (`docker compose --profile cluster up`): adds `backend-2`, a second Akka cluster
+# node sharing the same DB/Kafka/Keycloak, so cluster behavior (sharding, failover) is exercisable
+# without a second host. `backend` and `backend-2` share their environment via the `x-backend-env`
+# anchor below so the two cannot drift; each overrides only its own `Akka__Hostname`/seed list.
 
 name: chess
+
+# Shared env for every backend node (compose extension field + YAML anchor). Akka__Hostname and the
+# Akka__SeedNodes__* entries are per-node and are set explicitly on each service instead.
+x-backend-env: &backend-env
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_HTTP_PORTS: "8080"
+  Keycloak__Authority: http://keycloak.chess.localhost/realms/chess
+  Keycloak__Audience: ""
+  Keycloak__ClientId: chess_api
+  Keycloak__ClientSecret: chess-dev-secret
+  Keycloak__CallbackUri: http://app.chess.localhost/api/auth/callback
+  Keycloak__PostLogoutRedirectUri: http://app.chess.localhost
+  Keycloak__AppBaseUrl: http://app.chess.localhost
+  SessionCookies__Domain: .chess.localhost
+  SessionCookies__SessionName: mp_sid
+  SessionCookies__PkceName: mp_pkce
+  SessionStore__CleanupInterval: "00:05:00"
+  ForwardedHeaders__KnownNetworks__0: 172.30.0.0/24
+  AllowedCorsOrigins__0: http://app.chess.localhost
+  AllowedCorsOrigins__1: http://localhost:3000
+  ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=chess;Username=chess;Password=chess"
+  # Read side (ROADMAP D1): every query goes to the hot standby.
+  ConnectionStrings__PostgresReplica: "Host=postgres-replica;Port=5432;Database=chess;Username=chess;Password=chess"
+  ConnectionStrings__Redis: "redis:6379"
+  Kafka__BootstrapServers: "redpanda:9092"
+  Akka__Port: "8091"
 
 services:
   proxy:
@@ -265,29 +296,8 @@ services:
       context: ../../apps/backend
       dockerfile: ../../tools/localdev/backend.dev.Dockerfile
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_HTTP_PORTS: "8080"
-      Keycloak__Authority: http://keycloak.chess.localhost/realms/chess
-      Keycloak__Audience: ""
-      Keycloak__ClientId: chess_api
-      Keycloak__ClientSecret: chess-dev-secret
-      Keycloak__CallbackUri: http://app.chess.localhost/api/auth/callback
-      Keycloak__PostLogoutRedirectUri: http://app.chess.localhost
-      Keycloak__AppBaseUrl: http://app.chess.localhost
-      SessionCookies__Domain: .chess.localhost
-      SessionCookies__SessionName: mp_sid
-      SessionCookies__PkceName: mp_pkce
-      SessionStore__CleanupInterval: "00:05:00"
-      ForwardedHeaders__KnownNetworks__0: 172.30.0.0/24
-      AllowedCorsOrigins__0: http://app.chess.localhost
-      AllowedCorsOrigins__1: http://localhost:3000
-      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=chess;Username=chess;Password=chess"
-      # Read side (ROADMAP D1): every query goes to the hot standby. Not consumed until Part 0 code lands.
-      ConnectionStrings__PostgresReplica: "Host=postgres-replica;Port=5432;Database=chess;Username=chess;Password=chess"
-      ConnectionStrings__Redis: "redis:6379"
-      Kafka__BootstrapServers: "redpanda:9092"
+      <<: *backend-env
       Akka__Hostname: backend
-      Akka__Port: "8091"
       Akka__SeedNodes__0: akka.tcp://chess@backend:8091
     volumes:
       - ../../apps/backend:/src
@@ -315,6 +325,28 @@ services:
       - traefik.http.routers.api.rule=Host(`api.chess.localhost`)
       - traefik.http.routers.api.entrypoints=web
       - traefik.http.services.api.loadbalancer.server.port=8080
+
+  # Second cluster node — `docker compose --profile cluster up`. Same image/env; different Akka
+  # hostname. Joins the cluster through `backend`'s seed node.
+  backend-2:
+    profiles: ["cluster"]
+    build:
+      context: ../../apps/backend
+      dockerfile: ../../tools/localdev/backend.dev.Dockerfile
+    environment:
+      <<: *backend-env
+      Akka__Hostname: backend-2
+      Akka__SeedNodes__0: akka.tcp://chess@backend:8091
+      Akka__SeedNodes__1: akka.tcp://chess@backend-2:8091
+    volumes:
+      - ../../apps/backend:/src
+      - /src/bin
+      - /src/obj
+    extra_hosts:
+      - "keycloak.chess.localhost:host-gateway"
+    depends_on:
+      backend:
+        condition: service_started
 
   frontend:
     build:

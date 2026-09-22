@@ -4,6 +4,10 @@
 # a daemon that still accepts API 1.24; Docker 29+ (min API 1.40) rejects it and the labels are inert.
 # This file is the fallback the compose `proxy` service watches; it defines the same routes by hand.
 # Upstreams are compose service names on the `chess` network.
+#
+# `api`'s second server (`backend-2`) only exists under the compose `cluster` profile
+# (`docker compose --profile cluster up`); its `healthCheck` drops that server from rotation when
+# `backend-2` is absent or unhealthy, instead of serving 502s for it.
 http:
   routers:
     app:
@@ -35,6 +39,10 @@ http:
       loadBalancer:
         servers:
           - url: http://backend:8080
+          - url: http://backend-2:8080
+        healthCheck:
+          path: /health
+          interval: 5s
     keycloak:
       loadBalancer:
         servers:

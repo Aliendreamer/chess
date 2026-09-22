@@ -4,6 +4,12 @@
 #
 #   tools/localdev/verify-auth.sh                       # via Traefik on 127.0.0.1:80
 #   USER_NAME=player PASSWORD='Player123!' tools/localdev/verify-auth.sh
+#
+#   SID_ONLY=1 tools/localdev/verify-auth.sh             # login+callback only; prints raw mp_sid
+#                                                         # on stdout (last line) and exits 0 —
+#                                                         # skips /api/me, logout, revocation.
+#                                                         # All progress chatter goes to stderr so
+#                                                         # $(...) capture of stdout is clean.
 set -euo pipefail
 
 API_HOST="${API_HOST:-api.chess.localhost}"
@@ -12,6 +18,14 @@ APP_HOST="${APP_HOST:-app.chess.localhost}"
 EDGE_IP="${EDGE_IP:-127.0.0.1}"
 USERNAME="${USER_NAME:-testuser}"
 PASSWORD="${PASSWORD:-Test123!}"
+SID_ONLY="${SID_ONLY:-0}"
+
+# In SID_ONLY mode, reserve real stdout on fd 3 for the final raw mp_sid line and send every other
+# echo/step/printf (which write to fd 1) to stderr instead, so `$(SID_ONLY=1 ./verify-auth.sh)`
+# captures nothing but the sid.
+if [[ "$SID_ONLY" == "1" ]]; then
+  exec 3>&1 1>&2
+fi
 
 JAR="$(mktemp)"; trap 'rm -f "$JAR"' EXIT
 # *.localhost resolves in browsers, not in curl: pin every host to the edge.
@@ -80,6 +94,12 @@ rm -f "$cb_headers" "$cb_body"
 sid="$(awk '$6=="mp_sid" {print $7}' "$JAR")"
 [[ -n "$sid" ]] || fail "mp_sid cookie not set"
 echo "ok (mp_sid=${sid:0:8}…)"
+
+if [[ "$SID_ONLY" == "1" ]]; then
+  # Real stdout is fd 3 (see the exec above): the raw sid, and nothing else, lands there.
+  printf '%s\n' "$sid" >&3
+  exit 0
+fi
 
 step "GET /api/me with session → 200 + identity"
 me="$("${CURL[@]}" -w '\n%{http_code}' "http://$API_HOST/api/me")"
