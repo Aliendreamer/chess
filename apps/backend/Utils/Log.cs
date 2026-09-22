@@ -32,4 +32,13 @@ internal static partial class Log
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Consumer stream for {GroupId} failed; restarting")]
     public static partial void ConsumerStreamFailed(ILogger logger, Exception exception, string groupId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Journal publisher lease acquired; publishing from {StreamId}@{Ordering}")]
+    public static partial void PublisherLeaseAcquired(ILogger logger, string streamId, long ordering);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Journal publisher lease is held elsewhere; retrying in {Delay}")]
+    public static partial void PublisherLeaseBusy(ILogger logger, TimeSpan delay);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Journal publisher stopped ({Reason}); re-acquiring in {Delay}")]
+    public static partial void PublisherStopped(ILogger logger, Exception exception, string reason, TimeSpan delay);
 }

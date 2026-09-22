@@ -24,22 +24,22 @@ human-run gate.
 - [x] 2.3 EF migration `AddOutboxOffsets` (`./build_migration.sh "AddOutboxOffsets"`), then
       `outbox_offsets(stream_id pk, last_ordering, updated_at)`, seeded per tag with the journal's
       current `max(ordering)` so the first rollout doesn't re-publish history (design D4).
-- [ ] 2.4 Offset load and monotonic save are raw SQL on the lock connection (design D5), so they live in
+- [x] 2.4 Offset load and monotonic save are raw SQL on the lock connection (design D5), so they live in
       `PostgresPublisherLease` (group 3). They're proved there: a save of 5 after 10 leaves 10, and a load
       with no row throws instead of returning 0.
 - [x] 2.5 Commit: `feat(backend): outbox offset table and journal event mappers`.
 
 ## 3. Advisory-lock fence
 
-- [ ] 3.1 Failing integration test 🐳 (Postgres Testcontainer, `nx integration-test backend`): two
+- [ ] 3.1 (written as `PublisherLeaseTests`; run pending 🐳) Failing integration test 🐳 (Postgres Testcontainer, `nx integration-test backend`): two
       `PublisherLock` instances target the same database. The second `TryAcquireAsync` returns false
       while the first holds the lock. After the first connection is closed, the second acquires. It fails
       until `PublisherLock` exists.
-- [ ] 3.2 Implement `PublisherLock`: a dedicated `NpgsqlConnection` with `Keepalive` set,
+- [x] 3.2 Implement `PublisherLock`: a dedicated `NpgsqlConnection` with `Keepalive` set,
       `pg_try_advisory_lock(const)`, a 5 s `SELECT 1` liveness probe that raises `LockLost`, and
       `ExecuteOnLockConnectionAsync` for offset saves (design D5).
-- [ ] 3.3 Add `Log.cs` methods: `PublisherLockAcquired`, `PublisherLockBusy`, `PublisherLockLost`.
-- [ ] 3.4 Commit: `feat(backend): postgres advisory lock fencing for the journal publisher`.
+- [x] 3.3 Add `Log.cs` methods: `PublisherLeaseAcquired`, `PublisherLeaseBusy`, `PublisherStopped`.
+- [x] 3.4 Commit: `feat(backend): postgres advisory lock fencing for the journal publisher`.
 
 ## 4. JournalPublisher stream (runs alongside the actor publish)
 
