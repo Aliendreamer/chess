@@ -23,3 +23,28 @@ playwright-report/
 
 # superpowers SDD scratch
 .superpowers/
+
+# pnpm's content-addressable store when it falls back to a project-local path (the agent sandbox
+# cannot reach ~/.local/share/pnpm/store). Pure cache — safe to delete, never committed.
+.pnpm-store/
+
+# Sandbox masks: inside the Claude Code sandbox these appear as empty files/devices in the repo root
+# and error on read. They are the agent's own config and the user's shell dotfiles, not this project's.
+.mcp.json
+.gitconfig
+.gitmodules
+.ripgreprc
+.bashrc
+.bash_profile
+.profile
+.zshrc
+.zprofile
+.idea
+.claude/loop.md
+.claude/launch.json
+.claude/scheduled_tasks.json
+.claude/agents
+.claude/hooks
+.claude/output-styles
+.claude/routines
+.claude/workflows
