@@ -1,8 +1,11 @@
 using Akka.Cluster.Hosting;
 using Akka.Cluster.Hosting.SBR;
+using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Persistence.Sql.Hosting;
 using Akka.Remote.Hosting;
+using Chess.Backend.WebApi.Hubs;
 using LinqToDB;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Chess.Backend.Akka;
 
@@ -12,7 +15,8 @@ internal static class AkkaHostingExtensions
 
     /// <summary>
     /// One ActorSystem per backend replica: remoting + cluster (SBR keep-majority), SQL journal/snapshots on the
-    /// PRIMARY in schema `akka`, DistributedPubSub, and the sharded entity types registered by later tasks.
+    /// PRIMARY in schema `akka`, DistributedPubSub with its node-local <see cref="HubFanOutActor"/> fan-out to
+    /// SignalR, and the sharded entity types registered by later tasks.
     /// </summary>
     public static WebApplicationBuilder AddActorSystem(this WebApplicationBuilder builder, Action<AkkaConfigurationBuilder, IServiceProvider>? configureEntities = null)
     {
@@ -38,7 +42,11 @@ internal static class AkkaHostingExtensions
                     providerName: ProviderName.PostgreSQL15,
                     schemaName: PersistenceSchema,
                     autoInitialize: true)
-                .WithDistributedPubSub(AkkaOptions.BackendRole);
+                .WithDistributedPubSub(AkkaOptions.BackendRole)
+                .WithActors((system, registry, resolver) => registry.Register<HubFanOutActor>(
+                    system.ActorOf(
+                        Props.Create(() => new HubFanOutActor(resolver.GetService<IHubContext<PingsHub>>(), DistributedPubSub.Get(system).Mediator)),
+                        "hub-fanout")));
             configureEntities?.Invoke(akka, sp);
         });
         return builder;

@@ -1,4 +1,5 @@
 using Chess.Backend.WebApi.Authentication;
+using Chess.Backend.WebApi.Hubs;
 using FastEndpoints.Swagger;
 using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
@@ -22,6 +23,7 @@ internal static class ApplicationExtensions
         app.UseAuthorization();
 
         app.MapHealthChecks(Constants.HealthPath);
+        app.MapHub<PingsHub>(PingsHub.Path).RequireCors(Constants.CorsPolicy);
         app.UseFastEndpoints(c =>
         {
             c.Endpoints.RoutePrefix = Constants.RoutePrefix;

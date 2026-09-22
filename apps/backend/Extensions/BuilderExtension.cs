@@ -41,6 +41,7 @@ internal static class BuilderExtension
         services.AddHostedService<SessionCleanupService>();
         services.AddConventionServices();
         AddMessaging(services, configuration);
+        services.AddSignalR();
         builder.AddActorSystem((akka, sp) => akka.WithPingSharding(sp.GetRequiredService<AkkaOptions>()));
 
         AddJwtBearer(services, configuration.GetSection(KeycloakOptions.SectionName).Get<KeycloakOptions>() ?? new(), isDevelopment);
