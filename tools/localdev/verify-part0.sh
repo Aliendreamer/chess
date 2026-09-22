@@ -72,13 +72,19 @@ echo "ok"
 
 if [[ "$CLUSTER" == "1" ]]; then
   step "cluster: stop backend-1, $ID must answer from backend-2 with count=1"
-  compose stop backend >/dev/null
+  # SIGTERM the app itself, not the container: PID 1 in the dev image is `dotnet watch`, which ignores
+  # SIGTERM and SIGINT, so `compose stop` SIGKILLs the app after 10 s with no cluster leave — and in a
+  # two-node keep-majority cluster a crashed oldest node makes SBR down the survivor. A real deploy's
+  # SIGTERM reaches the app, so this is the stop worth proving. `dotnet watch` then idles, it does not
+  # restart the app, hence `compose restart` below rather than `start`.
+  compose exec -T backend sh -c "pkill -TERM -f '^/src/bin/Debug/net10.0/Chess.Backend'" \
+    || fail "could not signal the backend-1 app process"
   for i in $(seq 1 30); do
     if api "http://$API_HOST/api/pings/$ID/live" 2>/dev/null | count_is_1; then echo "ok (~$((i))s)"; break; fi
     [[ "$i" -eq 30 ]] && fail "entity did not recover on backend-2"
     sleep 1
   done
-  compose start backend >/dev/null
+  compose restart backend >/dev/null
 fi
 
 printf '\nAll part-0 checks passed.\n'

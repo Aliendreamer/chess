@@ -299,6 +299,11 @@ services:
       <<: *backend-env
       Akka__Hostname: backend
       Akka__SeedNodes__0: akka.tcp://chess@backend:8091
+      # backend-2 as a second seed: a RESTARTED backend-1 asks it first and rejoins the running cluster.
+      # With itself as the only seed it self-joined into a second cluster (split brain: two shard
+      # coordinators, 504s for entities on "the other" side). Without the cluster profile the lookup
+      # just times out (seed-node-timeout) and the node self-joins as before.
+      Akka__SeedNodes__1: akka.tcp://chess@backend-2:8091
     volumes:
       - ../../apps/backend:/src
       # Keep host-built artifacts out of the container (and vice versa).
