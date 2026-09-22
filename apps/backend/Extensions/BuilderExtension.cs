@@ -1,7 +1,9 @@
 using System.Reflection;
 using System.Threading.RateLimiting;
 using Chess.Backend.Akka;
+using Chess.Backend.Akka.Ping;
 using Chess.Backend.Data.Auth;
+using Chess.Backend.Messaging;
 using Chess.Backend.WebApi.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -36,7 +38,8 @@ internal static class BuilderExtension
         services.AddSingleton<IClaimsTransformation, KeycloakRolesClaimsTransformation>();
         services.AddHostedService<SessionCleanupService>();
         services.AddConventionServices();
-        builder.AddActorSystem();
+        services.AddSingleton<IEventPublisher, NullEventPublisher>();
+        builder.AddActorSystem((akka, sp) => akka.WithPingSharding(sp.GetRequiredService<AkkaOptions>()));
 
         AddJwtBearer(services, configuration.GetSection(KeycloakOptions.SectionName).Get<KeycloakOptions>() ?? new(), isDevelopment);
         services.AddAuthorization();
