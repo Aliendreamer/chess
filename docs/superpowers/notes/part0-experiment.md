@@ -87,7 +87,13 @@ every change — which is what `nx integration-test backend` now is.
 1. **Close the dual-write gap.** Either a journal tailer (read the Akka journal, publish to Kafka with
    an offset) or a transactional outbox in the same write as the event. This is the one item that
    should not carry into real moves. **Done (2026-09-23):** journal tailer, see OpenSpec change
-   `journal-outbox`. Latency against the 250–500 ms baseline still to be measured on the live stack.
+   `journal-outbox`. Measured on the two-node stack: ping → replica row median ~240 ms, 19/20 under
+   500 ms, one 2.2 s outlier (the journal gap detector's bounded wait, 10 × 200 ms); failover 1–2 s,
+   with the publisher lease taken over by backend-2 from the saved offset. Verifying it surfaced two
+   stack bugs, both fixed: `dotnet watch` ignores SIGTERM/SIGINT so `compose stop` SIGKILLed backend-1
+   without a cluster leave (verify-part0 now signals the app), and backend-1 seeded only itself so a
+   restart formed a second cluster (it now also seeds backend-2). The split brain happened once before
+   the fix, and the advisory-lock fence held: one publisher, the other side logged "held elsewhere".
 2. **Multiplex the relay.** Today the SSR server opens one hub connection per open feed. One
    connection per node, fanned out locally by topic, before there are watchers on a game.
 3. **Give a late subscriber the current state.** The hub pushes only to whoever is subscribed when

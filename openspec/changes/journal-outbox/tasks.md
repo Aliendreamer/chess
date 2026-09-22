@@ -31,7 +31,7 @@ human-run gate.
 
 ## 3. Advisory-lock fence
 
-- [ ] 3.1 (written as `PublisherLeaseTests`; run pending 🐳) Failing integration test 🐳 (Postgres Testcontainer, `nx integration-test backend`): two
+- [x] 3.1 (`PublisherLeaseTests`, 5/5 green) Failing integration test 🐳 (Postgres Testcontainer, `nx integration-test backend`): two
       `PublisherLock` instances target the same database. The second `TryAcquireAsync` returns false
       while the first holds the lock. After the first connection is closed, the second acquires. It fails
       until `PublisherLock` exists.
@@ -54,7 +54,7 @@ human-run gate.
       `Kafka:BootstrapServers` being non-empty. Extend `KafkaRegistrationTests` to cover both states of that switch.
 - [x] 4.4 Journal query tuning: `refresh-interval = 200ms`, `journal-sequence-retrieval.query-delay =
 200ms` (design D7).
-- [ ] 4.5 🐳 Human gate: `tools/localdev/stack.sh down -v && tools/localdev/stack.sh up`, then
+- [x] 4.5 🐳 Human gate: `tools/localdev/stack.sh down -v && tools/localdev/stack.sh up`, then
       `tools/localdev/verify-part0.sh`. Pings still project, and duplicates from the double path are
       skipped (`ProjectionSkippedReplay` in the logs).
 - [x] 4.6 Commit: `feat(backend): journal-tailing kafka publisher as a fenced cluster singleton`.
@@ -93,23 +93,24 @@ human-run gate.
 
 ## 8. Integration proof 🐳
 
-- [ ] 8.1 `PingRoundTripTests` still passes unchanged. That proves the wire format.
-- [ ] 8.2 (written; run pending 🐳) New `OutboxRecoveryTests` (Testcontainers):
+- [x] 8.1 `PingRoundTripTests` still passes unchanged. That proves the wire format.
+- [x] 8.2 (3/3 green) New `OutboxRecoveryTests` (Testcontainers):
       (a) pause the Redpanda container, POST 5 pings, unpause, and assert all 5 `rm_pings` updates
       within 30 s;
       (b) reset the offset row to 0 on a populated stack, and assert no read model changes;
       (c) POST pings, dispose the host before the publisher's first batch, start a new host, and assert
       none are missing.
-- [ ] 8.3 (not automated: two ActorSystems in one test process share the fixture's env-var config; covered by
-      `PublisherLeaseTests` for the fence and `verify-part0.sh --cluster` for placement) Two-node test (the `PingApiFactory` cluster setup used by `verify-part0 --cluster`): concurrent
+- [x] 8.3 (not automated in-process; proved live on 2026-09-23: during an accidental split brain — a restarted
+      backend-1 self-joined into a second cluster — both sides ran a publisher singleton and backend-1 logged
+      "lease is held elsewhere" every 5 s while exactly one publisher session existed in Postgres) Two-node test (the `PingApiFactory` cluster setup used by `verify-part0 --cluster`): concurrent
       pings on both nodes. Assert exactly one lock holder, no missing seq per key, and that after
       killing the publisher node the other node takes over and the rows complete.
-- [ ] 8.4 Run `pnpm exec nx integration-test backend` 🐳 plus `tools/localdev/verify-part0.sh --cluster` 🐳 (human).
+- [x] 8.4 Run `pnpm exec nx integration-test backend` 🐳 plus `tools/localdev/verify-part0.sh --cluster` 🐳 (human).
 - [x] 8.5 Commit: `test(backend): outbox recovery and two-node fencing`.
 
 ## 9. Docs and measurements
 
-- [ ] 9.1 (note marked done; measurement pending 🐳) Measure ping → replica row on the live stack and compare with the 250–500 ms baseline. Add it to
+- [x] 9.1 Measure ping → replica row on the live stack and compare with the 250–500 ms baseline. Add it to
       `docs/superpowers/notes/part0-experiment.md`, and mark the dual-write item closed.
 - [x] 9.2 Update `ROADMAP.md` principle 4 and §2 Recovery (agreed 2026-09-23):
       the journal is the recovery source and Kafka is derived from it.
