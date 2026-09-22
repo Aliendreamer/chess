@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Net;
 using System.Net.Sockets;
 using Testcontainers.PostgreSql;
 using Testcontainers.Redpanda;
@@ -31,19 +33,48 @@ public sealed class StackFixture : IAsyncLifetime
     /// </summary>
     public int AkkaPort { get; } = FreeTcpPort();
 
-    public Task InitializeAsync() => Task.WhenAll(_postgres.StartAsync(), _redpanda.StartAsync());
+    /// <summary>
+    /// Environment variables, not <c>UseSetting</c>: <c>AddSharedConfiguration</c> appends
+    /// <c>Config/appsettings*.json</c> and then <c>AddEnvironmentVariables()</c> on top of the host
+    /// configuration, so anything set through the web host builder is overwritten by the json files.
+    /// Env vars are the app's last source and therefore the only override that survives.
+    /// </summary>
+    private static readonly string[] OwnedVariables =
+    [
+        "ConnectionStrings__Postgres",
+        "ConnectionStrings__PostgresReplica",
+        "Kafka__BootstrapServers",
+        "Akka__Hostname",
+        "Akka__Port",
+    ];
+
+    public async Task InitializeAsync()
+    {
+        await Task.WhenAll(_postgres.StartAsync(), _redpanda.StartAsync());
+
+        Environment.SetEnvironmentVariable("ConnectionStrings__Postgres", PostgresConnectionString);
+        Environment.SetEnvironmentVariable("ConnectionStrings__PostgresReplica", PostgresConnectionString);
+        Environment.SetEnvironmentVariable("Kafka__BootstrapServers", BootstrapServers);
+        Environment.SetEnvironmentVariable("Akka__Hostname", "127.0.0.1");
+        Environment.SetEnvironmentVariable("Akka__Port", AkkaPort.ToString(CultureInfo.InvariantCulture));
+    }
 
     public async Task DisposeAsync()
     {
+        foreach (string variable in OwnedVariables)
+        {
+            Environment.SetEnvironmentVariable(variable, null);
+        }
+
         await _postgres.DisposeAsync();
         await _redpanda.DisposeAsync();
     }
 
     private static int FreeTcpPort()
     {
-        using TcpListener listener = new(System.Net.IPAddress.Loopback, 0);
+        using TcpListener listener = new(IPAddress.Loopback, 0);
         listener.Start();
-        int port = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+        int port = ((IPEndPoint)listener.LocalEndpoint).Port;
         listener.Stop();
         return port;
     }

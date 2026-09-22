@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
@@ -15,22 +16,26 @@ namespace Chess.Backend.IntegrationTests.Fixtures;
 /// Only two things are faked: authentication (there is no Keycloak here) and the replica, which points at
 /// the primary. Everything between the HTTP call and the row in <c>rm_pings</c> is production code.
 /// </summary>
-public sealed class PingApiFactory(StackFixture stack) : WebApplicationFactory<Program>
+public sealed class PingApiFactory : WebApplicationFactory<Program>
 {
     public const string Subject = "it-subject";
+
+    /// <summary>
+    /// Deliberately NOT "Development": that environment's appsettings hard-codes localhost connection
+    /// strings, and <c>AddSharedConfiguration</c> layers the json files on top of the web host builder's
+    /// settings, so <c>UseSetting</c> loses to them. Under an environment with no appsettings file of its
+    /// own only the base file applies, where every connection string is empty — the fixture's env vars
+    /// then decide, and Redis stays off (L1 cache, in-memory rate limiter).
+    /// </summary>
+    public const string EnvironmentName = "IntegrationTest";
+
+    private static readonly TimeSpan ReadyTimeout = TimeSpan.FromSeconds(90);
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.UseEnvironment("Development");
-        builder.UseSetting("ConnectionStrings:Postgres", stack.PostgresConnectionString);
-        builder.UseSetting("ConnectionStrings:PostgresReplica", stack.PostgresConnectionString);
-        builder.UseSetting("ConnectionStrings:Redis", string.Empty);
-        builder.UseSetting("Kafka:BootstrapServers", stack.BootstrapServers);
-        builder.UseSetting("Akka:Hostname", "127.0.0.1");
-        builder.UseSetting("Akka:Port", stack.AkkaPort.ToString(System.Globalization.CultureInfo.InvariantCulture));
-
+        builder.UseEnvironment(EnvironmentName);
         builder.ConfigureTestServices(services =>
         {
             // Replaces JwtBearer as the default scheme: the cookie→token resolver needs a live IdP, and
@@ -38,6 +43,43 @@ public sealed class PingApiFactory(StackFixture stack) : WebApplicationFactory<P
             services.AddAuthentication(TestAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
         });
+    }
+
+    /// <summary>
+    /// A client that will not command an actor before the node can serve one. <c>/health</c> covers the
+    /// primary, the replica, Kafka and — the one that matters here — <c>akka-cluster</c>, which is healthy
+    /// only once this node's member is Up and the shard region can allocate. Commanding earlier means the
+    /// region buffers the ask and the endpoint's 5s timeout turns it into a 504.
+    /// </summary>
+    public async Task<HttpClient> CreateReadyClientAsync(CancellationToken ct)
+    {
+        HttpClient client = CreateClient();
+        Stopwatch elapsed = Stopwatch.StartNew();
+        string last = "no response";
+        while (elapsed.Elapsed < ReadyTimeout)
+        {
+            try
+            {
+                using HttpResponseMessage health = await client.GetAsync(new Uri("/health", UriKind.Relative), ct);
+                if (health.IsSuccessStatusCode)
+                {
+                    return client;
+                }
+
+                last = $"{(int)health.StatusCode} {await health.Content.ReadAsStringAsync(ct)}";
+            }
+            catch (HttpRequestException e)
+            {
+                last = e.Message;
+            }
+
+            // 500ms, not tighter: TestServer has no remote IP, so every request lands in the rate
+            // limiter's single "anonymous" partition (300/min) alongside the projection polling.
+            await Task.Delay(TimeSpan.FromMilliseconds(500), ct);
+        }
+
+        client.Dispose();
+        throw new TimeoutException($"node not healthy within {ReadyTimeout.TotalSeconds:F0}s; last /health: {last}");
     }
 
     internal sealed class TestAuthHandler(

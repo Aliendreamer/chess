@@ -11,8 +11,12 @@ namespace Chess.Backend.IntegrationTests;
 /// The whole Part 0 spine in two tests: command → actor → journal → Kafka → projection → read model,
 /// and then the same entity recovered from the journal by a fresh process.
 /// </summary>
-public sealed class PingRoundTripTests(StackFixture stack) : IClassFixture<StackFixture>
+public sealed class PingRoundTripTests : IClassFixture<StackFixture>
 {
+    // The fixture is what configures the app (env vars the host reads at startup); the tests only need
+    // it to have run, not to read from it.
+    public PingRoundTripTests(StackFixture stack) => ArgumentNullException.ThrowIfNull(stack);
+
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan ProjectionTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(3);
@@ -29,8 +33,8 @@ public sealed class PingRoundTripTests(StackFixture stack) : IClassFixture<Stack
         using CancellationTokenSource cts = new(TestTimeout);
         CancellationToken ct = cts.Token;
         string id = $"it-{Guid.NewGuid():N}"[..20];
-        await using PingApiFactory app = new(stack);
-        using HttpClient client = app.CreateClient();
+        await using PingApiFactory app = new();
+        using HttpClient client = await app.CreateReadyClientAsync(ct);
 
         HttpResponseMessage posted = await client.PostAsJsonAsync(
             $"/api/pings/{id}",
@@ -56,9 +60,9 @@ public sealed class PingRoundTripTests(StackFixture stack) : IClassFixture<Stack
         using CancellationTokenSource cts = new(TestTimeout);
         CancellationToken ct = cts.Token;
         string id = $"it-{Guid.NewGuid():N}"[..20];
-        await using (PingApiFactory first = new(stack))
+        await using (PingApiFactory first = new())
         {
-            using HttpClient client = first.CreateClient();
+            using HttpClient client = await first.CreateReadyClientAsync(ct);
             HttpResponseMessage posted = await client.PostAsJsonAsync(
                 $"/api/pings/{id}",
                 new { text = "before restart" },
@@ -68,8 +72,8 @@ public sealed class PingRoundTripTests(StackFixture stack) : IClassFixture<Stack
         }
 
         // Same containers, same journal, a brand new ActorSystem: the count must survive.
-        await using PingApiFactory second = new(stack);
-        using HttpClient client2 = second.CreateClient();
+        await using PingApiFactory second = new();
+        using HttpClient client2 = await second.CreateReadyClientAsync(ct);
         PingState? recovered = await client2.GetFromJsonAsync<PingState>(
             $"/api/pings/{id}/live",
             Json,
@@ -95,7 +99,7 @@ public sealed class PingRoundTripTests(StackFixture stack) : IClassFixture<Stack
                 return found;
             }
 
-            await Task.Delay(TimeSpan.FromMilliseconds(250), ct);
+            await Task.Delay(TimeSpan.FromMilliseconds(500), ct);
         }
 
         throw new TimeoutException($"ping '{id}' never reached rm_pings within {ProjectionTimeout.TotalSeconds:F0}s");
