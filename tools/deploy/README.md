@@ -53,10 +53,10 @@ To publish everything use `nx run-many -t push`, not `-t build`.
      `apps/backend/Dockerfile`
 2. Computes the tag `TAG=$(date +%Y%m%d).$(git rev-parse --short HEAD)` — e.g. `20260720.f0a04ce`.
    **This tag is the deployable version and the rollback unit.**
-3. Reads credentials from the environment: `ACR_REGISTRY`, `ACR_USER`, `ACR_PASS`. Missing values
+3. Reads credentials from the environment: `REGISTRY`, `REGISTRY_USER`, `REGISTRY_PASS`. Missing values
    fail fast, before any build. There is no config-file fallback — supply them from your own
    credential store so nothing here reaches for a path outside the repo.
-4. Builds `$ACR_REGISTRY/<image>:$TAG`, logs in (`--password-stdin`), and pushes. `ACR_REGISTRY` is
+4. Builds `$REGISTRY/<image>:$TAG`, logs in (`--password-stdin`), and pushes. `REGISTRY` is
    the **bare** registry host; the `aliendreamer/` path is part of `<image>`, so the full ref
    is e.g. `docker.io/aliendreamer/chess-backend:$TAG`.
 5. Prints the tag as the final stdout line (everything else goes to stderr), so it can be captured:
@@ -86,11 +86,12 @@ Whatever you write, keep two properties the tagging scheme gives you: the tag is
 
 ## Registry: Docker Hub
 
-Images live under `docker.io/aliendreamer/`. `ACR_*` is the historical variable name — the
-script is registry-agnostic. For Docker Hub:
+Images live under `docker.io/aliendreamer/`. The script only ever does a `docker login` against
+whatever `REGISTRY` names, so another registry would work, but Docker Hub is where these images
+live:
 
 ```bash
-export ACR_REGISTRY=docker.io ACR_USER=aliendreamer ACR_PASS=<access-token>
+export REGISTRY=docker.io REGISTRY_USER=aliendreamer REGISTRY_PASS=<access-token>
 ```
 
 ## Deploy target: Docker (compose / swarm)
@@ -101,6 +102,6 @@ image for the service in the deployment compose/stack file, and roll the service
 ## Prerequisites
 
 - A container runtime (`docker` or `podman`) on PATH.
-- `ACR_REGISTRY`, `ACR_USER`, `ACR_PASS` exported for `push` mode.
+- `REGISTRY`, `REGISTRY_USER`, `REGISTRY_PASS` exported for `push` mode.
 - A clean git worktree is not required, but the tag carries the **current** short SHA — pushing
   from a dirty tree produces a tag that does not describe what was built.

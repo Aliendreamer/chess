@@ -137,7 +137,7 @@ to each app's own lint target). Keep `--no-stash`.
   the network. `/hc` returns 200 locally. No CSP here — the SSR layer owns it.
 - **Images and deploy** — `tools/deploy/build.sh <app> [push|local|validate]` tags
   `YYYYMMDD.<short-sha>`; that tag is the rollback unit. Registry is Docker Hub
-  (`docker.io/aliendreamer/chess-*`), creds via `ACR_REGISTRY`/`ACR_USER`/`ACR_PASS` env vars.
+  (`docker.io/aliendreamer/chess-*`), creds via `REGISTRY`/`REGISTRY_USER`/`REGISTRY_PASS` env vars.
   Deploy target is Docker (compose/swarm) and is **not implemented** — each app's `deploy` target is
   a placeholder. `nx run-many -t build` does not publish; use `-t push`.
 

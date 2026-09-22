@@ -10,5 +10,5 @@
   client `chess_api`, admin/admin).
 - Proxy image: `nginxinc/nginx-unprivileged:stable-alpine` (non-root, :8080, pid `/tmp/nginx.pid`).
 - Registry: Docker Hub `docker.io/aliendreamer/chess-{backend,frontend,proxy}`; creds via env
-  `ACR_REGISTRY=docker.io ACR_USER ACR_PASS` (name is historical, script is registry-agnostic).
+  `REGISTRY=docker.io REGISTRY_USER REGISTRY_PASS` (name is historical, script is registry-agnostic).
 - Serena language servers: typescript, csharp, bash (pre-registered before app code exists).

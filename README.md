@@ -108,15 +108,18 @@ commits). Pass an explicit `--specifier` if you disagree with it.
 
 ### Images — `nx push`
 
+Images live on **Docker Hub**, under `docker.io/aliendreamer/`. Credentials come from the
+environment; the script has no file fallback, so nothing reaches outside the repo for them.
+
 ```bash
-export ACR_REGISTRY=docker.io ACR_USER=… ACR_PASS=…   # from your own credential store
+export REGISTRY=docker.io REGISTRY_USER=aliendreamer REGISTRY_PASS=<access-token>
 pnpm push                 # all three apps  (nx run-many -t push)
 pnpm push:backend         # or one: push:frontend, push:proxy
 ```
 
 Each build prints a `YYYYMMDD.<short-git-sha>` tag — **that tag is the deployable unit and the
-rollback unit**, independent of the semver above. Images go to Docker Hub as
-`docker.io/aliendreamer/chess-{backend,frontend,proxy}`.
+rollback unit**, independent of the semver above. The images are
+`chess-backend`, `chess-frontend` and `chess-proxy`.
 
 Without credentials, build locally instead:
 
