@@ -11,10 +11,19 @@ namespace Chess.Backend.Messaging;
 
 /// <summary>
 /// One committable Kafka stream per registered projection. Offsets commit only after ApplyAsync returns,
-/// so a crash re-delivers and the projection's idempotency does the rest.
+/// so a crash re-delivers and the projection's idempotency does the rest. Anything a stream throws — a broker
+/// error, a stream-stage failure, or a bug in a projection's ApplyAsync — is logged and the stream is retried
+/// after a backoff rather than being allowed to fault this BackgroundService.
 /// </summary>
-internal sealed class KafkaConsumerHost(ActorSystem system, IServiceScopeFactory scopes, KafkaOptions options, ILogger<KafkaConsumerHost> logger) : BackgroundService
+internal sealed class KafkaConsumerHost(
+    ActorSystem system,
+    IServiceScopeFactory scopes,
+    KafkaOptions options,
+    ILogger<KafkaConsumerHost> logger,
+    TimeSpan? retryDelay = null) : BackgroundService
 {
+    private readonly TimeSpan _retryDelay = retryDelay ?? TimeSpan.FromSeconds(5);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using IServiceScope scope = scopes.CreateScope();
@@ -47,26 +56,49 @@ internal sealed class KafkaConsumerHost(ActorSystem system, IServiceScopeFactory
                 .WithBootstrapServers(options.BootstrapServers)
                 .WithGroupId(groupId)
                 .WithProperty("auto.offset.reset", "earliest");
-            try
-            {
-                await KafkaConsumer.CommittableSource(settings, Subscriptions.Topics(topic))
+
+            await RunOnceWithRetryAsync(
+                streamCt => KafkaConsumer.CommittableSource(settings, Subscriptions.Topics(topic))
                     .SelectAsync(1, async msg =>
                     {
                         using IServiceScope scope = scopes.CreateScope();
                         IProjection projection = (IProjection)scope.ServiceProvider.GetRequiredService(projectionType);
-                        await projection.ApplyAsync(msg.Record.Message.Key, msg.Record.Message.Value, ct);
+                        await projection.ApplyAsync(msg.Record.Message.Key, msg.Record.Message.Value, streamCt);
                         return (ICommittable)msg.CommitableOffset;
                     })
-                    .RunWith(Committer.Sink(CommitterSettings.Create(system)), materializer);
+                    .RunWith(Committer.Sink(CommitterSettings.Create(system)), materializer),
+                groupId,
+                ct);
+        }
+    }
+
+    /// <summary>
+    /// Runs one materialization of <paramref name="runStream"/> and never lets an exception escape it: a
+    /// cooperative cancellation of <paramref name="ct"/> returns quietly, and anything else — Kafka errors, a
+    /// stream-stage fault, or a projection's ApplyAsync throwing — is logged and swallowed after a backoff, so
+    /// the caller's loop can retry instead of the host dying. Exposed internally so the retry contract can be
+    /// unit-tested without a broker.
+    /// </summary>
+    internal async Task RunOnceWithRetryAsync(Func<CancellationToken, Task> runStream, string groupId, CancellationToken ct)
+    {
+        try
+        {
+            await runStream(ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            Log.ConsumerStreamFailed(logger, ex, groupId);
+            try
+            {
+                await Task.Delay(_retryDelay, ct);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
-                return;
-            }
-            catch (Exception ex) when (ex is KafkaException or InvalidOperationException or DbUpdateException)
-            {
-                Log.ConsumerStreamFailed(logger, ex, groupId);
-                await Task.Delay(TimeSpan.FromSeconds(5), ct);
+                // Shutting down while waiting to retry — let the caller's loop exit on the next check.
             }
         }
     }

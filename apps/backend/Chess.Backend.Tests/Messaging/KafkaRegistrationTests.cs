@@ -51,13 +51,11 @@ public sealed class KafkaRegistrationTests
         {
             ServiceCollection services = Base();
             KafkaOptions kafka = new() { BootstrapServers = bootstrapServers };
-            services.AddSingleton(kafka);
             IHealthChecksBuilder health = services.AddHealthChecks();
-            if (kafka.Enabled)
-            {
-                services.AddSingleton<KafkaHealthCheck>();
-                health.AddCheck<KafkaHealthCheck>("kafka");
-            }
+
+            // Drives the real production registration (FastEndpointSetup.AddKafkaHealthCheck), not a copy of
+            // it, so this test fails if that branch is ever removed or inverted.
+            health.AddKafkaHealthCheck(services, kafka);
 
             bool registered = services.Any(d => d.ServiceType == typeof(KafkaHealthCheck) && d.Lifetime == ServiceLifetime.Singleton);
             Assert.Equal(expected, registered);

@@ -31,13 +31,27 @@ internal static class FastEndpointSetup
         health.AddCheck<ClusterHealthCheck>("akka-cluster");
 
         KafkaOptions kafka = builder.Configuration.GetSection(KafkaOptions.SectionName).Get<KafkaOptions>() ?? new KafkaOptions();
+        health.AddKafkaHealthCheck(builder.Services, kafka);
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers the <c>"kafka"</c> health check only when Kafka is enabled. Extracted so the branch is
+    /// unit-testable against the real registration instead of a copy of it.
+    /// </summary>
+    internal static IHealthChecksBuilder AddKafkaHealthCheck(this IHealthChecksBuilder health, IServiceCollection services, KafkaOptions kafka)
+    {
+        ArgumentNullException.ThrowIfNull(health);
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(kafka);
         if (kafka.Enabled)
         {
             // Singleton so the AdminClient (and its broker connection) is built once, not per health probe.
-            builder.Services.AddSingleton<KafkaHealthCheck>();
+            services.AddSingleton<KafkaHealthCheck>();
             health.AddCheck<KafkaHealthCheck>("kafka");
         }
 
-        return builder;
+        return health;
     }
 }
