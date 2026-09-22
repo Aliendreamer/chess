@@ -1,0 +1,105 @@
+using Akka.Cluster.Tools.PublishSubscribe;
+using Akka.Event;
+using Akka.Persistence;
+using Chess.Backend.Events;
+using Chess.Backend.Messaging;
+
+namespace Chess.Backend.Akka.Ping;
+
+/// <summary>
+/// The proving entity: validate → Persist(Pinged) → publish to Kafka → DistributedPubSub → reply with state.
+/// One incarnation per ping id cluster-wide (sharding); passivation is configured by the shard region.
+/// </summary>
+internal sealed class PingActor : ReceivePersistentActor
+{
+    public const int SnapshotEvery = 20;
+    private const int MaxTextLength = 200;
+
+    private readonly string _pingId;
+    private readonly IEventPublisher _publisher;
+    private readonly IActorRef? _mediator;
+    private readonly ILoggingAdapter _log = Context.GetLogger();
+    private long _count;
+    private string? _lastText;
+    private DateTimeOffset? _lastAt;
+
+    public PingActor(string pingId, IEventPublisher publisher, IActorRef? mediator)
+    {
+        ArgumentNullException.ThrowIfNull(pingId);
+        ArgumentNullException.ThrowIfNull(publisher);
+
+        _pingId = pingId;
+        _publisher = publisher;
+        _mediator = mediator;
+
+        Recover<Pinged>(Apply);
+        Recover<SnapshotOffer>(offer =>
+        {
+            if (offer.Snapshot is PingSnapshot s)
+            {
+                _count = s.Count;
+                _lastText = s.LastText;
+                _lastAt = s.LastAt;
+            }
+        });
+
+        Command<GetPingState>(_ => Sender.Tell(State()));
+        Command<Ping>(HandlePing);
+        Command<SaveSnapshotSuccess>(_ => { });
+        Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "snapshot failed for {0}", _pingId));
+        Command<PublishFailed>(f => _log.Warning(f.Cause, "kafka publish failed for {0} seq {1}", _pingId, f.Seq));
+    }
+
+    public override string PersistenceId => "ping-" + _pingId;
+
+    private void HandlePing(Ping cmd)
+    {
+        if (string.IsNullOrWhiteSpace(cmd.Text))
+        {
+            Sender.Tell(new PingRejected(_pingId, "Text is required."));
+            return;
+        }
+
+        if (cmd.Text.Length > MaxTextLength)
+        {
+            Sender.Tell(new PingRejected(_pingId, $"Text must be at most {MaxTextLength} characters."));
+            return;
+        }
+
+        Pinged evt = new(cmd.Text.Trim(), cmd.UserId, DateTimeOffset.UtcNow);
+        IActorRef replyTo = Sender;
+        Persist(evt, persisted =>
+        {
+            Apply(persisted);
+            long seq = LastSequenceNr;
+            EventEnvelope<Pinged> envelope = new(EventTypes.Pinged, 1, _pingId, seq, persisted.At, persisted);
+            IActorRef self = Self;
+            _publisher.PublishAsync(PingTopics.Kafka, PingTopics.Key(_pingId), EventJson.Serialize(envelope), CancellationToken.None)
+                .ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        self.Tell(new PublishFailed(seq, t.Exception!.GetBaseException()));
+                    }
+                }, TaskScheduler.Default);
+            PingState state = State();
+            _mediator?.Tell(new Publish(PingTopics.PubSub, state));
+            replyTo.Tell(state);
+            if (seq % SnapshotEvery == 0)
+            {
+                SaveSnapshot(new PingSnapshot(_count, _lastText, _lastAt));
+            }
+        });
+    }
+
+    private void Apply(Pinged evt)
+    {
+        _count++;
+        _lastText = evt.Text;
+        _lastAt = evt.At;
+    }
+
+    private PingState State() => new(_pingId, _count, _lastText, _lastAt, LastSequenceNr);
+
+    private sealed record PublishFailed(long Seq, Exception Cause);
+}
