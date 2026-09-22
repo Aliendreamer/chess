@@ -113,6 +113,14 @@ to each app's own lint target). Keep `--no-stash`.
   server-side. Components are presentational. **No `VITE_API_URL` ever** — the client bundle must not
   mention the API host.
 
+- **Journal outbox (backend)** — actors never produce to Kafka. `Akka/Outbox/`: `TopicTagger` tags events
+  with their topic (tag table), `JournalPublisher` is a cluster singleton that takes a Postgres advisory lock
+  (`PostgresPublisherLeaseProvider`, unpooled connection) and runs `JournalPublisherLoop`: `EventsByTag`
+  after `outbox_offsets.LastOrdering` → `JournalEventMappers` → Kafka (acks=all) → save offset through the
+  lock connection. Any failure releases the lease and resumes from the saved offset (at-least-once).
+  Consumers dedupe via `IdempotencyGuard` on `(aggregateId, seq)` and stall on a gap
+  (`ProjectionGapException`). A new event type needs a `TopicTagger.BoundTypes` entry AND a mapper.
+
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/
   `.slnx`/`Directory.*.props`/runsettings so JS edits don't bust the backend cache and vice versa.
   The backend's `project.json` must reference this input.

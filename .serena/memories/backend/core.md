@@ -23,8 +23,10 @@ EF InMemory). Central package versions in `Directory.Packages.props`; `<Version>
   transformation, `UserProvisioningPreProcessor`, `CurrentUser`).
 - Part 0 spine: `Akka/` (`AkkaOptions`, `AkkaHostingExtensions`, `ClusterHealthCheck`, `ActorTracing`,
   `Ping/` = messages/actor/extractor/topics), `Events/` (versioned `EventEnvelope`, `Pinged`, `EventJson`),
-  `Messaging/` (`KafkaOptions`, publisher, `KafkaConsumerHost`, `KafkaHealthCheck`), `Projections/`
-  (`IProjection`, `PingProjection`), `Data/ReadDbContext.cs` + `Data/ReadModels/RmPing`, `WebApi/Pings/`
+  `Messaging/` (`KafkaOptions`, `KafkaConsumerHost`, `KafkaHealthCheck`), `Akka/Outbox/` (journal
+  publisher: `TopicTagger`, `JournalEventMappers`, `PostgresPublisherLeaseProvider`, `JournalPublisherLoop`,
+  `JournalPublisher` singleton, `PublisherLagHealthCheck`), `Projections/` (`IProjection`, `PingProjection`,
+  `IdempotencyGuard`, `PositionedProjection<T>`), `Data/ReadDbContext.cs` + `Data/ReadModels/RmPing`, `WebApi/Pings/`
   (POST/live = actor ask, list = replica), `WebApi/Hubs/` (`PingsHub`, `HubFanOutActor`),
   `Extensions/ObservabilityExtensions.cs`.
 - `Chess.Backend.IntegrationTests/` — Testcontainers (Postgres + Redpanda), `WebApplicationFactory<Program>`
@@ -53,8 +55,14 @@ EF InMemory). Central package versions in `Directory.Packages.props`; `<Version>
 - Observability is opt-in: `Observability:Console=true` registers the OTel tracer (ASP.NET, HttpClient,
   Npgsql, source `chess.actors`); unset ⇒ no `TracerProvider` at all, and `ActorTracing.StartPingHandle`
   returns null. OpenTelemetry.Api must stay >= the other OTel packages (all 1.19.x).
-- Dual-write gap (ROADMAP P0-5) still open: persist → publish is a task continuation, a crash between them
-  loses the Kafka event. See `docs/superpowers/notes/part0-experiment.md`.
+- Journal outbox (OpenSpec `journal-outbox`, 2026-09-23) closed the dual-write gap: actors only persist;
+  `JournalPublisher` (cluster singleton, `backend` role, only when Kafka is enabled) holds a Postgres
+  advisory lock on an UNPOOLED connection (pooling would keep the lock alive after "close"), tails
+  `EventsByTag(topic)` after `outbox_offsets.LastOrdering` (journal global `ordering`, never on the wire),
+  produces acks=all, saves the offset through the lock connection. Consumers dedupe by (aggregateId, seq)
+  and THROW `ProjectionGapException` on a gap — a stall is intended. Adding an event type needs BOTH a
+  `TopicTagger.BoundTypes` entry and an `IJournalEventMapper` (a test enforces the pairing). Retention on
+  `game.events` must stay unlimited until a rebuild-from-journal path exists (gap stall otherwise).
 - `Keycloak:Audience` empty ⇒ `ValidateAudience=false`. `RequireHttpsMetadata` only outside Development.
 - Cookies `Domain=.chess.localhost` in dev (`SessionCookies:Domain`); the BFF strips it for the browser.
 - `DefaultItemExcludes` covers `.claude/**`, `.mcp.json`, `.serena/**` — agent sandbox masks would otherwise

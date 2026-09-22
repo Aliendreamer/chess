@@ -86,7 +86,8 @@ every change — which is what `nx integration-test backend` now is.
 
 1. **Close the dual-write gap.** Either a journal tailer (read the Akka journal, publish to Kafka with
    an offset) or a transactional outbox in the same write as the event. This is the one item that
-   should not carry into real moves.
+   should not carry into real moves. **Done (2026-09-23):** journal tailer, see OpenSpec change
+   `journal-outbox`. Latency against the 250–500 ms baseline still to be measured on the live stack.
 2. **Multiplex the relay.** Today the SSR server opens one hub connection per open feed. One
    connection per node, fanned out locally by topic, before there are watchers on a game.
 3. **Give a late subscriber the current state.** The hub pushes only to whoever is subscribed when

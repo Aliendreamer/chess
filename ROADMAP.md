@@ -15,9 +15,11 @@ Legend: **[decided]** = settled with the owner · **[default]** = agent's propos
    from day one; "read your own write" is served from the actor, not the replica. [decided]
 3. **Akka.NET actors are the sync plane.** A live game is one actor: it owns the in-memory truth of the
    game while it is being played, validates moves, runs clocks, and fans state out. [decided]
-4. **Kafka is the event backbone.** Actors emit domain events; everything downstream (persistence
-   projections, notifications, analysis, engine work) is a consumer. Recovery of an actor is
-   Akka.Persistence first, Kafka replay second. [decided]
+4. **Kafka is the event backbone, derived from the journal.** Actors persist domain events; a single
+   fenced publisher tails the Akka journal into Kafka, and everything downstream (persistence
+   projections, notifications, analysis, engine work) is an idempotent consumer. The journal is the
+   recovery source; Kafka is never ahead of it. [decided — journal-outbox, 2026-09-23; supersedes
+   "Kafka replay second"]
 5. **The browser has one origin.** `app.` (the SSR BFF) is the only host the browser talks to, for
    HTTP _and_ realtime. The API stays internal. [decided]
 6. **Experiment honestly.** Each part ends with a short written note: what Akka/Kafka bought us, what it
@@ -48,16 +50,19 @@ Legend: **[decided]** = settled with the owner · **[default]** = agent's propos
 ```
 
 - **Command side**: HTTP `POST /api/games/{id}/moves` → backend → `GameActor` (via `ActorRegistry`).
-  The actor validates with the rules engine, persists the event (journal on the primary), publishes to
-  Kafka, replies to the caller, pushes the new state to subscribers.
+  The actor validates with the rules engine, persists the event (journal on the primary), replies to
+  the caller, pushes the new state to subscribers. It does not publish: the journal publisher (a
+  cluster singleton fenced by a Postgres advisory lock) tails the journal into Kafka from a stored
+  offset, so a persisted event reaches Kafka even if the node dies right after the write.
 - **Query side**: `GET /api/games/{id}` and lists read the **replica** through a read-only `DbContext`.
   A game that is live may also be read straight from its actor (`?live=true` / the hub), which is how
   "I just moved, show me the board" never sees replica lag.
 - **Projections** consume Kafka and upsert read tables on the primary. Idempotent by `(gameId,
-sequenceNr)`. Replaying a topic rebuilds a read model from scratch.
-- **Recovery**: a node restart re-hydrates `GameActor` from its journal. If the journal is behind (lost
-  node, partial write), the actor reconciles from Kafka from its last snapshot offset. [decided: both,
-  in that order]
+sequenceNr)` with a per-consumer high-water mark; a gap in `sequenceNr` stalls the consumer instead
+  of skipping. Replaying a topic (or resetting the publisher offset) rebuilds a read model from scratch.
+- **Recovery**: a node restart re-hydrates `GameActor` from its journal. Kafka is derived from the
+  journal and can never be ahead of it, so there is nothing to reconcile from Kafka. [decided —
+  journal-outbox, 2026-09-23; supersedes "reconciles from Kafka from its last snapshot offset"]
 
 ## 3. Decisions
 

@@ -109,9 +109,9 @@ human-run gate.
 
 ## 9. Docs and measurements
 
-- [ ] 9.1 Measure ping → replica row on the live stack and compare with the 250–500 ms baseline. Add it to
+- [ ] 9.1 (note marked done; measurement pending 🐳) Measure ping → replica row on the live stack and compare with the 250–500 ms baseline. Add it to
       `docs/superpowers/notes/part0-experiment.md`, and mark the dual-write item closed.
-- [ ] 9.2 Update `ROADMAP.md` principle 4 and §2 Recovery (agreed 2026-09-23):
+- [x] 9.2 Update `ROADMAP.md` principle 4 and §2 Recovery (agreed 2026-09-23):
       the journal is the recovery source and Kafka is derived from it.
-- [ ] 9.3 Update `CLAUDE.md` architecture notes (the publishing path) and `.serena/memories/backend/*`.
-- [ ] 9.4 Commit: `docs(repo): journal outbox closes the dual-write gap`.
+- [x] 9.3 Update `CLAUDE.md` architecture notes (the publishing path) and `.serena/memories/backend/*`.
+- [x] 9.4 Commit: `docs(repo): journal outbox closes the dual-write gap`.
