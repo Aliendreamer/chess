@@ -13,6 +13,8 @@
   make some more architecture ready, listen", 2026-09-22). Don't fire a question per turn; ask what they
   have in mind, absorb it, reflect it back, and only then raise gaps or options. Scope: all four modes
   (live vs people, vs engine, correspondence, study/analysis) are planned, built in parts.
+- **Work on `main` only** — no feature branches or worktrees, even when a skill suggests one (user,
+  2026-09-22: "work in main only"). Commit directly to main with scoped conventional commits.
 - Nothing is committed on the user's behalf unless asked. Scaffold prompts' STEP 0 answers are already
   fixed by the skeleton (`Chess.Backend`, `chess-frontend`, slug `chess`) — don't re-ask.
 

@@ -41,6 +41,7 @@ pnpm exec nx release version --dry-run
 dotnet build Chess.Backend.csproj              # warning-clean under AnalysisMode=All + TreatWarningsAsErrors
 ./build_test.sh                                # xUnit + coverage gate (COVERAGE_THRESHOLD, default 90)
 dotnet test Chess.Backend.Tests --filter "FullyQualifiedName~SessionStoreTests"   # one class
+pnpm exec nx integration-test backend          # Testcontainers round-trip + recovery (needs Docker)
 ./build_migration.sh "AddSomething"            # EF migration (dotnet-ef 10.x)
 dotnet format Chess.Backend.slnx --verify-no-changes   # = nx lint backend
 
@@ -52,6 +53,8 @@ pnpm build && API_URL=http://127.0.0.1:8080 pnpm start   # prod SSR server on :3
 
 tools/localdev/verify-auth.sh                  # curl-only login→/me→logout→revocation check vs the live stack
 tools/localdev/verify-stack.sh                 # replica streaming + write→read, redpanda health/topics/round-trip, console
+tools/localdev/verify-part0.sh [--cluster]     # login→ping→live→list→hub gate; --cluster kills backend-1 and re-checks
+docker compose -f tools/localdev/docker-compose.yml --profile cluster up -d --build   # adds backend-2
 tools/e2e.sh                                   # Playwright against the live stack
 ```
 
@@ -59,6 +62,9 @@ Agent sandbox note: MSBuild worker nodes, `dotnet format`'s build host, coverlet
 socket all need IPC the Claude Code sandbox blocks. Inside it: build with
 `-m:1 -nr:false -p:EnableSourceControlManagerQueries=false`; `build_test.sh` reports 0% coverage (tests still
 run); `dotnet format`, `stack.sh` and `verify-auth.sh` must be run by a human (`! <cmd>`).
+
+`Observability__Console=true` switches on OpenTelemetry console tracing (ASP.NET, HttpClient, Npgsql,
+and the `chess.actors` source); it is off by default, including in Development.
 
 Local URLs (Traefik on :80, dashboard on 127.0.0.1:8090): `app.chess.localhost`, `api.chess.localhost`,
 `keycloak.chess.localhost` (admin/admin), `redisinsight.chess.localhost`, `console.chess.localhost`

@@ -14,6 +14,19 @@ Parts: 0 spine (PingActor proves persist→publish→project→replicate→read)
 user said "basics are good, many implementation details we will need to go over" — every part gets its
 own design conversation before code, and defaults in §3/§4 are not settled until then.
 
+**Part 0 status (2026-09-22): all 11 tasks implemented and committed.** The spine runs end to end:
+PingActor (sharded, persistent) → Kafka → `rm_pings` projection → replica reads → DistributedPubSub →
+SignalR → SSR WebSocket relay → browser page `/pings/$id`. Two notes hold the conclusions:
+`docs/superpowers/notes/part0-realtime-spike.md` (relay option A adopted, with the evidence) and
+`part0-experiment.md` (what Akka/Kafka bought and cost, what to change before Part 1 — dual-write gap
+first). **Outstanding, all Docker-gated and human-run:** `tools/localdev/verify-part0.sh` (+ `--cluster`),
+`pnpm exec nx integration-test backend`, `pnpm exec playwright test pings`, `pnpm exec nx validate proxy`,
+and the four measurements the experiment note lists as pending.
+
+Release: no `nx release` has run yet; per-project changelogs (`apps/{backend,frontend}/CHANGELOG.md`) and
+tags `backend@x.y.z` / `frontend@x.y.z` appear on the first release. **The user will run the first
+publish themselves once Part 0 is finished** — do not run `nx release` or `nx push` for them.
+
 ## Source map
 
 - `nx.json` — targetDefaults (build/test/lint cached), `namedInputs.dotnet`, `release` groups (frontend, backend).

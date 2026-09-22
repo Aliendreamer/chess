@@ -21,6 +21,15 @@ EF InMemory). Central package versions in `Directory.Packages.props`; `<Version>
   endpoints `Login/`, `Callback/` (+ `CallbackValidator`), `Logout/`, group `auth/`.
 - `WebApi/Me/MeEndpoint` (`GET api/me`, `Cache-Control: no-store`), `WebApi/Authentication/` (claims
   transformation, `UserProvisioningPreProcessor`, `CurrentUser`).
+- Part 0 spine: `Akka/` (`AkkaOptions`, `AkkaHostingExtensions`, `ClusterHealthCheck`, `ActorTracing`,
+  `Ping/` = messages/actor/extractor/topics), `Events/` (versioned `EventEnvelope`, `Pinged`, `EventJson`),
+  `Messaging/` (`KafkaOptions`, publisher, `KafkaConsumerHost`, `KafkaHealthCheck`), `Projections/`
+  (`IProjection`, `PingProjection`), `Data/ReadDbContext.cs` + `Data/ReadModels/RmPing`, `WebApi/Pings/`
+  (POST/live = actor ask, list = replica), `WebApi/Hubs/` (`PingsHub`, `HubFanOutActor`),
+  `Extensions/ObservabilityExtensions.cs`.
+- `Chess.Backend.IntegrationTests/` — Testcontainers (Postgres + Redpanda), `WebApplicationFactory<Program>`
+  with a test auth scheme; `nx integration-test backend`, human-run (Docker). The main csproj must Remove
+  its `**/*.cs` or the Web SDK compiles it.
 - `Utils/Constants.cs`, `Utils/Log.cs` (LoggerMessage), `coverage.runsettings` (excludes Program,
   Extensions, Migrations, `[ExcludeFromCodeCoverage]` endpoints), `build_test.sh` (90% line gate),
   `build_migration.sh`, `Dockerfile` (alpine, non-root, `/health`).
@@ -38,6 +47,13 @@ EF InMemory). Central package versions in `Directory.Packages.props`; `<Version>
   / `KnownProxies` (default loopback-only, `ForwardLimit=1`). Compose pins subnet `172.30.0.0/24` and passes
   `ForwardedHeaders__KnownNetworks__0`; deployments MUST set it to the edge's network or the rate limiter
   keys on the proxy IP (seen live as `rl:fw:{172.20.0.8}` before the fix).
+- Akka:Port cannot be 0 — a node seeds itself at `akka.tcp://chess@Hostname:Port`, so tests must reserve a
+  real free port. `AkkaOptions.Validate()` rejects 0.
+- Observability is opt-in: `Observability:Console=true` registers the OTel tracer (ASP.NET, HttpClient,
+  Npgsql, source `chess.actors`); unset ⇒ no `TracerProvider` at all, and `ActorTracing.StartPingHandle`
+  returns null. OpenTelemetry.Api must stay >= the other OTel packages (all 1.19.x).
+- Dual-write gap (ROADMAP P0-5) still open: persist → publish is a task continuation, a crash between them
+  loses the Kafka event. See `docs/superpowers/notes/part0-experiment.md`.
 - `Keycloak:Audience` empty ⇒ `ValidateAudience=false`. `RequireHttpsMetadata` only outside Development.
 - Cookies `Domain=.chess.localhost` in dev (`SessionCookies:Domain`); the BFF strips it for the browser.
 - `DefaultItemExcludes` covers `.claude/**`, `.mcp.json`, `.serena/**` — agent sandbox masks would otherwise

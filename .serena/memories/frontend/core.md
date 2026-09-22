@@ -18,6 +18,15 @@ Built from the `fe-ssr-tanstack` prompt. No i18n/TanStack Store/Query (dropped a
   `api-loaders.ts` (pure: `loadMe` 401→null, `loadHealth` 401→redirect, `settle` rethrows redirects),
   `api.ts` (`createServerFn` `getMe`/`getHealth` using `serverFetch()` which re-attaches the cookie and
   prefixes `API_URL`), `config.ts` (`apiUrl()` throws without `API_URL`).
+- `server/routes/api/ws/pings/[id].ts` — Nitro-scanned WebSocket relay: cookie → SignalR client → backend
+  `/hub/pings`, frames back to the browser. Needs `scanDirs: ['server']` + `experimental.websocket` in
+  `nitroV2Plugin`, and `externals.traceInclude` with resolved paths for ws/eventsource/fetch-cookie/
+  tough-cookie (signalr loads them through an indirect `requireFunc`, invisible to node-file-trace — without
+  it the built server throws "Cannot find module 'ws'" on the first socket).
+- `lib/pings.ts` — wire types + `parseFrame`, deliberately OUTSIDE `lib/server/` because the browser
+  component imports it. `lib/server/ping-relay.ts` = `mapHubMessage` + `pingIdFromUrl` (validates against the
+  backend's `^[a-z0-9-]{1,64}$`). `components/PingFeed.tsx` owns the browser socket;
+  `routes/_authenticated/pings.$id.tsx` SSRs from the actor.
 - `lib/auth/session.ts` — `login()/logout()` same-origin navigations.
 - `components/` — presentational (`Dashboard`, `Tile`, `IdentityBar`); `data-testid`s used by e2e.
 - Tests: `src/**/*.test.ts(x)`; e2e in `e2e/auth.spec.ts` (`playwright.config.ts`, `E2E_BASE_URL`).
@@ -32,6 +41,11 @@ Built from the `fe-ssr-tanstack` prompt. No i18n/TanStack Store/Query (dropped a
 - tsconfig: no `baseUrl` (TS 6 deprecates it); aliases `@/*` and `#/*` → `src/*` via `paths` + vite alias.
 - Run `pnpm generate-routes` after route-file changes (`routeTree.gen.ts` is generated, prettier/eslint-ignored).
 - No jest-dom: assert with `.textContent`.
-- Dev container runs `vite dev --port 3000 --host 0.0.0.0`; prod image copies only `.output/`.
+- Dev container runs `vite dev --port 3000 --host 0.0.0.0`; prod image copies only `.output/`. The nitro
+  plugin only runs on `build`, so **there is no relay (and no Nitro server routes) under `vite dev`**.
+- The edge must route `/api/auth/` and `/api/ws/` to the frontend, not the API — nginx `location /api/`
+  otherwise swallows both (fixed in `apps/proxy/files/nginx.conf` with `^~` locations + upgrade headers).
+- `.prettierignore` exists per package: `pnpm check` runs prettier with cwd=apps/frontend, so the root one
+  does not apply (Playwright's `test-results/` needs ignoring there).
 - Quick local proof without Docker: run `.output/server/index.mjs` with `API_URL` pointing at any HTTP
   server implementing `/api/me`, `/health`, `/api/auth/*`.
