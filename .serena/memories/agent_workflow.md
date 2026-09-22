@@ -8,6 +8,11 @@
   (`~/.local/share/NuGet` is required — NuGet's http-cache lives there on this machine), Serena MCP via
   uvx, `prefer-serena.sh` PreToolUse hook, prettier PostToolUse hook. Edit it with the Edit tool — Bash
   writes to it are sandbox-denied. `permissions.deny` includes `rm -rf*` — don't put that in commands.
+- **Pace: the user drives architecture.** For the chess product they want to lay out the architecture
+  themselves before any design questions or approaches from the agent ("you still go too fast, i want to
+  make some more architecture ready, listen", 2026-09-22). Don't fire a question per turn; ask what they
+  have in mind, absorb it, reflect it back, and only then raise gaps or options. Scope: all four modes
+  (live vs people, vs engine, correspondence, study/analysis) are planned, built in parts.
 - Nothing is committed on the user's behalf unless asked. Scaffold prompts' STEP 0 answers are already
   fixed by the skeleton (`Chess.Backend`, `chess-frontend`, slug `chess`) — don't re-ask.
 

@@ -4,15 +4,32 @@ Nx + pnpm monorepo scaffolded from the `nx-monorepo` workspace skeleton (`.claud
 Three apps: `apps/backend` (.NET API, see `mem:backend/core`), `apps/frontend` (TanStack Start SSR BFF, see
 `mem:frontend/core`), `apps/proxy` (nginx edge). Prompts that built them: `.claude/commands/{dotnet-webapi,fe-ssr-tanstack}.md`.
 
+## Product architecture — read `ROADMAP.md` first
+
+Baseline agreed 2026-09-22 (commit 6148887): Postgres is the source of truth; writes → primary, reads →
+replica; Akka.NET actors are the live-game sync plane; Kafka (Redpanda locally) is the event backbone with
+Akka.Persistence-first / Kafka-replay-second recovery; browser has one origin (`app.`) incl. realtime.
+Parts: 0 spine (PingActor proves persist→publish→project→replicate→read) → 1 live vs people → 2 vs engine
+→ 3 correspondence → 4 study/analysis. `ROADMAP.md` §3 tags each decision decided/default/open; the
+user said "basics are good, many implementation details we will need to go over" — every part gets its
+own design conversation before code, and defaults in §3/§4 are not settled until then.
+
 ## Source map
 
 - `nx.json` — targetDefaults (build/test/lint cached), `namedInputs.dotnet`, `release` groups (frontend, backend).
 - `apps/backend/project.json` — build/test/lint(format --verify)/format/migration/push/validate/deploy; inputs `dotnet`.
 - `apps/frontend/project.json` — generate-routes/build/test/lint(typecheck+eslint+prettier)/e2e/push/validate/deploy.
 - `apps/proxy/` — Dockerfile + `files/nginx.conf` + `project.json` (build=push, validate, deploy placeholder).
-- `tools/localdev/` — compose stack (`docker-compose.yml`, project name `chess`), `stack.sh`, dev/coverage
-  Dockerfiles, `keycloak/chess-realm.json` (realm import), `traefik/` (dynamic config dir, empty),
-  `verify-auth.sh` (curl-only login→/me→logout→revocation smoke test).
+- `tools/localdev/` — compose stack (`docker-compose.yml`, project name `chess`, subnet 172.30.0.0/24),
+  `stack.sh`, dev/coverage Dockerfiles, `keycloak/chess-realm.json` (realm import), `traefik/dynamic.yml`
+  (file-provider routes — docker provider is inert on Docker 29), `postgres/` (primary replication init +
+  replica entrypoint), `verify-auth.sh` (curl-only login→/me→logout→revocation), `verify-stack.sh`
+  (replica streaming/write→read/read-only, Redpanda health/topics/round-trip, console).
+  Data plane since commit 71910b0: `postgres` primary → `postgres-replica` hot standby (:5433);
+  `redpanda` v26.2.3 (+ `redpanda-init` topics game.events/matchmaking.events/analysis.requests/
+  analysis.results, + `redpanda-console` at console.chess.localhost). Replica/replication init only
+  run on a FRESH data dir ⇒ `stack.sh down -v` after touching them. Backend env already has
+  `ConnectionStrings__PostgresReplica` and `Kafka__BootstrapServers` (unused until Part 0 code).
 - `tools/deploy/build.sh` — image build/push, tag `YYYYMMDD.<short-sha>`.
 - `tools/nx-release/dotnet-version-actions.cjs` — Nx Release reads/writes MSBuild `<Version>` for backend
   (wired via `apps/backend/project.json#release.version.versionActions`; do NOT set `currentVersionResolver`
