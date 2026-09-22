@@ -1,0 +1,172 @@
+# Chess — architecture & roadmap
+
+A chess platform built deliberately as an **experiment in Akka.NET + Kafka + CQRS on Postgres**, on top of
+the SSR-BFF cookie-session auth that already ships. The product is real (four play modes); the
+architecture choices are the point. Everything runs self-contained from `tools/localdev/`.
+
+Legend: **[decided]** = settled with the owner · **[default]** = agent's proposal, change freely ·
+**[open]** = needs a decision before the part that uses it.
+
+## 1. Principles
+
+1. **Postgres is the source of truth.** Actors and Kafka are how state moves and recovers, never what
+   we trust. If they disagree with the database, the database wins. [decided]
+2. **Writes to the primary, reads from the replica.** Every query path is designed for replication lag
+   from day one; "read your own write" is served from the actor, not the replica. [decided]
+3. **Akka.NET actors are the sync plane.** A live game is one actor: it owns the in-memory truth of the
+   game while it is being played, validates moves, runs clocks, and fans state out. [decided]
+4. **Kafka is the event backbone.** Actors emit domain events; everything downstream (persistence
+   projections, notifications, analysis, engine work) is a consumer. Recovery of an actor is
+   Akka.Persistence first, Kafka replay second. [decided]
+5. **The browser has one origin.** `app.` (the SSR BFF) is the only host the browser talks to, for
+   HTTP _and_ realtime. The API stays internal. [decided]
+6. **Experiment honestly.** Each part ends with a short written note: what Akka/Kafka bought us, what it
+   cost, what we'd do differently. That's a deliverable, not an afterthought. [default]
+
+## 2. System shape
+
+```text
+ browser ──http+ws──► app.  SSR BFF (TanStack Start, Nitro)
+                        │  /api/auth/* proxy, server fns, WS relay (§4)
+                        ▼  cookie forwarded, API name
+                     backend (FastEndpoints)  ── /api/*  HTTP commands + queries
+                        │                     ── /hub    realtime (SignalR)
+                        ▼
+                     Akka.NET ActorSystem
+                       GameActor(gameId)  ClockActor  MatchmakingActor  EngineActor pool …
+                        │ persist                     │ publish
+                        ▼                             ▼
+             Akka.Persistence journal ───────►   Kafka (Redpanda)  topics: game.events, …
+             (Postgres PRIMARY)                       │ consume
+                                                      ▼
+                                              Projections (backend hosted services)
+                                                      │ write read models
+                                                      ▼
+                    Postgres PRIMARY ──streaming replication──► Postgres REPLICA
+                    (writes: journal, projections,              (reads: every GET, lists,
+                     users, sessions)                            history, analysis)
+```
+
+- **Command side**: HTTP `POST /api/games/{id}/moves` → backend → `GameActor` (via `ActorRegistry`).
+  The actor validates with the rules engine, persists the event (journal on the primary), publishes to
+  Kafka, replies to the caller, pushes the new state to subscribers.
+- **Query side**: `GET /api/games/{id}` and lists read the **replica** through a read-only `DbContext`.
+  A game that is live may also be read straight from its actor (`?live=true` / the hub), which is how
+  "I just moved, show me the board" never sees replica lag.
+- **Projections** consume Kafka and upsert read tables on the primary. Idempotent by `(gameId,
+sequenceNr)`. Replaying a topic rebuilds a read model from scratch.
+- **Recovery**: a node restart re-hydrates `GameActor` from its journal. If the journal is behind (lost
+  node, partial write), the actor reconciles from Kafka from its last snapshot offset. [decided: both,
+  in that order]
+
+## 3. Decisions
+
+| #   | Decision                                                                                                                                                                           | Status           |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| D1  | Postgres primary/replica; reads always replica, writes always primary                                                                                                              | decided          |
+| D2  | Akka.NET (Akka.Hosting) inside the backend process; one `ActorSystem` per backend replica; Cluster.Sharding added only when we run >1 backend                                      | default          |
+| D3  | Akka.Persistence.Sql (Linq2Db → Postgres primary) for journal + snapshots; `akka` schema                                                                                           | default          |
+| D4  | Kafka via **Redpanda** locally (single binary, Kafka API, includes console); code uses the Confluent client / Akka.Streams.Kafka so real Kafka is a config change                  | default          |
+| D5  | Realtime: browser ↔ `app.` WebSocket (Nitro/crossws), SSR relays to backend SignalR hub with the forwarded session cookie                                                          | default — see §4 |
+| D6  | Rules engine: an existing .NET chess library for legality/FEN/PGN/SAN; evaluate `Gera.Chess` vs `ChessLib` before Part 1; the actor never re-implements rules                      | open             |
+| D7  | Engine: Stockfish in its own container, UCI over stdio, driven by an `EngineActor` pool with a bounded mailbox                                                                     | default          |
+| D8  | Topics: `game.events` (keyed by gameId), `matchmaking.events`, `analysis.requests`/`analysis.results`; JSON payloads with a `type` + `version`; schema registry not used initially | default          |
+| D9  | Read-model tables live next to the write tables in `public`, prefixed `rm_`; journal in schema `akka`                                                                              | default          |
+| D10 | Identity in the actor world = local `users.id` (from the session), never the Keycloak `sub`                                                                                        | default          |
+
+## 4. Realtime through the BFF (D5)
+
+The browser must never open a socket to the API. Two ways to keep that true:
+
+- **A. Relay in the SSR server** [default]: the browser opens `wss://app./ws/games/{id}`; the Nitro
+  server (crossws) authenticates it by the same cookie the pages use, then acts as a SignalR _client_
+  to the backend hub, forwarding the session cookie exactly as server functions do. One backend
+  connection per browser socket; messages pass through untouched. Keeps every existing invariant
+  (`cookies.ts`, `forwardCookieHeader`), costs a hop and some SSR-server memory per socket.
+- **B. Proxy the WebSocket at the edge**: nginx/Traefik upgrades `/hub` straight to the backend. Cheaper,
+  but the browser now holds a socket to the API's route, and the `__Host-` cookie name mapping has to
+  happen at the edge instead of in code we test.
+
+Part 1 starts with a **spike on A** (one afternoon): a page that subscribes to a fake game actor and
+receives ticks. If the relay is awkward under Nitro, fall back to B with a documented reason.
+
+## 5. Consistency rules (write once, apply everywhere)
+
+- A command's HTTP response carries the resulting state from the **actor** (not a re-read).
+- Lists and history read the **replica** and are labelled "eventually consistent" in the API docs.
+- The UI treats the live hub as truth for the game it is watching and the replica for everything else.
+- Projections are idempotent; a replay must never double-apply. Version every event.
+- Clocks are owned by the actor; the client only displays; disagreement → actor wins.
+
+## 6. Parts
+
+Each part: spec → plan → implement (TDD) → verify against the live stack → experiment note.
+
+### Part 0 — Spine (cross-cutting, before any mode)
+
+Goal: the architecture exists end to end with a trivial domain, so every later part only adds chess.
+
+- Compose: Postgres **replica** (same image, `pg_basebackup` init, `hot_standby`), **Redpanda** +
+  console, **Stockfish** image stub (used in Part 2), all on the `chess` network.
+- Backend: `Akka.Hosting` + `Akka.Persistence.Sql` (journal/snapshot tables migrated by the app),
+  `ReadDbContext` (replica, `NoTracking`, `QueryTrackingBehavior` off, read-only connection string) next
+  to the existing write `ProjectDbContext`; health checks for replica + Kafka.
+- A `PingActor` that persists `Pinged` events and publishes them to Kafka; a projection that writes
+  `rm_pings`; `POST /api/ping` (primary via actor) and `GET /api/pings` (replica). Proves: persist →
+  publish → project → replicate → read.
+- Realtime spike (§4) with the `PingActor`.
+- Tooling: Akka TestKit + Testcontainers (Postgres, Redpanda) in a separate `integration-test` Nx
+  target (`tools/test-all.sh` already has the hook); OpenTelemetry traces across HTTP → actor → Kafka.
+- Verify: `verify-auth.sh` still green; a ping round-trips; kill the backend mid-flight, restart,
+  `GET /api/pings` complete; replica lag visible in a health detail.
+
+### Part 1 — Live games vs people
+
+- Domain: `GameActor` (state machine: created → playing → ended; move validation via D6; clocks via a
+  `ClockActor` child), `MatchmakingActor` (queue by time control), invites by link.
+- API: create/join/resign/offer-draw/move; hub events: `state`, `move`, `clock`, `ended`.
+- Read side: `rm_games` (list, my games), `rm_moves` (history, PGN export).
+- FE: game page (board component, clocks, move list), lobby, invite page — SSR for the initial state,
+  hub for updates. Board UI library to evaluate (react-chessboard) vs own.
+- Verify: two browsers play a full game; a node restart mid-game resumes with clocks; the replica
+  shows the finished game; Playwright covers create → join → move → resign.
+
+### Part 2 — Play vs the computer
+
+- `EngineActor` pool over Stockfish (UCI), strength via `UCI_LimitStrength`/`Skill Level`; requests via
+  `analysis.requests`, results via `analysis.results`, so the engine work is a Kafka consumer group
+  that can scale independently.
+- The same `GameActor` — the opponent is an engine subscription, not a special game type.
+- Verify: full game vs engine at three strengths; engine container restart mid-game recovers.
+
+### Part 3 — Correspondence / async games
+
+- Same actors, but passivated when idle (Akka passivation) and re-hydrated on the next move; no
+  running clocks — per-move deadlines enforced by a scheduler actor publishing `deadline.expired`.
+- Notifications consumer (email/webhook stub) on `game.events` for "your move".
+- Verify: passivation observed (actor count drops), move after passivation works, deadline forfeit.
+
+### Part 4 — Study & analysis
+
+- PGN import → `rm_studies`; analysis board (no actor needed: pure client + engine requests over
+  Kafka); engine evaluation lines stored as read models; openings explorer from imported games.
+- Verify: import a PGN, step through, request evaluation, see it persist and survive a restart.
+
+## 7. Cross-cutting
+
+- **Testing**: unit (xUnit + Akka TestKit; vitest), integration (Testcontainers), e2e (Playwright);
+  coverage gate stays at 90 % for the non-actor code, actors measured via TestKit scenarios.
+- **Observability**: OpenTelemetry (traces + metrics) from Part 0; Akka and Kafka client
+  instrumentation; a local OTel collector + Grafana are optional compose profile `observability`.
+- **Security**: all commands pass the existing `[Authorize]` + `ICurrentUser`; hub connections carry
+  the same cookie; rate limiting already per client via Redis; Kafka/Redpanda unauthenticated on the
+  compose network only.
+- **Operations**: `stack.sh up` remains the one command; Redpanda console and replica lag show up in
+  the stack banner.
+
+## 8. Open questions (answer before the part that needs them)
+
+- D6 rules library choice (Part 1).
+- Time controls to support first (Part 1): default bullet/blitz/rapid presets.
+- Whether Cluster.Sharding is in scope for Part 1 or explicitly deferred (affects `ActorRegistry` shape).
+- Notification channel for Part 3 (email vs in-app only).
