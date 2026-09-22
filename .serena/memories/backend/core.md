@@ -30,6 +30,14 @@ EF InMemory). Central package versions in `Directory.Packages.props`; `<Version>
 - `AnalysisMode=All` + `TreatWarningsAsErrors`: all types `internal sealed`; no boxing log args (use
   `Utils/Log.cs`); `ConfigurationManager` not `IConfiguration` in extension params (CA1859).
 - Never store raw session tokens; `TokenHash` unique. Revoke locally BEFORE calling the IdP.
+- `ConnectionStrings:Redis` is the one Redis switch (`BuilderExtension.AddCaching/AddRateLimiting`,
+  `FastEndpointSetup` health): set ⇒ FusionCache L2 + backplane (STJ serializer), Redis-backed global rate
+  limiter (`RedisRateLimiting.AspNetCore`, 300/min per IP shared across replicas), Redis health check;
+  unset ⇒ L1-only, in-memory limiter. FusionCache core + add-ons must share one version (2.8.0).
+- `ApplicationExtensions.BuildForwardedHeaders`: X-Forwarded-* trusted only from `ForwardedHeaders:KnownNetworks`
+  / `KnownProxies` (default loopback-only, `ForwardLimit=1`). Compose pins subnet `172.30.0.0/24` and passes
+  `ForwardedHeaders__KnownNetworks__0`; deployments MUST set it to the edge's network or the rate limiter
+  keys on the proxy IP (seen live as `rl:fw:{172.20.0.8}` before the fix).
 - `Keycloak:Audience` empty ⇒ `ValidateAudience=false`. `RequireHttpsMetadata` only outside Development.
 - Cookies `Domain=.chess.localhost` in dev (`SessionCookies:Domain`); the BFF strips it for the browser.
 - `DefaultItemExcludes` covers `.claude/**`, `.mcp.json`, `.serena/**` — agent sandbox masks would otherwise

@@ -83,6 +83,14 @@ to each app's own lint target). Keep `--no-stash`.
   expiry; an `Authorization` header always wins. `LogoutEndpoint` revokes the row first, so the old cookie is
   dead even if the IdP call fails. `UserProvisioningPreProcessor` (global) JIT-creates `users` rows by `sub`
   and fills the scoped `ICurrentUser`; `KeycloakRolesClaimsTransformation` flattens `realm_access.roles`.
+- **Redis (backend)** — `ConnectionStrings:Redis` is the single switch: set (compose: `redis:6379`) ⇒ FusionCache
+  gets Redis as L2 + backplane, the global rate limiter (300 req/min per client IP) becomes Redis-backed
+  (shared across replicas), and `/health` includes Redis; unset ⇒ L1-only cache, in-memory limiter, no Redis
+  health check. Unit tests run without Redis.
+- **Forwarded headers (backend)** — `X-Forwarded-*` is trusted only from `ForwardedHeaders:KnownNetworks`
+  (CIDRs) / `KnownProxies`; default is ASP.NET's loopback-only, `ForwardLimit = 1`. The compose network is
+  pinned to `172.30.0.0/24` and passed as `ForwardedHeaders__KnownNetworks__0`. **Every deployment must set
+  this to the edge's network**, otherwise the per-client rate limiter keys on the proxy's IP.
 - **Backend conventions** — everything `internal sealed` (tests via `InternalsVisibleTo`; Moq via
   `DynamicProxyGenAssembly2`); logging through `Utils/Log.cs` `[LoggerMessage]` methods (CA1873 forbids boxing
   args); config lives in `Config/appsettings*.json` (env vars override, `Keycloak__*` etc.); services named
