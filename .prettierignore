@@ -24,3 +24,7 @@ pnpm-lock.yaml
 # generated route tree + app build output
 apps/frontend/src/routeTree.gen.ts
 .output/
+
+# Playwright run artifacts (gitignored, but prettier does not read .gitignore).
+test-results/
+playwright-report/
