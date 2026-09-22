@@ -29,6 +29,14 @@
 | Docker socket | `permission denied … docker.sock` | user runs `tools/localdev/stack.sh`, `verify-auth.sh`, `tools/e2e.sh` via `!` |
 | TCP listen/connect on localhost | works | can run built SSR server + a fake API for proofs |
 
+The user can drop the sandbox on request (`sandbox.enabled` in `.claude/settings.json`), which makes
+Docker, `dotnet format`, real coverage and the whole stack available — worth asking for when a
+failure cannot be reproduced any other way. Remember to leave that setting as they want it after.
+
+Dev-container gotcha: adding a frontend dependency needs
+`docker compose -f tools/localdev/docker-compose.yml up -d --build -V frontend` — node_modules lives
+in anonymous volumes, so a plain rebuild keeps the stale tree and vite dies with ERR_MODULE_NOT_FOUND.
+
 Sandbox masks (`.mcp.json`, `.claude/{loop.md,launch.json,…}`, shell dotfiles) appear as unreadable
 device files in every cwd: they are ignored in `.prettierignore`, markdownlint, the backend csproj
 `DefaultItemExcludes`, and `.vscode/settings.json`.

@@ -66,15 +66,27 @@ ping→feed latency is a stack measurement and belongs in the Part 0 experiment 
 - The SSR server now holds one hub connection per open feed. Fine for Part 0; for Part 1 (real
   games, many watchers) the relay should multiplex — one hub connection per node, fanned out to
   local peers by topic — rather than one per socket. Flagged for the Part 1 design conversation.
-- `vite dev` has no Nitro (the plugin only runs on `build`), so **the relay does not exist in dev
-  mode** — the feed degrades to the SSR-rendered initial state. Dev-time live updates would need a
-  Vite middleware; not worth it for Part 0.
+- `vite dev` has no Nitro (the plugin only runs on `build`), so the scanned route does not exist in
+  dev. That was not survivable: the compose frontend runs `vite dev`, so the live page sat on
+  "connecting…" and the Playwright spec could not pass. `src/lib/server/dev-ping-relay.ts` is a
+  dev-only Vite plugin serving the same path off the dev server's upgrade event, and
+  `connectPingHub` holds the hub wiring both hosts share. Dev and prod now behave the same.
 - Reconnect: `withAutomaticReconnect()` plus a re-`Subscribe` on `onreconnected`, since group
   membership lives on the hub connection. The browser socket itself does not auto-reconnect — a
   closed relay shows `disconnected` and a reload fixes it. Good enough for a spike page.
 
-## Still to verify on the live stack (human)
+## Verified on the live stack (2026-09-22)
 
-`tools/localdev/stack.sh up --build frontend`, then `pnpm exec playwright test pings` — the three
-specs in `apps/frontend/e2e/pings.spec.ts` cover SSR-before-JS, ping→feed, and "no API host in the
-browser" (including the WebSocket URL). Plus `pnpm exec nx validate proxy` for the nginx change.
+All three specs in `apps/frontend/e2e/pings.spec.ts` pass against the running stack — SSR-before-JS,
+ping→feed through the relay, and "no API host in the browser" including the WebSocket URL — as does
+the whole e2e suite (8 tests). `pnpm exec nx validate proxy` passes with the new `^~ /api/ws/` and
+`^~ /api/auth/` locations.
+
+Two things the spec itself had to learn, both real properties of the design rather than test noise:
+
+- The hub pushes only to whoever is subscribed **at publish time**; there is no replay for a late
+  subscriber. A test that pings before the relay reports `live` sees an empty feed. The page hides
+  this by server-rendering current state on load — which will not be enough for a board (see the
+  experiment note's Part 1 list).
+- React splits `count {n}` with a comment marker in SSR HTML, so a raw-bytes assertion has to read
+  `count <!-- -->1`. `PingFeed` now emits one interpolation instead, which is simpler markup anyway.

@@ -46,18 +46,41 @@ replica → DistributedPubSub → SignalR → SSR relay → browser.**
 
 ## Measured
 
-Relay overhead, loopback, against a stub hub (see the spike note): upgrade 15–37 ms, first frame
-23–146 ms. These bound the relay itself, not the system.
+Measured on the live stack, 2026-09-22 (WSL2, Docker 29.6):
 
-**Pending the human stack runs** — these need `stack.sh up` and are not guesses worth writing down
-until measured:
+| Number                          | Value                             | Source                        |
+| ------------------------------- | --------------------------------- | ----------------------------- |
+| write → replica visibility lag  | ~250 ms                           | `verify-stack.sh`             |
+| ping → row on the replica       | 250–500 ms                        | `verify-part0.sh`             |
+| failover, backend-1 stopped     | ~2 s to answer from backend-2     | `verify-part0.sh --cluster`   |
+| relay overhead (loopback, stub) | upgrade 15–37 ms, frame 23–146 ms | the spike note                |
+| full Testcontainers round trip  | ~1 m 36 s for both tests          | `nx integration-test backend` |
 
-| Number                         | How to get it                                                   |
-| ------------------------------ | --------------------------------------------------------------- |
-| write → replica visibility lag | `tools/localdev/verify-stack.sh` (write→read section)           |
-| ping → feed latency (real hub) | `tools/e2e.sh` / the `pings` Playwright spec, timed             |
-| failover time (backend-1 down) | `tools/localdev/verify-part0.sh --cluster`                      |
-| cold start of a backend node   | `stack.sh logs backend` — time from process start to cluster Up |
+The ping→feed path end to end is fast enough that the Playwright spec's 5 s budget is never close.
+
+## The finding that matters most: none of it ran until something ran it
+
+Tasks 1–8 were committed green — unit tests passing, code reviewed — and the spine was in fact dead.
+Three faults, each fatal on its own, sat undetected because every test was a unit test and the stack
+gate had never actually got past login:
+
+1. `Akka.Streams.Kafka` reads `akka.kafka.*` from the ActorSystem config, and Akka.Hosting does not
+   load a package's reference.conf. Every consumer stream died on creation, and because
+   `BackgroundServiceExceptionBehavior` defaults to `StopHost`, it took the whole API down with it.
+2. `Akka.Persistence.Sql`'s `autoInitialize` creates its tables but not its schema, so a fresh
+   database failed with `3F000: schema "akka" does not exist`.
+3. `KafkaConsumerHost` discovers projections through `IProjection` and re-resolves each by its
+   concrete type; an interface-only registration cannot serve that.
+
+The live stack agreed: its database had no `akka` schema and no akka tables at all, and the backend
+container had been exiting instead of serving. Two verification scripts were also wrong in ways that
+only a working system could reveal — `verify-part0.sh` queried `rm_pings` with unquoted lowercase
+columns, and `verify-stack.sh`'s Kafka round-trip read whichever partition answered first, which is
+only reliable while the topic is empty.
+
+The lesson for Part 1 is not "write more unit tests". It is that a distributed spine is only known to
+work when something exercises it end to end, and that the exercise has to be cheap enough to run on
+every change — which is what `nx integration-test backend` now is.
 
 ## What to change before Part 1
 
@@ -66,11 +89,14 @@ until measured:
    should not carry into real moves.
 2. **Multiplex the relay.** Today the SSR server opens one hub connection per open feed. One
    connection per node, fanned out locally by topic, before there are watchers on a game.
-3. **Revisit `ShardCount = 50`** against an actual expected concurrent-game count; it is a migration
+3. **Give a late subscriber the current state.** The hub pushes only to whoever is subscribed when
+   the event is published; a browser that connects a moment later sees nothing until the next move.
+   The page papers over it by server-rendering the state on load, which will not survive a board.
+4. **Revisit `ShardCount = 50`** against an actual expected concurrent-game count; it is a migration
    to change once data exists.
-4. **Decide the passivation policy per entity type.** A ping never passivates meaningfully; a finished
+5. **Decide the passivation policy per entity type.** A ping never passivates meaningfully; a finished
    game must.
-5. **Give the projection a dead-letter path.** A poison event currently retries forever.
+6. **Give the projection a dead-letter path.** A poison event currently retries forever.
 
 ## Where the pieces live
 

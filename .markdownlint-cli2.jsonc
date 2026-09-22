@@ -14,6 +14,7 @@
     "**/obj/**",
     ".git",
     ".claude/skills/**",
+    ".claude/commands/opsx/**",
     ".claude/loop.md",
     ".github/**",
     ".superpowers/**",

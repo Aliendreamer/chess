@@ -11,6 +11,9 @@ pnpm-lock.yaml
 # Store-installed skills (setup-flow re-fetches them); not authored here.
 .claude/skills/
 
+# Plugin-installed slash commands (OpenSpec); not authored here either.
+.claude/commands/opsx/
+
 # Serena project config + memories (Serena-owned formatting).
 .serena/
 

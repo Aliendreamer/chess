@@ -14,14 +14,18 @@ Parts: 0 spine (PingActor proves persist→publish→project→replicate→read)
 user said "basics are good, many implementation details we will need to go over" — every part gets its
 own design conversation before code, and defaults in §3/§4 are not settled until then.
 
-**Part 0 status (2026-09-22): all 11 tasks implemented and committed.** The spine runs end to end:
+**Part 0 status (2026-09-22): all 11 tasks implemented, committed AND verified against the live
+stack** — `verify-part0.sh` (single-node and `--cluster`), `verify-stack.sh`, `nx integration-test
+backend`, the full Playwright suite (8) and `nx validate proxy` all pass. Getting there took fixing
+three faults that had left the spine dead in the stack (Akka.Streams.Kafka HOCON missing from the
+ActorSystem, the `akka` schema never created, PingProjection unresolvable by concrete type) plus two
+wrong verification scripts; see `docs/superpowers/notes/part0-experiment.md`. Remaining gate:
+backend line coverage is 79.9% against the 90% `build_test.sh` threshold. The spine runs end to end:
 PingActor (sharded, persistent) → Kafka → `rm_pings` projection → replica reads → DistributedPubSub →
 SignalR → SSR WebSocket relay → browser page `/pings/$id`. Two notes hold the conclusions:
 `docs/superpowers/notes/part0-realtime-spike.md` (relay option A adopted, with the evidence) and
 `part0-experiment.md` (what Akka/Kafka bought and cost, what to change before Part 1 — dual-write gap
-first). **Outstanding, all Docker-gated and human-run:** `tools/localdev/verify-part0.sh` (+ `--cluster`),
-`pnpm exec nx integration-test backend`, `pnpm exec playwright test pings`, `pnpm exec nx validate proxy`,
-and the four measurements the experiment note lists as pending.
+first). Measured: write→replica ~250 ms, ping→replica row 250–500 ms, failover to backend-2 ~2 s.
 
 Release: no `nx release` has run yet; per-project changelogs (`apps/{backend,frontend}/CHANGELOG.md`) and
 tags `backend@x.y.z` / `frontend@x.y.z` appear on the first release. **The user will run the first
