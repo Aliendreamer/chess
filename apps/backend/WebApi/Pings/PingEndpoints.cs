@@ -25,8 +25,12 @@ internal sealed class PostPingEndpoint(IRequiredActor<PingActor> region, ICurren
 
     public override void Configure()
     {
-        Post("pings/{id:regex(^[a-z0-9\\-]{{1,64}}$)}");
-        Description(d => d.WithTags("Pings").Produces<PingState>().Produces(StatusCodes.Status400BadRequest));
+        Post("pings/{id}");
+        Description(d => d.WithTags("Pings")
+            .Produces<PingState>()
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status502BadGateway)
+            .Produces(StatusCodes.Status504GatewayTimeout));
     }
 
     public override async Task HandleAsync(PingRequest req, CancellationToken ct)
@@ -43,18 +47,25 @@ internal sealed class PostPingEndpoint(IRequiredActor<PingActor> region, ICurren
             return;
         }
 
-        object reply = await region.ActorRef.Ask(new Ping(id, req.Text, user.Id ?? 0), AskTimeout, ct);
-        switch (reply)
+        object reply;
+        try
         {
-            case PingState state:
-                await Send.OkAsync(state, ct);
-                break;
-            case PingRejected rejected:
-                ThrowError(rejected.Reason, StatusCodes.Status400BadRequest);
-                break;
-            default:
-                ThrowError("Unexpected reply from ping actor.", StatusCodes.Status502BadGateway);
-                break;
+            reply = await region.ActorRef.Ask(new Ping(id, req.Text, user.Id ?? 0), AskTimeout, ct);
+        }
+        catch (AskTimeoutException)
+        {
+            ThrowError("Ping entity did not respond in time.", StatusCodes.Status504GatewayTimeout);
+            return;
+        }
+
+        PingReplyOutcome outcome = PingReplyMapper.Map(reply);
+        if (outcome.IsSuccess)
+        {
+            await Send.OkAsync(outcome.State!, ct);
+        }
+        else
+        {
+            ThrowError(outcome.ErrorMessage!, outcome.ErrorStatusCode);
         }
     }
 }
@@ -67,8 +78,12 @@ internal sealed class GetPingLiveEndpoint(IRequiredActor<PingActor> region) : En
 
     public override void Configure()
     {
-        Get("pings/{id:regex(^[a-z0-9\\-]{{1,64}}$)}/live");
-        Description(d => d.WithTags("Pings").Produces<PingState>().Produces(StatusCodes.Status400BadRequest));
+        Get("pings/{id}/live");
+        Description(d => d.WithTags("Pings")
+            .Produces<PingState>()
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status502BadGateway)
+            .Produces(StatusCodes.Status504GatewayTimeout));
     }
 
     public override async Task HandleAsync(CancellationToken ct)
@@ -84,7 +99,25 @@ internal sealed class GetPingLiveEndpoint(IRequiredActor<PingActor> region) : En
             return;
         }
 
-        PingState state = await region.ActorRef.Ask<PingState>(new GetPingState(id), AskTimeout, ct);
-        await Send.OkAsync(state, ct);
+        object reply;
+        try
+        {
+            reply = await region.ActorRef.Ask(new GetPingState(id), AskTimeout, ct);
+        }
+        catch (AskTimeoutException)
+        {
+            ThrowError("Ping entity did not respond in time.", StatusCodes.Status504GatewayTimeout);
+            return;
+        }
+
+        PingReplyOutcome outcome = PingReplyMapper.Map(reply);
+        if (outcome.IsSuccess)
+        {
+            await Send.OkAsync(outcome.State!, ct);
+        }
+        else
+        {
+            ThrowError(outcome.ErrorMessage!, outcome.ErrorStatusCode);
+        }
     }
 }
