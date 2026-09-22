@@ -14,6 +14,7 @@ namespace Chess.Backend.Akka.Ping;
 internal sealed class PingActor : ReceivePersistentActor
 {
     public const int SnapshotEvery = 20;
+    public const string PersistenceIdPrefix = "ping-";
     private const int MaxTextLength = 200;
 
     private readonly string _pingId;
@@ -51,7 +52,7 @@ internal sealed class PingActor : ReceivePersistentActor
         Command<PublishFailed>(f => _log.Warning(f.Cause, "kafka publish failed for {0} seq {1}", _pingId, f.Seq));
     }
 
-    public override string PersistenceId => "ping-" + _pingId;
+    public override string PersistenceId => PersistenceIdPrefix + _pingId;
 
     private void HandlePing(Ping cmd)
     {

@@ -11,6 +11,8 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
     /// <summary>Mapped here too so migrations create the table on the primary; the projection writes it, the replica serves reads.</summary>
     public DbSet<RmPing> RmPings => Set<RmPing>();
 
+    public DbSet<OutboxOffset> OutboxOffsets => Set<OutboxOffset>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();

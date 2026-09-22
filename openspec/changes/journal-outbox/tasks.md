@@ -17,17 +17,17 @@ human-run gate.
 
 ## 2. Offset store and event mapping
 
-- [ ] 2.1 Failing tests: `PingedJournalMapper` builds the same key and `EventEnvelope` JSON as today's
+- [x] 2.1 Failing tests: `PingedJournalMapper` builds the same key and `EventEnvelope` JSON as today's
       `PingActor` for `(ping-abc, seq 3)`. Without the mapper, the test doesn't compile or returns null. An
       unmapped event type throws `UnmappedJournalEventException`.
-- [ ] 2.2 Implement `IJournalEventMapper` and the registry. Register them through DI.
-- [ ] 2.3 EF migration `AddOutboxOffsets` (`./build_migration.sh "AddOutboxOffsets"`), then
+- [x] 2.2 Implement `IJournalEventMapper` and the registry. Register them through DI.
+- [x] 2.3 EF migration `AddOutboxOffsets` (`./build_migration.sh "AddOutboxOffsets"`), then
       `outbox_offsets(stream_id pk, last_ordering, updated_at)`, seeded per tag with the journal's
       current `max(ordering)` so the first rollout doesn't re-publish history (design D4).
 - [ ] 2.4 Offset load and monotonic save are raw SQL on the lock connection (design D5), so they live in
       `PostgresPublisherLease` (group 3). They're proved there: a save of 5 after 10 leaves 10, and a load
       with no row throws instead of returning 0.
-- [ ] 2.5 Commit: `feat(backend): outbox offset table and journal event mappers`.
+- [x] 2.5 Commit: `feat(backend): outbox offset table and journal event mappers`.
 
 ## 3. Advisory-lock fence
 
