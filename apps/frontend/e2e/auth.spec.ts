@@ -7,8 +7,10 @@ const PASS = process.env.E2E_PASS ?? 'Test123!'
 async function loginThroughKeycloak(page: Page) {
   await page.goto('/')
   await expect(page).toHaveURL(/keycloak\.chess\.localhost/)
-  await page.getByLabel(/username|email/i).fill(USER)
-  await page.getByLabel(/password/i).fill(PASS)
+  // Keycloak 26's theme: the password field shares its label text with the "Show password" toggle,
+  // so target the textboxes by role rather than by label.
+  await page.getByRole('textbox', { name: /username|email/i }).fill(USER)
+  await page.getByRole('textbox', { name: 'Password', exact: true }).fill(PASS)
   await page.getByRole('button', { name: /sign in|log in/i }).click()
   await expect(page).toHaveURL(/app\.chess\.localhost/)
 }
@@ -16,7 +18,7 @@ async function loginThroughKeycloak(page: Page) {
 test('anonymous visit is bounced to the Keycloak login form', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveURL(/keycloak\.chess\.localhost/)
-  await expect(page.getByLabel(/username|email/i)).toBeVisible()
+  await expect(page.getByRole('textbox', { name: /username|email/i })).toBeVisible()
 })
 
 test('after login the identity chip and dashboard render', async ({ page }) => {
@@ -55,8 +57,10 @@ test('revocation: after logout the old session cookie bounces the SSR guard to l
   await loginThroughKeycloak(page)
   const sid = (await page.context().cookies()).find((c) => c.name === 'mp_sid')
   expect(sid).toBeDefined()
-  await page.getByRole('button', { name: /log out/i }).click()
-  await expect(page).toHaveURL(/keycloak\.chess\.localhost|app\.chess\.localhost/)
+  // logout() navigates the page: the API revokes the session, then 302s to Keycloak's end-session
+  // page. Landing on the keycloak host is proof the API has already processed the logout.
+  await page.getByRole('link', { name: /log out/i }).click()
+  await page.waitForURL(/keycloak\.chess\.localhost/)
   const res = await request.get('/', {
     headers: { cookie: `mp_sid=${sid!.value}` },
     maxRedirects: 0,
