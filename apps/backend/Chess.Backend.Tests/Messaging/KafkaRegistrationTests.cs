@@ -1,5 +1,7 @@
 using Chess.Backend.Extensions;
 using Chess.Backend.Messaging;
+using Chess.Backend.Projections;
+using Chess.Backend.Tests.Support;
 using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,6 +44,31 @@ public sealed class KafkaRegistrationTests
         Assert.Contains(services, d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(KafkaConsumerHost));
         Assert.Contains(services, d => d.ServiceType == typeof(IProducer<string, string>));
         Assert.DoesNotContain(services, d => d.ServiceType == typeof(IEventPublisher) && d.ImplementationType == typeof(NullEventPublisher));
+    }
+
+    /// <summary>
+    /// Walks the exact path <see cref="KafkaConsumerHost"/> takes: discover projections through the
+    /// interface, then resolve each one again by its concrete type in a new scope. An interface-only
+    /// registration passes discovery and fails the second step, which took the whole host down with
+    /// "No service for type 'PingProjection' has been registered".
+    /// </summary>
+    [Fact]
+    public void Every_discovered_projection_can_be_resolved_by_its_concrete_type()
+    {
+        ServiceCollection services = Base();
+        services.AddSingleton(TestDb.Create());
+        services.AddMessaging(Configuration("redpanda:9092"));
+
+        using ServiceProvider provider = services.BuildServiceProvider();
+        using IServiceScope scope = provider.CreateScope();
+        Type[] discovered = [.. scope.ServiceProvider.GetServices<IProjection>().Select(p => p.GetType())];
+
+        Assert.NotEmpty(discovered);
+        foreach (Type projection in discovered)
+        {
+            using IServiceScope probe = provider.CreateScope();
+            Assert.NotNull(probe.ServiceProvider.GetRequiredService(projection));
+        }
     }
 
     [Fact]

@@ -89,7 +89,11 @@ internal static class BuilderExtension
     {
         KafkaOptions kafka = configuration.GetSection(KafkaOptions.SectionName).Get<KafkaOptions>() ?? new KafkaOptions();
         services.AddSingleton(kafka);
-        services.AddScoped<IProjection, PingProjection>();
+        // Registered twice on purpose: KafkaConsumerHost discovers projections through IProjection but
+        // then re-resolves each one by its CONCRETE type in a fresh scope per batch, which an
+        // interface-only registration cannot serve.
+        services.AddScoped<PingProjection>();
+        services.AddScoped<IProjection>(sp => sp.GetRequiredService<PingProjection>());
         if (kafka.Enabled)
         {
             services.AddSingleton(_ => KafkaEventPublisher.CreateProducer(kafka));

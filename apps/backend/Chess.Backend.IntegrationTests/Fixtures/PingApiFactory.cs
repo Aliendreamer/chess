@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -30,6 +31,24 @@ public sealed class PingApiFactory : WebApplicationFactory<Program>
     public const string EnvironmentName = "IntegrationTest";
 
     private static readonly TimeSpan ReadyTimeout = TimeSpan.FromSeconds(90);
+
+    /// <summary>
+    /// Startup failures must name themselves. A hosted service that throws in <c>StartAsync</c> — the Akka
+    /// system or the Kafka consumer — fails host start, and <c>RunAsync</c>'s finally disposes the host; the
+    /// test then sees only <c>ObjectDisposedException: TestServer</c> from its first request, which says
+    /// nothing about the cause. Catching it here keeps the real exception attached to the test.
+    /// </summary>
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        try
+        {
+            return base.CreateHost(builder);
+        }
+        catch (Exception e)
+        {
+            throw new InvalidOperationException($"the API host did not start: {e}", e);
+        }
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -71,6 +90,15 @@ public sealed class PingApiFactory : WebApplicationFactory<Program>
             catch (HttpRequestException e)
             {
                 last = e.Message;
+            }
+            catch (ObjectDisposedException e)
+            {
+                // The host started and then tore itself down — almost always a hosted service failing
+                // after the server was created. Whatever logged first in the app output is the cause.
+                throw new InvalidOperationException(
+                    "the API host was disposed while starting; check the application log for the first error "
+                    + "(run: dotnet test Chess.Backend.IntegrationTests -l \"console;verbosity=detailed\")",
+                    e);
             }
 
             // 500ms, not tighter: TestServer has no remote IP, so every request lands in the rate

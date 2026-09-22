@@ -3,6 +3,7 @@ using Akka.Cluster.Hosting.SBR;
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Persistence.Sql.Hosting;
 using Akka.Remote.Hosting;
+using Akka.Streams.Kafka.Settings;
 using Chess.Backend.WebApi.Hubs;
 using LinqToDB;
 using Microsoft.AspNetCore.SignalR;
@@ -30,6 +31,11 @@ internal static class AkkaHostingExtensions
         builder.Services.AddAkka(AkkaOptions.SystemName, (akka, sp) =>
         {
             akka
+                // Akka.Streams.Kafka reads `akka.kafka.*` from the ActorSystem's config, and Akka.Hosting
+                // does not load a package's reference.conf on its own: without this every consumer stream
+                // dies at ConsumerSettings.Create with "Kafka config for Akka.NET consumer was not
+                // provided", which (BackgroundServiceExceptionBehavior.StopHost) takes the API down too.
+                .AddHocon(KafkaExtensions.DefaultSettings, HoconAddMode.Append)
                 .WithRemoting(hostname: options.Hostname, port: options.Port)
                 .WithClustering(new ClusterOptions
                 {
