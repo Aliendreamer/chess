@@ -5,15 +5,15 @@ human-run gate.
 
 ## 1. Tag events on persist
 
-- [ ] 1.1 Failing test first: `TopicTagger.ToJournal(pinged)` returns `Tagged` with tag `game.events`,
+- [x] 1.1 Failing test first: `TopicTagger.ToJournal(pinged)` returns `Tagged` with tag `game.events`,
       and other events pass through untouched. It fails to compile until `TopicTagger` exists. The
       in-memory journal has no tag query, so the SQL `EventsByTag` path is proved in group 8.
-- [ ] 1.2 Add `TopicTagger : IWriteEventAdapter` (maps `Pinged` → `Tagged(evt, ["game.events"])`) and
+- [x] 1.2 Add `TopicTagger : IWriteEventAdapter` (maps `Pinged` → `Tagged(evt, ["game.events"])`) and
       register it on the SQL journal in `AkkaHostingExtensions`. If the 1.5.70 Hosting API can't do
       it, fall back to `Persist(new Tagged(...))` in `PingActor` (design D2) and note it.
-- [ ] 1.3 Confirm `tag-write-mode`/`tag-read-mode` resolve to `TagTable` in the effective config.
+- [x] 1.3 Confirm `tag-write-mode`/`tag-read-mode` resolve to `TagTable` in the effective config.
       Add a test that reads `system.Settings.Config` so a package bump that changes the default fails loudly.
-- [ ] 1.4 Commit: `feat(backend): tag journal events with their kafka topic`.
+- [x] 1.4 Commit: `feat(backend): tag journal events with their kafka topic`.
 
 ## 2. Offset store and event mapping
 
@@ -52,7 +52,7 @@ human-run gate.
       the lock connection. Run it with restart-with-backoff. Stop the stream on `LockLost`.
 - [ ] 4.3 Register it as a cluster singleton (`WithSingleton`, role `backend`), gated on
       `Kafka:BootstrapServers` being non-empty. Extend `KafkaRegistrationTests` to cover both states of that switch.
-- [ ] 4.4 Journal query tuning: `refresh-interval = 200ms`, `journal-sequence-retrieval.query-delay =
+- [x] 4.4 Journal query tuning: `refresh-interval = 200ms`, `journal-sequence-retrieval.query-delay =
 200ms` (design D7).
 - [ ] 4.5 🐳 Human gate: `tools/localdev/stack.sh down -v && tools/localdev/stack.sh up`, then
       `tools/localdev/verify-part0.sh`. Pings still project, and duplicates from the double path are

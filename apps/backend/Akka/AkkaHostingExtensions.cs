@@ -1,9 +1,11 @@
 using Akka.Cluster.Hosting;
 using Akka.Cluster.Hosting.SBR;
 using Akka.Cluster.Tools.PublishSubscribe;
+using Akka.Persistence.Sql.Config;
 using Akka.Persistence.Sql.Hosting;
 using Akka.Remote.Hosting;
 using Akka.Streams.Kafka.Settings;
+using Chess.Backend.Akka.Outbox;
 using Chess.Backend.WebApi.Hubs;
 using LinqToDB;
 using Microsoft.AspNetCore.SignalR;
@@ -43,11 +45,7 @@ internal static class AkkaHostingExtensions
                     SeedNodes = [.. options.EffectiveSeedNodes()],
                     SplitBrainResolver = new KeepMajorityOption(),
                 })
-                .WithSqlPersistence(
-                    connectionString: connectionString,
-                    providerName: ProviderName.PostgreSQL15,
-                    schemaName: PersistenceSchema,
-                    autoInitialize: true)
+                .WithChessPersistence(connectionString)
                 .WithDistributedPubSub(AkkaOptions.BackendRole)
                 .WithActors((system, registry, resolver) => registry.Register<HubFanOutActor>(
                     system.ActorOf(
@@ -57,4 +55,33 @@ internal static class AkkaHostingExtensions
         });
         return builder;
     }
+
+    /// <summary>
+    /// SQL journal + snapshots on the PRIMARY in schema `akka`, with every outbound event tagged by its Kafka
+    /// topic (<see cref="TopicTagger"/>, tag table) and the query side tuned so <see cref="JournalPublisher"/>
+    /// sees a commit within ~200 ms instead of the 1 s + 1 s defaults.
+    /// </summary>
+    public static AkkaConfigurationBuilder WithChessPersistence(this AkkaConfigurationBuilder akka, string connectionString)
+    {
+        ArgumentNullException.ThrowIfNull(akka);
+        return akka
+            .AddHocon(QueryTuning, HoconAddMode.Prepend)
+            .WithSqlPersistence(
+                connectionString: connectionString,
+                providerName: ProviderName.PostgreSQL15,
+                schemaName: PersistenceSchema,
+                journalBuilder: journal => journal.AddWriteEventAdapter<TopicTagger>(TopicTagger.Name, TopicTagger.BoundTypes),
+                autoInitialize: true,
+                tagStorageMode: TagMode.TagTable);
+    }
+
+    // Both knobs matter: refresh-interval is the idle poll, query-delay is how often the ordering-gap detector
+    // looks again. A gap is waited on for max-tries (10) × query-delay = 2 s before being skipped — see design
+    // D7 and the gap risk in openspec/changes/journal-outbox/design.md.
+    private const string QueryTuning = """
+        akka.persistence.query.journal.sql {
+          refresh-interval = 200ms
+          journal-sequence-retrieval.query-delay = 200ms
+        }
+        """;
 }
