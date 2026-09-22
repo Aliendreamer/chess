@@ -63,7 +63,7 @@ for i in $(seq 1 20); do
 done
 
 step "rm_pings on the replica matches"
-[[ "$(compose exec -T postgres-replica psql -U chess -d chess -tA -c "select count from rm_pings where ping_id='$ID'")" == "1" ]] || fail "replica row mismatch"
+[[ "$(compose exec -T postgres-replica psql -U chess -d chess -tA -c "select \"Count\" from rm_pings where \"PingId\"='$ID'")" == "1" ]] || fail "replica row mismatch"
 echo "ok"
 
 step "hub negotiate is gated"
