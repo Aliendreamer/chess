@@ -31,6 +31,15 @@ Release: no `nx release` has run yet; per-project changelogs (`apps/{backend,fro
 tags `backend@x.y.z` / `frontend@x.y.z` appear on the first release. **The user will run the first
 publish themselves once Part 0 is finished** — do not run `nx release` or `nx push` for them.
 
+## Specs and plans — OpenSpec (from 2026-09-22)
+
+The user installed OpenSpec (CLI 1.2.0) to write specs and plans down "so we have history": scaffold
+in `openspec/` (`config.yaml` carries the project context and per-artifact rules shown to the agent),
+slash commands in `.claude/commands/opsx/`, skills `openspec-{propose,apply,archive,explore,sync-specs}`.
+Part 1 onward gets its design and plan through OpenSpec rather than ad-hoc files. Part 0's history
+stays where it was written: `docs/superpowers/{specs,plans,notes}/`. `openspec validate --strict`
+wants network (edge.openspec.dev) and fails inside the agent sandbox.
+
 ## Source map
 
 - `nx.json` — targetDefaults (build/test/lint cached), `namedInputs.dotnet`, `release` groups (frontend, backend).

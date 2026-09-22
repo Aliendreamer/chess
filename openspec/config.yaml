@@ -1,0 +1,38 @@
+schema: spec-driven
+
+context: |
+  Chess — an Nx + pnpm monorepo with three apps. Read ROADMAP.md first; CLAUDE.md holds the
+  build/test commands and the architecture notes that span files.
+
+  - apps/backend — .NET 10 API (Chess.Backend): FastEndpoints + EF Core/Npgsql, Keycloak PKCE login
+    with a server-owned opaque cookie session (mp_sid), Akka.NET cluster/sharding as the live-game
+    sync plane, Kafka (Redpanda locally) as the event backbone, reads from a Postgres replica.
+  - apps/frontend — TanStack Start SSR app that IS the BFF: it proxies /api/auth/*, re-homes cookies
+    and relays the SignalR hub over a WebSocket. The browser only ever talks to app.chess.localhost.
+  - apps/proxy — nginx edge for deployment.
+
+  Build order is by parts: 0 spine (done — PingActor proves persist→publish→project→replicate→read),
+  1 live vs people, 2 vs engine, 3 correspondence, 4 study/analysis. Each part gets its own design
+  conversation before any code; defaults in ROADMAP §3/§4 are not settled until then.
+
+  Conventions that are load-bearing:
+  - Conventional commits with a required scope (frontend | backend | repo | deps | proxy | ci |
+    release), lower-case subject, body lines <= 100 chars. Nx Release derives versions from them.
+  - Exact version pins everywhere — no ^ or ~ in package.json or Directory.Packages.props.
+  - Backend: everything internal sealed, warning-clean under AnalysisMode=All +
+    TreatWarningsAsErrors, logging through Utils/Log.cs [LoggerMessage] methods.
+  - Frontend: no VITE_API_URL ever; the client bundle must not mention the API host.
+  - Coverage gates are 75% on both apps; startup glue is covered by the integration suite
+    (nx integration-test backend, Testcontainers) rather than by mocks.
+  - Work happens on main. Docker-dependent gates (stack.sh, verify-*.sh, e2e, integration tests)
+    may need a human to run them when the agent sandbox is on.
+
+rules:
+  proposal:
+    - State what changes for a player before what changes in the code.
+    - Name the part (0-4) this belongs to, and say explicitly what is out of scope.
+    - Call out which ROADMAP §3/§4 decisions it settles or depends on.
+  tasks:
+    - Each task ends at a commit that passes lint, test and build.
+    - Write the failing test first and say what its failure looks like.
+    - Mark any step that needs Docker or a human-run gate, and say which command proves it.
