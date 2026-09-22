@@ -1,9 +1,10 @@
-dist
-.output
-.nitro
-.tanstack
-node_modules
+# Build output and generated files.
+dist/
+.output/
+.nitro/
+.tanstack/
 src/routeTree.gen.ts
-pnpm-lock.yaml
-.claude
-.mcp.json
+
+# Playwright run artifacts (gitignored, but prettier does not read .gitignore).
+test-results/
+playwright-report/

@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader } from '@tanstack/react-start/server'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { apiUrl } from './config'
-import { loadHealth, loadMe } from './api-loaders'
+import { loadHealth, loadMe, loadPingLive, sendPing } from './api-loaders'
 
 /** A `fetch` bound to the internal API that re-attaches the caller's session cookie under its API name. */
 function serverFetch(): typeof fetch {
@@ -22,3 +22,11 @@ function serverFetch(): typeof fetch {
 // so the browser never learns the API host.
 export const getMe = createServerFn({ method: 'GET' }).handler(() => loadMe(serverFetch()))
 export const getHealth = createServerFn({ method: 'GET' }).handler(() => loadHealth(serverFetch()))
+
+export const getPingLive = createServerFn({ method: 'GET' })
+  .inputValidator((id: string) => id)
+  .handler(({ data }) => loadPingLive(serverFetch(), data))
+
+export const postPing = createServerFn({ method: 'POST' })
+  .inputValidator((input: { id: string; text: string }) => input)
+  .handler(({ data }) => sendPing(serverFetch(), data.id, data.text))

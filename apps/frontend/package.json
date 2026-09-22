@@ -23,14 +23,19 @@
     "check": "prettier --check ."
   },
   "dependencies": {
+    "@microsoft/signalr": "10.0.11",
     "@tailwindcss/vite": "4.3.0",
     "@tanstack/react-router": "1.170.15",
     "@tanstack/react-start": "1.168.25",
     "@tanstack/router-plugin": "1.168.18",
+    "eventsource": "2.0.2",
+    "fetch-cookie": "2.2.0",
     "lucide-react": "1.17.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "tailwindcss": "4.3.0"
+    "tailwindcss": "4.3.0",
+    "tough-cookie": "4.1.4",
+    "ws": "7.5.13"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2",
@@ -46,6 +51,7 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
     "eslint": "10.4.1",
+    "h3": "1.15.11",
     "jsdom": "29.1.1",
     "prettier": "3.8.4",
     "typescript": "6.0.3",
