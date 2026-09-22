@@ -51,6 +51,7 @@ pnpm test / pnpm test:watch                    # vitest;  `pnpm vitest run src/l
 pnpm build && API_URL=http://127.0.0.1:8080 pnpm start   # prod SSR server on :3000
 
 tools/localdev/verify-auth.sh                  # curl-only login→/me→logout→revocation check vs the live stack
+tools/localdev/verify-stack.sh                 # replica streaming + write→read, redpanda health/topics/round-trip, console
 tools/e2e.sh                                   # Playwright against the live stack
 ```
 
@@ -60,8 +61,9 @@ socket all need IPC the Claude Code sandbox blocks. Inside it: build with
 run); `dotnet format`, `stack.sh` and `verify-auth.sh` must be run by a human (`! <cmd>`).
 
 Local URLs (Traefik on :80, dashboard on 127.0.0.1:8090): `app.chess.localhost`, `api.chess.localhost`,
-`keycloak.chess.localhost` (admin/admin), `redisinsight.chess.localhost`. Postgres is on
-`127.0.0.1:5432` as `chess`/`chess`/`chess`.
+`keycloak.chess.localhost` (admin/admin), `redisinsight.chess.localhost`, `console.chess.localhost`
+(Redpanda). Postgres primary `127.0.0.1:5432`, replica `127.0.0.1:5433` (`chess`/`chess`/`chess`);
+Redpanda Kafka API `127.0.0.1:19092`.
 
 ## Commit rules (load-bearing)
 
@@ -111,6 +113,12 @@ to each app's own lint target). Keep `--no-stash`.
 - **.NET versioning in Nx Release** — the backend has no `package.json`; its version is the MSBuild
   `<Version>` in `apps/backend/Directory.Build.props`. `tools/nx-release/dotnet-version-actions.cjs`
   teaches Nx Release to read/write it (wired via `release.groups.backend.version.versionActions`).
+- **Data plane (ROADMAP §2)** — `postgres` (primary, writes) streams to `postgres-replica` (hot standby,
+  reads; seeded by `postgres/replica-entrypoint.sh` via `pg_basebackup -R`, replication role from
+  `postgres/primary-init-replication.sh` — both only run on a FRESH data dir, so changes need `down -v`).
+  `redpanda` (Kafka API, dev-container mode) + `redpanda-init` (creates `game.events`, `matchmaking.events`,
+  `analysis.requests`, `analysis.results`) + `redpanda-console`. Backend env already carries
+  `ConnectionStrings__PostgresReplica` and `Kafka__BootstrapServers` for Part 0 code.
 - **Local stack** — `tools/localdev/docker-compose.yml`, project name `chess` (explicit, so volumes
   are `chess_*` and don't collide with other repos' `localdev_*`). Traefik routes by Host labels;
   Keycloak's issuer must resolve identically inside containers and in the browser (`extra_hosts`

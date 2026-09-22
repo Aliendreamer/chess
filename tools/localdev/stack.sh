@@ -37,6 +37,9 @@ case "$cmd" in
     echo "  backend api  http://api.chess.localhost"
     echo "  keycloak     http://keycloak.chess.localhost (admin/admin)"
     echo "  redisinsight http://redisinsight.chess.localhost"
+    echo "  console      http://console.chess.localhost (Redpanda)"
+    echo "  postgres     127.0.0.1:5432 primary · 127.0.0.1:5433 replica (chess/chess)"
+    echo "  redpanda     127.0.0.1:19092 (kafka api)"
     echo "  traefik ui   http://127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-8090}"
     ;;
   down)    compose down "$@" ;;

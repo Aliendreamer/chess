@@ -22,6 +22,10 @@ http:
       rule: Host(`redisinsight.chess.localhost`)
       entryPoints: [web]
       service: redisinsight
+    console:
+      rule: Host(`console.chess.localhost`)
+      entryPoints: [web]
+      service: console
   services:
     app:
       loadBalancer:
@@ -39,3 +43,7 @@ http:
       loadBalancer:
         servers:
           - url: http://redisinsight:5540
+    console:
+      loadBalancer:
+        servers:
+          - url: http://redpanda-console:8080
