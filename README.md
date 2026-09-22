@@ -88,32 +88,39 @@ Versions are derived from the conventional-commit scopes, per project, independe
 (`projectsRelationship: independent`). `feat(backend): …` bumps only the backend.
 
 ```bash
-pnpm exec nx release --first-release --dry-run   # THE FIRST TIME ONLY — writes nothing
-pnpm exec nx release --first-release             # versions, changelogs, commit, tags
-git push --follow-tags                           # the tags are the release
-
-pnpm exec nx release --dry-run                   # every release after that
-pnpm exec nx release
+pnpm release:dry          # preview: what bumps, what the changelog says. Writes nothing.
+pnpm release              # versions + changelogs + a chore(release) commit + tags
+git push --follow-tags    # the tags are the release
 ```
 
-**`--first-release` is not optional the first time.** Without a previous tag to diff against, the
-changelog step stops with _"Unable to determine the previous git tag"_ and nothing is written.
+Both scripts pass `--skip-publish`, because **we never publish packages** — the apps are private and
+the artifact is a container image (below). Running bare `nx release` instead ends with an error,
+after doing all the real work:
 
-That writes the new version, a per-project `CHANGELOG.md`, a commit, and a git tag
-`backend@x.y.z` / `frontend@x.y.z`. The run ends with _"Skipped publishing packages"_: both are
-private, so there is no npm step and no workspace-wide changelog — images are the artifact. Where
-the version actually lives differs per app:
+```text
+the following projects were matched for publishing but do not have the
+"nx-release-publish" target specified: frontend
+```
+
+That is the publish phase complaining about `"private": true`. Versions, changelogs, commit and tags
+are already written at that point — nothing is lost, and nothing needs re-running.
+
+**A brand-new release group also needs `--first-release` once**, or the changelog step stops with
+_"Unable to determine the previous git tag"_ before writing anything. That has already happened here
+(see below), so plain `pnpm release` is right from now on.
+
+Each run writes a per-project `CHANGELOG.md` and tags `backend@x.y.z` / `frontend@x.y.z`; there is
+no workspace-wide changelog. Where the version itself lives differs per app:
 
 - `frontend` → `apps/frontend/package.json`
 - `backend` → the MSBuild `<Version>` in `apps/backend/Directory.Build.props`, taught to Nx by
   `tools/nx-release/dotnet-version-actions.cjs`
 
-Nothing has been released yet, so that first run writes both changelogs from the whole history and
-cuts `frontend@0.1.1` and `backend@0.1.1` — it reads the commits as a `minor` bump, which below 1.0
-lands on `0.1.1` rather than `0.2.0`. Pass `--specifier` if you want something else, and skim the
-generated changelog first: it credits co-authors, so the AI co-author trailers show up under
-"Thank You". Generating it reaches out to `ungh.cc` to map commits to GitHub users; that call is
-optional and the changelog is still written if it fails.
+The first release is cut: `frontend@0.1.1` and `backend@0.1.1`, with both changelogs written from
+the whole history. Below 1.0 a `minor` bump lands on `0.1.1` rather than `0.2.0`; pass `--specifier`
+when you want something other than what the commits imply. The changelog credits co-authors, so the
+AI co-author trailers appear under "Thank You", and generating it calls `ungh.cc` to map commits to
+GitHub users — that call is optional and the changelog is still written without it.
 
 ### Images — `nx push`
 

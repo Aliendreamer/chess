@@ -12,6 +12,8 @@
     "pnpm:upgrade": "corepack prepare pnpm@latest --activate && corepack use pnpm@latest",
     "lint:md": "markdownlint-cli2",
     "lint:md:fix": "markdownlint-cli2 --fix",
+    "release:dry": "nx release --skip-publish --dry-run",
+    "release": "nx release --skip-publish",
     "push": "nx run-many -t push",
     "push:proxy": "nx push proxy",
     "push:frontend": "nx push frontend",
