@@ -54,8 +54,10 @@ echo "ok ($(wc -l <<<"$topics" | tr -d ' ') topics)"
 
 step "produce/consume round-trip on game.events"
 msg="probe-$(date +%s%N)"
-compose exec -T redpanda bash -c "echo '$msg' | rpk topic produce game.events -k probe" >/dev/null
-got="$(compose exec -T redpanda rpk topic consume game.events -o -1 -n 1 -f '%v\n' 2>/dev/null | tr -d '\r')"
+# Pin both ends to partition 0: game.events has three, so "last record" without a partition is
+# whichever partition answers first — which is a real ping event once the backend is publishing.
+compose exec -T redpanda bash -c "echo '$msg' | rpk topic produce game.events -k probe -p 0" >/dev/null
+got="$(compose exec -T redpanda rpk topic consume game.events -p 0 -o -1 -n 1 -f '%v\n' 2>/dev/null | tr -d '\r')"
 [[ "$got" == "$msg" ]] || fail "consumed '$got', expected '$msg'"
 echo "ok"
 
