@@ -60,8 +60,10 @@ export function PingFeed({ id, initial }: PingFeedProps) {
         </span>
       </header>
 
+      {/* One interpolation, not `count {n}`: React separates those with a comment marker in the SSR
+          HTML, and the e2e asserts on the raw server bytes before any JS runs. */}
       <p className="text-2xl font-semibold tabular-nums" data-testid="ping-count">
-        count {latest.count}
+        {`count ${latest.count}`}
       </p>
       <p className="mt-1 text-sm text-zinc-500">{latest.lastText ?? 'no text yet'}</p>
 
@@ -75,7 +77,7 @@ export function PingFeed({ id, initial }: PingFeedProps) {
         {frames.map((state) => (
           <li key={state.lastSeq} className="flex gap-3 font-mono text-xs">
             <span className="text-zinc-500">#{state.lastSeq}</span>
-            <span>count {state.count}</span>
+            <span>{`count ${state.count}`}</span>
             <span className="truncate">{state.lastText}</span>
           </li>
         ))}

@@ -32,6 +32,9 @@ test('SSR renders the ping state before any JS runs', async ({ page, request }) 
   await loginThroughKeycloak(page)
   const id = pingId()
   await page.goto(`/pings/${id}`)
+  // The hub pushes to whoever is subscribed at publish time — there is no replay for a late
+  // subscriber — so the feed only sees this ping if the relay is connected before the click.
+  await expect(page.getByTestId('ping-status')).toHaveText(/live/i, { timeout: 10_000 })
   await page.getByTestId('ping-submit').click()
   await expect(page.getByTestId('ping-feed')).toContainText('count 1', { timeout: 5_000 })
 
@@ -50,7 +53,11 @@ test('the relay keeps the API host out of the browser', async ({ page }) => {
   page.on('websocket', (ws) => hosts.add(new URL(ws.url()).host))
 
   await loginThroughKeycloak(page)
-  const wsPromise = page.waitForEvent('websocket', { timeout: 10_000 })
+  // Under `vite dev` the first socket the page opens is Vite's own HMR channel, so match ours.
+  const wsPromise = page.waitForEvent('websocket', {
+    predicate: (socket) => socket.url().includes('/api/ws/pings/'),
+    timeout: 15_000,
+  })
   await page.goto(`/pings/${pingId()}`)
   const ws = await wsPromise
 
