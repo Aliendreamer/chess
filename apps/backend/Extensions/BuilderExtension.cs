@@ -4,7 +4,9 @@ using Chess.Backend.Akka;
 using Chess.Backend.Akka.Ping;
 using Chess.Backend.Data.Auth;
 using Chess.Backend.Messaging;
+using Chess.Backend.Projections;
 using Chess.Backend.WebApi.Authentication;
+using Confluent.Kafka;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -38,7 +40,7 @@ internal static class BuilderExtension
         services.AddSingleton<IClaimsTransformation, KeycloakRolesClaimsTransformation>();
         services.AddHostedService<SessionCleanupService>();
         services.AddConventionServices();
-        services.AddSingleton<IEventPublisher, NullEventPublisher>();
+        AddMessaging(services, configuration);
         builder.AddActorSystem((akka, sp) => akka.WithPingSharding(sp.GetRequiredService<AkkaOptions>()));
 
         AddJwtBearer(services, configuration.GetSection(KeycloakOptions.SectionName).Get<KeycloakOptions>() ?? new(), isDevelopment);
@@ -74,6 +76,29 @@ internal static class BuilderExtension
             .WithSerializer(new ZiggyCreatures.Caching.Fusion.Serialization.SystemTextJson.FusionCacheSystemTextJsonSerializer())
             .WithRegisteredDistributedCache()
             .WithStackExchangeRedisBackplane(o => o.Configuration = redisConnectionString);
+        return services;
+    }
+
+    /// <summary>
+    /// Empty <c>Kafka:BootstrapServers</c> ⇒ NullEventPublisher, no consumer host. Non-empty ⇒ the real Confluent
+    /// producer plus one Akka.Streams.Kafka consumer per registered <see cref="IProjection"/>.
+    /// </summary>
+    internal static IServiceCollection AddMessaging(this IServiceCollection services, IConfiguration configuration)
+    {
+        KafkaOptions kafka = configuration.GetSection(KafkaOptions.SectionName).Get<KafkaOptions>() ?? new KafkaOptions();
+        services.AddSingleton(kafka);
+        services.AddScoped<IProjection, PingProjection>();
+        if (kafka.Enabled)
+        {
+            services.AddSingleton(_ => KafkaEventPublisher.CreateProducer(kafka));
+            services.AddSingleton<IEventPublisher>(sp => new KafkaEventPublisher(sp.GetRequiredService<IProducer<string, string>>()));
+            services.AddHostedService<KafkaConsumerHost>();
+        }
+        else
+        {
+            services.AddSingleton<IEventPublisher, NullEventPublisher>();
+        }
+
         return services;
     }
 

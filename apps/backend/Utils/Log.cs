@@ -26,4 +26,10 @@ internal static partial class Log
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Session cleanup failed; will retry next interval")]
     public static partial void CleanupFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Projection skipped replayed event {AggregateId}#{Seq}")]
+    public static partial void ProjectionSkippedReplay(ILogger logger, string aggregateId, long seq);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Consumer stream for {GroupId} failed; restarting")]
+    public static partial void ConsumerStreamFailed(ILogger logger, Exception exception, string groupId);
 }

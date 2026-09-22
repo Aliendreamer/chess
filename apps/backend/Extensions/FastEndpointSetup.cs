@@ -1,4 +1,5 @@
 using Chess.Backend.Akka;
+using Chess.Backend.Messaging;
 using FastEndpoints.Swagger;
 
 namespace Chess.Backend.Extensions;
@@ -28,6 +29,14 @@ internal static class FastEndpointSetup
         }
 
         health.AddCheck<ClusterHealthCheck>("akka-cluster");
+
+        KafkaOptions kafka = builder.Configuration.GetSection(KafkaOptions.SectionName).Get<KafkaOptions>() ?? new KafkaOptions();
+        if (kafka.Enabled)
+        {
+            // Singleton so the AdminClient (and its broker connection) is built once, not per health probe.
+            builder.Services.AddSingleton<KafkaHealthCheck>();
+            health.AddCheck<KafkaHealthCheck>("kafka");
+        }
 
         return builder;
     }
