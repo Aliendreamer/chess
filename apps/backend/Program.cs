@@ -4,6 +4,7 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder
     .AddSharedConfiguration()
     .AddDatabaseContext()
+    .AddReadDatabaseContext()
     .AddCommonServices()
     .AddEndpoints();
 
