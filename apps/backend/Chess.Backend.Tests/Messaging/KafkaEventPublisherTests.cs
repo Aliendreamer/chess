@@ -19,5 +19,32 @@ public sealed class KafkaEventPublisherTests
     }
 
     [Fact]
+    public async Task Rejects_an_empty_topic_or_key_before_touching_the_producer()
+    {
+        Mock<IProducer<string, string>> producer = new(MockBehavior.Strict);
+        KafkaEventPublisher publisher = new(producer.Object);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => publisher.PublishAsync(string.Empty, "k", "{}", CancellationToken.None));
+        await Assert.ThrowsAsync<ArgumentException>(() => publisher.PublishAsync("t", string.Empty, "{}", CancellationToken.None));
+        producer.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public void Dispose_flushes_before_closing_so_queued_events_are_not_dropped()
+    {
+        Mock<IProducer<string, string>> producer = new();
+        KafkaEventPublisher publisher = new(producer.Object);
+
+        publisher.Dispose();
+
+        producer.Verify(p => p.Flush(It.IsAny<TimeSpan>()), Times.Once);
+        producer.Verify(p => p.Dispose(), Times.Once);
+    }
+
+    [Fact]
+    public void Creating_a_producer_needs_options() =>
+        Assert.Throws<ArgumentNullException>(() => KafkaEventPublisher.CreateProducer(null!));
+
+    [Fact]
     public void Options_default_group_prefix() => Assert.Equal("chess", new KafkaOptions().GroupPrefix);
 }

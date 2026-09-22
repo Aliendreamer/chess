@@ -31,7 +31,7 @@ tools/localdev/stack.sh down -v                # drop volumes (fresh DB + Keyclo
 tools/localdev/stack.sh logs [svc]
 
 tools/test-all.sh                              # every test, both languages
-tools/coverage-report.sh                       # combined coverage
+tools/coverage-report.sh                       # combined coverage (frontend vitest v8 + backend gate)
 tools/e2e.sh                                   # stack up → Playwright → down
 
 pnpm exec nx validate proxy                    # build proxy image, run `nginx -t` inside
@@ -39,7 +39,7 @@ pnpm exec nx release version --dry-run
 
 # backend (apps/backend)
 dotnet build Chess.Backend.csproj              # warning-clean under AnalysisMode=All + TreatWarningsAsErrors
-./build_test.sh                                # xUnit + coverage gate (COVERAGE_THRESHOLD, default 90)
+./build_test.sh                                # xUnit + coverage gate (COVERAGE_THRESHOLD, default 75)
 dotnet test Chess.Backend.Tests --filter "FullyQualifiedName~SessionStoreTests"   # one class
 pnpm exec nx integration-test backend          # Testcontainers round-trip + recovery (needs Docker)
 ./build_migration.sh "AddSomething"            # EF migration (dotnet-ef 10.x)

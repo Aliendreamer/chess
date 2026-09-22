@@ -31,7 +31,8 @@ EF InMemory). Central package versions in `Directory.Packages.props`; `<Version>
   with a test auth scheme; `nx integration-test backend`, human-run (Docker). The main csproj must Remove
   its `**/*.cs` or the Web SDK compiles it.
 - `Utils/Constants.cs`, `Utils/Log.cs` (LoggerMessage), `coverage.runsettings` (excludes Program,
-  Extensions, Migrations, `[ExcludeFromCodeCoverage]` endpoints), `build_test.sh` (90% line gate),
+  Extensions, Migrations, `[ExcludeFromCodeCoverage]` endpoints), `build_test.sh` (75% line gate — the spine's
+  startup glue is covered by the integration suite instead, not by mocks),
   `build_migration.sh`, `Dockerfile` (alpine, non-root, `/health`).
 
 ## Invariants / gotchas

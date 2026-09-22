@@ -29,7 +29,9 @@ Built from the `fe-ssr-tanstack` prompt. No i18n/TanStack Store/Query (dropped a
   `routes/_authenticated/pings.$id.tsx` SSRs from the actor.
 - `lib/auth/session.ts` — `login()/logout()` same-origin navigations.
 - `components/` — presentational (`Dashboard`, `Tile`, `IdentityBar`); `data-testid`s used by e2e.
-- Tests: `src/**/*.test.ts(x)`; e2e in `e2e/auth.spec.ts` (`playwright.config.ts`, `E2E_BASE_URL`).
+- Tests: `src/**/*.test.ts(x)`; e2e in `e2e/{auth,pings}.spec.ts` (`playwright.config.ts`, `E2E_BASE_URL`).
+  `pnpm test:coverage` = vitest v8 with 75% line/statement thresholds; routes, router, `api.ts` and the
+  relay hosts are excluded because Playwright exercises them (same rule as the backend runsettings).
 
 ## Invariants / gotchas
 

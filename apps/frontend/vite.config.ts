@@ -52,5 +52,24 @@ export default defineConfig(({ command }) => ({
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
     globals: false,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      // Same rule the backend's runsettings applies: framework glue and IO hosts are exercised
+      // end to end by Playwright, not by unit tests. What stays measured is the logic — cookie
+      // re-homing, loaders, frame parsing, components.
+      exclude: [
+        'src/routeTree.gen.ts',
+        'src/routes/**', // route definitions; loaders call the server fns below
+        'src/router.tsx',
+        'src/env.d.ts',
+        'src/lib/server/api.ts', // createServerFn wrappers over the tested loaders
+        'src/lib/server/ping-hub.ts', // relay I/O, covered by e2e/pings.spec.ts
+        'src/lib/server/dev-ping-relay.ts', // dev-only vite plugin, same
+        '**/*.test.{ts,tsx}',
+      ],
+      thresholds: { lines: 75, statements: 75, functions: 75, branches: 70 },
+      reporter: ['text-summary'],
+    },
   },
 }))

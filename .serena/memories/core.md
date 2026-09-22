@@ -19,8 +19,8 @@ stack** — `verify-part0.sh` (single-node and `--cluster`), `verify-stack.sh`, 
 backend`, the full Playwright suite (8) and `nx validate proxy` all pass. Getting there took fixing
 three faults that had left the spine dead in the stack (Akka.Streams.Kafka HOCON missing from the
 ActorSystem, the `akka` schema never created, PingProjection unresolvable by concrete type) plus two
-wrong verification scripts; see `docs/superpowers/notes/part0-experiment.md`. Remaining gate:
-backend line coverage is 79.9% against the 90% `build_test.sh` threshold. The spine runs end to end:
+wrong verification scripts; see `docs/superpowers/notes/part0-experiment.md`. Coverage gates are 75% both sides (user, 2026-09-22: "90 is too much... 75+ should be enough"):
+backend 81.7%, frontend 98.5% on the measured surface. The spine runs end to end:
 PingActor (sharded, persistent) → Kafka → `rm_pings` projection → replica reads → DistributedPubSub →
 SignalR → SSR WebSocket relay → browser page `/pings/$id`. Two notes hold the conclusions:
 `docs/superpowers/notes/part0-realtime-spike.md` (relay option A adopted, with the evidence) and
