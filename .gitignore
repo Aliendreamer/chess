@@ -48,3 +48,6 @@ playwright-report/
 .claude/output-styles
 .claude/routines
 .claude/workflows
+
+# The same masks appear under any directory a command ran in; only the repo-root .claude/ is real.
+apps/*/.claude/
