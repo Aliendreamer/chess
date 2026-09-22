@@ -14,6 +14,12 @@ namespace Chess.Backend.IntegrationTests.Fixtures;
 /// </summary>
 public sealed class StackFixture : IAsyncLifetime
 {
+    /// <summary>
+    /// Every class using the stack joins this collection: the fixture sets process-wide env vars, so two
+    /// instances running in parallel would point one app at the other's containers.
+    /// </summary>
+    public const string Collection = "stack";
+
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18")
         .WithDatabase("chess")
         .WithUsername("chess")
@@ -24,6 +30,11 @@ public sealed class StackFixture : IAsyncLifetime
         new RedpandaBuilder("docker.redpanda.com/redpandadata/redpanda:v24.3.6").Build();
 
     public string PostgresConnectionString => _postgres.GetConnectionString();
+
+    /// <summary>Freezes the broker (docker pause): connections hang rather than refuse, like a real outage.</summary>
+    public Task PauseKafkaAsync() => _redpanda.PauseAsync();
+
+    public Task UnpauseKafkaAsync() => _redpanda.UnpauseAsync();
 
     public string BootstrapServers => _redpanda.GetBootstrapAddress().Replace("PLAINTEXT://", string.Empty, StringComparison.Ordinal);
 
@@ -79,3 +90,6 @@ public sealed class StackFixture : IAsyncLifetime
         return port;
     }
 }
+
+[CollectionDefinition(StackFixture.Collection)]
+public sealed class StackCollection : ICollectionFixture<StackFixture>;

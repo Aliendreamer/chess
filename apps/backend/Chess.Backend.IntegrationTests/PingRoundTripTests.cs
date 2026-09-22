@@ -11,7 +11,8 @@ namespace Chess.Backend.IntegrationTests;
 /// The whole Part 0 spine in two tests: command → actor → journal → Kafka → projection → read model,
 /// and then the same entity recovered from the journal by a fresh process.
 /// </summary>
-public sealed class PingRoundTripTests : IClassFixture<StackFixture>
+[Collection(StackFixture.Collection)]
+public sealed class PingRoundTripTests
 {
     // The fixture is what configures the app (env vars the host reads at startup); the tests only need
     // it to have run, not to read from it.

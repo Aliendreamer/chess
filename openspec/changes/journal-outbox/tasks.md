@@ -94,17 +94,18 @@ human-run gate.
 ## 8. Integration proof 🐳
 
 - [ ] 8.1 `PingRoundTripTests` still passes unchanged. That proves the wire format.
-- [ ] 8.2 New `OutboxRecoveryTests` (Testcontainers):
+- [ ] 8.2 (written; run pending 🐳) New `OutboxRecoveryTests` (Testcontainers):
       (a) pause the Redpanda container, POST 5 pings, unpause, and assert all 5 `rm_pings` updates
       within 30 s;
       (b) reset the offset row to 0 on a populated stack, and assert no read model changes;
       (c) POST pings, dispose the host before the publisher's first batch, start a new host, and assert
       none are missing.
-- [ ] 8.3 Two-node test (the `PingApiFactory` cluster setup used by `verify-part0 --cluster`): concurrent
+- [ ] 8.3 (not automated: two ActorSystems in one test process share the fixture's env-var config; covered by
+      `PublisherLeaseTests` for the fence and `verify-part0.sh --cluster` for placement) Two-node test (the `PingApiFactory` cluster setup used by `verify-part0 --cluster`): concurrent
       pings on both nodes. Assert exactly one lock holder, no missing seq per key, and that after
       killing the publisher node the other node takes over and the rows complete.
 - [ ] 8.4 Run `pnpm exec nx integration-test backend` 🐳 plus `tools/localdev/verify-part0.sh --cluster` 🐳 (human).
-- [ ] 8.5 Commit: `test(backend): outbox recovery and two-node fencing`.
+- [x] 8.5 Commit: `test(backend): outbox recovery and two-node fencing`.
 
 ## 9. Docs and measurements
 
