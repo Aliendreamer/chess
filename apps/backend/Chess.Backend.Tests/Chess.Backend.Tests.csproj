@@ -21,6 +21,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Akka.TestKit.Xunit2" />
+    <PackageReference Include="Akka.Persistence.TestKit" />
   </ItemGroup>
 
   <ItemGroup>

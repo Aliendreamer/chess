@@ -1,5 +1,7 @@
 global using System.Diagnostics.CodeAnalysis;
 global using System.Security.Claims;
+global using Akka.Actor;
+global using Akka.Hosting;
 global using Chess.Backend.Data;
 global using Chess.Backend.Data.Models;
 global using Chess.Backend.Services;

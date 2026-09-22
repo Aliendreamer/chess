@@ -1,3 +1,4 @@
+using Chess.Backend.Akka;
 using FastEndpoints.Swagger;
 
 namespace Chess.Backend.Extensions;
@@ -25,6 +26,8 @@ internal static class FastEndpointSetup
         {
             health.AddRedis(redis, name: "redis");
         }
+
+        health.AddCheck<ClusterHealthCheck>("akka-cluster");
 
         return builder;
     }
