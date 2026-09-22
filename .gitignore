@@ -20,3 +20,6 @@ playwright-report/
 
 # Claude Code harness scratch
 **/.claude/.cc-writes/
+
+# superpowers SDD scratch
+.superpowers/
