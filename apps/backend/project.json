@@ -29,6 +29,14 @@
         "command": "./build_test.sh"
       }
     },
+    "integration-test": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "apps/backend",
+        "command": "dotnet test Chess.Backend.IntegrationTests"
+      }
+    },
     "lint": {
       "executor": "nx:run-commands",
       "inputs": ["dotnet", "{projectRoot}/.editorconfig"],

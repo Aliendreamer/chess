@@ -15,6 +15,9 @@
     <Compile Remove="Chess.Backend.Tests/**/*.cs" />
     <Content Remove="Chess.Backend.Tests/**" />
     <None Remove="Chess.Backend.Tests/**" />
+    <Compile Remove="Chess.Backend.IntegrationTests/**/*.cs" />
+    <Content Remove="Chess.Backend.IntegrationTests/**" />
+    <None Remove="Chess.Backend.IntegrationTests/**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -59,10 +62,16 @@
     <PackageReference Include="Akka.Streams.Kafka" />
     <PackageReference Include="Confluent.Kafka" />
     <PackageReference Include="OpenTelemetry.Api" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" />
+    <PackageReference Include="Npgsql.OpenTelemetry" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Chess.Backend.Tests" />
+    <InternalsVisibleTo Include="Chess.Backend.IntegrationTests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 

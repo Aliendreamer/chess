@@ -40,6 +40,7 @@ internal static class BuilderExtension
         services.AddSingleton<IClaimsTransformation, KeycloakRolesClaimsTransformation>();
         services.AddHostedService<SessionCleanupService>();
         services.AddConventionServices();
+        services.AddObservability(configuration);
         AddMessaging(services, configuration);
         services.AddSignalR();
         builder.AddActorSystem((akka, sp) => akka.WithPingSharding(sp.GetRequiredService<AkkaOptions>()));

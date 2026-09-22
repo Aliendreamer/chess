@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Event;
 using Akka.Persistence;
@@ -72,6 +73,9 @@ internal sealed class PingActor : ReceivePersistentActor
         {
             Apply(persisted);
             long seq = LastSequenceNr;
+            // Covers the synchronous half — apply, hand the envelope to Kafka, fan out, reply. The
+            // publish itself completes later on a task continuation and is not part of this span.
+            using Activity? activity = ActorTracing.StartPingHandle(_pingId, seq);
             EventEnvelope<Pinged> envelope = new(EventTypes.Pinged, 1, _pingId, seq, persisted.At, persisted);
             IActorRef self = Self;
             _publisher.PublishAsync(PingTopics.Kafka, PingTopics.Key(_pingId), EventJson.Serialize(envelope), CancellationToken.None)

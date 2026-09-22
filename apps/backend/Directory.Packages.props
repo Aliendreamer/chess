@@ -32,8 +32,14 @@
     <PackageVersion Include="Confluent.Kafka" Version="2.15.1" />
     <!-- Akka.Hosting 1.5.71 transitively floors OpenTelemetry.Api at 1.10.0, which carries two known
          moderate-severity advisories (GHSA-8785-wc3w-h8q6, GHSA-g94r-2vxg-569j); pin the patched version
-         directly so restore (NuGetAudit, TreatWarningsAsErrors) doesn't fail on the transitive floor. -->
-    <PackageVersion Include="OpenTelemetry.Api" Version="1.16.0" />
+         directly so restore (NuGetAudit, TreatWarningsAsErrors) doesn't fail on the transitive floor.
+         Kept in lockstep with the SDK packages below, which require Api >= their own version. -->
+    <PackageVersion Include="OpenTelemetry.Api" Version="1.19.1" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.19.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.19.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.19.1" />
+    <PackageVersion Include="Npgsql.OpenTelemetry" Version="10.0.3" />
     <!-- tests -->
     <PackageVersion Include="Akka.TestKit.Xunit2" Version="1.5.71" />
     <PackageVersion Include="Akka.Persistence.TestKit" Version="1.5.71" />
@@ -45,5 +51,9 @@
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="coverlet.msbuild" Version="10.0.1" />
+    <!-- integration tests only -->
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.8" />
+    <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
+    <PackageVersion Include="Testcontainers.Redpanda" Version="4.15.0" />
   </ItemGroup>
 </Project>

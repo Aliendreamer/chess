@@ -3,6 +3,7 @@ namespace Chess.Backend.Utils;
 internal static class Constants
 {
     public const string RoutePrefix = "api";
+    public const string ServiceName = "chess-backend";
     public const string CorsPolicy = "AppOrigins";
     public const string KeycloakHttpClient = "keycloak";
     public const string HealthPath = "/health";
