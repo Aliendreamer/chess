@@ -30,6 +30,9 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Debug, Message = "Projection skipped replayed event {AggregateId}#{Seq}")]
     public static partial void ProjectionSkippedReplay(ILogger logger, string aggregateId, long seq);
 
+    [LoggerMessage(Level = LogLevel.Error, Message = "{GroupId}: gap for {AggregateId} after seq {LastSeq}, got {Seq}; stalling")]
+    public static partial void ProjectionGap(ILogger logger, string groupId, string aggregateId, long lastSeq, long seq);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Consumer stream for {GroupId} failed; restarting")]
     public static partial void ConsumerStreamFailed(ILogger logger, Exception exception, string groupId);
 

@@ -13,6 +13,8 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<OutboxOffset> OutboxOffsets => Set<OutboxOffset>();
 
+    public DbSet<ConsumerPosition> ConsumerPositions => Set<ConsumerPosition>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();

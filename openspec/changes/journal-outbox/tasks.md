@@ -71,16 +71,16 @@ human-run gate.
 
 ## 6. Consumer idempotency
 
-- [ ] 6.1 Failing tests on `PingProjection`: (a) the same envelope twice → one increment (passes today —
+- [x] 6.1 Failing tests on `PingProjection`: (a) the same envelope twice → one increment (passes today —
       keep as the regression guard); (b) `last_seq = 3`, receive `seq = 5` → throws `ProjectionGapException`
       and the row is unchanged — fails today because the projection applies it.
-- [ ] 6.2 Extract the check into `IdempotencyGuard` (skip if `seq <= last`, throw if `seq > last + 1`) and
+- [x] 6.2 Extract the check into `IdempotencyGuard` (skip if `seq <= last`, throw if `seq > last + 1`) and
       use it in `PingProjection`; add `Log.ProjectionGap`.
-- [ ] 6.3 Failing tests for the `PositionedProjection<T>` base: a duplicate `(group, aggregate, seq)` is not
+- [x] 6.3 Failing tests for the `PositionedProjection<T>` base: a duplicate `(group, aggregate, seq)` is not
       re-applied; a gap throws; the effect and position are saved in one `SaveChanges`.
-- [ ] 6.4 EF migration `AddConsumerPositions` (`consumer_positions`, PK `(group_id, aggregate_id)`) and the
+- [x] 6.4 EF migration `AddConsumerPositions` (`consumer_positions`, PK `(group_id, aggregate_id)`) and the
       base class. No consumer uses it yet; Part 1's first projection without a per-aggregate row will.
-- [ ] 6.5 Commit: `feat(backend): idempotency guard and consumer positions for kafka projections`.
+- [x] 6.5 Commit: `feat(backend): idempotency guard and consumer positions for kafka projections`.
 
 ## 7. Observability
 

@@ -28,6 +28,32 @@ public sealed class PingProjectionTests
     }
 
     [Fact]
+    public async Task A_gap_stalls_instead_of_skipping()
+    {
+        using ProjectDbContext db = TestDb.Create();
+        PingProjection p = new(db, NullLogger<PingProjection>.Instance);
+        await p.ApplyAsync("ping:p1", Event("p1", 1, "one"), CancellationToken.None);
+        await p.ApplyAsync("ping:p1", Event("p1", 2, "two"), CancellationToken.None);
+        await p.ApplyAsync("ping:p1", Event("p1", 3, "three"), CancellationToken.None);
+
+        // seq 4 never arrived: applying 5 would make the read model silently wrong.
+        await Assert.ThrowsAsync<ProjectionGapException>(() => p.ApplyAsync("ping:p1", Event("p1", 5, "five"), CancellationToken.None));
+
+        RmPing row = await db.RmPings.AsNoTracking().SingleAsync();
+        Assert.Equal(3, row.LastSeq);
+        Assert.Equal(3, row.Count);
+    }
+
+    [Fact]
+    public async Task A_new_aggregate_must_start_at_seq_1()
+    {
+        using ProjectDbContext db = TestDb.Create();
+        PingProjection p = new(db, NullLogger<PingProjection>.Instance);
+        await Assert.ThrowsAsync<ProjectionGapException>(() => p.ApplyAsync("ping:p9", Event("p9", 2, "two"), CancellationToken.None));
+        Assert.Equal(0, await db.RmPings.CountAsync());
+    }
+
+    [Fact]
     public async Task Ignores_other_event_types_and_garbage()
     {
         using ProjectDbContext db = TestDb.Create();

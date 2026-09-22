@@ -208,6 +208,15 @@ base), so Part 1's projections start from it rather than re-inventing it.
 - **[Offset semantics: exclusive vs inclusive]** → Pinned by a test. `Offset.Sequence(n)` must
   resume after `n`.
 
+- **[Gap stall on a topic whose early events were deleted by retention]** → A new consumer group, or a
+  replay after the topic's retention removed seq 1, would stall on its first event forever. For now,
+  `game.events` retention must stay unlimited (Redpanda dev default). Before Part 1, decide on either
+  infinite retention for `game.events` or a "rebuild from the journal" path that re-publishes from
+  ordering 0.
+- **[Existing dev read rows with a hole from the old dual write]** → The next event for such a ping
+  stalls its consumer, which is the gap detector doing its job. Dev stacks take `stack.sh down -v`
+  for the tag table anyway.
+
 ## Migration Plan
 
 1. Land the migration (`outbox_offsets`) and journal tag config. Existing dev stacks need
