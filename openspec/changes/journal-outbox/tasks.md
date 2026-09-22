@@ -61,13 +61,13 @@ human-run gate.
 
 ## 5. Remove the dual write
 
-- [ ] 5.1 Failing test: a `PingActorTests` case that constructs `PingActor` without a publisher. It fails
+- [x] 5.1 Failing test: a `PingActorTests` case that constructs `PingActor` without a publisher. It fails
       to compile until the constructor changes. Delete the tests that asserted the actor publishes
       (`PingTopics.Kafka` topic assertion).
-- [ ] 5.2 Remove `IEventPublisher` from `PingActor` and `PingShardingExtensions`, and remove `PublishFailed`.
+- [x] 5.2 Remove `IEventPublisher` from `PingActor` and `PingShardingExtensions`, and remove `PublishFailed`.
       Delete `IEventPublisher`, `KafkaEventPublisher`, `NullEventPublisher` and their tests if nothing else uses them.
       Remove the producer DI registration in `BuilderExtension`.
-- [ ] 5.3 Commit: `refactor(backend): pingactor no longer publishes to kafka`.
+- [x] 5.3 Commit: `refactor(backend): pingactor no longer publishes to kafka`.
 
 ## 6. Consumer idempotency
 

@@ -25,26 +25,24 @@ public sealed class KafkaRegistrationTests
         .Build();
 
     [Fact]
-    public void Empty_bootstrap_servers_registers_the_null_publisher_and_no_consumer_host()
+    public void Empty_bootstrap_servers_registers_no_consumer_host_and_no_producer()
     {
         ServiceCollection services = Base();
         services.AddMessaging(Configuration(string.Empty));
 
-        Assert.Contains(services, d => d.ServiceType == typeof(IEventPublisher) && d.ImplementationType == typeof(NullEventPublisher));
         Assert.DoesNotContain(services, d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(KafkaConsumerHost));
         Assert.DoesNotContain(services, d => d.ServiceType == typeof(IProducer<string, string>));
     }
 
     [Fact]
-    public void Nonempty_bootstrap_servers_registers_the_kafka_publisher_and_the_consumer_host()
+    public void Nonempty_bootstrap_servers_registers_the_consumer_host_but_no_actor_side_producer()
     {
         ServiceCollection services = Base();
         services.AddMessaging(Configuration("redpanda:9092"));
 
-        Assert.Contains(services, d => d.ServiceType == typeof(IEventPublisher) && d.ImplementationFactory is not null);
         Assert.Contains(services, d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(KafkaConsumerHost));
-        Assert.Contains(services, d => d.ServiceType == typeof(IProducer<string, string>));
-        Assert.DoesNotContain(services, d => d.ServiceType == typeof(IEventPublisher) && d.ImplementationType == typeof(NullEventPublisher));
+        // The journal publisher builds its own producer inside the singleton; nothing else may produce.
+        Assert.DoesNotContain(services, d => d.ServiceType == typeof(IProducer<string, string>));
     }
 
     [Fact]

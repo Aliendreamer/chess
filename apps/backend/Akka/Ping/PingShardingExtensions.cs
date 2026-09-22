@@ -1,7 +1,6 @@
 using Akka.Cluster.Hosting;
 using Akka.Cluster.Sharding;
 using Akka.Cluster.Tools.PublishSubscribe;
-using Chess.Backend.Messaging;
 
 namespace Chess.Backend.Akka.Ping;
 
@@ -14,10 +13,7 @@ internal static class PingShardingExtensions
         ArgumentNullException.ThrowIfNull(options);
         return akka.WithShardRegion<PingActor>(
             PingTopics.ShardTypeName,
-            (system, _, resolver) => id => Props.Create(() => new PingActor(
-                id,
-                resolver.GetService<IEventPublisher>(),
-                DistributedPubSub.Get(system).Mediator)),
+            (system, _, _) => id => Props.Create(() => new PingActor(id, DistributedPubSub.Get(system).Mediator)),
             new PingMessageExtractor(options.ShardCount),
             new ShardOptions
             {
