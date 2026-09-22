@@ -14,6 +14,10 @@ pnpm-lock.yaml
 # Plugin-installed slash commands (OpenSpec); not authored here either.
 .claude/commands/opsx/
 
+# Harness-managed: Claude Code rewrites this whenever the sandbox is toggled, and the sandbox makes
+# it read-only, so `prettier --write` cannot fix it and the pre-commit hook fails on it.
+.claude/settings.json
+
 # Serena project config + memories (Serena-owned formatting).
 .serena/
 

@@ -27,9 +27,12 @@ SignalR → SSR WebSocket relay → browser page `/pings/$id`. Two notes hold th
 `part0-experiment.md` (what Akka/Kafka bought and cost, what to change before Part 1 — dual-write gap
 first). Measured: write→replica ~250 ms, ping→replica row 250–500 ms, failover to backend-2 ~2 s.
 
-Release: no `nx release` has run yet; per-project changelogs (`apps/{backend,frontend}/CHANGELOG.md`) and
-tags `backend@x.y.z` / `frontend@x.y.z` appear on the first release. **The user will run the first
-publish themselves once Part 0 is finished** — do not run `nx release` or `nx push` for them.
+Release: the first release is cut (2026-09-22) — `frontend@0.1.1`, `backend@0.1.1`, per-project
+`CHANGELOG.md` written from the whole history, commit `chore(release): publish`. Use `pnpm release`
+/ `pnpm release:dry`, which pass `--skip-publish`: bare `nx release` does all the work and then
+errors with "no nx-release-publish target ... frontend", the publish phase objecting to
+`"private": true`. We never publish packages; images are the artifact. **Releases and pushes are the
+user's to run** — do not run `nx release` or `nx push` for them.
 
 ## Specs and plans — OpenSpec (from 2026-09-22)
 

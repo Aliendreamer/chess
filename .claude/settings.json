@@ -1,20 +1,4 @@
 {
-  "mcpServers": {
-    "serena": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/oraios/serena",
-        "serena",
-        "start-mcp-server",
-        "--context",
-        "claude-code",
-        "--project-from-cwd",
-        "--open-web-dashboard",
-        "false"
-      ]
-    }
-  },
   "sandbox": {
     "enabled": true,
     "failIfUnavailable": false,
@@ -44,7 +28,11 @@
     }
   },
   "permissions": {
-    "allow": ["Bash(git*)", "SKILL(*)", "mcp__plugin_serena_serena__*"],
+    "allow": [
+      "Bash(git*)",
+      "SKILL(*)",
+      "mcp__plugin_serena_serena__*"
+    ],
     "deny": [
       "Bash(git branch --delete --force*)",
       "Bash(git branch -D*)",
