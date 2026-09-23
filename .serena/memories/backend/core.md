@@ -68,6 +68,8 @@ EF InMemory). Central package versions in `Directory.Packages.props`; `<Version>
   can't run the seek, so it is proven in `PingRoundTripTests`), `Keyset.ToPage` trims the limit+1 look-ahead
   into `CursorPage<T>(Items, NextCursor, Limit)`; `KeysetCursor` is opaque base64url `"<utc ticks>|<id>"`,
   bad cursor ⇒ 400. Each paged table needs a composite `(at, id)` index. `BaseService.Page()` is gone.
+- `Config/appsettings.Production.json` (committed 2026-09-23) holds only local-stack/dev values on purpose.
+  User: safe for now; once real values go in, add git-crypt for it BEFORE committing them.
 - `Keycloak:Audience` empty ⇒ `ValidateAudience=false`. `RequireHttpsMetadata` only outside Development.
 - Cookies `Domain=.chess.localhost` in dev (`SessionCookies:Domain`); the BFF strips it for the browser.
 - `DefaultItemExcludes` covers `.claude/**`, `.mcp.json`, `.serena/**` — agent sandbox masks would otherwise
