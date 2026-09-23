@@ -63,6 +63,11 @@ EF InMemory). Central package versions in `Directory.Packages.props`; `<Version>
   and THROW `ProjectionGapException` on a gap — a stall is intended. Adding an event type needs BOTH a
   `TopicTagger.BoundTypes` entry and an `IJournalEventMapper` (a test enforces the pairing). Retention on
   `game.events` must stay unlimited until a rebuild-from-journal path exists (gap stall otherwise).
+- Lists page by keyset cursor, never Skip/Take (user, 2026-09-23). `Utils/Keyset.NewestFirst(at, id, after,
+  limit)` → `(at, id) DESC` + `EF.Functions.LessThan(ValueTuple…)` row-value seek (Postgres-only; InMemory
+  can't run the seek, so it is proven in `PingRoundTripTests`), `Keyset.ToPage` trims the limit+1 look-ahead
+  into `CursorPage<T>(Items, NextCursor, Limit)`; `KeysetCursor` is opaque base64url `"<utc ticks>|<id>"`,
+  bad cursor ⇒ 400. Each paged table needs a composite `(at, id)` index. `BaseService.Page()` is gone.
 - `Keycloak:Audience` empty ⇒ `ValidateAudience=false`. `RequireHttpsMetadata` only outside Development.
 - Cookies `Domain=.chess.localhost` in dev (`SessionCookies:Domain`); the BFF strips it for the browser.
 - `DefaultItemExcludes` covers `.claude/**`, `.mcp.json`, `.serena/**` — agent sandbox masks would otherwise

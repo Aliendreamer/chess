@@ -18,9 +18,9 @@ public sealed class OutboxRecoveryTests(StackFixture stack)
     private static readonly TimeSpan ProjectionTimeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(4);
 
-    private sealed record PingListItem(string PingId, long Count, string? LastText, DateTimeOffset? LastAt, long LastSeq);
+    private sealed record PingListItem(string PingId, long Count, string? LastText, DateTimeOffset? LastAt, long LastSeq, DateTimeOffset UpdatedAt);
 
-    private sealed record PingListResponse(IReadOnlyList<PingListItem> Items, int Page, int PageSize);
+    private sealed record PingListResponse(IReadOnlyList<PingListItem> Items, string? NextCursor, int Limit);
 
     [Fact]
     public async Task Pings_accepted_while_kafka_is_down_are_projected_once_it_is_back()
@@ -121,7 +121,7 @@ public sealed class OutboxRecoveryTests(StackFixture stack)
         PingListItem? last = null;
         while (elapsed.Elapsed < ProjectionTimeout)
         {
-            PingListResponse? list = await client.GetFromJsonAsync<PingListResponse>("/api/pings?page=1&pageSize=200", Json, ct);
+            PingListResponse? list = await client.GetFromJsonAsync<PingListResponse>("/api/pings?limit=200", Json, ct);
             last = list?.Items.FirstOrDefault(i => string.Equals(i.PingId, id, StringComparison.Ordinal));
             if (last is not null && done(last))
             {

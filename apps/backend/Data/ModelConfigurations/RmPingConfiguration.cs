@@ -11,6 +11,7 @@ internal sealed class RmPingConfiguration : IEntityTypeConfiguration<RmPing>
         builder.HasKey(p => p.PingId);
         builder.Property(p => p.PingId).HasMaxLength(64);
         builder.Property(p => p.LastText).HasMaxLength(200);
-        builder.HasIndex(p => p.UpdatedAt);
+        // Keyset paging key for GET api/pings: (UpdatedAt, PingId) DESC, scanned backwards.
+        builder.HasIndex(p => new { p.UpdatedAt, p.PingId });
     }
 }

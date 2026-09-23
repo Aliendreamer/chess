@@ -57,7 +57,7 @@ echo "ok"
 
 step "GET /api/pings → row for $ID (replica via projection) within 5s"
 for i in $(seq 1 20); do
-  if api "http://$API_HOST/api/pings?pageSize=200" | grep -q "\"pingId\":\"$ID\""; then echo "ok (~$((i*250))ms)"; break; fi
+  if api "http://$API_HOST/api/pings?limit=200" | grep -q "\"pingId\":\"$ID\""; then echo "ok (~$((i*250))ms)"; break; fi
   [[ "$i" -eq 20 ]] && fail "projection did not reach the replica"
   sleep 0.25
 done

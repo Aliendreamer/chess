@@ -104,6 +104,8 @@ to each app's own lint target). Keep `--no-stash`.
   args); config lives in `Config/appsettings*.json` (env vars override, `Keycloak__*` etc.); services named
   `Xxx : BaseService, IXxx` where `IXxx : IService` are auto-registered scoped by `AddConventionServices`.
   Endpoints are thin and `[ExcludeFromCodeCoverage]`; the logic they call is unit-tested.
+  Lists use keyset (cursor) paging, never Skip/Take: `Utils/Keyset.NewestFirst` + `Keyset.ToPage` →
+  `CursorPage<T>(Items, NextCursor, Limit)`, opaque `KeysetCursor`, and a composite `(at, id)` index per table.
 - **BFF (frontend)** — `lib/server/cookies.ts` is the whole cookie contract: outbound `rehomeSetCookie`
   strips `Domain`, keeps lifetime, forces `Path=/; HttpOnly; SameSite=Lax`, adds `__Host-` + `Secure` when
   `COOKIE_SECURE=true` (never `NODE_ENV`); inbound `forwardCookieHeader` forwards only `mp_sid`/`mp_pkce`,

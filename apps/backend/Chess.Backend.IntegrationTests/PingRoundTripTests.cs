@@ -24,9 +24,9 @@ public sealed class PingRoundTripTests
 
     private sealed record PingState(string PingId, long Count, string? LastText, DateTimeOffset? LastAt, long LastSeq);
 
-    private sealed record PingListItem(string PingId, long Count, string? LastText, DateTimeOffset? LastAt, long LastSeq);
+    private sealed record PingListItem(string PingId, long Count, string? LastText, DateTimeOffset? LastAt, long LastSeq, DateTimeOffset UpdatedAt);
 
-    private sealed record PingListResponse(IReadOnlyList<PingListItem> Items, int Page, int PageSize);
+    private sealed record PingListResponse(IReadOnlyList<PingListItem> Items, string? NextCursor, int Limit);
 
     [Fact]
     public async Task A_ping_is_answered_by_the_actor_and_shows_up_in_the_read_model()
@@ -53,6 +53,47 @@ public sealed class PingRoundTripTests
         PingListItem projected = await Eventually(client, id, ct);
         Assert.Equal(1, projected.Count);
         Assert.Equal("round trip", projected.LastText);
+    }
+
+    [Fact]
+    public async Task The_list_walks_every_row_once_by_cursor_and_rejects_a_forged_one()
+    {
+        using CancellationTokenSource cts = new(TestTimeout);
+        CancellationToken ct = cts.Token;
+        string[] ids = [.. Enumerable.Range(0, 3).Select(_ => $"it-{Guid.NewGuid():N}"[..20])];
+        await using PingApiFactory app = new();
+        using HttpClient client = await app.CreateReadyClientAsync(ct);
+        foreach (string id in ids)
+        {
+            HttpResponseMessage posted = await client.PostAsJsonAsync($"/api/pings/{id}", new { text = "paged" }, Json, ct);
+            Assert.Equal(HttpStatusCode.OK, posted.StatusCode);
+        }
+
+        foreach (string id in ids)
+        {
+            _ = await Eventually(client, id, ct);
+        }
+
+        // limit=1 makes every row its own page, so the seek predicate (the row-value comparison) runs each hop.
+        List<PingListItem> walked = [];
+        string? cursor = null;
+        do
+        {
+            string url = cursor is null ? "/api/pings?limit=1" : $"/api/pings?limit=1&cursor={Uri.EscapeDataString(cursor)}";
+            PingListResponse? page = await client.GetFromJsonAsync<PingListResponse>(url, Json, ct);
+            Assert.NotNull(page);
+            Assert.Equal(1, page.Limit);
+            walked.AddRange(page.Items);
+            cursor = page.NextCursor;
+        }
+        while (cursor is not null);
+
+        Assert.Equal(walked.Count, walked.Select(i => i.PingId).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(ids, id => Assert.Contains(walked, i => string.Equals(i.PingId, id, StringComparison.Ordinal)));
+        Assert.True(walked.Zip(walked.Skip(1)).All(p => p.Item1.UpdatedAt >= p.Item2.UpdatedAt), "newest first");
+
+        HttpResponseMessage forged = await client.GetAsync(new Uri("/api/pings?cursor=bm9wZQ", UriKind.Relative), ct);
+        Assert.Equal(HttpStatusCode.BadRequest, forged.StatusCode);
     }
 
     [Fact]
@@ -91,7 +132,7 @@ public sealed class PingRoundTripTests
         while (elapsed.Elapsed < ProjectionTimeout)
         {
             PingListResponse? list = await client.GetFromJsonAsync<PingListResponse>(
-                "/api/pings?page=1&pageSize=200",
+                "/api/pings?limit=200",
                 Json,
                 ct);
             PingListItem? found = list?.Items.FirstOrDefault(i => string.Equals(i.PingId, id, StringComparison.Ordinal));
