@@ -41,16 +41,16 @@ steps that need Docker or a human-run gate.
 
 ## 4. Replay, admin endpoints, health
 
-- [ ] 4.1 Failing tests (`DeadLetterReplayerTests`): - replay of `seq 7, 8` applies both in order, deletes them, and lifts the quarantine; - a failure on `seq 7` stops the replay with `seq 7, 8` still parked and returns the error with applied = 0; - an unknown group returns a not-found result.
-- [ ] 4.2 Implement `DeadLetterReplayer : BaseService, IDeadLetterReplayer`. Add the thin
+- [x] 4.1 Failing tests (`DeadLetterReplayerTests`): - replay of `seq 7, 8` applies both in order, deletes them, and lifts the quarantine; - a failure on `seq 7` stops the replay with `seq 7, 8` still parked and returns the error with applied = 0; - an unknown group returns a not-found result.
+- [x] 4.2 Implement `DeadLetterReplayer : BaseService, IDeadLetterReplayer`. Add the thin
       `[ExcludeFromCodeCoverage]` endpoints under `WebApi/Admin/`: - `GET api/admin/projections/dead-letters`: keyset paging, `?groupId=` filter; - `POST api/admin/projections/{groupId}/dead-letters/{aggregateId}/replay`: `200` / `404` / `409`.
 
       Both are restricted to `Roles(Constants.Roles.Admin)`.
 
-- [ ] 4.3 Failing test (`DeadLetterHealthCheckTests`): no rows → Healthy. One quarantined aggregate →
+- [x] 4.3 Failing test (`DeadLetterHealthCheckTests`): no rows → Healthy. One quarantined aggregate →
       Degraded with `data["chess.rm-pings"] = 1`. Implement it and register it as `projection-dead-letters`
       with `failureStatus: Degraded`.
-- [ ] 4.4 Commit: `feat(backend): replay dead-lettered projection events`.
+- [x] 4.4 Commit: `feat(backend): replay dead-lettered projection events`.
 
 ## 5. Integration proof on real Postgres 🐳
 

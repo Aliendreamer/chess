@@ -1,6 +1,7 @@
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Messaging;
+using Chess.Backend.Projections;
 using FastEndpoints.Swagger;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -31,6 +32,9 @@ internal static class FastEndpointSetup
         }
 
         health.AddCheck<ClusterHealthCheck>("akka-cluster");
+        // Always on: the table lives on the primary whether or not Kafka is configured, and Degraded (never
+        // Unhealthy) keeps a quarantined game from pulling the API out of rotation.
+        health.AddCheck<DeadLetterHealthCheck>("projection-dead-letters", failureStatus: HealthStatus.Degraded);
 
         KafkaOptions kafka = builder.Configuration.GetSection(KafkaOptions.SectionName).Get<KafkaOptions>() ?? new KafkaOptions();
         health.AddKafkaHealthCheck(builder.Services, kafka);
