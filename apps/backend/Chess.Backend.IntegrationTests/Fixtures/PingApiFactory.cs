@@ -17,9 +17,12 @@ namespace Chess.Backend.IntegrationTests.Fixtures;
 /// Only two things are faked: authentication (there is no Keycloak here) and the replica, which points at
 /// the primary. Everything between the HTTP call and the row in <c>rm_pings</c> is production code.
 /// </summary>
-public sealed class PingApiFactory : WebApplicationFactory<Program>
+public sealed class PingApiFactory(Action<IServiceCollection>? configureServices = null) : WebApplicationFactory<Program>
 {
     public const string Subject = "it-subject";
+
+    /// <summary>Comma-separated extra realm roles for one request, e.g. <c>Admin</c>; absent means a plain User.</summary>
+    public const string RolesHeader = "X-Test-Roles";
 
     /// <summary>
     /// Deliberately NOT "Development": that environment's appsettings hard-codes localhost connection
@@ -61,6 +64,7 @@ public sealed class PingApiFactory : WebApplicationFactory<Program>
             // what these tests prove is the spine, not the login.
             services.AddAuthentication(TestAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
+            configureServices?.Invoke(services);
         });
     }
 
@@ -120,12 +124,17 @@ public sealed class PingApiFactory : WebApplicationFactory<Program>
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
-            Claim[] claims =
+            List<Claim> claims =
             [
                 new(Utils.Constants.Claims.Subject, Subject),
                 new(Utils.Constants.Claims.Email, "it@chess.localhost"),
                 new(ClaimTypes.Role, Utils.Constants.Roles.User),
             ];
+            foreach (string role in Request.Headers[RolesHeader].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
             ClaimsPrincipal principal = new(new ClaimsIdentity(claims, SchemeName, Utils.Constants.Claims.Subject, ClaimTypes.Role));
             return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, SchemeName)));
         }

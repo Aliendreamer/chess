@@ -54,14 +54,14 @@ steps that need Docker or a human-run gate.
 
 ## 5. Integration proof on real Postgres 🐳
 
-- [ ] 5.1 🐳 In `Chess.Backend.IntegrationTests`, two contexts race a first insert for the same ping. The loser
+- [x] 5.1 🐳 In `Chess.Backend.IntegrationTests`, two contexts race a first insert for the same ping. The loser
       is recognised by `ConflictDetector` as `23505`, and after the runner's retry `rm_pings.Count == 1`.
-- [ ] 5.2 🐳 A test-only projection throws on one aggregate: - `seq 1` is parked; - `seq 2` of the same aggregate is parked without a call; - another aggregate on the same topic is applied; - the Kafka offset has advanced past all three; - after a fix flag is flipped, replay applies `seq 1, 2`, the next produced `seq 3` applies live,
+- [x] 5.2 🐳 A test-only projection throws on one aggregate: - `seq 1` is parked; - `seq 2` of the same aggregate is parked without a call; - another aggregate on the same topic is applied; - the Kafka offset has advanced past all three; - after a fix flag is flipped, replay applies `seq 1, 2`, the next produced `seq 3` applies live,
       and the table is empty.
-- [ ] 5.3 🐳 A replay and a concurrent park for one aggregate never leave an orphan row with the quarantine
+- [x] 5.3 🐳 A replay and a concurrent park for one aggregate never leave an orphan row with the quarantine
       lifted. Hold the D5 lock from the test and assert the consumer waits.
-- [ ] 5.4 🐳 Gate: `pnpm exec nx integration-test backend` green, run by a human if the sandbox is on.
-- [ ] 5.5 Commit: `test(backend): projection conflicts and dead letters against postgres`.
+- [x] 5.4 🐳 Gate: `pnpm exec nx integration-test backend` green, run by a human if the sandbox is on.
+- [x] 5.5 Commit: `test(backend): projection conflicts and dead letters against postgres`.
 
 ## 6. Live stack and docs
 
