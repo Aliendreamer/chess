@@ -20,7 +20,8 @@ HTTP → sharded persistent actor → journal → Kafka → projection → read 
 
 Measured on the local stack: write→replica ~250 ms, ping→row on the replica 250–500 ms, failover to a
 second node ~2 s. Read [`docs/superpowers/notes/part0-experiment.md`](docs/superpowers/notes/part0-experiment.md)
-for what that cost and what changes before Part 1 — the open dual-write gap is first on the list.
+for what that cost and what changes before Part 1. The dual-write gap it flagged is closed: actors no
+longer publish, a journal outbox does (see [`openspec/architecture.md`](openspec/architecture.md)).
 
 Next: Part 1, live games against people. Parts 2–4 (engine, correspondence, study) follow.
 [`ROADMAP.md`](ROADMAP.md) tags every decision as decided, default, or open.
@@ -152,15 +153,29 @@ edits a deployment manifest, and there is no CI pipeline — both are deliberate
 
 ## How the pieces fit
 
-A command is answered by the **actor**, never by a query: `POST /api/pings/{id}` asks the sharded
-entity and returns its post-persist state, so you always read your own write. The actor persists to
-its journal on the primary, publishes to Kafka, and fans out over DistributedPubSub. A consumer
-projects those events into `rm_*` read-model tables, and every list endpoint reads the **replica**.
-Live updates reach the browser through a SignalR hub and an SSR WebSocket relay, so the API host
-never appears in the client bundle.
+```mermaid
+flowchart LR
+    B([Browser]) -- "HTTP + WS<br/>cookie only" --> S["app.<br/>SSR BFF"]
+    S -- "server-to-server" --> E["backend<br/>FastEndpoints"]
+    E -- "command (Ask)" --> A["sharded actor<br/>one per aggregate"]
+    A -- "persist" --> J[("journal<br/>PRIMARY")]
+    A -- "live state" --> H["SignalR hub"] --> S
+    J -- "JournalPublisher<br/>(singleton + PG lock)" --> K[["Kafka"]]
+    K -- "idempotent<br/>projections" --> R[("rm_* tables<br/>PRIMARY")]
+    R == "replication" ==> Q[("REPLICA")]
+    E -- "GET lists" --> Q
+```
 
-That shape — and which of the three consistency points each read wants — is the thing Part 0 existed
-to prove. [`ROADMAP.md`](ROADMAP.md) explains why; `CLAUDE.md` explains where.
+A command is answered by the **actor**, never by a query: it persists to its journal on the primary
+and replies with its post-persist state, so you always read your own write. The actor never touches
+Kafka — a fenced `JournalPublisher` tails the journal into it, so Kafka can never be ahead of the
+database. Projections consume Kafka into `rm_*` tables, and every list endpoint reads the **replica**.
+Live updates reach the browser through a SignalR hub and an SSR WebSocket relay, so the API host never
+appears in the client bundle.
+
+[`openspec/architecture.md`](openspec/architecture.md) has the full set of diagrams — command sequence, the
+journal outbox and its advisory-lock lease, projection idempotency, actor lifecycle, auth — and
+[`ROADMAP.md`](ROADMAP.md) explains why each choice was made.
 
 ## Layout
 
@@ -169,7 +184,7 @@ apps/            backend (.NET), frontend (TanStack Start), proxy (nginx)
 tools/localdev/  compose stack, Keycloak realm, Postgres init, verify-*.sh
 tools/deploy/    image build/push (tag YYYYMMDD.<short-sha>)
 docs/superpowers/ Part 0's spec, plan and experiment notes
-openspec/        specs and plans from Part 1 onward
+openspec/        architecture.md (diagrams), plus specs and plans from Part 1 onward
 ```
 
 ## Conventions that bite

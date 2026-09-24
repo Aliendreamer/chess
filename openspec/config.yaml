@@ -1,8 +1,9 @@
 schema: spec-driven
 
 context: |
-  Chess — an Nx + pnpm monorepo with three apps. Read ROADMAP.md first; CLAUDE.md holds the
-  build/test commands and the architecture notes that span files.
+  Chess — an Nx + pnpm monorepo with three apps. Read ROADMAP.md first, then openspec/architecture.md
+  (diagrams of how commands, events and actors move); CLAUDE.md holds the build/test commands and the
+  architecture notes that span files.
 
   - apps/backend — .NET 10 API (Chess.Backend): FastEndpoints + EF Core/Npgsql, Keycloak PKCE login
     with a server-owned opaque cookie session (mp_sid), Akka.NET cluster/sharding as the live-game
