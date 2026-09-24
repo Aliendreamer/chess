@@ -122,6 +122,9 @@ to each app's own lint target). Keep `--no-stash`.
   lock connection. Any failure releases the lease and resumes from the saved offset (at-least-once).
   Consumers dedupe via `IdempotencyGuard` on `(aggregateId, seq)` and stall on a gap
   (`ProjectionGapException`). A new event type needs a `TopicTagger.BoundTypes` entry AND a mapper.
+  Every record goes through `Projections/ProjectionRunner`: `LastSeq` is a concurrency token (a lost race
+  re-runs and skips), and any other exception is retried 5× then parked in `projection_dead_letters`,
+  quarantining that `(group, aggregate)` until an Admin replays it (`WebApi/Admin/`). Gaps never park.
 
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/
   `.slnx`/`Directory.*.props`/runsettings so JS edits don't bust the backend cache and vice versa.

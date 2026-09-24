@@ -99,11 +99,18 @@ every change — which is what `nx integration-test backend` now is.
 3. **Give a late subscriber the current state.** The hub pushes only to whoever is subscribed when
    the event is published; a browser that connects a moment later sees nothing until the next move.
    The page papers over it by server-rendering the state on load, which will not survive a board.
-4. **Revisit `ShardCount = 50`** against an actual expected concurrent-game count; it is a migration
-   to change once data exists.
+4. **Revisit `ShardCount = 50`** against an actual expected concurrent-game count. **Corrected
+   (2026-09-24):** changing it is _not_ a data migration. The shard id isn't part of the `persistenceId`,
+   and `RememberEntities = false` stores nothing keyed by it. Every node must agree on the value, so a
+   change means a full cluster restart rather than a rolling one. 50 is kept (~10 shards per node suits
+   1–5 nodes); see OpenSpec change `projection-hardening`, design D9.
 5. **Decide the passivation policy per entity type.** A ping never passivates meaningfully; a finished
    game must.
-6. **Give the projection a dead-letter path.** A poison event currently retries forever.
+6. **Give the projection a dead-letter path.** A poison event currently retries forever. **Done
+   (2026-09-24):** OpenSpec change `projection-hardening`. After 5 attempts the record is parked in
+   `projection_dead_letters` and its aggregate is quarantined per consumer group. Admins can list and replay
+   parked records, and gaps still stall. The same change made `LastSeq` a concurrency token, so a Kafka
+   rebalance can't double-apply an event.
 
 ## Where the pieces live
 

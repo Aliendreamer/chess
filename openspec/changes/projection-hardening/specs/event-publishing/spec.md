@@ -95,11 +95,18 @@ report the error. A replay and the consumer MUST NOT interleave for the same `(g
 
 ### Requirement: Quarantined aggregates are observable
 
-The backend SHALL report the number of quarantined aggregates per consumer group in its health detail. Any
-quarantined aggregate MUST make that entry `Degraded`, not `Unhealthy`, because the rest of the pipeline is
-still flowing.
+The backend SHALL run a `projection-dead-letters` health check that counts quarantined aggregates per
+consumer group. Any quarantined aggregate MUST make the check, and therefore `/health`, `Degraded`, not
+`Unhealthy`, because the rest of the pipeline is still flowing. The per-group detail MUST be available to an
+Admin through the dead-letter list endpoint.
 
 #### Scenario: One aggregate quarantined
 
 - **WHEN** game A is quarantined for `chess.rm-pings`
-- **THEN** `/health` shows the dead-letter entry as `Degraded` with `chess.rm-pings: 1`
+- **THEN** the check reports `Degraded` with `chess.rm-pings: 1` in its data, `/health` answers `Degraded`,
+  and the Admin list shows game A's parked records
+
+#### Scenario: Nothing quarantined
+
+- **WHEN** no record is parked
+- **THEN** the check reports `Healthy`

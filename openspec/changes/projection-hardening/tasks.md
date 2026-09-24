@@ -65,11 +65,15 @@ steps that need Docker or a human-run gate.
 
 ## 6. Live stack and docs
 
-- [ ] 6.1 🐳 `tools/localdev/stack.sh up`, then `tools/localdev/verify-part0.sh` and `verify-part0.sh --cluster`
+- [x] 6.1 🐳 `tools/localdev/stack.sh up`, then `tools/localdev/verify-part0.sh` and `verify-part0.sh --cluster`
       are still green. `curl` `/health` shows `projection-dead-letters: Healthy`.
-- [ ] 6.2 Correct `docs/superpowers/notes/part0-experiment.md` item 4 (ShardCount: full-cluster restart, not a
+      _As built:_ `/health` uses the default writer and prints only the overall status, so the check was
+      read from the backend's health-check debug log (`projection-dead-letters: Healthy`) on both nodes. The
+      overall status read `Degraded` because of `postgres-replica`, whose replay-timestamp "lag" grows
+      whenever the primary is idle. That predates this change and is left for a follow-up.
+- [x] 6.2 Correct `docs/superpowers/notes/part0-experiment.md` item 4 (ShardCount: full-cluster restart, not a
       migration; 50 kept) and mark items 6 and the concurrency token done, pointing at this change.
-- [ ] 6.3 Update `openspec/architecture.md` §4: replace the "Open" note with the conflict retry and the
+- [x] 6.3 Update `openspec/architecture.md` §4: replace the "Open" note with the conflict retry and the
       dead-letter/quarantine flow (add a `parked` branch to the flowchart), and add `projection-dead-letters`
       to the health notes. Update the CLAUDE.md "Journal outbox" note with one line on parking and replay.
-- [ ] 6.4 Commit: `docs(repo): projection hardening in architecture and part 0 notes`.
+- [x] 6.4 Commit: `docs(repo): projection hardening in architecture and part 0 notes`.

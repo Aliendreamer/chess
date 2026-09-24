@@ -135,13 +135,20 @@ Projections are **read-modify-write on the primary**, not blind writes:
 
 ```mermaid
 flowchart TD
-    K[["Kafka record"]] --> D{"deserialize,<br/>type matches?"}
-    D -- no --> C1["ignore → commit"]
+    K[["Kafka record"]] --> Q{"aggregate quarantined<br/>for this group?"}
+    Q -- yes --> PB["park behind quarantine<br/>(no projection call)"] --> C1["commit Kafka offset"]
+    Q -- no --> D{"deserialize,<br/>type matches?"}
+    D -- no --> C1
     D -- yes --> R["read LastSeq for (consumer, aggregate)<br/>from the PRIMARY"]
     R --> G{"IdempotencyGuard<br/>seq vs LastSeq"}
     G -- "seq ≤ last" --> S["Skip (redelivery / replay)"] --> C1
-    G -- "seq = last + 1" --> AP["apply change + LastSeq = seq<br/>ONE SaveChanges"] --> C2["commit Kafka offset"]
-    G -- "seq > last + 1" --> GAP["ProjectionGapException<br/>stall, retry with backoff"]
+    G -- "seq = last + 1" --> AP["apply change + LastSeq = seq<br/>ONE SaveChanges"]
+    AP -- saved --> C1
+    AP -- "lost the race<br/>(stale LastSeq / 23505)" --> RR["re-run in a fresh scope<br/>(not an attempt)"] --> R
+    AP -- "threw" --> AT{"attempt < 5?"}
+    AT -- yes --> BO["backoff 200ms·2ⁿ ≤ 5s"] --> R
+    AT -- no --> PK["park in projection_dead_letters<br/>→ aggregate quarantined"] --> C1
+    G -- "seq > last + 1" --> GAP["ProjectionGapException<br/>stall, retry with backoff<br/>(never parked)"]
 ```
 
 - The watermark is read from the **primary**. Reading it from the replica could see a stale `LastSeq` and
@@ -149,12 +156,15 @@ flowchart TD
 - Two ways to hold the watermark: on the read row itself (`PingProjection` → `rm_pings.LastSeq`), or in
   `consumer_positions` for consumers with no per-aggregate row (`PositionedProjection<T>`), saved in the
   same `SaveChanges` as the staged change.
-- The Kafka offset commits only after `ApplyAsync` returns, so a crash re-delivers and the guard skips.
+- `LastSeq` is an EF **concurrency token**. A consumer that loses a rebalance race gets a conflict, and
+  `ProjectionRunner` re-runs the record, which then skips.
+- The Kafka offset commits only after `ProjectionRunner` returns, so a crash re-delivers and the guard skips.
 - A gap stalls instead of skipping: a silently wrong read model is worse than a stuck one.
-
-**Open:** read models carry no concurrency token. During a Kafka rebalance two consumers can briefly
-apply the same `seq`; harmless for `rm_pings` (both write identical values), not for a projection that
-inserts rows. Make the watermark a concurrency token before the first `PositionedProjection` lands.
+- **Dead letters:** one poison event blocks only its own aggregate in its own group. Parking and replay
+  serialise on `pg_advisory_xact_lock` per `(group, aggregate)`. An admin lists parked records with
+  `GET /api/admin/projections/dead-letters` and replays one aggregate in `seq` order with
+  `POST /api/admin/projections/{groupId}/dead-letters/{aggregateId}/replay` (200 / 409 / 404). The
+  health check `projection-dead-letters` turns `/health` Degraded while anything is quarantined.
 
 ## 5. Actors: how many, and for how long
 
