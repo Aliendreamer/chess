@@ -10,10 +10,11 @@ using Confluent.Kafka;
 namespace Chess.Backend.Messaging;
 
 /// <summary>
-/// One committable Kafka stream per registered projection. Offsets commit only after ApplyAsync returns,
-/// so a crash re-delivers and the projection's idempotency does the rest. Anything a stream throws — a broker
-/// error, a stream-stage failure, or a bug in a projection's ApplyAsync — is logged and the stream is retried
-/// after a backoff rather than being allowed to fault this BackgroundService.
+/// One committable Kafka stream per registered projection. Each record goes through <see cref="ProjectionRunner"/>,
+/// which retries, resolves watermark races and parks poison records; the offset commits only after it returns, so a
+/// crash re-delivers and the projection's idempotency does the rest. What the runner lets through — a broker error,
+/// a stream-stage failure, a gap, cancellation — is logged and the stream is retried after a backoff rather than
+/// being allowed to fault this BackgroundService.
 /// </summary>
 internal sealed class KafkaConsumerHost(
     ActorSystem system,
@@ -28,17 +29,18 @@ internal sealed class KafkaConsumerHost(
     {
         using IServiceScope scope = scopes.CreateScope();
         IEnumerable<Type> projectionTypes = scope.ServiceProvider.GetServices<IProjection>().Select(p => p.GetType()).ToArray();
+        ProjectionRunner runner = scope.ServiceProvider.GetRequiredService<ProjectionRunner>();
         IMaterializer materializer = system.Materializer();
         List<Task> streams = [];
         foreach (Type type in projectionTypes)
         {
-            streams.Add(RunUntilCancelledAsync(type, materializer, stoppingToken));
+            streams.Add(RunUntilCancelledAsync(type, runner, materializer, stoppingToken));
         }
 
         await Task.WhenAll(streams);
     }
 
-    private async Task RunUntilCancelledAsync(Type projectionType, IMaterializer materializer, CancellationToken ct)
+    private async Task RunUntilCancelledAsync(Type projectionType, ProjectionRunner runner, IMaterializer materializer, CancellationToken ct)
     {
         while (!ct.IsCancellationRequested)
         {
@@ -61,9 +63,7 @@ internal sealed class KafkaConsumerHost(
                 streamCt => KafkaConsumer.CommittableSource(settings, Subscriptions.Topics(topic))
                     .SelectAsync(1, async msg =>
                     {
-                        using IServiceScope scope = scopes.CreateScope();
-                        IProjection projection = (IProjection)scope.ServiceProvider.GetRequiredService(projectionType);
-                        await projection.ApplyAsync(msg.Record.Message.Key, msg.Record.Message.Value, streamCt);
+                        await runner.RunAsync(projectionType, groupId, msg.Record.Message.Key, msg.Record.Message.Value, streamCt);
                         return (ICommittable)msg.CommitableOffset;
                     })
                     .RunWith(Committer.Sink(CommitterSettings.Create(system)), materializer),

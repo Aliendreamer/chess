@@ -106,6 +106,8 @@ internal static class BuilderExtension
         if (kafka.Enabled)
         {
             services.AddHostedService<KafkaConsumerHost>();
+            services.AddSingleton(configuration.GetSection(ProjectionDeadLetterOptions.SectionName).Get<ProjectionDeadLetterOptions>() ?? new ProjectionDeadLetterOptions());
+            services.AddSingleton<ProjectionRunner>();
             services.AddSingleton<IJournalEventMapper, PingedJournalMapper>();
             services.AddSingleton<JournalEventMappers>();
             services.AddSingleton(new JournalPublisherOptions());

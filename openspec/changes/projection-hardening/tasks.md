@@ -30,14 +30,14 @@ steps that need Docker or a human-run gate.
 
 ## 3. ProjectionRunner (attempts, conflicts, parking)
 
-- [ ] 3.1 Failing tests (`ProjectionRunnerTests`, fake `IProjection`, InMemory store, 1 ms backoff). Each
+- [x] 3.1 Failing tests (`ProjectionRunnerTests`, fake `IProjection`, InMemory store, 1 ms backoff). Each
       fails because `ProjectionRunner` doesn't exist yet: - throws twice then succeeds → applied once, nothing parked; - always throws → parked after exactly 5 calls, `attempts = 5`, and `RunAsync` returns normally so the
       host can commit; - aggregate already quarantined → parked with **zero** projection calls; - quarantine for group A doesn't affect group B; - `ProjectionGapException` → rethrown on the first call and never parked, even when repeated past the limit; - conflict once, then success → 2 calls, 0 attempts counted, nothing parked; - 4 consecutive conflicts → counted as one failed attempt; - unparseable value that throws → parked under the Kafka key with `seq 0`; - cancellation → `OperationCanceledException` propagates, nothing parked.
-- [ ] 3.2 Implement `ProjectionRunner` and `DeadLetterOptions` (`Projections:DeadLetter`, `MaxAttempts` 5,
+- [x] 3.2 Implement `ProjectionRunner` and `ProjectionDeadLetterOptions` (`Projections:DeadLetter`, `MaxAttempts` 5,
       `BaseDelay` 200 ms, cap 5 s, `MaxConflictRetries` 3). Resolve the projection in a fresh scope per attempt.
-- [ ] 3.3 Wire the runner into `KafkaConsumerHost`'s `SelectAsync`. The existing `RunOnceWithRetryAsync` tests
+- [x] 3.3 Wire the runner into `KafkaConsumerHost`'s `SelectAsync`. The existing `RunOnceWithRetryAsync` tests
       must still pass unchanged. Register the options and runner in `BuilderExtension`.
-- [ ] 3.4 Commit: `feat(backend): park failing projection events and quarantine the aggregate`.
+- [x] 3.4 Commit: `feat(backend): park failing projection events and quarantine the aggregate`.
 
 ## 4. Replay, admin endpoints, health
 

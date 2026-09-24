@@ -118,4 +118,22 @@ public sealed class KafkaRegistrationTests
             }
         }
     }
+
+    [Fact]
+    public void The_projection_runner_and_its_options_register_only_when_enabled()
+    {
+        ServiceCollection off = Base();
+        off.AddMessaging(Configuration(string.Empty));
+        Assert.DoesNotContain(off, d => d.ServiceType == typeof(ProjectionRunner));
+
+        ServiceCollection on = Base();
+        on.AddMessaging(new ConfigurationBuilder().AddInMemoryCollection(
+        [
+            new KeyValuePair<string, string?>("Kafka:BootstrapServers", "redpanda:9092"),
+            new KeyValuePair<string, string?>("Projections:DeadLetter:MaxAttempts", "3"),
+        ]).Build());
+        Assert.Contains(on, d => d.ServiceType == typeof(ProjectionRunner));
+        ProjectionDeadLetterOptions options = (ProjectionDeadLetterOptions)Assert.Single(on, d => d.ServiceType == typeof(ProjectionDeadLetterOptions)).ImplementationInstance!;
+        Assert.Equal(3, options.MaxAttempts);
+    }
 }
