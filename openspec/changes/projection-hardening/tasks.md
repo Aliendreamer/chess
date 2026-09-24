@@ -17,16 +17,16 @@ steps that need Docker or a human-run gate.
 
 ## 2. Dead-letter storage
 
-- [ ] 2.1 Failing test (`DeadLetterStoreTests`, InMemory): `ParkAsync` stores every field and `last_error`
+- [x] 2.1 Failing test (`DeadLetterStoreTests`, InMemory): `ParkAsync` stores every field and `last_error`
       truncated to 2 000 chars. `IsQuarantinedAsync(group, agg)` is true only for that group. `NextAsync`
       returns the lowest `seq` first. `CountsAsync` groups distinct aggregates per group. It fails to compile
       until `ProjectionDeadLetter` / `DeadLetterStore` exist.
-- [ ] 2.2 Add the `ProjectionDeadLetter` entity, `ProjectionDeadLetterConfiguration` (table
+- [x] 2.2 Add the `ProjectionDeadLetter` entity, `ProjectionDeadLetterConfiguration` (table
       `projection_dead_letters`, index `(group_id, aggregate_id, seq)`, keyset index `(parked_at, id)`),
       `DeadLetterStore : BaseService, IDeadLetterStore`, and the D5 advisory-lock helper behind
       `Database.IsRelational()`. Generate `./build_migration.sh "AddProjectionDeadLetters"`.
-- [ ] 2.3 Add `Log.ProjectionParked` / `Log.ProjectionReplayed` `[LoggerMessage]` methods.
-- [ ] 2.4 Commit: `feat(backend): projection dead-letter store`.
+- [x] 2.3 Add `Log.ProjectionParked` / `Log.ProjectionReplayed` `[LoggerMessage]` methods.
+- [x] 2.4 Commit: `feat(backend): projection dead-letter store`.
 
 ## 3. ProjectionRunner (attempts, conflicts, parking)
 

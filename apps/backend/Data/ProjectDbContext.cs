@@ -15,6 +15,8 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<ConsumerPosition> ConsumerPositions => Set<ConsumerPosition>();
 
+    public DbSet<ProjectionDeadLetter> ProjectionDeadLetters => Set<ProjectionDeadLetter>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();

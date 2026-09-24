@@ -33,6 +33,18 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Error, Message = "{GroupId}: gap for {AggregateId} after seq {LastSeq}, got {Seq}; stalling")]
     public static partial void ProjectionGap(ILogger logger, string groupId, string aggregateId, long lastSeq, long seq);
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{GroupId}: attempt {Attempt} at {AggregateId}#{Seq} failed; retrying")]
+    public static partial void ProjectionAttemptFailed(ILogger logger, Exception exception, string groupId, string aggregateId, long seq, int attempt);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "{GroupId}: parked {AggregateId}#{Seq} after {Attempts} attempts; aggregate quarantined")]
+    public static partial void ProjectionParked(ILogger logger, Exception exception, string groupId, string aggregateId, long seq, int attempts);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{GroupId}: parked {AggregateId}#{Seq} behind an existing quarantine")]
+    public static partial void ProjectionParkedBehindQuarantine(ILogger logger, string groupId, string aggregateId, long seq);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{GroupId}: replayed {Applied} parked events for {AggregateId}; quarantine lifted: {Lifted}")]
+    public static partial void ProjectionReplayed(ILogger logger, string groupId, string aggregateId, int applied, bool lifted);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Consumer stream for {GroupId} failed; restarting")]
     public static partial void ConsumerStreamFailed(ILogger logger, Exception exception, string groupId);
 

@@ -73,10 +73,14 @@ the right thing.
 
 ### D4. Quarantine = "a parked row exists"; no separate state
 
-`projection_dead_letters(id bigserial PK, group_id, aggregate_id, seq, kafka_key, value text, attempts,
-last_error, first_failed_at, parked_at)` with an index on `(group_id, aggregate_id, seq)`. An aggregate is
-quarantined for a group exactly when it has at least one row. Replaying the last row lifts it, so nothing else
-has to be kept in step.
+`projection_dead_letters(Id, GroupId, AggregateId, Seq, KafkaKey, Value, Attempts, LastError, FirstFailedAt,
+ParkedAt)` with an index on `(GroupId, AggregateId, Seq)`. An aggregate is quarantined for a group exactly when
+it has at least one row. Replaying the last row lifts it, so nothing else has to be kept in step.
+
+_As built:_ `Id` is a Guid v7 as 32 hex chars rather than a bigserial, because `Keyset.NewestFirst` pages on a
+string tiebreak. `AggregateId` and `KafkaKey` are unbounded `text`: the fallback identity is the raw Kafka key,
+and a length limit would make an oversized key's park fail, which would be a new poison loop. Columns are
+PascalCase like the rest of the schema.
 
 The check runs **per message against the database** (one indexed `EXISTS`), not against an in-memory set. A
 replay can run on any node through the API, and a node-local cache would need invalidation across the cluster.
