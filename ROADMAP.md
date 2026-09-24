@@ -66,18 +66,18 @@ sequenceNr)` with a per-consumer high-water mark; a gap in `sequenceNr` stalls t
 
 ## 3. Decisions
 
-| #   | Decision                                                                                                                                                                           | Status           |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| D1  | Postgres primary/replica; reads always replica, writes always primary                                                                                                              | decided          |
-| D2  | Akka.NET (Akka.Hosting) inside the backend process; one `ActorSystem` per backend replica; Cluster.Sharding added only when we run >1 backend                                      | default          |
-| D3  | Akka.Persistence.Sql (Linq2Db → Postgres primary) for journal + snapshots; `akka` schema                                                                                           | default          |
-| D4  | Kafka via **Redpanda** locally (single binary, Kafka API, includes console); code uses the Confluent client / Akka.Streams.Kafka so real Kafka is a config change                  | default          |
-| D5  | Realtime: browser ↔ `app.` WebSocket (Nitro/crossws), SSR relays to backend SignalR hub with the forwarded session cookie                                                          | default — see §4 |
-| D6  | Rules engine: an existing .NET chess library for legality/FEN/PGN/SAN; evaluate `Gera.Chess` vs `ChessLib` before Part 1; the actor never re-implements rules                      | open             |
-| D7  | Engine: Stockfish in its own container, UCI over stdio, driven by an `EngineActor` pool with a bounded mailbox                                                                     | default          |
-| D8  | Topics: `game.events` (keyed by gameId), `matchmaking.events`, `analysis.requests`/`analysis.results`; JSON payloads with a `type` + `version`; schema registry not used initially | default          |
-| D9  | Read-model tables live next to the write tables in `public`, prefixed `rm_`; journal in schema `akka`                                                                              | default          |
-| D10 | Identity in the actor world = local `users.id` (from the session), never the Keycloak `sub`                                                                                        | default          |
+| #   | Decision                                                                                                                                                                           | Status               |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| D1  | Postgres primary/replica; reads always replica, writes always primary                                                                                                              | decided              |
+| D2  | Akka.NET (Akka.Hosting) inside the backend process; one `ActorSystem` per backend replica; Cluster.Sharding added only when we run >1 backend                                      | default              |
+| D3  | Akka.Persistence.Sql (Linq2Db → Postgres primary) for journal + snapshots; `akka` schema                                                                                           | default              |
+| D4  | Kafka via **Redpanda** locally (single binary, Kafka API, includes console); code uses the Confluent client / Akka.Streams.Kafka so real Kafka is a config change                  | default              |
+| D5  | Realtime: browser ↔ `app.` WebSocket (Nitro/crossws), SSR relays to backend SignalR hub with the forwarded session cookie                                                          | default — see §4     |
+| D6  | Rules engine: **ChessLib** for legality/FEN/PGN/SAN; the actor never re-implements rules                                                                                           | decided (2026-09-24) |
+| D7  | Engine: Stockfish in its own container, UCI over stdio, driven by an `EngineActor` pool with a bounded mailbox                                                                     | default              |
+| D8  | Topics: `game.events` (keyed by gameId), `matchmaking.events`, `analysis.requests`/`analysis.results`; JSON payloads with a `type` + `version`; schema registry not used initially | default              |
+| D9  | Read-model tables live next to the write tables in `public`, prefixed `rm_`; journal in schema `akka`                                                                              | default              |
+| D10 | Identity in the actor world = local `users.id` (from the session), never the Keycloak `sub`                                                                                        | default              |
 
 ## 4. Realtime through the BFF (D5)
 
@@ -171,7 +171,6 @@ Goal: the architecture exists end to end with a trivial domain, so every later p
 
 ## 8. Open questions (answer before the part that needs them)
 
-- D6 rules library choice (Part 1).
 - Time controls to support first (Part 1): default bullet/blitz/rapid presets.
-- Whether Cluster.Sharding is in scope for Part 1 or explicitly deferred (affects `ActorRegistry` shape).
+- ~~Whether Cluster.Sharding is in scope for Part 1~~ — settled by Part 0: every entity is sharded.
 - Notification channel for Part 3 (email vs in-app only).
