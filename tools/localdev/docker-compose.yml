@@ -105,6 +105,17 @@ services:
       - shared_preload_libraries=pg_cron
       - -c
       - cron.database_name=chess
+      # Drop a vanished client's session within ~30s (15s idle + 3 probes x 5s) instead of the kernel's ~2h,
+      # so the journal publisher's advisory lock is released when its holder dies without closing the socket.
+      # tcp_user_timeout covers the case keepalives don't: unacked data already in flight.
+      - -c
+      - tcp_keepalives_idle=15
+      - -c
+      - tcp_keepalives_interval=5
+      - -c
+      - tcp_keepalives_count=3
+      - -c
+      - tcp_user_timeout=30000
     environment:
       POSTGRES_USER: chess
       POSTGRES_PASSWORD: chess
