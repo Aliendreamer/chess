@@ -10,5 +10,7 @@ internal sealed class ConsumerPositionConfiguration : IEntityTypeConfiguration<C
         builder.HasKey(p => new { p.GroupId, p.AggregateId });
         builder.Property(p => p.GroupId).HasMaxLength(128);
         builder.Property(p => p.AggregateId).HasMaxLength(128);
+        // Same rule as RmPing.LastSeq: the watermark is the concurrency token, so a racing writer loses loudly.
+        builder.Property(p => p.LastSeq).IsConcurrencyToken();
     }
 }

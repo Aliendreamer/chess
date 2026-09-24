@@ -64,6 +64,27 @@ public sealed class PingProjectionTests
     }
 
     [Fact]
+    public async Task A_racing_second_writer_of_the_same_seq_fails_instead_of_double_applying()
+    {
+        string name = Guid.NewGuid().ToString("N");
+        using (ProjectDbContext seed = TestDb.Create(name: name))
+        {
+            await new PingProjection(seed, NullLogger<PingProjection>.Instance).ApplyAsync("ping:p1", Event("p1", 1, "one"), CancellationToken.None);
+        }
+
+        // Two consumers during a rebalance: both have read LastSeq = 1 before either saves seq 2.
+        using ProjectDbContext first = TestDb.Create(name: name);
+        using ProjectDbContext second = TestDb.Create(name: name);
+        RmPing a = await first.RmPings.SingleAsync();
+        RmPing b = await second.RmPings.SingleAsync();
+        (a.Count, a.LastSeq) = (a.Count + 1, 2);
+        (b.Count, b.LastSeq) = (b.Count + 1, 2);
+        await first.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => second.SaveChangesAsync());
+    }
+
+    [Fact]
     public void Identifies_its_topic_and_group()
     {
         using ProjectDbContext db = TestDb.Create();

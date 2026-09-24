@@ -3,17 +3,17 @@ steps that need Docker or a human-run gate.
 
 ## 1. Concurrency token on the watermark
 
-- [ ] 1.1 Failing test first (`PingProjectionTests`, `PositionedProjectionTests`): two `ProjectDbContext`s on
+- [x] 1.1 Failing test first (`PingProjectionTests`, `PositionedProjectionTests`): two `ProjectDbContext`s on
       the same InMemory database both load `LastSeq = 1`, both apply `seq 2`, and both `SaveChanges`. Today
       the second save succeeds and `Count` reads 2 where it should read 1. After the change, the second must
       throw `DbUpdateConcurrencyException`.
-- [ ] 1.2 `IsConcurrencyToken()` on `RmPing.LastSeq` and `ConsumerPosition.LastSeq`. Generate
+- [x] 1.2 `IsConcurrencyToken()` on `RmPing.LastSeq` and `ConsumerPosition.LastSeq`. Generate
       `./build_migration.sh "LastSeqConcurrencyToken"`. If the migration body comes out empty (expected, since
       only the snapshot changes), keep it anyway so the snapshot matches the model.
-- [ ] 1.3 Failing test for `ConflictDetector.IsConflict`: `true` for `DbUpdateConcurrencyException` and for a
+- [x] 1.3 Failing test for `ConflictDetector.IsConflict`: `true` for `DbUpdateConcurrencyException` and for a
       `DbUpdateException` whose inner `PostgresException` has `SqlState = "23505"`, `false` otherwise. It fails
       to compile until the class exists. Implement it.
-- [ ] 1.4 Commit: `feat(backend): lastseq concurrency token on projection watermarks`.
+- [x] 1.4 Commit: `feat(backend): lastseq concurrency token on projection watermarks`.
 
 ## 2. Dead-letter storage
 

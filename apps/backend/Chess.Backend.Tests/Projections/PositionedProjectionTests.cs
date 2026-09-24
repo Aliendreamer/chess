@@ -82,6 +82,26 @@ public sealed class PositionedProjectionTests
     }
 
     [Fact]
+    public async Task A_racing_second_writer_of_the_same_position_fails_instead_of_double_applying()
+    {
+        string name = Guid.NewGuid().ToString("N");
+        using (ProjectDbContext seed = TestDb.Create(name: name))
+        {
+            await new CountingProjection(seed).ApplyAsync("k", Event("a", 1), CancellationToken.None);
+        }
+
+        using ProjectDbContext first = TestDb.Create(name: name);
+        using ProjectDbContext second = TestDb.Create(name: name);
+        ConsumerPosition a = await first.ConsumerPositions.SingleAsync();
+        ConsumerPosition b = await second.ConsumerPositions.SingleAsync();
+        a.LastSeq = 2;
+        b.LastSeq = 2;
+        await first.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => second.SaveChangesAsync());
+    }
+
+    [Fact]
     public async Task Ignores_other_types_and_garbage()
     {
         using ProjectDbContext db = TestDb.Create();
