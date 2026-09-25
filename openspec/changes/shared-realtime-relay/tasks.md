@@ -43,12 +43,12 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 4. Frames and multiplexer (frontend)
 
-- [ ] 4.1 Failing vitest (`live.test.ts`): - `parseFrame` accepts `{topic, seq, payload}` and drops junk; - `applyFrame(undefined, f7)` gives f7, `(f7, f8)` gives f8, `(f8, f7)` keeps f8, `(f8, f8)` keeps
+- [x] 4.1 Failing vitest (`live.test.ts`): - `parseFrame` accepts `{topic, seq, payload}` and drops junk; - `applyFrame(undefined, f7)` gives f7, `(f7, f8)` gives f8, `(f8, f7)` keeps f8, `(f8, f8)` keeps
       current.
-- [ ] 4.2 Failing vitest (`hub-multiplexer.test.ts`, fake `HubPort`): - two sockets on one topic → one `start`, two `Subscribe` invokes, each snapshot to its own socket only; - a push reaches only that topic's sockets; - the last unsubscribe invokes `Unsubscribe` and keeps the connection; - reconnect re-subscribes every topic and snapshots all of its sockets; - a final close sends an error, closes the sockets with 1011, and the next subscribe restarts; - a failed start affects only the subscribing socket.
-- [ ] 4.3 Implement `live.ts`, `hub-multiplexer.ts` and `live-hub.ts` (the SignalR `HubPort` with
+- [x] 4.2 Failing vitest (`hub-multiplexer.test.ts`, fake `HubPort`): - two sockets on one topic → one `start`, two `Subscribe` invokes, each snapshot to its own socket only; - a push reaches only that topic's sockets; - the last unsubscribe invokes `Unsubscribe` and keeps the connection; - reconnect re-subscribes every topic and snapshots all of its sockets; - a final close sends an error, closes the sockets with 1011, and the next subscribe restarts; - a failed start affects only the subscribing socket.
+- [x] 4.3 Implement `live.ts`, `hub-multiplexer.ts` and `live-hub.ts` (the SignalR `HubPort` with
       `accessTokenFactory` from `ServiceToken`, WebSockets transport, automatic reconnect).
-- [ ] 4.4 Commit: `feat(frontend): one live hub connection per process`.
+- [x] 4.4 Commit: `feat(frontend): one live hub connection per process`.
 
 ## 5. Relay hosts and the ping page
 
