@@ -6,7 +6,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import tailwindcss from '@tailwindcss/vite'
 import viteReact from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
-import { devPingRelay } from './src/lib/server/dev-ping-relay'
+import { devLiveRelay } from './src/lib/server/dev-live-relay'
 
 /**
  * @microsoft/signalr reaches its Node transports through an indirect `requireFunc(...)` that neither
@@ -46,7 +46,7 @@ export default defineConfig(({ command }) => ({
     viteReact(),
     // `vite dev` has no Nitro, so the scanned relay route does not exist there; this serves the same
     // path off the dev server's upgrade event.
-    devPingRelay(),
+    devLiveRelay(),
   ],
   test: {
     environment: 'jsdom',
@@ -64,8 +64,8 @@ export default defineConfig(({ command }) => ({
         'src/router.tsx',
         'src/env.d.ts',
         'src/lib/server/api.ts', // createServerFn wrappers over the tested loaders
-        'src/lib/server/ping-hub.ts', // relay I/O, covered by e2e/pings.spec.ts
-        'src/lib/server/dev-ping-relay.ts', // dev-only vite plugin, same
+        'src/lib/server/live-hub.ts', // SignalR adapter + process wiring, covered by e2e/pings.spec.ts
+        'src/lib/server/dev-live-relay.ts', // dev-only vite plugin, same
         '**/*.test.{ts,tsx}',
       ],
       thresholds: { lines: 75, statements: 75, functions: 75, branches: 70 },

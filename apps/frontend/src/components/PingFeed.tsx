@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { LiveFrame } from '#/lib/live'
 import type { PingState } from '#/lib/pings'
-import { parseFrame } from '#/lib/pings'
+import { applyFrame, parseSocketMessage } from '#/lib/live'
+import { isPingState } from '#/lib/pings'
 
 export interface PingFeedProps {
   id: string
@@ -13,7 +15,7 @@ type Status = 'connecting' | 'live' | 'closed'
 /** Same origin as the page, always — the relay is the only thing that knows the API host. */
 export function relayUrl(host: string, protocol: string, id: string): string {
   const scheme = protocol === 'https:' ? 'wss' : 'ws'
-  return `${scheme}://${host}/api/ws/pings/${encodeURIComponent(id)}`
+  return `${scheme}://${host}/api/ws/live/ping/${encodeURIComponent(id)}`
 }
 
 const STATUS_LABEL: Record<Status, string> = {
@@ -27,19 +29,36 @@ export function PingFeed({ id, initial }: PingFeedProps) {
   const [frames, setFrames] = useState<Array<PingState>>([])
   const [status, setStatus] = useState<Status>('connecting')
   const [error, setError] = useState<string | null>(null)
+  // The newest frame applied so far: the snapshot and pushes race, and only a newer seq may move the view.
+  const shown = useRef<LiveFrame<PingState> | undefined>(undefined)
+  // The server-rendered state counts as shown, so a snapshot that merely repeats it isn't listed again.
+  const rendered = useRef(initial)
+  useEffect(() => {
+    rendered.current = initial
+  }, [initial])
 
   useEffect(() => {
     setFrames([])
     setError(null)
     setStatus('connecting')
+    const topic = `ping:${id}`
+    shown.current = { topic, seq: rendered.current.lastSeq, payload: rendered.current }
     const socket = new WebSocket(relayUrl(window.location.host, window.location.protocol, id))
     socket.onopen = () => setStatus('live')
     socket.onclose = () => setStatus('closed')
     socket.onmessage = (event: { data: unknown }) => {
-      const frame = typeof event.data === 'string' ? parseFrame(event.data) : null
-      if (!frame) return
-      if (frame.kind === 'state') setFrames((prev) => [...prev, frame.state])
-      else setError(frame.message)
+      const message = typeof event.data === 'string' ? parseSocketMessage(event.data) : null
+      if (!message) return
+      if (message.kind === 'error') {
+        setError(message.message)
+        return
+      }
+      const { frame } = message
+      if (frame.topic !== topic || !isPingState(frame.payload)) return
+      const next = { ...frame, payload: frame.payload }
+      if (applyFrame(shown.current, next) !== next) return
+      shown.current = next
+      setFrames((prev) => [...prev, next.payload])
     }
     return () => socket.close()
   }, [id])

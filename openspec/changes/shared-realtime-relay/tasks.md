@@ -52,12 +52,12 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 5. Relay hosts and the ping page
 
-- [ ] 5.1 Failing vitest (`live-relay.test.ts`): - `parseLiveUrl` accepts `/api/ws/live/ping/abc-1` and rejects an unknown kind or bad id; - `openRelay` with no cookie or `loadMe` null → 4401, no subscribe; - a valid session → subscribe; - re-validation turning invalid → 4401 and unsubscribe; - `close()` → unsubscribe and clear the timer; - an unknown kind → 4400.
-- [ ] 5.2 Implement `live-relay.ts`. Add the route `server/routes/api/ws/live/[kind]/[id].ts` and
+- [x] 5.1 Failing vitest (`live-relay.test.ts`): - `parseLiveUrl` accepts `/api/ws/live/ping/abc-1` and rejects an unknown kind or bad id; - `openRelay` with no cookie or `loadMe` null → 4401, no subscribe; - a valid session → subscribe; - re-validation turning invalid → 4401 and unsubscribe; - `close()` → unsubscribe and clear the timer; - an unknown kind → 4400.
+- [x] 5.2 Implement `live-relay.ts`. Add the route `server/routes/api/ws/live/[kind]/[id].ts` and
       `dev-live-relay.ts`. Remove `ping-hub.ts`, `ping-relay.ts`, `dev-ping-relay.ts` and the old route.
       `PingFeed` uses `/api/ws/live/ping/{id}` and `applyFrame`, with a failing `PingFeed.test.tsx` case first:
       out-of-order snapshot and push render once, in seq order.
-- [ ] 5.3 Commit: `feat(frontend): generic live relay with session check before subscribe`.
+- [x] 5.3 Commit: `feat(frontend): generic live relay with session check before subscribe`.
 
 ## 6. End to end 🐳
 

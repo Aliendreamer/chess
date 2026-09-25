@@ -17,6 +17,20 @@ class FakeSocket {
   }
 }
 
+const frameMessage = (state: PingState) =>
+  JSON.stringify({
+    kind: 'frame',
+    frame: { topic: `ping:${state.pingId}`, seq: state.lastSeq, payload: state },
+  })
+
+const at = (seq: number): PingState => ({
+  pingId: 'p1',
+  count: seq,
+  lastText: `t${seq}`,
+  lastAt: null,
+  lastSeq: seq,
+})
+
 function renderFeed() {
   vi.stubGlobal('WebSocket', FakeSocket)
   render(<PingFeed id="p1" initial={initial} />)
@@ -33,9 +47,11 @@ afterEach(() => {
 describe('relayUrl', () => {
   it('stays on the app origin and upgrades the scheme with the page', () => {
     expect(relayUrl('app.chess.localhost', 'http:', 'p1')).toBe(
-      'ws://app.chess.localhost/api/ws/pings/p1',
+      'ws://app.chess.localhost/api/ws/live/ping/p1',
     )
-    expect(relayUrl('chess.example', 'https:', 'p1')).toBe('wss://chess.example/api/ws/pings/p1')
+    expect(relayUrl('chess.example', 'https:', 'p1')).toBe(
+      'wss://chess.example/api/ws/live/ping/p1',
+    )
   })
 })
 
@@ -52,11 +68,43 @@ describe('PingFeed', () => {
     expect(screen.getByTestId('ping-status').textContent).toMatch(/live/i)
 
     const next: PingState = { pingId: 'p1', count: 2, lastText: 'again', lastAt: null, lastSeq: 2 }
-    act(() => socket.onmessage?.({ data: JSON.stringify({ kind: 'state', state: next }) }))
+    act(() => socket.onmessage?.({ data: frameMessage(next) }))
 
     expect(screen.getByTestId('ping-count').textContent).toBe('count 2')
     expect(screen.getAllByRole('listitem')).toHaveLength(1)
     expect(screen.getByTestId('ping-feed').textContent).toContain('again')
+  })
+
+  it('applies frames in seq order: a late snapshot and a duplicate push are dropped', () => {
+    const socket = renderFeed()
+
+    act(() => socket.onmessage?.({ data: frameMessage(at(3)) })) // push overtakes the snapshot
+    act(() => socket.onmessage?.({ data: frameMessage(at(2)) })) // the snapshot, now stale
+    act(() => socket.onmessage?.({ data: frameMessage(at(3)) })) // duplicate after a reconnect
+    act(() => socket.onmessage?.({ data: frameMessage(at(4)) }))
+
+    expect(screen.getByTestId('ping-count').textContent).toBe('count 4')
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      '#3count 3t3',
+      '#4count 4t4',
+    ])
+  })
+
+  it('does not list a snapshot that only repeats the server-rendered state', () => {
+    const socket = renderFeed() // initial is seq 1
+    act(() => socket.onmessage?.({ data: frameMessage(initial) }))
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0)
+    expect(screen.getByTestId('ping-count').textContent).toBe('count 1')
+  })
+
+  it('ignores a frame for another kind', () => {
+    const socket = renderFeed()
+    const other = JSON.stringify({
+      kind: 'frame',
+      frame: { topic: 'game:g1', seq: 9, payload: {} },
+    })
+    act(() => socket.onmessage?.({ data: other }))
+    expect(screen.getByTestId('ping-count').textContent).toBe('count 1')
   })
 
   it('ignores junk frames instead of breaking the feed', () => {
