@@ -3,10 +3,11 @@
 # Container-runtime agnostic: uses `docker compose`, `podman compose`, or `docker-compose`,
 # whichever is available.
 #
-#   tools/localdev/stack.sh up          # build + start (detached)
-#   tools/localdev/stack.sh down        # stop + remove containers
-#   tools/localdev/stack.sh down -v     # also drop volumes (fresh DB/Keycloak)
-#   tools/localdev/stack.sh logs [svc]  # follow logs
+#   tools/localdev/stack.sh up             # build + start (detached)
+#   tools/localdev/stack.sh up --cluster   # same, plus the second Akka node (backend-2, 'cluster' profile)
+#   tools/localdev/stack.sh down           # stop + remove containers, every profile included
+#   tools/localdev/stack.sh down -v        # also drop volumes (fresh DB/Keycloak)
+#   tools/localdev/stack.sh logs [svc]     # follow logs (backend-2 included)
 #   tools/localdev/stack.sh ps
 #   tools/localdev/stack.sh restart [svc]
 set -euo pipefail
@@ -25,13 +26,21 @@ else
 fi
 
 compose() { "${RUNTIME[@]}" -f "$COMPOSE_FILE" "$@"; }
+# Every profile at once: `down` and `ps` must see backend-2 even when it was started with --cluster,
+# otherwise a plain `down` leaves it running on its own.
+all_profiles() { compose --profile '*' "$@"; }
 
 cmd="${1:-up}"
 [ $# -gt 0 ] && shift
 
 case "$cmd" in
   up)
-    compose up --build -d "$@"
+    profile=()
+    if [ "${1:-}" = "--cluster" ]; then
+      profile=(--profile cluster)
+      shift
+    fi
+    compose "${profile[@]}" up --build -d "$@"
     echo "Stack up via '${RUNTIME[*]}' →"
     echo "  frontend     http://app.chess.localhost"
     echo "  backend api  http://api.chess.localhost"
@@ -41,13 +50,16 @@ case "$cmd" in
     echo "  postgres     127.0.0.1:5432 primary · 127.0.0.1:5433 replica (chess/chess)"
     echo "  redpanda     127.0.0.1:19092 (kafka api)"
     echo "  traefik ui   http://127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-8090}"
-    echo "  cluster mode: 'cluster' compose profile adds a second Akka node (backend-2) —"
-    echo "    docker compose -f tools/localdev/docker-compose.yml --profile cluster up -d --build"
+    if [ ${#profile[@]} -gt 0 ]; then
+      echo "  cluster      backend-2 is up (second Akka node)"
+    else
+      echo "  cluster mode: tools/localdev/stack.sh up --cluster adds a second Akka node (backend-2)"
+    fi
     ;;
-  down)    compose down "$@" ;;
-  restart) compose restart "$@" ;;
-  logs)    compose logs -f "$@" ;;
-  ps)      compose ps "$@" ;;
+  down)    all_profiles down "$@" ;;
+  restart) all_profiles restart "$@" ;;
+  logs)    all_profiles logs -f "$@" ;;
+  ps)      all_profiles ps "$@" ;;
   *)
     echo "usage: stack.sh {up|down|restart|logs|ps} [args]" >&2
     exit 1

@@ -55,7 +55,7 @@ pnpm build && API_URL=http://127.0.0.1:8080 pnpm start   # prod SSR server on :3
 tools/localdev/verify-auth.sh                  # curl-only login→/me→logout→revocation check vs the live stack
 tools/localdev/verify-stack.sh                 # replica streaming + write→read, redpanda health/topics/round-trip, console
 tools/localdev/verify-part0.sh [--cluster]     # login→ping→live→list→hub gate; --cluster kills backend-1 and re-checks
-docker compose -f tools/localdev/docker-compose.yml --profile cluster up -d --build   # adds backend-2
+tools/localdev/stack.sh up --cluster            # adds backend-2 (down/ps/logs always include it)
 tools/e2e.sh                                   # Playwright against the live stack
 ```
 
