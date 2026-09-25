@@ -24,9 +24,9 @@ export const getMe = createServerFn({ method: 'GET' }).handler(() => loadMe(serv
 export const getHealth = createServerFn({ method: 'GET' }).handler(() => loadHealth(serverFetch()))
 
 export const getPingLive = createServerFn({ method: 'GET' })
-  .inputValidator((id: string) => id)
+  .validator((id: string) => id)
   .handler(({ data }) => loadPingLive(serverFetch(), data))
 
 export const postPing = createServerFn({ method: 'POST' })
-  .inputValidator((input: { id: string; text: string }) => input)
+  .validator((input: { id: string; text: string }) => input)
   .handler(({ data }) => sendPing(serverFetch(), data.id, data.text))
