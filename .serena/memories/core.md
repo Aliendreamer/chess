@@ -48,7 +48,7 @@ wants network (edge.openspec.dev) and fails inside the agent sandbox.
 - `nx.json` — targetDefaults (build/test/lint cached), `namedInputs.dotnet`, `release` groups (frontend, backend).
 - `apps/backend/project.json` — build/test/lint(format --verify)/format/migration/push/validate/deploy; inputs `dotnet`.
 - `apps/frontend/project.json` — generate-routes/build/test/lint(typecheck+eslint+prettier)/e2e/push/validate/deploy.
-- `apps/proxy/` — Dockerfile + `files/nginx.conf` + `project.json` (build=push, validate, deploy placeholder).
+- `apps/proxy/` — Dockerfile + `files/nginx.conf` + `project.json` (build = local image, no push; push; validate; deploy placeholder).
 - `tools/localdev/` — compose stack (`docker-compose.yml`, project name `chess`, subnet 172.30.0.0/24),
   `stack.sh`, dev/coverage Dockerfiles, `keycloak/chess-realm.json` (realm import), `traefik/dynamic.yml`
   (file-provider routes — docker provider is inert on Docker 29), `postgres/` (primary replication init +

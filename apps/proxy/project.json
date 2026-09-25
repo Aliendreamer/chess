@@ -7,7 +7,7 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tools/deploy/build.sh proxy"
+        "command": "tools/deploy/build.sh proxy local"
       }
     },
     "push": {

@@ -15,7 +15,8 @@ An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding three apps:
 - `apps/proxy` — nginx edge for deployment (`/api/` → backend, `/` → frontend, `/hc` local 200).
 
 Node ≥ 24, pnpm pinned in `package.json#packageManager` (bump deliberately). Docker is required for
-the local stack and for proxy validation.
+the local stack and for the proxy target (its `build` makes a local `:local` image and never pushes;
+`push` does that).
 
 ## Commands
 
