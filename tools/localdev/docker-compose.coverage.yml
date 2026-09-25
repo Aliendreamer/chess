@@ -128,6 +128,12 @@ services:
       API_URL: http://backend:8080
       # IdP origin for the CSP form-action (logout redirect to Keycloak); see docker-compose.yml.
       KEYCLOAK_ORIGIN: http://keycloak.chess.localhost
+      # Live relay service identity; see docker-compose.yml.
+      KEYCLOAK_TOKEN_URL: http://keycloak.chess.localhost/realms/chess/protocol/openid-connect/token
+      RELAY_CLIENT_ID: chess_bff
+      RELAY_CLIENT_SECRET: chess-bff-dev-secret
+    extra_hosts:
+      - "keycloak.chess.localhost:host-gateway"
     volumes:
       # Host-built SSR output (with sourcemaps) + source, so c8 maps coverage to src.
       - ../../apps/frontend/.output:/app/.output:ro

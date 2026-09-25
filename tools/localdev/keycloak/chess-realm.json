@@ -14,7 +14,11 @@
   "roles": {
     "realm": [
       { "name": "Admin", "description": "Full access" },
-      { "name": "User", "description": "Signed-in player" }
+      { "name": "User", "description": "Signed-in player" },
+      {
+        "name": "Relay",
+        "description": "The BFF's service account: the only caller allowed on the live hub"
+      }
     ]
   },
   "defaultRoles": ["User"],
@@ -61,6 +65,36 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "chess_bff",
+      "name": "Chess BFF relay (service account only)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "chess-bff-dev-secret",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": true,
+      "defaultClientScopes": ["basic", "roles"],
+      "optionalClientScopes": [],
+      "protocolMappers": [
+        {
+          "name": "audience-chess-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "chess_api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "users": [
@@ -87,6 +121,12 @@
         { "type": "password", "value": "Player123!", "temporary": false }
       ],
       "realmRoles": ["User"]
+    },
+    {
+      "username": "service-account-chess_bff",
+      "enabled": true,
+      "serviceAccountClientId": "chess_bff",
+      "realmRoles": ["Relay"]
     }
   ]
 }

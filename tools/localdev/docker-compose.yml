@@ -374,6 +374,11 @@ services:
       # IdP public origin, added to the CSP `form-action` so the logout form's redirect to
       # Keycloak's end-session endpoint is not blocked (browsers enforce form-action across redirects).
       KEYCLOAK_ORIGIN: http://keycloak.chess.localhost
+      # The live relay's service identity (chess_bff, realm role Relay). The token URL is the PUBLIC issuer so
+      # `iss` matches the backend's Keycloak:Authority; extra_hosts below makes the name resolve in here.
+      KEYCLOAK_TOKEN_URL: http://keycloak.chess.localhost/realms/chess/protocol/openid-connect/token
+      RELAY_CLIENT_ID: chess_bff
+      RELAY_CLIENT_SECRET: chess-bff-dev-secret
       DOCKER_DEV: "1"
     volumes:
       - ../../apps/frontend:/app/apps/frontend
@@ -384,6 +389,8 @@ services:
       # Keep node_modules in the container (don't let the host's shadow it).
       - /app/node_modules
       - /app/apps/frontend/node_modules
+    extra_hosts:
+      - "keycloak.chess.localhost:host-gateway"
     depends_on:
       - backend
     labels:

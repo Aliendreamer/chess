@@ -30,13 +30,16 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 3. BFF service identity
 
-- [ ] 3.1 Failing vitest (`service-token.test.ts`, injected `fetch` and clock): - the first call fetches; - a call within lifetime reuses the token; - within 30 s of expiry it refetches; - concurrent calls share one fetch; - a non-2xx is a named error.
-- [ ] 3.2 Implement `ServiceToken` and the `config.ts` accessors. Extend the client-bundle guard to
+- [x] 3.1 Failing vitest (`service-token.test.ts`, injected `fetch` and clock): - the first call fetches; - a call within lifetime reuses the token; - within 30 s of expiry it refetches; - concurrent calls share one fetch; - a non-2xx is a named error.
+- [x] 3.2 Implement `ServiceToken` and the `config.ts` accessors. Extend the client-bundle guard to
       `RELAY_CLIENT_SECRET`.
-- [ ] 3.3 Realm export: client `chess_bff` (confidential, service account, dev secret, the same audience
+      _As built:_ there was no client-bundle guard to extend, only a comment in `env.d.ts`. `config.test.ts`
+      now adds one: it fails if any browser-reachable file under `src/` (anything outside `lib/server/`)
+      names a server-only env var.
+- [x] 3.3 Realm export: client `chess_bff` (confidential, service account, dev secret, the same audience
       mapper) and realm role `Relay`, granted only to its service account. Compose: the frontend gets the
       relay env vars and the backend's `extra_hosts`.
-- [ ] 3.4 Commit: `feat(frontend): relay service identity via client credentials`.
+- [x] 3.4 Commit: `feat(frontend): relay service identity via client credentials`.
 
 ## 4. Frames and multiplexer (frontend)
 
