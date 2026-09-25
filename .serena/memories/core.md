@@ -34,6 +34,36 @@ errors with "no nx-release-publish target ... frontend", the publish phase objec
 `"private": true`. We never publish packages; images are the artifact. **Releases and pushes are the
 user's to run** — do not run `nx release` or `nx push` for them.
 
+## State after 2026-09-25 — Part 0 carry-overs closed, Part 1 not started
+
+Three OpenSpec changes are archived (`openspec/changes/archive/`). Their capabilities live in
+`openspec/specs/`:
+
+- `event-publishing`, from `journal-outbox` + `projection-hardening`: actors never produce to Kafka.
+  `ProjectionRunner` treats `LastSeq` as a concurrency token, retries 5× then parks in
+  `projection_dead_letters` (quarantining the aggregate per group), and admins replay via `WebApi/Admin/`.
+- `realtime-relay`, from `shared-realtime-relay`: generic `LiveHub` at `/hub/live` with `{kind}:{id}` topics
+  and `ILiveTopicSource` per kind, reached through ONE SignalR connection per SSR process as the `chess_bff`
+  service account (role `Relay`). The BFF checks the session (`/api/me`) before subscribing. Browsers use
+  `/api/ws/live/{kind}/{id}` and apply frames by `seq`.
+- `api-token-validation`: audience `chess_api` is enforced everywhere except the IntegrationTest env. Any new
+  client that calls the API needs an audience mapper.
+
+Decisions settled on 2026-09-24/25 (ROADMAP §3):
+
+- D5: the relay design above.
+- D6: **ChessLib**.
+- D11: entity ids are **Guid v7 in `uuid` columns** (researched vs ULID; same ordering, 16 bytes, native).
+- D12: time controls bullet 1+0, 2+1 · blitz 3+0, 3+2, 5+0, 5+3 · rapid 10+0, 10+5, 15+10 · classical
+  30+20, 90+30. Chess960 later.
+
+Also: `ShardCount` stays 50, and changing it is a full-cluster restart, not a data migration. Replica health
+counts a connected, caught-up replica as 0 lag. Proxy `build` makes a local image and only `push` pushes.
+Postgres TCP keepalives are set so a dead publisher's lease drops in about 30 s.
+
+The UI for Part 1 will be done by the user in Design. Next up is the Part 1 design conversation (the user
+drives architecture; see `mem:agent_workflow`).
+
 ## Specs and plans — OpenSpec (from 2026-09-22)
 
 The user installed OpenSpec (CLI 1.2.0) to write specs and plans down "so we have history": scaffold
