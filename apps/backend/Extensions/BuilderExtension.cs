@@ -120,30 +120,37 @@ internal static class BuilderExtension
         return services;
     }
 
-    private static void AddJwtBearer(IServiceCollection services, KeycloakOptions keycloak, bool isDevelopment)
-    {
+    private static void AddJwtBearer(IServiceCollection services, KeycloakOptions keycloak, bool isDevelopment) =>
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
-            {
-                options.Authority = keycloak.Authority;
-                options.RequireHttpsMetadata = !isDevelopment;
-                options.MapInboundClaims = false;
-                bool hasAudience = !string.IsNullOrEmpty(keycloak.Audience);
-                options.Audience = hasAudience ? keycloak.Audience : null;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    NameClaimType = Constants.Claims.Subject,
-                    RoleClaimType = ClaimTypes.Role,
-                    ValidateAudience = hasAudience,
-                    ValidateIssuer = true,
-                    ValidIssuer = keycloak.Authority,
-                };
-                options.Events = new JwtBearerEvents
-                {
-                    OnMessageReceived = CookieBearerTokenResolver.OnMessageReceivedAsync,
-                };
-            });
+            .AddJwtBearer(options => ConfigureJwtBearer(options, keycloak, isDevelopment));
+
+    /// <summary>
+    /// Issuer is always validated. Audience is validated whenever <c>Keycloak:Audience</c> is set, which every deployed
+    /// environment does (<c>chess_api</c>); only the IntegrationTest environment, which swaps in a test scheme, leaves it
+    /// empty. Without it any token from the realm would do, whichever client it was issued to.
+    /// </summary>
+    internal static void ConfigureJwtBearer(JwtBearerOptions options, KeycloakOptions keycloak, bool isDevelopment)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(keycloak);
+        options.Authority = keycloak.Authority;
+        options.RequireHttpsMetadata = !isDevelopment;
+        options.MapInboundClaims = false;
+        bool hasAudience = !string.IsNullOrEmpty(keycloak.Audience);
+        options.Audience = hasAudience ? keycloak.Audience : null;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            NameClaimType = Constants.Claims.Subject,
+            RoleClaimType = ClaimTypes.Role,
+            ValidateAudience = hasAudience,
+            ValidateIssuer = true,
+            ValidIssuer = keycloak.Authority,
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = CookieBearerTokenResolver.OnMessageReceivedAsync,
+        };
     }
 
     private static void AddCors(IServiceCollection services, ConfigurationManager configuration)

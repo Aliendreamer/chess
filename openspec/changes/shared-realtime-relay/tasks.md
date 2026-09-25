@@ -3,15 +3,15 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 1. Audience enforced
 
-- [ ] 1.1 Realm export: add an `oidc-audience-mapper` (`included.client.audience: chess_api`,
+- [x] 1.1 Realm export: add an `oidc-audience-mapper` (`included.client.audience: chess_api`,
       `access.token.claim: true`) to client `chess_api`. Set `Keycloak__Audience: chess_api` in compose and
       `"Audience": "chess_api"` in `appsettings.Development.json` and `appsettings.Production.json`.
-- [ ] 1.2 Failing unit test first (`BuilderExtension` JwtBearer options): with `Keycloak:Audience` set,
+- [x] 1.2 Failing unit test first (`BuilderExtension` JwtBearer options): with `Keycloak:Audience` set,
       `ValidateAudience` is true and `ValidAudience` is `chess_api`. With it empty, `ValidateAudience` is
       false. This proves the switch that exists today and guards against it being dropped.
-- [ ] 1.3 🐳 `stack.sh down -v && stack.sh up`, then `verify-auth.sh` green (login → `/me` → logout →
+- [x] 1.3 🐳 `stack.sh down -v && stack.sh up`, then `verify-auth.sh` green (login → `/me` → logout →
       revocation with `aud` validated). Decode one access token and confirm `aud` contains `chess_api`.
-- [ ] 1.4 Commit: `feat(backend): enforce chess_api audience on api tokens`.
+- [x] 1.4 Commit: `feat(backend): enforce chess_api audience on api tokens`.
 
 ## 2. Live topics on the backend
 

@@ -35,7 +35,7 @@ x-backend-env: &backend-env
   ASPNETCORE_ENVIRONMENT: Development
   ASPNETCORE_HTTP_PORTS: "8080"
   Keycloak__Authority: http://keycloak.chess.localhost/realms/chess
-  Keycloak__Audience: ""
+  Keycloak__Audience: chess_api
   Keycloak__ClientId: chess_api
   Keycloak__ClientSecret: chess-dev-secret
   Keycloak__CallbackUri: http://app.chess.localhost/api/auth/callback
