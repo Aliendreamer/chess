@@ -6,7 +6,7 @@ using Akka.Persistence.Sql.Hosting;
 using Akka.Remote.Hosting;
 using Akka.Streams.Kafka.Settings;
 using Chess.Backend.Akka.Outbox;
-using Chess.Backend.WebApi.Hubs;
+using Chess.Backend.WebApi.Live;
 using LinqToDB;
 using Microsoft.AspNetCore.SignalR;
 
@@ -49,7 +49,7 @@ internal static class AkkaHostingExtensions
                 .WithDistributedPubSub(AkkaOptions.BackendRole)
                 .WithActors((system, registry, resolver) => registry.Register<HubFanOutActor>(
                     system.ActorOf(
-                        Props.Create(() => new HubFanOutActor(resolver.GetService<IHubContext<PingsHub>>(), DistributedPubSub.Get(system).Mediator)),
+                        Props.Create(() => new HubFanOutActor(resolver.GetService<IHubContext<LiveHub>>(), DistributedPubSub.Get(system).Mediator)),
                         "hub-fanout")));
             configureEntities?.Invoke(akka, sp);
         });

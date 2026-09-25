@@ -33,6 +33,9 @@ internal static class Constants
     {
         public const string Admin = "Admin";
         public const string User = "User";
+
+        /// <summary>The BFF's service account (<c>chess_bff</c>): the only caller allowed on the live hub.</summary>
+        public const string Relay = "Relay";
     }
 
     public static class Claims

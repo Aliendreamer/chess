@@ -3,6 +3,7 @@ using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Event;
 using Akka.Persistence;
 using Chess.Backend.Events;
+using Chess.Backend.Live;
 
 namespace Chess.Backend.Akka.Ping;
 
@@ -73,7 +74,7 @@ internal sealed class PingActor : ReceivePersistentActor
             long seq = LastSequenceNr;
             using Activity? activity = ActorTracing.StartPingHandle(_pingId, seq);
             PingState state = State();
-            _mediator?.Tell(new Publish(PingTopics.PubSub, state));
+            _mediator?.Tell(new Publish(LiveTopics.PubSub, PingLiveSource.ToFrame(state)));
             replyTo.Tell(state);
             if (seq % SnapshotEvery == 0)
             {

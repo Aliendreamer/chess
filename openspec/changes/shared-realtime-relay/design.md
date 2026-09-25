@@ -53,6 +53,13 @@ Id rules stay per kind (`PingIds.Validate` for ping). The source validates, so t
 _Alternative:_ one hub per kind (`PingsHub`, later `GamesHub`), each with its own multiplexer. Rejected: that
 means N connections per process and duplicated relay code. The kind prefix costs a string split.
 
+_As built:_ `LiveFrame.Payload` is `object`, not `JsonElement`. Frames cross nodes over Akka remoting, which
+already carried `PingState` records, and SignalR's System.Text.Json writes an `object` by its runtime type, so
+the browser still gets the kind's JSON. The kind-agnostic types (`LiveFrame`, `LiveTopics`,
+`ILiveTopicSource`, `LiveTopicResolver`) live in `Chess.Backend.Live`, so actors publish without depending on
+`WebApi`. `LiveHub` and `HubFanOutActor` are in `WebApi/Live`. `ILiveTopicSource` also has `IsValidId`, so a bad
+id is refused before any group join.
+
 ### D2. `LiveHub`: Relay-only, snapshot after join
 
 `LiveHub` at `/hub/live` is `[Authorize(Roles = Constants.Roles.Relay)]`. It has two methods:

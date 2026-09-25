@@ -4,6 +4,7 @@ using Chess.Backend.Akka;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Akka.Ping;
 using Chess.Backend.Data.Auth;
+using Chess.Backend.Live;
 using Chess.Backend.Messaging;
 using Chess.Backend.Projections;
 using Chess.Backend.WebApi.Authentication;
@@ -44,6 +45,9 @@ internal static class BuilderExtension
         services.AddObservability(configuration);
         AddMessaging(services, configuration);
         services.AddSignalR();
+        // One source per live kind; the resolver refuses two for the same kind at startup.
+        services.AddSingleton<ILiveTopicSource, PingLiveSource>();
+        services.AddSingleton<LiveTopicResolver>();
         builder.AddActorSystem((akka, sp) =>
         {
             akka.WithPingSharding(sp.GetRequiredService<AkkaOptions>());

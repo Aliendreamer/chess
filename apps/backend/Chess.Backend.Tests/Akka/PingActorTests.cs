@@ -38,15 +38,17 @@ public sealed class PingActorTests : TestKit
     }
 
     [Fact]
-    public void Ping_publishes_to_pubsub_mediator()
+    public void Ping_publishes_a_live_frame_to_the_live_topic()
     {
         TestProbe mediator = CreateTestProbe();
         IActorRef actor = Create("p1", mediator.Ref);
         actor.Tell(new Ping("p1", "hello", 42));
-        ExpectMsg<PingState>();
+        PingState state = ExpectMsg<PingState>();
         Publish published = mediator.ExpectMsg<Publish>();
-        Assert.Equal(PingTopics.PubSub, published.Topic);
-        Assert.IsType<PingState>(published.Message);
+        Assert.Equal(Chess.Backend.Live.LiveTopics.PubSub, published.Topic);
+        Chess.Backend.Live.LiveFrame frame = Assert.IsType<Chess.Backend.Live.LiveFrame>(published.Message);
+        Assert.Equal(("ping:p1", 1L), (frame.Topic, frame.Seq));
+        Assert.Equal(state, frame.Payload);
     }
 
     [Theory]

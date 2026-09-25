@@ -15,18 +15,18 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 2. Live topics on the backend
 
-- [ ] 2.1 Failing tests (`LiveTopicsTests`, `LiveTopicResolverTests`), which fail to compile until the types
+- [x] 2.1 Failing tests (`LiveTopicsTests`, `LiveTopicResolverTests`), which fail to compile until the types
       exist: - `Parse("ping:abc")` gives `(ping, abc)`; - `Parse` rejects `"abc"`, `":abc"`, `"ping:"`; - the resolver finds the source by kind and throws a named error for an unknown kind.
-- [ ] 2.2 Failing test (`PingLiveSourceTests`, Akka TestKit probe as the region): the snapshot is
+- [x] 2.2 Failing test (`PingLiveSourceTests`, Akka TestKit probe as the region): the snapshot is
       `LiveFrame("ping:abc", lastSeq, state)`, and an invalid id is rejected before any ask.
-- [ ] 2.3 Implement `LiveFrame`, `LiveTopics`, `ILiveTopicSource`, `LiveTopicResolver` and `PingLiveSource`.
+- [x] 2.3 Implement `LiveFrame`, `LiveTopics`, `ILiveTopicSource`, `LiveTopicResolver` and `PingLiveSource`.
       `PingActor` publishes a `LiveFrame` to topic `live`. `HubFanOutActor` subscribes to `live` and pushes to
       group `frame.Topic`. Update `PingActorTests` / `HubFanOutActor` tests to the envelope.
-- [ ] 2.4 Add `Constants.Roles.Relay` and `LiveHub` at `/hub/live` (`[Authorize(Roles = Relay)]`,
+- [x] 2.4 Add `Constants.Roles.Relay` and `LiveHub` at `/hub/live` (`[Authorize(Roles = Relay)]`,
       `Subscribe`/`Unsubscribe` per design D2). Remove `PingsHub` and `HubGroups`, and map the new hub.
-- [ ] 2.5 🐳 Failing integration test (`LiveHubTests`, SignalR client over `TestServer`,
+- [x] 2.5 🐳 Failing integration test (`LiveHubTests`, SignalR client over `TestServer`,
       `X-Test-Roles: Relay`): - `Subscribe("ping:{id}")` returns the state of a ping posted earlier; - a later ping pushes a frame with a higher `seq`; - `Subscribe("nope:x")` fails; - without `Relay` the connection is refused.
-- [ ] 2.6 Commit: `feat(backend): generic relay-only live hub with snapshot on subscribe`.
+- [x] 2.6 Commit: `feat(backend): generic relay-only live hub with snapshot on subscribe`.
 
 ## 3. BFF service identity
 

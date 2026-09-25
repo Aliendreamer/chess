@@ -53,6 +53,7 @@
     <PackageVersion Include="coverlet.msbuild" Version="10.0.1" />
     <!-- integration tests only -->
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.8" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <PackageVersion Include="Testcontainers.Redpanda" Version="4.15.0" />
   </ItemGroup>
