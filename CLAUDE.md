@@ -91,6 +91,9 @@ to each app's own lint target). Keep `--no-stash`.
   expiry; an `Authorization` header always wins. `LogoutEndpoint` revokes the row first, so the old cookie is
   dead even if the IdP call fails. `UserProvisioningPreProcessor` (global) JIT-creates `users` rows by `sub`
   and fills the scoped `ICurrentUser`; `KeycloakRolesClaimsTransformation` flattens `realm_access.roles`.
+  JwtBearer validates issuer AND audience `chess_api` (`Keycloak:Audience`, set in compose/Development/
+  Production; empty only under the IntegrationTest env). Both `chess_api` and `chess_bff` carry an audience
+  mapper in the realm export — a new client that calls the API needs one too, or every call is a 401.
 - **Redis (backend)** — `ConnectionStrings:Redis` is the single switch: set (compose: `redis:6379`) ⇒ FusionCache
   gets Redis as L2 + backplane, the global rate limiter (300 req/min per client IP) becomes Redis-backed
   (shared across replicas), and `/health` includes Redis; unset ⇒ L1-only cache, in-memory limiter, no Redis
@@ -114,6 +117,15 @@ to each app's own lint target). Keep `--no-stash`.
   route loaders call server functions (`lib/server/api.ts`) that re-attach the cookie and hit `API_URL`
   server-side. Components are presentational. **No `VITE_API_URL` ever** — the client bundle must not
   mention the API host.
+- **Live relay (frontend + backend)** — browsers open `/api/ws/live/{kind}/{id}` on `app.`; `lib/server/live-relay.ts`
+  checks the kind allow-list, validates the session with `GET /api/me` (4400/4401 otherwise, re-checked every
+  `RELAY_REVALIDATE_MS`) and subscribes through `hub-multiplexer.ts`: ONE SignalR connection per SSR process to
+  `/hub/live`, authenticated as the `chess_bff` service account (`service-token.ts`, client credentials,
+  `KEYCLOAK_TOKEN_URL` must be the PUBLIC issuer). `LiveHub` admits only role `Relay`; `Subscribe(topic)` joins
+  the group, then returns the kind's snapshot (`ILiveTopicSource`). Actors publish `LiveFrame(topic, seq,
+payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's group. The browser applies a
+  frame only if its seq is newer (`lib/live.ts#applyFrame`). A new live kind = one `ILiveTopicSource` + one
+  entry in the BFF's `KINDS`. Both relay hosts (Nitro route, `dev-live-relay.ts`) only adapt sockets.
 
 - **Journal outbox (backend)** — actors never produce to Kafka. `Akka/Outbox/`: `TopicTagger` tags events
   with their topic (tag table), `JournalPublisher` is a cluster singleton that takes a Postgres advisory lock

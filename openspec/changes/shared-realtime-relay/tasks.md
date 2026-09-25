@@ -61,13 +61,21 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 6. End to end 🐳
 
-- [ ] 6.1 🐳 A fresh stack (`down -v`, `up --profile cluster`). `verify-auth.sh`, `verify-part0.sh` (hub check
+- [x] 6.1 🐳 A fresh stack (`down -v`, `up --profile cluster`). `verify-auth.sh`, `verify-part0.sh` (hub check
       moved to `/hub/live`, plus "a user-session negotiate is 403") and `verify-part0.sh --cluster` are green.
-- [ ] 6.2 🐳 Playwright `e2e/pings.spec.ts`: a late subscriber sees the state from the socket snapshot, two
+- [x] 6.2 🐳 Playwright `e2e/pings.spec.ts`: a late subscriber sees the state from the socket snapshot, two
       tabs on one ping both receive a push, and an unknown kind closes with 4400.
-- [ ] 6.3 🐳 Connection count: 5 tabs on one ping → exactly 1 `/hub/live` connection from the frontend
+- [x] 6.3 🐳 Connection count: 5 tabs on one ping → exactly 1 `/hub/live` connection from the frontend
       container (backend connection log or `ss`). Record it in an as-built note.
-- [ ] 6.4 Update `openspec/architecture.md` (§1 relay edge and service identity; §2 snapshot on subscribe;
+      _As built (2026-09-25):_ counted from the backend request log (relay negotiates use host
+      `backend:8080`) and the frontend's SignalR log. - A cold frontend process opened exactly **1** `/hub/live` negotiate and **1** hub WebSocket. - Then **5 separate viewers** (5 browser contexts, logged in) on one ping all went live and all received
+      the push, with **0** new negotiates and **0** new hub connections: the process's one connection
+      carried them all. - Two measurement traps to avoid. Writing a script into `apps/frontend/` (mounted in the dev container)
+      makes Vite full-reload every tab. And 5 tabs in one Chromium instance under `vite dev` starve the 5th
+      tab's module loading (11 sockets to one host), which is a dev-server artifact, not the relay.
+- [x] 6.4 Update `openspec/architecture.md` (§1 relay edge and service identity; §2 snapshot on subscribe;
       §7 audience), the CLAUDE.md BFF and auth notes, and `docs/superpowers/notes/part0-experiment.md` items
       2–3 as done.
-- [ ] 6.5 Commit: `docs(repo): shared live relay and audience in architecture and notes`.
+      _As built:_ `docs/superpowers/` (with the Part 0 notes) was removed by the owner during this change, since
+      docs now live only in `openspec/`. The notes update is replaced by the architecture and CLAUDE.md updates.
+- [x] 6.5 Commit: `docs(repo): shared live relay and audience in architecture and notes`.

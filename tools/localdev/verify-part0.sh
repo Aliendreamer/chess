@@ -66,8 +66,9 @@ step "rm_pings on the replica matches"
 [[ "$(compose exec -T postgres-replica psql -U chess -d chess -tA -c "select \"Count\" from rm_pings where \"PingId\"='$ID'")" == "1" ]] || fail "replica row mismatch"
 echo "ok"
 
-step "hub negotiate is gated"
-[[ "$(curl -sS --resolve "$API_HOST:80:$EDGE_IP" -o /dev/null -w '%{http_code}' -X POST "http://$API_HOST/hub/pings/negotiate?negotiateVersion=1")" == "401" ]] || fail "hub not gated"
+step "live hub: anonymous is 401, a user session is 403 (only the BFF's Relay identity gets in)"
+[[ "$(curl -sS --resolve "$API_HOST:80:$EDGE_IP" -o /dev/null -w '%{http_code}' -X POST "http://$API_HOST/hub/live/negotiate?negotiateVersion=1")" == "401" ]] || fail "hub not gated"
+[[ "$(api -o /dev/null -w '%{http_code}' -X POST "http://$API_HOST/hub/live/negotiate?negotiateVersion=1")" == "403" ]] || fail "a user session reached the live hub"
 echo "ok"
 
 if [[ "$CLUSTER" == "1" ]]; then

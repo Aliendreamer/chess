@@ -22,12 +22,12 @@ flowchart TB
     subgraph bff["app. — TanStack Start SSR (the BFF)"]
         proxy["/api/auth/* proxy<br/>cookies.ts re-homes mp_sid"]
         sfn["server functions<br/>(page data)"]
-        relay["/api/ws/pings/:id<br/>WebSocket relay"]
+        relay["/api/ws/live/:kind/:id<br/>relay: session check,<br/>ONE hub connection per process"]
     end
 
     subgraph be["backend — .NET 10 (1..n replicas, one Akka cluster)"]
         http["FastEndpoints /api/*"]
-        hub["SignalR /hub/pings"]
+        hub["SignalR /hub/live<br/>role Relay only"]
         subgraph akka["Akka.NET ActorSystem"]
             region["shard region<br/>PingActor / GameActor per id"]
             fanout["HubFanOutActor<br/>(DistributedPubSub)"]
@@ -46,12 +46,14 @@ flowchart TB
     browser -- "HTTP + WS, cookie only" --> bff
     proxy --> http
     sfn --> http
-    relay -- "SignalR client,<br/>forwarded cookie" --> hub
+    relay -- "chess_bff service token<br/>(client credentials)" --> hub
+    relay -. "GET /api/me<br/>(browser's cookie)" .-> http
+    relay -. "token" .-> kc
     http -- "Ask (command)" --> region
     http -- "GET lists" --> replica
     http -. "login / refresh" .-> kc
     region -- "Persist event" --> primary
-    region -- "Publish state" --> fanout --> hub
+    region -- "LiveFrame(topic, seq, payload)" --> fanout --> hub
     pub -- "EventsByTag" --> primary
     pub -- "produce acks=all" --> kafka
     kafka --> proj -- "upsert rm_*" --> primary
@@ -82,11 +84,41 @@ sequenceDiagram
     A-->>E: reply with post-persist state
     E-->>S: 200 + state
     S-->>B: 200 + state
-    H-->>B: live update via SignalR → WS relay
+    H-->>B: LiveFrame via the shared hub connection → relay → browser (applied if seq is newer)
     Note over J: Kafka is NOT touched here —<br/>the journal publisher picks the event up (§3)
 ```
 
 The HTTP reply and the live update both come from the actor, so neither waits on replication or Kafka.
+
+### Watching live state (ROADMAP D5)
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant R as BFF relay
+    participant H as LiveHub (/hub/live)
+    participant S as ILiveTopicSource
+    B->>R: WS /api/ws/live/ping/abc (cookie)
+    R->>R: kind on allow-list? id valid? (else 4400)
+    R->>R: GET /api/me with the cookie (else 4401)
+    Note over R,H: one SignalR connection per SSR process,<br/>authenticated as chess_bff (role Relay)
+    R->>H: Subscribe("ping:abc")
+    H->>H: join group "ping:abc" FIRST
+    H->>S: snapshot (actor's current state)
+    S-->>H: LiveFrame(topic, seq, payload)
+    H-->>R: snapshot
+    R-->>B: snapshot (this socket only)
+    H-->>R: pushed LiveFrame (group)
+    R-->>B: to every local socket on "ping:abc"
+    Note over B: applies a frame only if seq is newer,<br/>so a racing snapshot and push never go backwards
+```
+
+- **Topics** are `{kind}:{id}`. A kind plugs in with one backend `ILiveTopicSource` and one entry on the BFF's
+  allow-list. The hub, fan-out and relay never read payloads.
+- **Sharing:** the first local subscriber to a topic joins the backend group and the last one leaves it. 5
+  viewers on one ping cost the backend one connection (measured on the local stack).
+- **Who may watch:** the hub admits only the `Relay` role. The BFF admits a browser only with a valid session
+  and re-checks it every 5 minutes (close code 4401 when it ends).
 
 ## 3. Journal → Kafka (the outbox)
 
@@ -217,3 +249,12 @@ sequenceDiagram
 
 Tokens never leave the backend. Logout revokes the session row first, so the cookie is dead even if the
 Keycloak call fails.
+
+**Which tokens the API accepts:** the issuer must be the realm, and the audience must include `chess_api`,
+enforced in every deployed environment. Two clients carry that audience:
+
+- `chess_api`, the user login above;
+- `chess_bff`, the relay's service account, whose only role is `Relay` and which is the only identity the live
+  hub admits.
+
+A realm token issued to any other client (e.g. `admin-cli`) gets 401.
