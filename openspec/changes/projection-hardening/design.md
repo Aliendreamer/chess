@@ -77,9 +77,12 @@ the right thing.
 ParkedAt)` with an index on `(GroupId, AggregateId, Seq)`. An aggregate is quarantined for a group exactly when
 it has at least one row. Replaying the last row lifts it, so nothing else has to be kept in step.
 
-_As built:_ `Id` is a Guid v7 as 32 hex chars rather than a bigserial, because `Keyset.NewestFirst` pages on a
-string tiebreak. `AggregateId` and `KafkaKey` are unbounded `text`: the fallback identity is the raw Kafka key,
-and a length limit would make an oversized key's park fail, which would be a new poison loop. Columns are
+_As built:_ `Id` is a Guid v7 in a native `uuid` column, per ROADMAP D11 (settled during this change,
+2026-09-24). `Keyset` gained a `Guid` tiebreak overload and `KeysetCursor.TryDecodeGuid` for it. The first
+cut stored the id as `varchar(32)`, and migration `DeadLetterIdUuid` casts it with `USING "Id"::uuid`, because
+Npgsql's `AlterColumn` emits no `USING` clause. `AggregateId` and `KafkaKey` are unbounded `text`: the fallback
+identity is the raw Kafka key, and a length limit would make an oversized key's park fail, which would be a new
+poison loop. Columns are
 PascalCase like the rest of the schema.
 
 The check runs **per message against the database** (one indexed `EXISTS`), not against an in-memory set. A

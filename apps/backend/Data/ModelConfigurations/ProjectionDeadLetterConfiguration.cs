@@ -8,7 +8,6 @@ internal sealed class ProjectionDeadLetterConfiguration : IEntityTypeConfigurati
     {
         builder.ToTable("projection_dead_letters");
         builder.HasKey(d => d.Id);
-        builder.Property(d => d.Id).HasMaxLength(32);
         builder.Property(d => d.GroupId).HasMaxLength(128);
         // AggregateId and KafkaKey stay unbounded text on purpose: the fallback identity is the raw Kafka key, and
         // a length limit here would turn an oversized key into a park that itself fails — a new poison loop.

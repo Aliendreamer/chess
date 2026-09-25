@@ -77,3 +77,16 @@ steps that need Docker or a human-run gate.
       dead-letter/quarantine flow (add a `parked` branch to the flowchart), and add `projection-dead-letters`
       to the health notes. Update the CLAUDE.md "Journal outbox" note with one line on parking and replay.
 - [x] 6.4 Commit: `docs(repo): projection hardening in architecture and part 0 notes`.
+
+## 7. Dead-letter id as uuid (ROADMAP D11)
+
+- [x] 7.1 Failing tests: `KeysetCursor.TryDecodeGuid` accepts only a Guid id; `NewestFirst` / `Before` with a
+      `Guid` tiebreak order by `(at, id)` and build one row-value comparison; the stored dead-letter id is a
+      version-7 Guid. They fail to compile until the overloads exist and `Id` is a `Guid`.
+- [x] 7.2 `Keyset`: generic core over the id type, keeping the string entry points unchanged for pings.
+      `ProjectionDeadLetter.Id` becomes a `Guid`, and the list endpoint decodes with `TryDecodeGuid`.
+- [x] 7.3 Migration `DeadLetterIdUuid` with a hand-written `USING "Id"::uuid` (Npgsql emits none).
+- [x] 7.4 🐳 `DeadLetterSchemaTests`: a row parked under the old schema survives the migration with the same
+      id, and uuid-keyed pages walk every row once. `DeadLetterRoundTripTests` still green. On the live stack
+      the column is `uuid` after a restart and `verify-part0.sh` passes.
+- [x] 7.5 Commit: `refactor(backend): dead-letter id as uuid with a guid keyset tiebreak`.

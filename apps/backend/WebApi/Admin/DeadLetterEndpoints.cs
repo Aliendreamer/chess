@@ -3,7 +3,7 @@ using Chess.Backend.Projections;
 namespace Chess.Backend.WebApi.Admin;
 
 internal sealed record DeadLetterItem(
-    string Id,
+    Guid Id,
     string GroupId,
     string AggregateId,
     long Seq,
@@ -48,15 +48,15 @@ internal sealed class ListDeadLettersEndpoint(ProjectDbContext db) : Endpoint<Li
     public override async Task HandleAsync(ListDeadLettersRequest req, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(req);
-        KeysetCursor? after = null;
+        (DateTimeOffset At, Guid Id)? after = null;
         if (req.Cursor is not null)
         {
-            if (!KeysetCursor.TryDecode(req.Cursor, out KeysetCursor decoded))
+            if (!KeysetCursor.TryDecodeGuid(req.Cursor, out KeysetCursor decoded, out Guid afterId))
             {
                 ThrowError(r => r.Cursor, "Invalid cursor.");
             }
 
-            after = decoded;
+            after = (decoded.At, afterId);
         }
 
         int limit = Keyset.ClampLimit(req.Limit, ListDeadLettersRequest.MaxLimit);
@@ -70,7 +70,7 @@ internal sealed class ListDeadLettersEndpoint(ProjectDbContext db) : Endpoint<Li
             .NewestFirst(d => d.ParkedAt, d => d.Id, after, limit)
             .Select(d => new DeadLetterItem(d.Id, d.GroupId, d.AggregateId, d.Seq, d.KafkaKey, d.Value, d.Attempts, d.LastError, d.FirstFailedAt, d.ParkedAt))
             .ToListAsync(ct);
-        await Send.OkAsync(Keyset.ToPage(rows, limit, i => new KeysetCursor(i.ParkedAt, i.Id)), ct);
+        await Send.OkAsync(Keyset.ToPage(rows, limit, i => new KeysetCursor(i.ParkedAt, i.Id.ToString())), ct);
     }
 }
 

@@ -23,7 +23,7 @@ public sealed class DeadLetterStoreTests
         Assert.Equal(("g", "a", 7L, "key-a", "{\"seq\":7}", 5, "boom"), (row.GroupId, row.AggregateId, row.Seq, row.KafkaKey, row.Value, row.Attempts, row.LastError));
         Assert.Equal(T0.AddSeconds(-7), row.FirstFailedAt);
         Assert.Equal(T0, row.ParkedAt);
-        Assert.False(string.IsNullOrEmpty(row.Id));
+        Assert.Equal(7, row.Id.Version); // Guid v7, time-ordered (ROADMAP D11)
     }
 
     [Fact]

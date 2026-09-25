@@ -118,7 +118,7 @@ internal sealed class DeadLetterStore(ProjectDbContext context, ILogger<DeadLett
     {
         Context.ProjectionDeadLetters.Add(new ProjectionDeadLetter
         {
-            Id = Guid.CreateVersion7().ToString("N"),
+            Id = Guid.CreateVersion7(),
             GroupId = request.GroupId,
             AggregateId = request.AggregateId,
             Seq = request.Seq,

@@ -7,8 +7,8 @@ namespace Chess.Backend.Data.Models;
 /// </summary>
 internal sealed class ProjectionDeadLetter
 {
-    /// <summary>Guid v7 as 32 hex chars: time-ordered, and a string so keyset paging can use it as the tiebreak.</summary>
-    public required string Id { get; set; }
+    /// <summary>Guid v7 in a native <c>uuid</c> column (ROADMAP D11): time-ordered, 16 bytes, the keyset tiebreak.</summary>
+    public Guid Id { get; set; }
 
     public required string GroupId { get; set; }
 

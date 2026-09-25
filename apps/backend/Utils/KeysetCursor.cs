@@ -34,4 +34,11 @@ internal readonly record struct KeysetCursor(DateTimeOffset At, string Id)
         cursor = new KeysetCursor(new DateTimeOffset(ticks, TimeSpan.Zero), raw[(bar + 1)..]);
         return true;
     }
+
+    /// <summary>Decodes a cursor whose id must be a <see cref="Guid"/> (a <c>uuid</c>-keyed list, ROADMAP D11).</summary>
+    public static bool TryDecodeGuid(string? encoded, out KeysetCursor cursor, out Guid id)
+    {
+        id = Guid.Empty;
+        return TryDecode(encoded, out cursor) && Guid.TryParse(cursor.Id, out id);
+    }
 }

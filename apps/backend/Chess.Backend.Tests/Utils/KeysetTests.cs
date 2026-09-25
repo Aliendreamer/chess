@@ -99,6 +99,45 @@ public sealed class KeysetTests
         Assert.All(ParameterCollector.Collect(before.Body), p => Assert.Same(only, p));
     }
 
+    private sealed record GuidRow(Guid Id, DateTimeOffset At);
+
+    [Fact]
+    public void Guid_cursor_decodes_only_when_the_id_is_a_guid()
+    {
+        Guid id = Guid.CreateVersion7();
+        Assert.True(KeysetCursor.TryDecodeGuid(new KeysetCursor(T0, id.ToString()).Encode(), out KeysetCursor cursor, out Guid back));
+        Assert.Equal((T0, id), (cursor.At, back));
+
+        Assert.False(KeysetCursor.TryDecodeGuid(new KeysetCursor(T0, "not-a-guid").Encode(), out _, out _));
+        Assert.False(KeysetCursor.TryDecodeGuid("garbage!", out _, out _));
+    }
+
+    [Fact]
+    public void NewestFirst_with_a_guid_tiebreak_orders_by_time_then_id_and_takes_one_extra()
+    {
+        Guid low = Guid.Parse("00000000-0000-7000-8000-000000000001");
+        Guid high = Guid.Parse("00000000-0000-7000-8000-000000000002");
+        IQueryable<GuidRow> source = new[]
+        {
+            new GuidRow(low, T0), new GuidRow(high, T0.AddSeconds(1)), new GuidRow(low, T0.AddSeconds(1)), new GuidRow(high, T0.AddSeconds(-1)),
+        }.AsQueryable();
+
+        List<GuidRow> rows = [.. source.NewestFirst(r => r.At, r => r.Id, after: null, limit: 2)];
+
+        Assert.Equal([(T0.AddSeconds(1), high), (T0.AddSeconds(1), low), (T0, low)], rows.Select(r => (r.At, r.Id)));
+    }
+
+    [Fact]
+    public void Before_with_a_guid_tiebreak_is_one_row_value_comparison_over_a_single_row_parameter()
+    {
+        Expression<Func<GuidRow, bool>> before = Keyset.Before<GuidRow>(r => r.At, x => x.Id, T0, Guid.CreateVersion7());
+
+        MethodCallExpression call = Assert.IsAssignableFrom<MethodCallExpression>(before.Body);
+        Assert.Equal(nameof(NpgsqlDbFunctionsExtensions.LessThan), call.Method.Name);
+        ParameterExpression only = Assert.Single(before.Parameters);
+        Assert.All(ParameterCollector.Collect(before.Body), p => Assert.Same(only, p));
+    }
+
     private sealed class ParameterCollector : ExpressionVisitor
     {
         private readonly List<ParameterExpression> _seen = [];
