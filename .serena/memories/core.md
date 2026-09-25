@@ -19,11 +19,11 @@ stack** — `verify-part0.sh` (single-node and `--cluster`), `verify-stack.sh`, 
 backend`, the full Playwright suite (8) and `nx validate proxy` all pass. Getting there took fixing
 three faults that had left the spine dead in the stack (Akka.Streams.Kafka HOCON missing from the
 ActorSystem, the `akka` schema never created, PingProjection unresolvable by concrete type) plus two
-wrong verification scripts; see `docs/superpowers/notes/part0-experiment.md`. Coverage gates are 75% both sides (user, 2026-09-22: "90 is too much... 75+ should be enough"):
+wrong verification scripts; see the Part 0 experiment note (removed 2026-09-25 with `docs/`; in git history, commit d24c251). Coverage gates are 75% both sides (user, 2026-09-22: "90 is too much... 75+ should be enough"):
 backend 81.7%, frontend 98.5% on the measured surface. The spine runs end to end:
 PingActor (sharded, persistent) → Kafka → `rm_pings` projection → replica reads → DistributedPubSub →
 SignalR → SSR WebSocket relay → browser page `/pings/$id`. Two notes hold the conclusions:
-`docs/superpowers/notes/part0-realtime-spike.md` (relay option A adopted, with the evidence) and
+the realtime-spike note (relay option A adopted, with the evidence) and
 `part0-experiment.md` (what Akka/Kafka bought and cost, what to change before Part 1 — dual-write gap
 first). Measured: write→replica ~250 ms, ping→replica row 250–500 ms, failover to backend-2 ~2 s.
 
@@ -40,7 +40,7 @@ The user installed OpenSpec (CLI 1.2.0) to write specs and plans down "so we hav
 in `openspec/` (`config.yaml` carries the project context and per-artifact rules shown to the agent),
 slash commands in `.claude/commands/opsx/`, skills `openspec-{propose,apply,archive,explore,sync-specs}`.
 Part 1 onward gets its design and plan through OpenSpec rather than ad-hoc files. Part 0's history
-stays where it was written: `docs/superpowers/{specs,plans,notes}/`. `openspec validate --strict`
+was in `docs/superpowers/`, removed on 2026-09-25 (user: "we dont want to use docs only openspec"); it survives in git history. **Docs live only in `openspec/`** (architecture in `openspec/architecture.md`). `openspec validate --strict`
 wants network (edge.openspec.dev) and fails inside the agent sandbox.
 
 ## Source map

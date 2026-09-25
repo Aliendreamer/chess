@@ -19,9 +19,15 @@ HTTP → sharded persistent actor → journal → Kafka → projection → read 
 ```
 
 Measured on the local stack: write→replica ~250 ms, ping→row on the replica 250–500 ms, failover to a
-second node ~2 s. Read [`docs/superpowers/notes/part0-experiment.md`](docs/superpowers/notes/part0-experiment.md)
-for what that cost and what changes before Part 1. The dual-write gap it flagged is closed: actors no
-longer publish, a journal outbox does (see [`openspec/architecture.md`](openspec/architecture.md)).
+second node ~2 s. The Part 0 follow-ups are done as OpenSpec changes (in
+[`openspec/changes/archive/`](openspec/changes/archive/)):
+
+- the journal outbox, so actors no longer publish;
+- projection hardening (dead letters, conflict-safe watermarks);
+- the shared live relay, with audience enforcement.
+
+[`openspec/architecture.md`](openspec/architecture.md) draws the result. The original Part 0 spec, plan and
+experiment notes are in git history (`git show d24c251`).
 
 Next: Part 1, live games against people. Parts 2–4 (engine, correspondence, study) follow.
 [`ROADMAP.md`](ROADMAP.md) tags every decision as decided, default, or open.
@@ -183,7 +189,6 @@ journal outbox and its advisory-lock lease, projection idempotency, actor lifecy
 apps/            backend (.NET), frontend (TanStack Start), proxy (nginx)
 tools/localdev/  compose stack, Keycloak realm, Postgres init, verify-*.sh
 tools/deploy/    image build/push (tag YYYYMMDD.<short-sha>)
-docs/superpowers/ Part 0's spec, plan and experiment notes
 openspec/        architecture.md (diagrams), plus specs and plans from Part 1 onward
 ```
 
