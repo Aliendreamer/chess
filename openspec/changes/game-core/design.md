@@ -177,5 +177,14 @@ redeploying the previous image, and games created in between become dormant jour
 
 ## Open Questions
 
-- The exact Gera API for promotion and SAN output is confirmed while writing the adapter tests (task 1). If it
-  can't produce SAN with check marks, the adapter derives `+`/`#` from the board.
+_Resolved while building the adapter (task 1, probed against Gera.Chess 1.2.0):_
+
+- SAN carries check and mate marks (`Qh4#`), castling is `O-O`, en passant is `exd6`, and promotion is `a8=N`.
+- Gera appends `$` to a stalemating move (`Qe6$`). That isn't SAN, so the adapter strips it.
+- **Automatic draw rules are off by default** (`AutoEndgameRules.None`). The adapter turns on `All`, otherwise
+  threefold, the 50-move rule and insufficient material would never end a game.
+- An illegal move makes `Move()` return `false` rather than throw. Promotion is chosen through the
+  `OnPromotePawn` event.
+- The FEN includes the en-passant square (`… b KQkq e3 0 1`).
+- Gera's types live in the root namespace `Chess`, the same as ours, so the adapter is the only file that uses
+  them, through a `Gera` alias.

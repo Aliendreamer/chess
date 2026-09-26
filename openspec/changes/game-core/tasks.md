@@ -3,13 +3,13 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 1. Rules adapter
 
-- [ ] 1.1 Add `Gera.Chess` 1.2.0 (exact pin in `Directory.Packages.props`). Failing tests (`ChessRulesTests`),
+- [x] 1.1 Add `Gera.Chess` 1.2.0 (exact pin in `Directory.Packages.props`). Failing tests (`ChessRulesTests`),
       which fail to compile until the adapter exists: - `e2e4` gives SAN `e4`, the expected placement, and Black to move; - `e2e5` is rejected with a reason; - `a7a8n` promotes to a knight (`a8=N`), set up by replaying a legal sequence to a promotion; - fool's mate ends `0-1 checkmate`; - the knight shuffle twice ends `½-½ threefold`, also after `Replay` of the first half; - a known 10-move stalemate line ends `½-½ stalemate`; - castling SAN (`O-O`) and en passant are accepted.
-- [ ] 1.2 Failing tests (`SideCanMateTests`, positions from FEN): a lone king or king + one minor piece can't
+- [x] 1.2 Failing tests (`SideCanMateTests`, positions from FEN): a lone king or king + one minor piece can't
       mate; king + rook, king + two bishops, or any pawn can.
-- [ ] 1.3 Implement `ChessRules`, `SideCanMate`, `GameResult`/`EndReason` and `TimeControl` (the D12 presets,
+- [x] 1.3 Implement `ChessRules`, `SideCanMate`, `GameResult`/`EndReason` and `TimeControl` (the D12 presets,
       parse and format `5+3`). Answer design open question 1 (SAN check marks) in an as-built note.
-- [ ] 1.4 Commit: `feat(backend): chess rules adapter over gera.chess`.
+- [x] 1.4 Commit: `feat(backend): chess rules adapter over gera.chess`.
 
 ## 2. GameActor: moves, draws, endings
 

@@ -58,6 +58,7 @@
     <PackageReference Include="Akka" />
     <PackageReference Include="Akka.Hosting" />
     <PackageReference Include="Akka.Cluster.Hosting" />
+    <PackageReference Include="Gera.Chess" />
     <PackageReference Include="Akka.Persistence.Sql.Hosting" />
     <PackageReference Include="Akka.Streams.Kafka" />
     <PackageReference Include="Confluent.Kafka" />
