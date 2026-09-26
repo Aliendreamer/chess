@@ -156,3 +156,78 @@ describe('HubMultiplexer', () => {
     expect(invokes(hub.port).at(-1)).toEqual(['Unsubscribe', 'ping:a'])
   })
 })
+
+describe('HubMultiplexer presence (presence-and-abandonment D1–D2)', () => {
+  const GAME = 'game:0199f1c2a3b47c5d8e9f0a1b2c3d4e5f'
+
+  function withTimer() {
+    const hub = fakeHub()
+    let refresh: (() => void) | null = null
+    const mux = createHubMultiplexer(() => hub.port, {
+      instance: 'bff-1',
+      refreshMs: 30_000,
+      setInterval: (fn) => {
+        refresh = fn
+        return 1 as unknown as ReturnType<typeof setInterval>
+      },
+      clearInterval: () => {},
+    })
+    const presence = () => invokes(hub.port).filter(([m]) => m === 'Present' || m === 'Absent')
+    return { hub, mux, presence, refresh: () => refresh!() }
+  }
+
+  it('reports a user present on their first socket and absent after their last', async () => {
+    const { mux, presence } = withTimer()
+    const tab1 = socket()
+    const tab2 = socket()
+
+    await mux.subscribe(GAME, tab1, 7)
+    await mux.subscribe(GAME, tab2, 7)
+    await mux.unsubscribe(GAME, tab1, 7)
+    expect(presence()).toEqual([['Present', GAME, 7, 'bff-1']])
+
+    await mux.unsubscribe(GAME, tab2, 7)
+    expect(presence()).toEqual([
+      ['Present', GAME, 7, 'bff-1'],
+      ['Absent', GAME, 7, 'bff-1'],
+    ])
+  })
+
+  it('reports nothing for other kinds or an unknown user', async () => {
+    const { mux, presence } = withTimer()
+
+    await mux.subscribe('ping:p1', socket(), 7)
+    await mux.subscribe('queue:5+3', socket(), 7)
+    await mux.subscribe(GAME, socket())
+
+    expect(presence()).toEqual([])
+  })
+
+  it('re-sends every held presence on the refresh timer and after a reconnect', async () => {
+    const { hub, mux, presence, refresh } = withTimer()
+    await mux.subscribe(GAME, socket(), 7)
+    await mux.subscribe(GAME, socket(), 8)
+
+    refresh()
+    hub.reconnect()
+
+    expect(presence()).toEqual([
+      ['Present', GAME, 7, 'bff-1'],
+      ['Present', GAME, 8, 'bff-1'],
+      ['Present', GAME, 7, 'bff-1'],
+      ['Present', GAME, 8, 'bff-1'],
+      ['Present', GAME, 7, 'bff-1'],
+      ['Present', GAME, 8, 'bff-1'],
+    ])
+  })
+
+  it('forgets presence on a final close (the backend lease expires it)', async () => {
+    const { hub, mux, presence, refresh } = withTimer()
+    await mux.subscribe(GAME, socket(), 7)
+
+    hub.close()
+    refresh()
+
+    expect(presence()).toEqual([['Present', GAME, 7, 'bff-1']])
+  })
+})

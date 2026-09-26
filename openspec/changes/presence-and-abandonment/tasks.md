@@ -26,10 +26,10 @@ endpoint`.
 
 ## 3. BFF presence reporting
 
-- [ ] 3.1 Failing tests: `openRelay` hands the `/api/me` user id to `mux.subscribe`; the multiplexer sends
+- [x] 3.1 Failing tests: `openRelay` hands the `/api/me` user id to `mux.subscribe`; the multiplexer sends
       `Present` on a user's first `game:` socket and `Absent` on the last, nothing for `ping:`/`queue:`/`invite:`,
       re-sends every held presence on the 30 s timer and on reconnect, all under one instance id.
-- [ ] 3.2 Implement. Commit: `feat(frontend): report player presence to the hub`.
+- [x] 3.2 Implement. Commit: `feat(frontend): report player presence to the hub`.
 
 ## 4. The page
 

@@ -50,8 +50,8 @@ export function parseLiveUrl(url: string | null | undefined): LiveTarget | null 
 export interface RelayDeps {
   mux: HubMultiplexer
   revalidateMs: number
-  /** True for a live session, false for none/revoked; throws when the backend can't be asked. */
-  isSessionValid: (cookie: string) => Promise<boolean>
+  /** The session's user id, or null for none/revoked; throws when the backend can't be asked. */
+  sessionUser: (cookie: string) => Promise<number | null>
   setInterval: (fn: () => Promise<void>, ms: number) => ReturnType<typeof setInterval>
   clearInterval: (handle: ReturnType<typeof setInterval>) => void
 }
@@ -76,6 +76,7 @@ export function openRelay(
 ): RelayHandle {
   let closed = false
   let subscribed = false
+  let userId: number | undefined
   let timer: ReturnType<typeof setInterval> | null = null
 
   async function stop(): Promise<void> {
@@ -83,7 +84,7 @@ export function openRelay(
     timer = null
     if (subscribed) {
       subscribed = false
-      await deps.mux.unsubscribe(target.topic, socket)
+      await deps.mux.unsubscribe(target.topic, socket, userId)
     }
   }
 
@@ -92,20 +93,24 @@ export function openRelay(
       socket.close(UNAUTHENTICATED, 'unauthenticated')
       return
     }
-    const valid = await deps.isSessionValid(cookie)
+    const user = await deps.sessionUser(cookie)
     if (closed) return
-    if (!valid) {
+    if (user === null) {
       socket.close(UNAUTHENTICATED, 'unauthenticated')
       return
     }
     subscribed = true
+    userId = user
     timer = deps.setInterval(async () => {
-      const stillValid = await deps.isSessionValid(cookie).catch(() => true)
+      const stillValid = await deps
+        .sessionUser(cookie)
+        .then((u) => u !== null)
+        .catch(() => true)
       if (stillValid || closed) return
       await stop()
       socket.close(UNAUTHENTICATED, 'session ended')
     }, deps.revalidateMs)
-    await deps.mux.subscribe(target.topic, socket)
+    await deps.mux.subscribe(target.topic, socket, user)
   }
 
   const ready = open().catch(() => {
@@ -126,14 +131,16 @@ export function relayDeps(): RelayDeps {
   return {
     mux: liveMultiplexer(),
     revalidateMs: relayRevalidateMs(),
-    isSessionValid: async (cookie) =>
-      (await loadMe((input, init) => {
-        const headers = new Headers(init?.headers)
-        headers.set('cookie', cookie)
-        headers.set('accept', 'application/json')
-        const url = typeof input === 'string' ? `${base}${input}` : input
-        return fetch(url, { ...init, headers })
-      })) !== null,
+    sessionUser: async (cookie) =>
+      (
+        await loadMe((input, init) => {
+          const headers = new Headers(init?.headers)
+          headers.set('cookie', cookie)
+          headers.set('accept', 'application/json')
+          const url = typeof input === 'string' ? `${base}${input}` : input
+          return fetch(url, { ...init, headers })
+        })
+      )?.id ?? null,
     setInterval: (fn, ms) => setInterval(() => void fn(), ms),
     clearInterval: (handle) => clearInterval(handle),
   }

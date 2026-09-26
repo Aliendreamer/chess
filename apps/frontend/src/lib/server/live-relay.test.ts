@@ -63,9 +63,10 @@ function harness(session: Array<boolean | Error>) {
   const deps: RelayDeps = {
     mux,
     revalidateMs: 1000,
-    isSessionValid: vi.fn(() => {
+    // true = a live session (user 7), false = none/revoked.
+    sessionUser: vi.fn(() => {
       const next = session.length > 1 ? session.shift()! : session[0]!
-      return next instanceof Error ? Promise.reject(next) : Promise.resolve(next)
+      return next instanceof Error ? Promise.reject(next) : Promise.resolve(next ? 7 : null)
     }),
     setInterval: vi.fn((fn: () => Promise<void>) => {
       tick = fn
@@ -86,7 +87,7 @@ describe('openRelay', () => {
     await openRelay(target, null, s, deps).ready
 
     expect(s.closed).toEqual([UNAUTHENTICATED, 'unauthenticated'])
-    expect(deps.isSessionValid).not.toHaveBeenCalled()
+    expect(deps.sessionUser).not.toHaveBeenCalled()
     expect(mux.subscribe).not.toHaveBeenCalled()
   })
 
@@ -106,7 +107,7 @@ describe('openRelay', () => {
 
     await openRelay(target, 'mp_sid=x', s, deps).ready
 
-    expect(mux.subscribe).toHaveBeenCalledWith('ping:p1', s)
+    expect(mux.subscribe).toHaveBeenCalledWith('ping:p1', s, 7)
     expect(deps.setInterval).toHaveBeenCalledWith(expect.any(Function), 1000)
     expect(s.closed).toBeUndefined()
   })
@@ -118,7 +119,7 @@ describe('openRelay', () => {
 
     await tick()
 
-    expect(mux.unsubscribe).toHaveBeenCalledWith('ping:p1', s)
+    expect(mux.unsubscribe).toHaveBeenCalledWith('ping:p1', s, 7)
     expect(deps.clearInterval).toHaveBeenCalled()
     expect(s.closed).toEqual([UNAUTHENTICATED, 'session ended'])
   })
@@ -142,20 +143,20 @@ describe('openRelay', () => {
 
     await relay.close()
 
-    expect(mux.unsubscribe).toHaveBeenCalledWith('ping:p1', s)
+    expect(mux.unsubscribe).toHaveBeenCalledWith('ping:p1', s, 7)
     expect(deps.clearInterval).toHaveBeenCalled()
   })
 
   it('does not subscribe a socket that closed while its session was being checked', async () => {
-    let release: (valid: boolean) => void = () => {}
+    let release: (user: number | null) => void = () => {}
     const { deps, mux } = harness([true])
-    deps.isSessionValid = () => new Promise((resolve) => (release = resolve))
+    deps.sessionUser = () => new Promise((resolve) => (release = resolve))
     const s = socket()
 
     const relay = openRelay(target, 'mp_sid=x', s, deps)
     // The host's close handler runs before the session check returns.
     await relay.close()
-    release(true)
+    release(7)
     await relay.ready
 
     expect(mux.subscribe).not.toHaveBeenCalled()
