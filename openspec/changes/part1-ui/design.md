@@ -88,7 +88,9 @@ Choosing a tile does the following:
 - otherwise open `queue:{tc}` (its frame carries the waiting count and `lastPairing`) and re-POST with
   `?heartbeat=true` every 25 s (only a heartbeat may be answered with a recent pairing; a plain POST always seeks
   a new game);
-- the first of the frame naming this user or a heartbeat answering `matched` navigates to the game;
+- the first of a frame naming this user (only frames after the join answer's `seq`: the queue's view keeps
+  its last pairing, which may be this user's previous game) or a heartbeat answering `matched` navigates to the
+  game;
 - Cancel, or leaving the page, sends `DELETE`.
 
 The tiles don't show live counts on Home. That would take one socket per preset for every visitor, so the

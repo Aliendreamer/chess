@@ -7,6 +7,8 @@ export interface OptionTileProps {
   selected?: boolean
   align?: 'start' | 'center'
   disabled?: boolean
+  /** The accessible name, when figure + caption would not read well ("5+3Blitz"). */
+  label?: string
   onClick?: () => void
 }
 
@@ -16,6 +18,7 @@ export function OptionTile({
   selected = false,
   align = 'start',
   disabled = false,
+  label,
   onClick,
 }: OptionTileProps) {
   const center = align === 'center'
@@ -23,6 +26,7 @@ export function OptionTile({
     <button
       type="button"
       aria-pressed={selected}
+      aria-label={label}
       disabled={disabled}
       onClick={onClick}
       className={[

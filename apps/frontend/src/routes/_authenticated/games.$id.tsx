@@ -4,7 +4,7 @@ import type { GameSummary, GameView, MoveItem } from '#/lib/games'
 import type { GameCommand } from '#/lib/server/game-loaders'
 import type { LiveFrame } from '#/lib/live'
 import type { Me } from '#/lib/server/api-loaders'
-import { getGameMoves, getGamePage, postGameCommand } from '#/lib/server/api'
+import { getGameMoves, getGamePage, getGameSummary, postGameCommand } from '#/lib/server/api'
 import {
   category,
   isGameView,
@@ -51,7 +51,7 @@ interface GameProps {
 
 type Pending = { fen: string; uci: string }
 
-function Game({ id, me, view: loaded, summary, moves }: GameProps) {
+function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps) {
   const topic = topicId(id)
   const initial = useMemo<LiveFrame<GameView>>(
     () => ({ topic: `game:${topic}`, seq: loaded.seq, payload: loaded }),
@@ -92,6 +92,21 @@ function Game({ id, me, view: loaded, summary, moves }: GameProps) {
       })
     }
   }, [seq, id])
+
+  // A game this new may not be on the replica yet: ask again a few times for the players' names (D4, D23).
+  const [summary, setSummary] = useState(loadedSummary)
+  useEffect(() => {
+    if (summary) return
+    let tries = 0
+    const timer = setInterval(() => {
+      tries += 1
+      void getGameSummary({ data: id }).then((found) => {
+        if (found) setSummary(found)
+      })
+      if (tries >= 5) clearInterval(timer)
+    }, 1500)
+    return () => clearInterval(timer)
+  }, [id, summary])
 
   const clocks = useLocalClocks(current)
 

@@ -35,11 +35,11 @@ Components stay presentational; the logic they show lives in pure, tested helper
 
 ## 3. Home, matchmaking and invites
 
-- [ ] 3.1 Server functions: join/leave queue, create/get/accept/cancel invite, my games; loader tests.
-- [ ] 3.2 Home (`/`): greeting, quick-pairing tiles from the D12 presets with the waiting state (D6: live
+- [x] 3.1 Server functions: join/leave queue, create/get/accept/cancel invite, my games; loader tests.
+- [x] 3.2 Home (`/`): greeting, quick-pairing tiles from the D12 presets with the waiting state (D6: live
       `queue:{tc}` count, 25 s heartbeat, Cancel, navigate on pairing), "Play a friend" (time control + colour →
       invite), recent games from `/api/me/games`.
-- [ ] 3.3 Route `/invites/$id` (D7): creator view (link, status, Cancel), guest view (Accept), navigate on
+- [x] 3.3 Route `/invites/$id` (D7): creator view (link, status, Cancel), guest view (Accept), navigate on
       `accepted`. Commit: `feat(frontend): quick pairing, invite links and home`.
 
 ## 4. History and PGN

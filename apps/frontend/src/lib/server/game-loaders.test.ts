@@ -56,8 +56,9 @@ describe('game reads', () => {
     ])
   })
 
-  it('a summary the replica does not have yet is null, not an error', async () => {
+  it('a game the replica does not have yet reads as no summary and no moves, not an error', async () => {
     expect(await loadGameSummary(fakeFetch(404, ''), ID)).toBeNull()
+    expect(await loadGameMoves(fakeFetch(404, ''), ID)).toEqual([])
   })
 
   it('401 redirects to login; other failures throw', async () => {

@@ -52,12 +52,11 @@ export async function loadGameSummary(
   return readJson<GameSummary>(res, `GET /api/games/${id}`)
 }
 
-/** `GET /api/games/{id}/moves` (replica). */
+/** `GET /api/games/{id}/moves` (replica): empty while the projection has not caught up with a new game (D4). */
 export async function loadGameMoves(fetchImpl: typeof fetch, id: string): Promise<Array<MoveItem>> {
-  return readJson<Array<MoveItem>>(
-    await fetchImpl(`/api/games/${id}/moves`),
-    `GET /api/games/${id}/moves`,
-  )
+  const res = await fetchImpl(`/api/games/${id}/moves`)
+  if (res.status === 404) return []
+  return readJson<Array<MoveItem>>(res, `GET /api/games/${id}/moves`)
 }
 
 /** A POST whose 4xx refusal is an outcome; 401 redirects to login, 5xx throws. */
