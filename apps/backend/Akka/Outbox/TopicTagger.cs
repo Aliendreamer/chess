@@ -15,14 +15,20 @@ internal sealed class TopicTagger : IWriteEventAdapter
 
     /// <summary>Every event type the tagger knows; the journal binds the adapter to exactly these.</summary>
     public static readonly Type[] BoundTypes =
-        [typeof(Pinged), typeof(GameCreated), typeof(MoveMade), typeof(DrawOffered), typeof(DrawDeclined), typeof(GameEnded)];
+        [
+            typeof(Pinged), typeof(GameCreated), typeof(MoveMade), typeof(DrawOffered), typeof(DrawDeclined), typeof(GameEnded),
+            typeof(PlayerLeft), typeof(PlayerReturned), typeof(AbandonmentOffered),
+        ];
 
     public string Manifest(object evt) => string.Empty;
 
     public object ToJournal(object evt) => evt switch
     {
         Pinged => new Tagged(evt, [PingTopics.Kafka]),
-        GameCreated or MoveMade or DrawOffered or DrawDeclined or GameEnded => new Tagged(evt, [GameTopics.Kafka]),
+        // Every event a game persists goes to Kafka: consumers dedupe by (game, seq) and stall on a gap, so a game
+        // event kept out of Kafka would stop every projection of that game.
+        GameCreated or MoveMade or DrawOffered or DrawDeclined or GameEnded
+            or PlayerLeft or PlayerReturned or AbandonmentOffered => new Tagged(evt, [GameTopics.Kafka]),
         _ => evt,
     };
 }

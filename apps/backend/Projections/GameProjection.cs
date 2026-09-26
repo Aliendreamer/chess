@@ -49,14 +49,15 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
             "game.created" => await CreateAsync(gameId, Payload<GameCreated>(e), ct),
             "game.move-made" => Moved(game!, gameId, Payload<MoveMade>(e)),
             "game.ended" => await EndedAsync(game!, Payload<GameEnded>(e), ct),
-            _ => game!, // draw offered / declined: nothing to show in lists, only the watermark moves
+            _ => game!, // draw and presence events: nothing to show in lists, only the watermark moves
         };
         game.LastSeq = e.Seq;
         await db.SaveChangesAsync(ct);
     }
 
     private static bool IsGameEvent(string type) =>
-        type is "game.created" or "game.move-made" or "game.draw-offered" or "game.draw-declined" or "game.ended";
+        type is "game.created" or "game.move-made" or "game.draw-offered" or "game.draw-declined" or "game.ended"
+            or "game.player-left" or "game.player-returned" or "game.abandonment-offered";
 
     private static T Payload<T>(EventEnvelope<JsonElement> e) =>
         e.Payload.Deserialize<T>(EventJson.Options)

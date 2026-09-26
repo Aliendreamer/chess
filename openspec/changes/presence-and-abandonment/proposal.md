@@ -26,7 +26,8 @@ In the code:
   and after a hub reconnect. Presence is keyed by a per-process BFF instance id, not the SignalR connection id.
 - **Backend:** `LiveHub.Present/Absent(topic, userId, instance)` route to the `GameActor`. The actor keeps who is
   present per BFF instance in memory, expires an instance not refreshed in 75 s, and persists only the
-  transitions `PlayerLeft` / `PlayerReturned` (journal only, not Kafka). A timer at absent + 60 s publishes a view
+  transitions `PlayerLeft` / `PlayerReturned` (on `game.events` like every game event; the projection only moves its
+  watermark). A timer at absent + 60 s publishes a view
   with `claimableBy`; `POST /api/games/{id}/claim {"outcome":"win"|"draw"}` ends the game with a new
   `EndReason.Abandonment` (PGN termination `abandoned`).
 - **Frontend:** `GameView` gains `absentId` and `claimableBy`; the game page shows the three choices to
@@ -59,4 +60,5 @@ player (e.g. email).
   `WebApi/Live/LiveHub`, `WebApi/Games` (claim endpoint), `GameProjection` (the new reason flows through as text).
 - Frontend: `lib/server/{live-relay,hub-multiplexer}.ts`, `lib/useLiveTopic.ts`, `lib/games.ts`, the game route,
   `lib/server/game-loaders.ts` (claim command).
-- No schema change: the new events are journal-only and the read model stores the reason as text.
+- No schema change: the new events only advance the projection's watermark, and the read model stores the reason as
+  text.

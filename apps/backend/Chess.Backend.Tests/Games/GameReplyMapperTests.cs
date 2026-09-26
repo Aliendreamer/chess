@@ -51,4 +51,16 @@ public sealed class GameReplyMapperTests
 
         Assert.Equal(n, d);
     }
+
+    [Theory]
+    [InlineData("win", true, true)]
+    [InlineData("draw", true, false)]
+    [InlineData("WIN", false, false)]
+    [InlineData("", false, false)]
+    [InlineData(null, false, false)]
+    public void A_claim_is_a_win_or_a_draw(string? outcome, bool ok, bool win)
+    {
+        Assert.Equal(ok, GameReplyMapper.TryParseClaim(outcome, out bool parsed));
+        Assert.Equal(win, parsed);
+    }
 }

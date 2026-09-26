@@ -15,10 +15,10 @@ touches. 🐳 marks steps that need Docker or the live stack. Expected values in
 
 ## 2. Hub and endpoint
 
-- [ ] 2.1 `LiveHub.Present/Absent(topic, userId, instance)` (Relay role; `game` topics only, others ignored) →
+- [x] 2.1 `LiveHub.Present/Absent(topic, userId, instance)` (Relay role; `game` topics only, others ignored) →
       the games region; `POST /api/games/{id}/claim` with the reply mapper. Unit-test the mapping of the claim
       body; the hub stays thin.
-- [ ] 2.2 🐳 Integration test (`GamePresenceFlowTests`): a hub client reports both players present, White and
+- [x] 2.2 🐳 Integration test (`GamePresenceFlowTests`): a hub client reports both players present, White and
       Black move, Black is reported `Absent`; with the actor's timers shortened by options (`GameOptions:
 AbandonAfter`, `PresenceLease`, test-only values), White's frame gets `claimableBy`, the claim ends the game
       with `Abandonment`, and the PGN says `abandoned`. Commit: `feat(backend): presence on the hub and the claim

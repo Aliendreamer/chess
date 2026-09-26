@@ -57,7 +57,14 @@ public sealed class StackFixture : IAsyncLifetime
         "Kafka__BootstrapServers",
         "Akka__Hostname",
         "Akka__Port",
+        "Akka__AbandonAfterSeconds",
+        "Akka__PresenceLeaseSeconds",
     ];
+
+    /// <summary>Presence timings shortened from 60 s / 75 s so abandonment is testable in seconds.</summary>
+    public const int AbandonAfterSeconds = 3;
+
+    public const int PresenceLeaseSeconds = 6;
 
     public async Task InitializeAsync()
     {
@@ -68,6 +75,8 @@ public sealed class StackFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("Kafka__BootstrapServers", BootstrapServers);
         Environment.SetEnvironmentVariable("Akka__Hostname", "127.0.0.1");
         Environment.SetEnvironmentVariable("Akka__Port", AkkaPort.ToString(CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable("Akka__AbandonAfterSeconds", AbandonAfterSeconds.ToString(CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable("Akka__PresenceLeaseSeconds", PresenceLeaseSeconds.ToString(CultureInfo.InvariantCulture));
     }
 
     public async Task DisposeAsync()

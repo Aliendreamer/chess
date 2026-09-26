@@ -24,6 +24,9 @@ public sealed class GameMapperTests
         { new DrawOffered(1, At), "game.draw-offered" },
         { new DrawDeclined(2, At), "game.draw-declined" },
         { new GameEnded("0-1", "Checkmate", 250_000, 260_000, At), "game.ended" },
+        { new PlayerLeft(2, At), "game.player-left" },
+        { new PlayerReturned(2, At), "game.player-returned" },
+        { new AbandonmentOffered(1, At), "game.abandonment-offered" },
     };
 
     [Theory]

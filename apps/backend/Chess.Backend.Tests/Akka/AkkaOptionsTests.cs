@@ -13,6 +13,14 @@ public sealed class AkkaOptionsTests
         Assert.Equal(["backend"], o.Roles);
         Assert.Equal(50, o.ShardCount);
         Assert.Equal(["akka.tcp://chess@localhost:8091"], o.EffectiveSeedNodes());
+        Assert.Equal((TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(75)), (o.Presence().AbandonAfter, o.Presence().Lease));
+    }
+
+    [Fact]
+    public void Validate_rejects_non_positive_presence_timings()
+    {
+        Assert.Throws<InvalidOperationException>(() => new AkkaOptions { AbandonAfterSeconds = 0 }.Validate());
+        Assert.Throws<InvalidOperationException>(() => new AkkaOptions { PresenceLeaseSeconds = -1 }.Validate());
     }
 
     [Fact]

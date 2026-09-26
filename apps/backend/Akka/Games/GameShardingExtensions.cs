@@ -32,7 +32,8 @@ internal static class GameShardingExtensions
             (system, _, resolver) => id => Props.Create(() => new GameActor(
                 Guid.ParseExact(id, "N"),
                 DistributedPubSub.Get(system).Mediator,
-                resolver.GetService<TimeProvider>())),
+                resolver.GetService<TimeProvider>(),
+                options.Presence())),
             new GameMessageExtractor(options.ShardCount),
             ShardOptions());
     }

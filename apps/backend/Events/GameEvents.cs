@@ -39,7 +39,8 @@ internal sealed record GameEnded(
     [property: JsonPropertyName("blackMs")] long BlackMs,
     [property: JsonPropertyName("at")] DateTimeOffset At);
 
-// Presence transitions (presence-and-abandonment D3): journal only, never tagged for Kafka — no read model needs them.
+// Presence transitions (presence-and-abandonment D3). Tagged for Kafka like every game event: consumers track a
+// game's seq and stall on a gap, so none of its events may be left out, even ones no read model shows.
 
 /// <summary>Every BFF instance lost <see cref="UserId"/> (last socket closed, or the lease ran out).</summary>
 internal sealed record PlayerLeft(

@@ -25,6 +25,13 @@ internal static class GameReplyMapper
     /// Route ids (games, invites) are lower-case Guids in <c>N</c> form (32 hex, as live topics spell them) or <c>D</c>
     /// form (with dashes, as JSON responses spell them), so an id from a response can be pasted straight into a URL.
     /// </summary>
+    /// <summary>A claim body's outcome: <c>win</c> or <c>draw</c> (lower case), nothing else.</summary>
+    public static bool TryParseClaim(string? outcome, out bool win)
+    {
+        win = outcome == "win";
+        return outcome is "win" or "draw";
+    }
+
     public static bool TryParseId(string? text, out Guid id) =>
         (Guid.TryParseExact(text, "N", out id) && string.Equals(id.ToString("N"), text, StringComparison.Ordinal))
         || (Guid.TryParseExact(text, "D", out id) && string.Equals(id.ToString("D"), text, StringComparison.Ordinal));
@@ -173,4 +180,31 @@ internal sealed class GetGameLiveEndpoint(IRequiredActor<GameActor> region) : Ga
     }
 
     public override Task HandleAsync(EmptyRequest req, CancellationToken ct) => AskAsync(id => new GetGameView(id), ct);
+}
+
+internal sealed class ClaimRequest
+{
+    /// <summary><c>win</c> or <c>draw</c>.</summary>
+    public string Outcome { get; init; } = string.Empty;
+}
+
+[ExcludeFromCodeCoverage]
+internal sealed class ClaimAbandonmentEndpoint(IRequiredActor<GameActor> region, ICurrentUser user) : GameEndpointBase<ClaimRequest>(region)
+{
+    public override void Configure()
+    {
+        Post("games/{id}/claim");
+        Describe("End a game whose opponent has been away a minute: claim the win or call it a draw (reason Abandonment).");
+    }
+
+    public override Task HandleAsync(ClaimRequest req, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(req);
+        if (!GameReplyMapper.TryParseClaim(req.Outcome, out bool win))
+        {
+            ThrowError("Outcome must be \"win\" or \"draw\".", StatusCodes.Status400BadRequest);
+        }
+
+        return AskAsync(id => new ClaimAbandonment(id, user.Id ?? 0, win), ct);
+    }
 }

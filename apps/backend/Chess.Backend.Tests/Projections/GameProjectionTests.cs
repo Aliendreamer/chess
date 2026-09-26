@@ -169,6 +169,25 @@ public sealed class GameProjectionTests
     }
 
     [Fact]
+    public async Task Presence_events_only_advance_the_watermark()
+    {
+        (ProjectDbContext db, GameProjection p) = Build();
+        using (db)
+        {
+            await ApplyAll(
+                p,
+                Created(),
+                FoolsMate[0],
+                Env("game.player-left", 3, new PlayerLeft(2, T0.AddSeconds(30)), T0.AddSeconds(30)),
+                Env("game.abandonment-offered", 4, new AbandonmentOffered(1, T0.AddSeconds(90)), T0.AddSeconds(90)),
+                Env("game.player-returned", 5, new PlayerReturned(2, T0.AddSeconds(95)), T0.AddSeconds(95)));
+
+            RmGame game = await db.RmGames.AsNoTracking().SingleAsync();
+            Assert.Equal((5L, 1, "playing", T0.AddSeconds(2)), (game.LastSeq, game.Ply, game.Status, game.UpdatedAt));
+        }
+    }
+
+    [Fact]
     public async Task Foreign_and_unreadable_records_are_ignored()
     {
         (ProjectDbContext db, GameProjection p) = Build();

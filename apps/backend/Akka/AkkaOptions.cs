@@ -19,6 +19,15 @@ internal sealed class AkkaOptions
     /// <summary>Number of shards per sharded entity type; changing it after data exists is a migration.</summary>
     public int ShardCount { get; set; } = 50;
 
+    /// <summary>How long a player may be away before the other may claim the game (presence-and-abandonment).</summary>
+    public int AbandonAfterSeconds { get; set; } = 60;
+
+    /// <summary>How long a BFF instance's presence report lasts without a refresh (the BFF refreshes every 30 s).</summary>
+    public int PresenceLeaseSeconds { get; set; } = 75;
+
+    public Games.PresenceTimings Presence() =>
+        new(TimeSpan.FromSeconds(AbandonAfterSeconds), TimeSpan.FromSeconds(PresenceLeaseSeconds));
+
     public string SelfAddress => $"akka.tcp://{SystemName}@{Hostname}:{Port}";
 
     public IReadOnlyList<string> EffectiveSeedNodes() => SeedNodes.Length == 0 ? [SelfAddress] : SeedNodes;
@@ -33,6 +42,11 @@ internal sealed class AkkaOptions
         if (Port is <= 0 or > 65535)
         {
             throw new InvalidOperationException("Akka:Port must be 1-65535.");
+        }
+
+        if (AbandonAfterSeconds <= 0 || PresenceLeaseSeconds <= 0)
+        {
+            throw new InvalidOperationException("Akka:AbandonAfterSeconds and Akka:PresenceLeaseSeconds must be positive.");
         }
 
         foreach (string seed in SeedNodes)

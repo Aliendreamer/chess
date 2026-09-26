@@ -68,13 +68,15 @@ Presence entries live in memory; only these transitions are persisted:
   moves (ply ≥ 2).
 - **`PlayerReturned(userId, at)`:** the player is present again after a `PlayerLeft`.
 
-Neither event goes to Kafka. They aren't mapped or tagged, as with invites. On `PlayerLeft`, a timer is set for
+Both go to `game.events` like every other game event, and the projection only advances its watermark on them. (The
+first plan kept them journal-only like invites. The integration test showed why that fails: they take seq numbers
+in the game's journal, and consumers stall on a gap in a game's seq.) On `PlayerLeft`, a timer is set for
 **60 s**. When it fires, the actor publishes a view with `claimableBy` set to the other player, if that player is
 present. If they aren't, both are gone, and `claimableBy` is set when one of them returns.
 
 As built: the claim opening is itself persisted as a marker event, `AbandonmentOffered(claimantId, at)`. A frame
 that only said "claimable now" would carry the previous frame's seq, and browsers drop frames that aren't newer.
-It's journal-only like the other two. Presence tracking also switches on only once a game gets its first report,
+It goes to Kafka like the other two, for the same reason. Presence tracking also switches on only once a game gets its first report,
 or when its journal holds presence events. Games played only through the API (tests, `verify-part1.sh`) never
 count anyone as absent.
 

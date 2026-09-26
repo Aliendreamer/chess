@@ -23,6 +23,9 @@ internal static class GameJournalMappers
         new GameJournalMapper<DrawOffered>("game.draw-offered", e => e.At),
         new GameJournalMapper<DrawDeclined>("game.draw-declined", e => e.At),
         new GameJournalMapper<GameEnded>("game.ended", e => e.At),
+        new GameJournalMapper<PlayerLeft>("game.player-left", e => e.At),
+        new GameJournalMapper<PlayerReturned>("game.player-returned", e => e.At),
+        new GameJournalMapper<AbandonmentOffered>("game.abandonment-offered", e => e.At),
     ];
 }
 
