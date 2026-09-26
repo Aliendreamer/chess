@@ -147,6 +147,10 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   region has idle passivation OFF (Akka default 120 s would kill clocks); `PassivationPolicy` passivates 1 min
   after the end. Games start only through `IGameStarter` (no public endpoint until matchmaking/invites).
   Commands: `POST /api/games/{id}/moves|resign|draw/offer|draw/accept|draw/decline|abort`, `GET …/live`.
+  Read side: `GameProjection` fills `rm_games` / `rm_game_players` / `rm_moves` (names = Keycloak
+  `preferred_username` snapshotted per game, D23; PGN built at the end, D22); `GET /api/games?status=`,
+  `/api/me/games`, `/api/games/{id}`, `…/moves`, `…/pgn` read the replica; a finished game's live snapshot comes from
+  `rm_games` (`IEndedGameReader`) so its actor is not woken.
 
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/
   `.slnx`/`Directory.*.props`/runsettings so JS edits don't bust the backend cache and vice versa.

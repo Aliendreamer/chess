@@ -185,6 +185,10 @@ flowchart TD
 
 - The watermark is read from the **primary**. Reading it from the replica could see a stale `LastSeq` and
   double-apply.
+- **Games:** `GameProjection` (group `chess.rm-games`) keeps `rm_games` (one row per game, `LastSeq` as
+  watermark and concurrency token), `rm_game_players` (one row per player, for "my games") and `rm_moves` (one row
+  per move). Names are snapshotted at `game.created` (D23), and the PGN is built from the moves at `game.ended`
+  (D22).
 - Two ways to hold the watermark: on the read row itself (`PingProjection` → `rm_pings.LastSeq`), or in
   `consumer_positions` for consumers with no per-aggregate row (`PositionedProjection<T>`), saved in the
   same `SaveChanges` as the staged change.
@@ -248,6 +252,8 @@ The rules go only through `Games/ChessRules` (Gera.Chess behind an alias). Every
 | "What happened after my command?"               | The command's reply      | Immediate (actor state)     |
 | "What is this live aggregate right now?"        | `GET …/live`, SignalR    | Immediate (actor state)     |
 | Lists, history, anything paged                  | `ReadDbContext` →replica | Eventual (~250–500 ms here) |
+| Game lists, my games, summary, moves, PGN       | `ReadDbContext` →replica | Eventual                    |
+| A finished game's live snapshot                 | `rm_games` →replica      | Eventual; actor if not yet  |
 | Projection watermarks, sessions, users, offsets | `ProjectDbContext` →prim | Strong                      |
 
 ## 7. Auth in one picture

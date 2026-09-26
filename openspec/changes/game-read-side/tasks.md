@@ -77,6 +77,6 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 5. Docs
 
-- [ ] 5.1 Update `openspec/architecture.md` (§4 a `GameProjection` note, §6 read table rows for games) and
+- [x] 5.1 Update `openspec/architecture.md` (§4 a `GameProjection` note, §6 read table rows for games) and
       CLAUDE.md (a read-side line under Games).
-- [ ] 5.2 Commit: `docs(repo): game read side in architecture`.
+- [x] 5.2 Commit: `docs(repo): game read side in architecture`.
