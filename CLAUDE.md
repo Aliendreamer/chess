@@ -139,6 +139,15 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   re-runs and skips), and any other exception is retried 5× then parked in `projection_dead_letters`,
   quarantining that `(group, aggregate)` until an Admin replays it (`WebApi/Admin/`). Gaps never park.
 
+- **Games (backend)** — `Akka/Games/GameActor` (sharded `games`, persistence id `game-{id:N}`, Guid v7 ids) owns
+  board and clocks; rules only via `Games/ChessRules` (Gera.Chess shares our root namespace `Chess`, so it is used
+  through a `Gera` alias there and nowhere else; its auto-draw rules are OFF by default — the adapter turns on
+  `All`). Clocks run from Black's first reply (−elapsed +increment); flag fall is an actor timer, a late move after
+  the flag ends the game; recovery restores the side to move's clock as of the last event (D14). The `games`
+  region has idle passivation OFF (Akka default 120 s would kill clocks); `PassivationPolicy` passivates 1 min
+  after the end. Games start only through `IGameStarter` (no public endpoint until matchmaking/invites).
+  Commands: `POST /api/games/{id}/moves|resign|draw/offer|draw/accept|draw/decline|abort`, `GET …/live`.
+
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/
   `.slnx`/`Directory.*.props`/runsettings so JS edits don't bust the backend cache and vice versa.
   The backend's `project.json` must reference this input.

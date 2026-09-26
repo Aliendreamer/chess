@@ -200,22 +200,46 @@ flowchart TD
 
 ## 5. Actors: how many, and for how long
 
-One sharded entity per aggregate id — 10 000 live games means 10 000 `GameActor`s, which is cheap
-(hundreds of bytes plus state each, zero CPU while idle). Only active aggregates stay in memory:
+One sharded entity per aggregate id. 10,000 live games means 10,000 `GameActor`s, which is cheap: hundreds of
+bytes plus state each, and zero CPU while idle. When an entity leaves memory depends on its type:
 
 ```mermaid
 stateDiagram-v2
     [*] --> Recovering: first message for id
     Recovering --> Running: latest snapshot + journal events after it
     Running --> Running: command → persist → reply
-    Running --> Passivated: idle 5 min (PassivateIdleEntityAfter)
+    Running --> Passivated: pings — idle 5 min · games — 1 min after the end
     Passivated --> Recovering: next message for id
-    Running --> Recovering: node lost → shard rebalanced to another node
+    Running --> Recovering: node lost → next message recreates it on a survivor
 ```
 
-- `ShardCount = 50` shards spread over the backend nodes; adding a node moves shards to it.
-- `PingActor` snapshots every 20 events, so recovery replays at most 19.
-- Finished or historical games are never woken for reads — lists and history come from `rm_*` on the replica.
+- `ShardCount = 50` shards are spread over the backend nodes; adding a node moves shards to it.
+- **Pings:** region idle passivation of 5 minutes, a snapshot every 20 events.
+- **Games:** the `games` region has idle passivation **off**. Akka's 120 s default would stop a classical game
+  during a long think, and the entity's clock timers with it. Each game passivates itself according to its
+  `PassivationPolicy`: live controls never while playing, and 1 minute after the end. Snapshots (every 20
+  events) store the **UCI move list**, because threefold repetition needs history, not just a FEN (D22).
+- A live game whose node dies stays dormant until any message (a move, a `/live` read, a live-socket subscribe)
+  recreates it. Recovery gives the side to move its clock back as of the last event (D14) and re-arms the
+  timers. Change 4's heartbeat makes that wake-up prompt.
+- Once change 2 lands, finished games are read from `rm_*` on the replica and never woken.
+
+### A game's life (`Akka/Games/GameActor`)
+
+```mermaid
+stateDiagram-v2
+    [*] --> Created: IGameStarter → CreateGame (GameCreated)
+    Created --> Playing: White's first move (no clock yet)
+    Created --> Ended: no first move in 1 min / abort → *, aborted
+    Playing --> Playing: MoveMade (clocks run from Black's first reply; −elapsed +increment)
+    Playing --> Ended: checkmate · stalemate · insufficient material · threefold · 50-move
+    Playing --> Ended: resign · draw agreed · flag fall (timer, no message needed)
+    Ended --> [*]: passivate after 1 min
+```
+
+The rules go only through `Games/ChessRules` (Gera.Chess behind an alias). Every event
+(`GameCreated`, `MoveMade`, `DrawOffered`, `DrawDeclined`, `GameEnded`) goes to `game.events` keyed
+`game:{id}`, and to the live relay as a `game:{id}` frame.
 
 ## 6. Reads and consistency
 

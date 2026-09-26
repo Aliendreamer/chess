@@ -52,11 +52,15 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 5. Verify and document 🐳
 
-- [ ] 5.1 🐳 `stack.sh up --cluster`, then `verify-auth.sh`, `verify-part0.sh --cluster` and `nx integration-test
+- [x] 5.1 🐳 `stack.sh up --cluster`, then `verify-auth.sh`, `verify-part0.sh --cluster` and `nx integration-test
 backend` are green.
-- [ ] 5.2 🐳 Add to `verify-part0.sh` (or a new `verify-part1.sh`): start a game through a test-only path, play
+- [x] 5.2 🐳 Add to `verify-part0.sh` (or a new `verify-part1.sh`): start a game through a test-only path, play
       a checkmate over the API with two sessions, and see `GameEnded` on `game.events`. If no test-only start
       path exists on the live stack, record that this waits for change 3 and rely on 4.4.
-- [ ] 5.3 Update `openspec/architecture.md` (§1 adds the games region; §2 a move as the example command; §5 game
+      _As built:_ there's no public start path (parked by the owner until change 3), so a game can't be started on
+      the live stack yet. On the fresh cluster stack, the games region and endpoints answer correctly: an unknown
+      game is 404, a malformed id 400, and a move on an unknown game 404. The full two-player game is proved by
+      `GameFlowTests` (4.4). The live-stack game script comes with change 3.
+- [x] 5.3 Update `openspec/architecture.md` (§1 adds the games region; §2 a move as the example command; §5 game
       lifecycle and passivation policy) and CLAUDE.md (a GameActor note).
-- [ ] 5.4 Commit: `docs(repo): game core in architecture`.
+- [x] 5.4 Commit: `docs(repo): game core in architecture`.
