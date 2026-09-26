@@ -55,6 +55,7 @@ pnpm build && API_URL=http://127.0.0.1:8080 pnpm start   # prod SSR server on :3
 tools/localdev/verify-auth.sh                  # curl-only login→/me→logout→revocation check vs the live stack
 tools/localdev/verify-stack.sh                 # replica streaming + write→read, redpanda health/topics/round-trip, console
 tools/localdev/verify-part0.sh [--cluster]     # login→ping→live→list→hub gate; --cluster kills backend-1 and re-checks
+tools/localdev/verify-part1.sh                 # two logins → queue pairing → invite → fool's mate → ended 0-1 + PGN
 tools/localdev/stack.sh up --cluster            # adds backend-2 (down/ps/logs always include it)
 tools/e2e.sh                                   # Playwright against the live stack
 ```
@@ -145,7 +146,10 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   `All`). Clocks run from Black's first reply (−elapsed +increment); flag fall is an actor timer, a late move after
   the flag ends the game; recovery restores the side to move's clock as of the last event (D14). The `games`
   region has idle passivation OFF (Akka default 120 s would kill clocks); `PassivationPolicy` passivates 1 min
-  after the end. Games start only through `IGameStarter` (no public endpoint until matchmaking/invites).
+  after the end. Games start only through `IGameStarter`: from matchmaking (`Akka/Matchmaking/MatchmakingActor`, a cluster singleton;
+  `POST|DELETE /api/matchmaking/{tc}`, the POST doubles as a ~30 s heartbeat, 60 s silence drops you) or an invite
+  (`Akka/Invites/InviteActor`, sharded `invites`, 24 h; `POST /api/invites`, `GET /api/invites/{id}`, `…/accept`,
+  `…/cancel`). Live kinds `queue:{tc}` and `invite:{id}`.
   Commands: `POST /api/games/{id}/moves|resign|draw/offer|draw/accept|draw/decline|abort`, `GET …/live`.
   Read side: `GameProjection` fills `rm_games` / `rm_game_players` / `rm_moves` (names = Keycloak
   `preferred_username` snapshotted per game, D23; PGN built at the end, D22); `GET /api/games?status=`,

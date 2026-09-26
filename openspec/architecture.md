@@ -29,7 +29,8 @@ flowchart TB
         http["FastEndpoints /api/*"]
         hub["SignalR /hub/live<br/>role Relay only"]
         subgraph akka["Akka.NET ActorSystem"]
-            region["shard region<br/>PingActor / GameActor per id"]
+            region["shard regions<br/>PingActor / GameActor / InviteActor per id"]
+            mm["MatchmakingActor<br/>cluster singleton, all queues"]
             fanout["HubFanOutActor<br/>(DistributedPubSub)"]
             pub["JournalPublisher<br/>cluster singleton + PG lease"]
         end
@@ -50,6 +51,8 @@ flowchart TB
     relay -. "GET /api/me<br/>(browser's cookie)" .-> http
     relay -. "token" .-> kc
     http -- "Ask (command)" --> region
+    http -- "Ask (join / leave)" --> mm
+    mm -- "IGameStarter" --> region
     http -- "GET lists" --> replica
     http -. "login / refresh" .-> kc
     region -- "Persist event" --> primary
@@ -232,7 +235,7 @@ stateDiagram-v2
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Created: IGameStarter → CreateGame (GameCreated)
+    [*] --> Created: matchmaking pairing or accepted invite → IGameStarter → CreateGame (GameCreated)
     Created --> Playing: White's first move (no clock yet)
     Created --> Ended: no first move in 1 min / abort → *, aborted
     Playing --> Playing: MoveMade (clocks run from Black's first reply; −elapsed +increment)
@@ -244,6 +247,18 @@ stateDiagram-v2
 The rules go only through `Games/ChessRules` (Gera.Chess behind an alias). Every event
 (`GameCreated`, `MoveMade`, `DrawOffered`, `DrawDeclined`, `GameEnded`) goes to `game.events` keyed
 `game:{id}`, and to the live relay as a `game:{id}` frame.
+
+### Matchmaking and invites (`Akka/Matchmaking`, `Akka/Invites`)
+
+- `MatchmakingActor` is a cluster singleton holding one first-come-first-served queue per preset time control
+  (D16). Pairing is immediate, so a queue holds at most one seeker. Queues are memory only: the client re-POSTs
+  `/api/matchmaking/{tc}` every ~30 s as a heartbeat (silent for 60 s → dropped), which also rebuilds the
+  queue after a failover. A pairing is remembered for 60 s so the waiting seeker's next heartbeat answers
+  `matched` with the game. The queue count is the live kind `queue:{tc}`.
+- `InviteActor` (sharded `invites`, persistence id `invite-{id:N}`, random v4 id because the link is a bearer
+  secret) is open for 24 h (derived from the clock, no timer). Accept resolves the colour, starts the game via
+  `IGameStarter` and stashes every other command meanwhile, so two accepts never start two games. Its view is the
+  live kind `invite:{id}`; invite events stay in the journal (not tagged for Kafka).
 
 ## 6. Reads and consistency
 
