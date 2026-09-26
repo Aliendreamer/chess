@@ -3,7 +3,7 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 1. PGN builder
 
-- [ ] 1.1 Failing tests (`PgnTests`), which fail to compile until `Pgn` exists:
+- [x] 1.1 Failing tests (`PgnTests`), which fail to compile until `Pgn` exists:
 
   - fool's mate gives movetext `1. f3 e5 2. g4 Qh4# 0-1`;
   - the seven-tag roster, `TimeControl` (`300+3`) and `Termination` are present, in order;
@@ -12,8 +12,8 @@ touches. 🐳 marks steps that need Docker or the live stack.
   - an aborted game's result is `*`;
   - no email ever appears.
 
-- [ ] 1.2 Implement `Games/Pgn.cs`.
-- [ ] 1.3 Commit: `feat(backend): pgn builder from san`.
+- [x] 1.2 Implement `Games/Pgn.cs`.
+- [x] 1.3 Commit: `feat(backend): pgn builder from san`.
 
 ## 2. Read models and projection
 
