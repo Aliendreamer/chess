@@ -1,6 +1,9 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
+/** Where `auth.setup.ts` keeps a user's signed-in browser state (gitignored). */
+export const sessionFile = (user: string) => `e2e/.auth/${user}.json`
+
 export const USER = process.env.E2E_USER ?? 'testuser'
 export const PASS = process.env.E2E_PASS ?? 'Test123!'
 export const PLAYER = process.env.E2E_PLAYER ?? 'player'

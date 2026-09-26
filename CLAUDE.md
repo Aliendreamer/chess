@@ -134,8 +134,9 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   dark only), fonts via `@fontsource` (no third-party requests). Screens: `/` (quick pairing, invite, recent
   games), `/invites/$id`, `/games/$id`, `/games`, and the `/pgn/$id` download route. **chess.js is feedback only**
   (`lib/moveInput.ts`): the server's answer/frame always wins. Commands return `CommandOutcome` (4xx is shown, 401
-  redirects, 5xx throws); server functions validate path inputs. e2e runs one worker (Keycloak's quick-login
-  check locks a user logged in twice within a second).
+  redirects, 5xx throws); server functions validate path inputs. e2e signs each user in once (`e2e/auth.setup.ts` →
+  gitignored `e2e/.auth/*.json`) and reuses the session: Keycloak's quick-login check locks a user logged in twice
+  within a second, so specs never log in again except the signed-out ones in `auth.spec.ts`.
 
 - **Journal outbox (backend)** — actors never produce to Kafka. `Akka/Outbox/`: `TopicTagger` tags events
   with their topic (tag table), `JournalPublisher` is a cluster singleton that takes a Postgres advisory lock

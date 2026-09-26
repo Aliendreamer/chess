@@ -51,3 +51,6 @@ playwright-report/
 
 # The same masks appear under any directory a command ran in; only the repo-root .claude/ is real.
 apps/*/.claude/
+
+# Playwright sessions saved by apps/frontend/e2e/auth.setup.ts (live cookies)
+apps/frontend/e2e/.auth/

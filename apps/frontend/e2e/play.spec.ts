@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { PLAYER, PLAYER_PASS, loginThroughKeycloak } from './support'
+import { PLAYER, USER, sessionFile } from './support'
 import type { Browser, Page } from '@playwright/test'
 
 /**
@@ -7,9 +7,10 @@ import type { Browser, Page } from '@playwright/test'
  * accepts, and the fool's mate is played by clicking squares. Both boards end 0–1 with a PGN to download.
  */
 
-async function signedIn(browser: Browser, user?: string, pass?: string): Promise<Page> {
-  const page = await (await browser.newContext()).newPage()
-  await loginThroughKeycloak(page, user, pass)
+/** A separate browser for each player, signed in from the session `auth.setup.ts` saved. */
+async function signedIn(browser: Browser, user: string): Promise<Page> {
+  const page = await (await browser.newContext({ storageState: sessionFile(user) })).newPage()
+  await page.goto('/')
   return page
 }
 
@@ -23,8 +24,8 @@ async function move(page: Page, from: string, to: string) {
 
 test('two players meet through an invite and play the fool’s mate', async ({ browser }) => {
   test.setTimeout(120_000)
-  const white = await signedIn(browser)
-  const black = await signedIn(browser, PLAYER, PLAYER_PASS)
+  const white = await signedIn(browser, USER)
+  const black = await signedIn(browser, PLAYER)
 
   // Choices only stick once the page has hydrated: retry until the chip reports itself selected.
   await expect(async () => {

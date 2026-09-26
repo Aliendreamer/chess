@@ -80,7 +80,7 @@ full game through the UI (Playwright `e2e/play.spec.ts`). Commits after 73166f2 
 Local-stack gotchas learned: new npm deps need `docker compose ... up -d --no-deps --renew-anon-volumes frontend`
 (node_modules live in anonymous volumes); a changed record/message shape needs `restart backend backend-2` (hot
 reload "applies" but can't be trusted); Keycloak's quick-login check locks a user logged in twice within 1 s, so
-e2e runs `workers: 1`; D15 aborts a game with no first move in 1 min, so start test games right before using them.
+e2e logs each user in once (`auth.setup.ts` storageState) and reuses it; D15 aborts a game with no first move in 1 min, so start test games right before using them.
 
 Next: change 4 `presence-and-abandonment`.
 
