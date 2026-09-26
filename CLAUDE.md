@@ -128,6 +128,14 @@ to each app's own lint target). Keep `--no-stash`.
 payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's group. The browser applies a
   frame only if its seq is newer (`lib/live.ts#applyFrame`). A new live kind = one `ILiveTopicSource` + one
   entry in the BFF's `KINDS`. Both relay hosts (Nitro route, `dev-live-relay.ts`) only adapt sockets.
+  Pages use `lib/useLiveTopic.ts` (initial = the loader's state as a frame; it is the baseline at subscribe only).
+- **UI (frontend)** — the Club design (`Design/`, untracked, never committed) as TS: tokens are CSS variables in
+  `styles.css`'s `@theme` (use `bg-surface-*`, `text-fg-*`, `border-line-*`, `font-display`, `rounded-card`; no zinc,
+  dark only), fonts via `@fontsource` (no third-party requests). Screens: `/` (quick pairing, invite, recent
+  games), `/invites/$id`, `/games/$id`, `/games`, and the `/pgn/$id` download route. **chess.js is feedback only**
+  (`lib/moveInput.ts`): the server's answer/frame always wins. Commands return `CommandOutcome` (4xx is shown, 401
+  redirects, 5xx throws); server functions validate path inputs. e2e runs one worker (Keycloak's quick-login
+  check locks a user logged in twice within a second).
 
 - **Journal outbox (backend)** — actors never produce to Kafka. `Akka/Outbox/`: `TopicTagger` tags events
   with their topic (tag table), `JournalPublisher` is a cluster singleton that takes a Postgres advisory lock
@@ -147,7 +155,7 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   the flag ends the game; recovery restores the side to move's clock as of the last event (D14). The `games`
   region has idle passivation OFF (Akka default 120 s would kill clocks); `PassivationPolicy` passivates 1 min
   after the end. Games start only through `IGameStarter`: from matchmaking (`Akka/Matchmaking/MatchmakingActor`, a cluster singleton;
-  `POST|DELETE /api/matchmaking/{tc}`, the POST doubles as a ~30 s heartbeat, 60 s silence drops you) or an invite
+  `POST|DELETE /api/matchmaking/{tc}`; `?heartbeat=true` every ~25 s keeps your place, 60 s silence drops you) or an invite
   (`Akka/Invites/InviteActor`, sharded `invites`, 24 h; `POST /api/invites`, `GET /api/invites/{id}`, `…/accept`,
   `…/cancel`). Live kinds `queue:{tc}` and `invite:{id}`.
   Commands: `POST /api/games/{id}/moves|resign|draw/offer|draw/accept|draw/decline|abort`, `GET …/live`.

@@ -252,13 +252,39 @@ The rules go only through `Games/ChessRules` (Gera.Chess behind an alias). Every
 
 - `MatchmakingActor` is a cluster singleton holding one first-come-first-served queue per preset time control
   (D16). Pairing is immediate, so a queue holds at most one seeker. Queues are memory only: the client re-POSTs
-  `/api/matchmaking/{tc}` every ~30 s as a heartbeat (silent for 60 s → dropped), which also rebuilds the
-  queue after a failover. A pairing is remembered for 60 s so the waiting seeker's next heartbeat answers
-  `matched` with the game. The queue count is the live kind `queue:{tc}`.
+  `/api/matchmaking/{tc}?heartbeat=true` every ~25 s (silent for 60 s → dropped), which also rebuilds the
+  queue after a failover. A pairing is remembered for 60 s, but only a heartbeat is answered with it; a plain POST
+  always seeks a new game. The queue is the live kind `queue:{tc}` (waiting count and last pairing); a `waiting`
+  answer carries the queue's seq, and the client ignores pairings in frames up to it, since the last pairing may be
+  its own previous game.
 - `InviteActor` (sharded `invites`, persistence id `invite-{id:N}`, random v4 id because the link is a bearer
   secret) is open for 24 h (derived from the clock, no timer). Accept resolves the colour, starts the game via
   `IGameStarter` and stashes every other command meanwhile, so two accepts never start two games. Its view is the
   live kind `invite:{id}`; invite events stay in the journal (not tagged for Kafka).
+
+### The screens (`apps/frontend`, part1-ui)
+
+The UI is the owner's Club design (`Design/`, untracked) in TypeScript: tokens as CSS variables in Tailwind's
+`@theme` (`styles.css`), self-hosted fonts, presentational components in `src/components/{core,navigation,chess,play}`,
+and pure, tested rules in `src/lib/{games,moveInput,play}.ts`.
+
+| Route            | Reads (server functions)                                                       | Live                       | Acts                                               |
+| ---------------- | ------------------------------------------------------------------------------ | -------------------------- | -------------------------------------------------- |
+| `/` Home         | `/api/me/games`                                                                | `queue:{tc}` while seeking | join / heartbeat / leave a queue, create an invite |
+| `/invites/{id}`  | `/api/invites/{id}`                                                            | `invite:{id}`              | accept, cancel                                     |
+| `/games/{id}`    | `…/live` (actor), `/api/games/{id}` and `…/moves` (replica)                    | `game:{id}`                | move, resign, draw, abort                          |
+| `/games` History | `/api/me/games` (keyset "Load more")                                           | —                          | —                                                  |
+| `/pgn/{id}`      | a BFF download of `…/pgn` (not under `/api/`, which the edge sends to the API) | —                          | —                                                  |
+
+- **chess.js is feedback only (D3):** legal-target dots, the optimistic board and the promotion choice. Every move
+  is posted; the answer or the next frame replaces the position, and a refusal snaps it back with the server's
+  reason. The browser never ends a game.
+- **Clocks** count down locally from when a view arrived, only for the side to move while playing; the next
+  frame corrects them and flag fall is only the server's.
+- A brand-new game may not be on the replica yet: the page shows `Player {id}` and no moves, then retries the
+  summary and appends moves from frames.
+- Server functions validate what becomes part of an API path (preset time controls, guid ids, UCI) before calling
+  the API.
 
 ## 6. Reads and consistency
 

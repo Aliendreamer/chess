@@ -50,8 +50,8 @@ Components stay presentational; the logic they show lives in pure, tested helper
 
 ## 5. End to end and docs 🐳
 
-- [ ] 5.1 🐳 Playwright `play.spec.ts`: two browser contexts (testuser, player) — create an invite as white,
+- [x] 5.1 🐳 Playwright `play.spec.ts`: two browser contexts (testuser, player) — create an invite as white,
       accept it in the other context, play the fool's mate by clicking squares, both see `0–1` and the PGN link.
       Proof: `tools/e2e.sh`.
-- [ ] 5.2 Update `openspec/architecture.md` (the frontend section) and CLAUDE.md (screens, tokens, chess.js rule).
+- [x] 5.2 Update `openspec/architecture.md` (the frontend section) and CLAUDE.md (screens, tokens, chess.js rule).
       Commit: `docs(repo): part 1 ui in architecture`.
