@@ -73,8 +73,16 @@ invite links. `tools/localdev/verify-part1.sh` plays a real invite game on the l
 `apps/backend/Chess.Backend.http` lists every route (paste `mp_sid` from `SID_ONLY=1 verify-auth.sh`). Route ids
 accept Guids with or without dashes. Pushed to origin/main at 1fa8a6f.
 
-Next: discuss how to build the UI from the user's `Design/` folder (untracked; never commit it). Later: change 4
-`presence-and-abandonment` (BFF presence, 1-min abandon where the remaining player chooses, in-game heartbeat).
+Part 1 UI (`part1-ui`, archived 2026-09-26): the Club design as TS (tokens in `styles.css` `@theme`, @fontsource),
+screens `/`, `/invites/$id`, `/games/$id`, `/games`, `/pgn/$id`; chess.js feedback only. Two players have played a
+full game through the UI (Playwright `e2e/play.spec.ts`). Commits after 73166f2 are NOT pushed yet (ask first).
+
+Local-stack gotchas learned: new npm deps need `docker compose ... up -d --no-deps --renew-anon-volumes frontend`
+(node_modules live in anonymous volumes); a changed record/message shape needs `restart backend backend-2` (hot
+reload "applies" but can't be trusted); Keycloak's quick-login check locks a user logged in twice within 1 s, so
+e2e runs `workers: 1`; D15 aborts a game with no first move in 1 min, so start test games right before using them.
+
+Next: change 4 `presence-and-abandonment`.
 
 ## Specs and plans — OpenSpec (from 2026-09-22)
 
