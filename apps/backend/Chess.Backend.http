@@ -1,0 +1,157 @@
+# Every backend route, against the local stack (tools/localdev/stack.sh up).
+# Works in VS Code (REST Client), Rider and Visual Studio.
+#
+# Auth: the API only takes the mp_sid session cookie (tokens never leave the server; the Keycloak clients have
+# no password grant). Get a session per player, then paste it below:
+#   SID_ONLY=1 tools/localdev/verify-auth.sh                                    # testuser
+#   SID_ONLY=1 USER_NAME=player PASSWORD='Player123!' tools/localdev/verify-auth.sh   # player
+# or open {{host}}/api/auth/login in a browser and copy the mp_sid cookie of api.chess.localhost.
+#
+# Ids in routes are lower-case Guids, with or without dashes (paste them straight from a response).
+
+@host = http://api.chess.localhost
+@sid = paste-testuser-mp_sid-here
+@sid2 = paste-player-mp_sid-here
+@tc = 5+3
+@gameId = 00000000000000000000000000000000
+@inviteId = 00000000000000000000000000000000
+@aggregateId = paste-from-dead-letter-list
+
+### ---------- auth (browser flow; shown for completeness) ----------
+
+### Start login: 302 to Keycloak, sets mp_pkce
+GET {{host}}/api/auth/login?returnTo=/
+
+### Keycloak redirects here with code+state; sets mp_sid and 302s to the app
+# GET {{host}}/api/auth/callback?code=...&state=...
+
+### Who am I (also JIT-provisions the users row)
+GET {{host}}/api/me
+Cookie: mp_sid={{sid}}
+
+### Logout: revokes the session row, then the IdP session
+GET {{host}}/api/auth/logout
+Cookie: mp_sid={{sid}}
+
+### Health (anonymous)
+GET {{host}}/health
+
+### ---------- matchmaking ----------
+
+### Join / heartbeat a queue (re-POST every ~30 s; 60 s silence drops you) → waiting | matched
+POST {{host}}/api/matchmaking/{{tc}}
+Cookie: mp_sid={{sid}}
+
+### Second player: gets matched
+POST {{host}}/api/matchmaking/{{tc}}
+Cookie: mp_sid={{sid2}}
+
+### Leave the queue → 204
+DELETE {{host}}/api/matchmaking/{{tc}}
+Cookie: mp_sid={{sid}}
+
+### ---------- invites ----------
+
+### Create (color: white | black | random) → 201
+POST {{host}}/api/invites
+Cookie: mp_sid={{sid}}
+Content-Type: application/json
+
+{ "timeControl": "{{tc}}", "color": "white" }
+
+### Read → open | accepted (with gameId) | cancelled | expired
+GET {{host}}/api/invites/{{inviteId}}
+Cookie: mp_sid={{sid2}}
+
+### Accept (anyone but the creator) → the game starts; a second accept is 409
+POST {{host}}/api/invites/{{inviteId}}/accept
+Cookie: mp_sid={{sid2}}
+
+### Cancel (creator only, while open)
+POST {{host}}/api/invites/{{inviteId}}/cancel
+Cookie: mp_sid={{sid}}
+
+### ---------- games: commands (the actor) ----------
+
+### Move (UCI; promotion as e7e8q)
+POST {{host}}/api/games/{{gameId}}/moves
+Cookie: mp_sid={{sid}}
+Content-Type: application/json
+
+{ "uci": "e2e4" }
+
+### Resign (after the first move)
+POST {{host}}/api/games/{{gameId}}/resign
+Cookie: mp_sid={{sid}}
+
+### Offer a draw
+POST {{host}}/api/games/{{gameId}}/draw/offer
+Cookie: mp_sid={{sid}}
+
+### Accept the opponent's draw offer
+POST {{host}}/api/games/{{gameId}}/draw/accept
+Cookie: mp_sid={{sid2}}
+
+### Decline the opponent's draw offer
+POST {{host}}/api/games/{{gameId}}/draw/decline
+Cookie: mp_sid={{sid2}}
+
+### Abort (before your first move)
+POST {{host}}/api/games/{{gameId}}/abort
+Cookie: mp_sid={{sid}}
+
+### Live view (the actor while playing; the replica once ended)
+GET {{host}}/api/games/{{gameId}}/live
+Cookie: mp_sid={{sid}}
+
+### ---------- games: read side (replica, keyset paged) ----------
+
+### All games (status: open | playing | ended | aborted; limit ≤ 200; cursor from nextCursor)
+GET {{host}}/api/games?status=ended&limit=20
+Cookie: mp_sid={{sid}}
+
+### My games
+GET {{host}}/api/me/games?limit=20
+Cookie: mp_sid={{sid}}
+
+### One game
+GET {{host}}/api/games/{{gameId}}
+Cookie: mp_sid={{sid}}
+
+### Its moves
+GET {{host}}/api/games/{{gameId}}/moves
+Cookie: mp_sid={{sid}}
+
+### Its PGN (after the end)
+GET {{host}}/api/games/{{gameId}}/pgn
+Cookie: mp_sid={{sid}}
+
+### ---------- pings (Part 0 spine) ----------
+
+### Send a ping to an actor
+POST {{host}}/api/pings/demo-1
+Cookie: mp_sid={{sid}}
+Content-Type: application/json
+
+{ "text": "hello" }
+
+### Its live state (actor)
+GET {{host}}/api/pings/demo-1/live
+Cookie: mp_sid={{sid}}
+
+### List (replica)
+GET {{host}}/api/pings?limit=50
+Cookie: mp_sid={{sid}}
+
+### ---------- admin (role Admin) ----------
+
+### Parked projection records
+GET {{host}}/api/admin/projections/dead-letters
+Cookie: mp_sid={{sid}}
+
+### Replay one quarantined aggregate (groupId and aggregateId exactly as the dead-letter list shows them;
+# groups: chess.rm-games, chess.rm-pings)
+POST {{host}}/api/admin/projections/chess.rm-games/dead-letters/{{aggregateId}}/replay
+Cookie: mp_sid={{sid}}
+
+# The live hub (/hub/live) is SignalR for the BFF's Relay service account only — not callable from here.

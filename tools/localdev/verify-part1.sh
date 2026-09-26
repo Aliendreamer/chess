@@ -32,12 +32,17 @@ echo "ok"
 
 # as <sid> <curl args...>: one API call as that session.
 as() { local sid="$1"; shift; curl -sS --resolve "$API_HOST:80:$EDGE_IP" -H "Cookie: mp_sid=$sid" "$@"; }
-post() { as "$1" -X POST -H 'content-type: application/json' "${@:2}"; }
+# post <sid> [curl args...]: a POST; JSON content type only when there is a body (an empty JSON body is a 400).
+post() {
+  local sid="$1"; shift
+  if [[ " $* " == *" -d "* ]]; then as "$sid" -X POST -H 'content-type: application/json' "$@"; else as "$sid" -X POST "$@"; fi
+}
 # field <name>: the first string value of a JSON field (ids and statuses here never contain quotes).
 field() { grep -oE "\"$1\":\"[^\"]*\"" | head -n1 | cut -d'"' -f4; }
 
 step "matchmaking: testuser waits on 5+3, player is matched into the same game"
-post "$SID_T" "http://$API_HOST/api/matchmaking/5+3" | grep -q '"status":"waiting"' || fail "testuser not waiting"
+waiting="$(post "$SID_T" "http://$API_HOST/api/matchmaking/5+3")"
+[[ "$(field status <<<"$waiting")" == "waiting" ]] || fail "testuser not waiting: $waiting"
 paired="$(post "$SID_P" "http://$API_HOST/api/matchmaking/5+3")"
 [[ "$(field status <<<"$paired")" == "matched" ]] || fail "player not matched: $paired"
 [[ "$(post "$SID_T" "http://$API_HOST/api/matchmaking/5+3" | field gameId)" == "$(field gameId <<<"$paired")" ]] \
@@ -46,13 +51,13 @@ echo "ok (game $(field gameId <<<"$paired"))"
 
 step "testuser creates a 5+3 invite as white"
 invite="$(post "$SID_T" -d '{"timeControl":"5+3","color":"white"}' "http://$API_HOST/api/invites")"
-INVITE="$(field inviteId <<<"$invite" | tr -d '-')"
+INVITE="$(field inviteId <<<"$invite")"
 [[ "$(field status <<<"$invite")" == "open" && -n "$INVITE" ]] || fail "invite not created: $invite"
 echo "ok ($INVITE)"
 
 step "player accepts; a second accept is 409"
 accepted="$(post "$SID_P" "http://$API_HOST/api/invites/$INVITE/accept")"
-GAME="$(field gameId <<<"$accepted" | tr -d '-')"
+GAME="$(field gameId <<<"$accepted")"
 [[ "$(field status <<<"$accepted")" == "accepted" && -n "$GAME" ]] || fail "accept failed: $accepted"
 [[ "$(post "$SID_P" -o /dev/null -w '%{http_code}' "http://$API_HOST/api/invites/$INVITE/accept")" == "409" ]] \
   || fail "second accept was not a conflict"

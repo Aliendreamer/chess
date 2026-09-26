@@ -61,7 +61,7 @@ touches. 🐳 marks steps that need Docker or the live stack. Expected values in
 
 ## 4. Live stack and docs 🐳
 
-- [ ] 4.1 🐳 `tools/localdev/verify-part1.sh` per design D5. Run it on a fresh `stack.sh up --cluster`, together
+- [x] 4.1 🐳 `tools/localdev/verify-part1.sh` per design D5. Run it on a fresh `stack.sh up --cluster`, together
       with `verify-auth.sh` and `verify-part0.sh --cluster`, and run `nx integration-test backend`.
 - [x] 4.2 Record the D16 refinements in `ROADMAP.md`, update `openspec/architecture.md` (matchmaking and invites
       in §1 and the game-life diagram) and CLAUDE.md.
