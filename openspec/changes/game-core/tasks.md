@@ -25,10 +25,10 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 3. Clocks and abort
 
-- [ ] 3.1 Failing TestKit tests using `TestScheduler` and a fake `TimeProvider`: - no clock runs before each side's first move; - elapsed time plus increment gives the spec's 3+2 example; - flag fall fires with no message and ends `0-1 timeout`; - flag fall against king + knight ends `½-½`; - a stale timer doesn't end the game; - no first move within 1 minute ends `*, aborted`, and Black's first reply has its own minute; - abort before your first move works, and after both first moves it's `conflict`; - recovery restores the clock of the player to move as of the last event and re-arms the timer (D14); - an ended game passivates itself after 1 minute.
-- [ ] 3.2 Implement the timers, recovery forgiveness and `PassivationPolicy` (live controls only for now). The `games` region has idle
+- [x] 3.1 Failing TestKit tests using `TestScheduler` and a fake `TimeProvider`: - no clock runs before each side's first move; - elapsed time plus increment gives the spec's 3+2 example; - flag fall fires with no message and ends `0-1 timeout`; - flag fall against king + knight ends `½-½`; - a stale timer doesn't end the game; - no first move within 1 minute ends `*, aborted`, and Black's first reply has its own minute; - abort before your first move works, and after both first moves it's `conflict`; - recovery restores the clock of the player to move as of the last event and re-arms the timer (D14); - an ended game passivates itself after 1 minute.
+- [x] 3.2 Implement the timers, recovery forgiveness and `PassivationPolicy` (live controls only for now). The `games` region has idle
       passivation off (design D8).
-- [ ] 3.3 Commit: `feat(backend): game clocks, flag fall and abort`.
+- [x] 3.3 Commit: `feat(backend): game clocks, flag fall and abort`.
 
 ## 4. Outbox, starter, HTTP and live kind
 

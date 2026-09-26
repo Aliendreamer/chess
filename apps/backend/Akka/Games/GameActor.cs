@@ -13,10 +13,17 @@ namespace Chess.Backend.Akka.Games;
 /// <see cref="LiveFrame"/> both come from the post-persist state, so a player reads their own write and watchers see
 /// the same seq. Kafka is fed from the journal by the outbox, never from here. Sharded, one incarnation per id.
 /// </summary>
-internal sealed class GameActor : ReceivePersistentActor
+internal sealed class GameActor : ReceivePersistentActor, IWithTimers
 {
     public const string PersistenceIdPrefix = "game-";
     public const int SnapshotEvery = 20;
+
+    /// <summary>Each side's first move must come within this, or the game is aborted (D15).</summary>
+    public static readonly TimeSpan FirstMoveWindow = TimeSpan.FromMinutes(1);
+
+    private const string FlagTimer = "flag";
+    private const string AbortTimer = "abort";
+    private const string PassivateTimer = "passivate";
 
     private readonly Guid _gameId;
     private readonly IActorRef? _mediator;
@@ -37,6 +44,11 @@ internal sealed class GameActor : ReceivePersistentActor
     private string? _result;
     private string? _reason;
     private int _eventsSinceSnapshot;
+    private DateTimeOffset _createdAt;
+    private DateTimeOffset _lastMoveAt;
+
+    /// <summary>When the side to move's clock started running; null while no clock runs (before both first moves).</summary>
+    private DateTimeOffset? _turnStartedAt;
 
     public GameActor(Guid gameId, IActorRef? mediator, TimeProvider clock)
     {
@@ -65,11 +77,41 @@ internal sealed class GameActor : ReceivePersistentActor
         Command<OfferDraw>(HandleOfferDraw);
         Command<AcceptDraw>(HandleAcceptDraw);
         Command<DeclineDraw>(HandleDeclineDraw);
+        Command<AbortGame>(HandleAbort);
+        Command<FlagCheck>(_ => HandleFlagCheck());
+        Command<AbortCheck>(_ => HandleAbortCheck());
+        Command<PassivateNow>(_ => Context.Parent.Tell(new global::Akka.Cluster.Sharding.Passivate(PoisonPill.Instance)));
         Command<SaveSnapshotSuccess>(_ => { });
         Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "snapshot failed for game {0}", _gameId));
     }
 
+    public ITimerScheduler Timers { get; set; } = null!;
+
     public override string PersistenceId => PersistenceIdPrefix + _gameId.ToString("N");
+
+    /// <summary>
+    /// D18 flag fall: the flagged side loses, unless the opponent has no mating material — then it is a draw.
+    /// Static and pure so the material cases are testable from a FEN.
+    /// </summary>
+    public static GameOutcome TimeoutOutcome(ChessRules rules, Side flagged)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        Side opponent = flagged.Opponent();
+        return rules.CanMate(opponent)
+            ? new GameOutcome(opponent.WinFor(), EndReason.Timeout)
+            : new GameOutcome(GameResult.Draw, EndReason.TimeoutVsInsufficientMaterial);
+    }
+
+    /// <summary>Recovery (D14): the side to move gets its clock back as of the last event, and the turn restarts now.</summary>
+    protected override void OnReplaySuccess()
+    {
+        if (ClocksRunning)
+        {
+            _turnStartedAt = _clock.GetUtcNow();
+        }
+
+        Rearm();
+    }
 
     private string Topic => LiveTopics.Format("game", _gameId.ToString("N"));
 
@@ -110,6 +152,14 @@ internal sealed class GameActor : ReceivePersistentActor
             return;
         }
 
+        DateTimeOffset now = _clock.GetUtcNow();
+        if (ClocksRunning && RemainingMs(now) <= 0)
+        {
+            // The flag fell before this move arrived; the timer just hadn't fired yet.
+            PersistAndReply([TimedOut(now)]);
+            return;
+        }
+
         // TryApply mutates the board on success, so the persist callback must not apply the move again (replay: false).
         MoveOutcome outcome = _rules.TryApply(cmd.Uci);
         if (outcome is MoveRejected rejected)
@@ -120,8 +170,23 @@ internal sealed class GameActor : ReceivePersistentActor
 
         MoveApplied applied = (MoveApplied)outcome;
 
-        DateTimeOffset now = _clock.GetUtcNow();
-        MoveMade moved = new(Ply, applied.Uci, applied.San, applied.FenAfter, _whiteMs, _blackMs, now);
+        // Before both first moves no clock runs (D15); after them the mover pays the elapsed time and earns the increment.
+        long whiteMs = _whiteMs;
+        long blackMs = _blackMs;
+        if (_turnStartedAt is { } started)
+        {
+            long spent = (long)(now - started).TotalMilliseconds;
+            if (cmd.UserId == _white)
+            {
+                whiteMs = whiteMs - spent + _timeControl.IncrementMs;
+            }
+            else
+            {
+                blackMs = blackMs - spent + _timeControl.IncrementMs;
+            }
+        }
+
+        MoveMade moved = new(Ply, applied.Uci, applied.San, applied.FenAfter, whiteMs, blackMs, now);
         List<object> events = [moved];
         if (applied.End is { } end)
         {
@@ -212,6 +277,70 @@ internal sealed class GameActor : ReceivePersistentActor
         PersistAndReply([new DrawDeclined(cmd.UserId, _clock.GetUtcNow())]);
     }
 
+    private void HandleAbort(AbortGame cmd)
+    {
+        if (Refuse(cmd.UserId) is { } refused)
+        {
+            Reply(refused);
+            return;
+        }
+
+        bool movedAlready = Ply >= 2 || (Ply == 1 && cmd.UserId == _white);
+        if (movedAlready)
+        {
+            Reply(Rejected(RejectionCode.Conflict, "You have already moved: resign instead of aborting."));
+            return;
+        }
+
+        PersistAndReply([Ended(GameResult.None, EndReason.Aborted, _clock.GetUtcNow())]);
+    }
+
+    private void HandleFlagCheck()
+    {
+        if (_status == GameStatus.Ended || !ClocksRunning)
+        {
+            return;
+        }
+
+        DateTimeOffset now = _clock.GetUtcNow();
+        if (RemainingMs(now) > 0)
+        {
+            Rearm(); // a stale timer: the turn changed or time was given back since it was armed
+            return;
+        }
+
+        PersistAll([TimedOut(now)], e =>
+        {
+            ApplyLive(e);
+            Publish();
+            MaybeSnapshot();
+            Rearm();
+        });
+    }
+
+    private void HandleAbortCheck()
+    {
+        if (_status == GameStatus.Ended || Ply >= 2)
+        {
+            return;
+        }
+
+        DateTimeOffset now = _clock.GetUtcNow();
+        if (now < FirstMoveDeadline)
+        {
+            Rearm();
+            return;
+        }
+
+        PersistAll([Ended(GameResult.None, EndReason.Aborted, now)], e =>
+        {
+            ApplyLive(e);
+            Publish();
+            MaybeSnapshot();
+            Rearm();
+        });
+    }
+
     /// <summary>Common gate: the game must exist, the sender must be a player (D10), and it must not be over.</summary>
     private GameRejected? Refuse(long userId) =>
         !_created ? NotFound()
@@ -229,6 +358,7 @@ internal sealed class GameActor : ReceivePersistentActor
             ApplyLive(e);
             Publish();
             MaybeSnapshot();
+            Rearm();
         });
         DeferAsync(events[^1], _ => replyTo.Tell(View()));
     }
@@ -270,6 +400,7 @@ internal sealed class GameActor : ReceivePersistentActor
         _blackMs = e.InitialMs;
         _status = GameStatus.Created;
         _rules = ChessRules.NewGame();
+        _createdAt = e.At;
     }
 
     private void Apply(MoveMade e, bool replay)
@@ -295,6 +426,9 @@ internal sealed class GameActor : ReceivePersistentActor
         _whiteMs = e.WhiteMs;
         _blackMs = e.BlackMs;
         _status = GameStatus.Playing;
+        _lastMoveAt = e.At;
+        // From Black's first reply on, the side to move's clock runs from the moment of the last move.
+        _turnStartedAt = Ply >= 2 ? e.At : null;
     }
 
     private void Apply(DrawOffered e) => _drawOfferedBy = e.By;
@@ -313,6 +447,7 @@ internal sealed class GameActor : ReceivePersistentActor
         _whiteMs = e.WhiteMs;
         _blackMs = e.BlackMs;
         _drawOfferedBy = null;
+        _turnStartedAt = null;
     }
 
     private void Restore(GameSnapshot s)
@@ -332,6 +467,9 @@ internal sealed class GameActor : ReceivePersistentActor
         _drawBlocked = s.DrawBlocked;
         _result = s.Result;
         _reason = s.Reason;
+        _createdAt = s.CreatedAt;
+        _lastMoveAt = s.LastMoveAt;
+        _turnStartedAt = _status == GameStatus.Playing && Ply >= 2 ? s.LastMoveAt : null;
     }
 
     private void MaybeSnapshot()
@@ -344,7 +482,7 @@ internal sealed class GameActor : ReceivePersistentActor
         _eventsSinceSnapshot = 0;
         SaveSnapshot(new GameSnapshot(
             _white, _black, _timeControl.ToString(), [.. _rules.Moves], _lastSan, _whiteMs, _blackMs, _status,
-            _drawOfferedBy, _drawBlocked, _result, _reason));
+            _drawOfferedBy, _drawBlocked, _result, _reason, _createdAt, _lastMoveAt));
     }
 
     private void Publish() => _mediator?.Tell(new Publish(LiveTopics.PubSub, new LiveFrame(Topic, LastSequenceNr, View())));
@@ -352,7 +490,60 @@ internal sealed class GameActor : ReceivePersistentActor
     // ---- helpers -----------------------------------------------------------------------------------------------
 
     private GameEnded Ended(GameResult result, EndReason reason, DateTimeOffset at) =>
-        new(result.ToPgn(), reason.ToString(), _whiteMs, _blackMs, at);
+        new(result.ToPgn(), reason.ToString(), CurrentMs(Side.White, at), CurrentMs(Side.Black, at), at);
+
+    private GameEnded TimedOut(DateTimeOffset at)
+    {
+        GameOutcome outcome = TimeoutOutcome(_rules, _rules.SideToMove);
+        return Ended(outcome.Result, outcome.Reason, at);
+    }
+
+    private bool ClocksRunning => _status == GameStatus.Playing && _turnStartedAt is not null;
+
+    private DateTimeOffset FirstMoveDeadline => (Ply == 0 ? _createdAt : _lastMoveAt) + FirstMoveWindow;
+
+    /// <summary>The side to move's remaining time at <paramref name="at"/>.</summary>
+    private long RemainingMs(DateTimeOffset at) => CurrentMs(_rules.SideToMove, at);
+
+    /// <summary>A side's clock at <paramref name="at"/>: stored value, minus the running turn if it is that side's, never below 0.</summary>
+    private long CurrentMs(Side side, DateTimeOffset at)
+    {
+        long stored = side == Side.White ? _whiteMs : _blackMs;
+        if (_turnStartedAt is not { } started || side != _rules.SideToMove)
+        {
+            return stored;
+        }
+
+        return Math.Max(0, stored - (long)(at - started).TotalMilliseconds);
+    }
+
+    /// <summary>
+    /// One place decides which timer runs: the flag while clocks run, the first-move abort before that, and after the
+    /// end only the passivation the game type allows (design D8).
+    /// </summary>
+    private void Rearm()
+    {
+        Timers.CancelAll();
+        DateTimeOffset now = _clock.GetUtcNow();
+        if (_status == GameStatus.Ended)
+        {
+            if (PassivationPolicy.For(_timeControl).AfterEnd is { } after)
+            {
+                Timers.StartSingleTimer(PassivateTimer, PassivateNow.Instance, after);
+            }
+
+            return;
+        }
+
+        if (ClocksRunning)
+        {
+            Timers.StartSingleTimer(FlagTimer, FlagCheck.Instance, TimeSpan.FromMilliseconds(RemainingMs(now)));
+            return;
+        }
+
+        TimeSpan untilAbort = FirstMoveDeadline - now;
+        Timers.StartSingleTimer(AbortTimer, AbortCheck.Instance, untilAbort > TimeSpan.Zero ? untilAbort : TimeSpan.Zero);
+    }
 
     private long PlayerToMove => _rules.SideToMove == Side.White ? _white : _black;
 
@@ -362,7 +553,8 @@ internal sealed class GameActor : ReceivePersistentActor
 
     private GameView View() => new(
         _gameId, _white, _black, _timeControl.ToString(), _status, _rules.Fen, Ply, _rules.SideToMove.ToString(),
-        _rules.Moves.Count > 0 ? _rules.Moves[^1] : null, _lastSan, _whiteMs, _blackMs, _clock.GetUtcNow(),
+        _rules.Moves.Count > 0 ? _rules.Moves[^1] : null, _lastSan,
+        CurrentMs(Side.White, _clock.GetUtcNow()), CurrentMs(Side.Black, _clock.GetUtcNow()), _clock.GetUtcNow(),
         _drawOfferedBy, _result, _reason, LastSequenceNr);
 
     private GameRejected NotFound() => Rejected(RejectionCode.NotFound, "No such game.");
@@ -370,4 +562,24 @@ internal sealed class GameActor : ReceivePersistentActor
     private GameRejected Rejected(RejectionCode code, string reason) => new(_gameId, code, reason);
 
     private void Reply(object message) => Sender.Tell(message);
+
+    /// <summary>The flag timer fired; re-checked against the clock before ending anything.</summary>
+    internal sealed class FlagCheck
+    {
+        public static readonly FlagCheck Instance = new();
+
+        private FlagCheck()
+        {
+        }
+    }
+
+    private sealed class AbortCheck
+    {
+        public static readonly AbortCheck Instance = new();
+    }
+
+    private sealed class PassivateNow
+    {
+        public static readonly PassivateNow Instance = new();
+    }
 }

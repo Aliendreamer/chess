@@ -82,4 +82,6 @@ internal sealed record GameSnapshot(
     long? DrawOfferedBy,
     long? DrawBlocked,
     string? Result,
-    string? Reason);
+    string? Reason,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset LastMoveAt);
