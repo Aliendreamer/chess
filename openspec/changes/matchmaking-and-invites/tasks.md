@@ -46,10 +46,10 @@ touches. 🐳 marks steps that need Docker or the live stack. Expected values in
 
 ## 3. HTTP and live kinds
 
-- [ ] 3.1 Failing tests for the reply mappers (matchmaking and invite replies to HTTP codes and shapes).
-- [ ] 3.2 Implement the endpoints (`WebApi/Matchmaking/`, `WebApi/Invites/`). The frontend `KINDS` gains `queue`
-      and `invite`, with failing `live-relay.test.ts` cases first.
-- [ ] 3.3 🐳 Failing integration test (`MatchmakingFlowTests`):
+- [x] 3.1 Failing tests for the reply mappers (matchmaking and invite replies to HTTP codes and shapes).
+- [x] 3.2 Implement the endpoints (`WebApi/Matchmaking/`, `WebApi/Invites/`). The frontend `KINDS` gains `queue`
+      and `invite`, with failing `live-relay.test.ts` cases first. As built: both live in `WebApi/Matchmaking/`.
+- [x] 3.3 🐳 Failing integration test (`MatchmakingFlowTests`):
 
   - two users join `5+3` over HTTP; the second gets `matched` and the game exists (`GET /api/games/{id}/live`);
   - an invite is created by A as black, and B accepts: B is White in the started game;
@@ -57,7 +57,7 @@ touches. 🐳 marks steps that need Docker or the live stack. Expected values in
   - cancel on another invite gives `cancelled`;
   - a hub subscriber on `invite:{id}` gets the accepted frame.
 
-- [ ] 3.4 Commit: `feat(backend): matchmaking and invite endpoints with live kinds`.
+- [x] 3.4 Commit: `feat(backend): matchmaking and invite endpoints with live kinds`.
 
 ## 4. Live stack and docs 🐳
 

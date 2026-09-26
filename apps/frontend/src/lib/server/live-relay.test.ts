@@ -17,6 +17,21 @@ describe('parseLiveUrl', () => {
     expect(parseLiveUrl('/api/ws/live/game/0199f1c2-a3b4-7c5d-8e9f-0a1b2c3d4e5f')).toBeNull()
   })
 
+  it('accepts the queue kind with a time control and the invite kind with an N-form guid', () => {
+    expect(parseLiveUrl('/api/ws/live/queue/5+3')).toEqual({
+      kind: 'queue',
+      id: '5+3',
+      topic: 'queue:5+3',
+    })
+    expect(parseLiveUrl('/api/ws/live/queue/90+30')?.topic).toBe('queue:90+30')
+    expect(parseLiveUrl('/api/ws/live/queue/5')).toBeNull()
+    expect(parseLiveUrl('/api/ws/live/queue/5%2B3')).toBeNull()
+    expect(parseLiveUrl('/api/ws/live/invite/7c9e6679742540de944be07fc1f90ae7')?.topic).toBe(
+      'invite:7c9e6679742540de944be07fc1f90ae7',
+    )
+    expect(parseLiveUrl('/api/ws/live/invite/7c9e6679-7425-40de-944b-e07fc1f90ae7')).toBeNull()
+  })
+
   it('accepts a known kind with a valid id, absolute or relative, with a query', () => {
     const want = { kind: 'ping', id: 'abc-1', topic: 'ping:abc-1' }
     expect(parseLiveUrl('http://app.chess.localhost/api/ws/live/ping/abc-1')).toEqual(want)
