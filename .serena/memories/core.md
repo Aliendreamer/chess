@@ -82,6 +82,9 @@ Local-stack gotchas learned: new npm deps need `docker compose ... up -d --no-de
 reload "applies" but can't be trusted); Keycloak's quick-login check locks a user logged in twice within 1 s, so
 e2e logs each user in once (`auth.setup.ts` storageState) and reuses it; D15 aborts a game with no first move in 1 min, so start test games right before using them.
 
+The user keeps a local Stockfish build in `apps/backend/chessEngine/` (git- and docker-ignored, GPLv3). When the
+engine is wired in, the Dockerfile should download a pinned release (URL + SHA-256), not copy the folder.
+
 Next: change 4 `presence-and-abandonment`.
 
 ## Specs and plans — OpenSpec (from 2026-09-22)
