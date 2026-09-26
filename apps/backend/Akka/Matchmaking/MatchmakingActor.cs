@@ -6,7 +6,11 @@ using Chess.Backend.Live;
 
 namespace Chess.Backend.Akka.Matchmaking;
 
-internal sealed record JoinQueue(long UserId, string TimeControl);
+/// <summary>
+/// Join a queue. <paramref name="Heartbeat"/> marks a keep-alive from a client already waiting: only a heartbeat may
+/// be answered with a pairing it raced. A fresh join always seeks a new game.
+/// </summary>
+internal sealed record JoinQueue(long UserId, string TimeControl, bool Heartbeat = false);
 
 internal sealed record LeaveQueue(long UserId, string TimeControl);
 
@@ -85,7 +89,11 @@ internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
 
         DateTimeOffset now = _clock.GetUtcNow();
         SweepExpired();
-        if (_recent.TryGetValue(join.UserId, out (Matched Match, DateTimeOffset At) recent) && recent.Match.TimeControl == join.TimeControl)
+        if (!join.Heartbeat)
+        {
+            _recent.Remove(join.UserId); // a fresh join after a quick game must not get that game back
+        }
+        else if (_recent.TryGetValue(join.UserId, out (Matched Match, DateTimeOffset At) recent) && recent.Match.TimeControl == join.TimeControl)
         {
             Sender.Tell(recent.Match); // a heartbeat that raced its own pairing
             return;

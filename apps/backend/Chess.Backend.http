@@ -38,8 +38,12 @@ GET {{host}}/health
 
 ### ---------- matchmaking ----------
 
-### Join / heartbeat a queue (re-POST every ~30 s; 60 s silence drops you) → waiting | matched
+### Join a queue (always seeks a new game) → waiting | matched
 POST {{host}}/api/matchmaking/{{tc}}
+Cookie: mp_sid={{sid}}
+
+### Keep your place while waiting (every ~30 s; 60 s silence drops you); answers matched if you were just paired
+POST {{host}}/api/matchmaking/{{tc}}?heartbeat=true
 Cookie: mp_sid={{sid}}
 
 ### Second player: gets matched

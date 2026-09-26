@@ -46,7 +46,10 @@ internal static class InviteHttp
     };
 }
 
-/// <summary>Join (or heartbeat) a queue: re-POST every ~30 s while searching; silence for 60 s drops you.</summary>
+/// <summary>
+/// Join a queue, or keep your place with <c>?heartbeat=true</c> every ~30 s while searching (silence for 60 s drops
+/// you). Only a heartbeat can be answered with a pairing it raced; a plain POST always seeks a new game.
+/// </summary>
 [ExcludeFromCodeCoverage]
 internal sealed class JoinQueueEndpoint(IRequiredActor<MatchmakingActor> matchmaker, ICurrentUser user) : EndpointWithoutRequest<QueueStatus>
 {
@@ -65,7 +68,7 @@ internal sealed class JoinQueueEndpoint(IRequiredActor<MatchmakingActor> matchma
         object reply;
         try
         {
-            reply = await matchmaker.ActorRef.Ask(new JoinQueue(user.Id ?? 0, Route<string>("tc")!), AskTimeout, ct);
+            reply = await matchmaker.ActorRef.Ask(new JoinQueue(user.Id ?? 0, Route<string>("tc")!, Query<bool>("heartbeat", isRequired: false)), AskTimeout, ct);
         }
         catch (AskTimeoutException)
         {

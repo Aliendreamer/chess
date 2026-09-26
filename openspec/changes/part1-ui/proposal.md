@@ -50,7 +50,10 @@ presence and abandonment (change 4), drag-and-drop moves, and sounds and premove
 
 ### Modified Capabilities
 
-<!-- none: /api/me gaining `username` is additive and not a spec-level requirement change -->
+- `game-matchmaking`: a keep-alive is now `POST /api/matchmaking/{tc}?heartbeat=true`, and only a heartbeat may be
+  answered with a recent pairing. Found while building Home: a player who queued again within 60 s of a quick game
+  (an abort, a bullet loss) was answered with the finished game. (`/api/me` gaining `username` is additive and not
+  a spec-level change.)
 
 ## Impact
 

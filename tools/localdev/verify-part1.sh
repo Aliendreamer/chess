@@ -45,7 +45,7 @@ waiting="$(post "$SID_T" "http://$API_HOST/api/matchmaking/5+3")"
 [[ "$(field status <<<"$waiting")" == "waiting" ]] || fail "testuser not waiting: $waiting"
 paired="$(post "$SID_P" "http://$API_HOST/api/matchmaking/5+3")"
 [[ "$(field status <<<"$paired")" == "matched" ]] || fail "player not matched: $paired"
-[[ "$(post "$SID_T" "http://$API_HOST/api/matchmaking/5+3" | field gameId)" == "$(field gameId <<<"$paired")" ]] \
+[[ "$(post "$SID_T" "http://$API_HOST/api/matchmaking/5+3?heartbeat=true" | field gameId)" == "$(field gameId <<<"$paired")" ]] \
   || fail "testuser's heartbeat did not learn the same game"
 echo "ok (game $(field gameId <<<"$paired"))"
 

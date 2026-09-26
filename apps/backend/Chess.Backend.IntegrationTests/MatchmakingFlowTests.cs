@@ -42,7 +42,7 @@ public sealed class MatchmakingFlowTests(StackFixture stack)
         Assert.Equal([a, b], new[] { second.WhiteId!.Value, second.BlackId!.Value }.Order());
 
         // The first seeker's next heartbeat learns the same pairing.
-        Queue heartbeat = await ReadAsync<Queue>(await SendAsync(client, HttpMethod.Post, "/api/matchmaking/5+3", $"it-a-{run}", null, ct), HttpStatusCode.OK, ct);
+        Queue heartbeat = await ReadAsync<Queue>(await SendAsync(client, HttpMethod.Post, "/api/matchmaking/5+3?heartbeat=true", $"it-a-{run}", null, ct), HttpStatusCode.OK, ct);
         Assert.Equal(("matched", second.GameId), (heartbeat.Status, heartbeat.GameId));
 
         Game game = await ReadAsync<Game>(await Api.GetAsync(client, $"/api/games/{second.GameId:N}/live", $"it-a-{run}", ct), HttpStatusCode.OK, ct);

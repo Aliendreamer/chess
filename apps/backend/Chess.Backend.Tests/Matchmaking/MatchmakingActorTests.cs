@@ -40,9 +40,9 @@ public sealed class MatchmakingActorTests() : TestKit(AkkaConfig.InMemoryPersist
     private IActorRef Matchmaker(IActorRef? mediator = null, int seed = 7) =>
         Sys.ActorOf(Props.Create(() => new MatchmakingActor(Starter, mediator, Clock, new Random(seed))));
 
-    private object Join(IActorRef mm, long user, string tc)
+    private object Join(IActorRef mm, long user, string tc, bool heartbeat = false)
     {
-        mm.Tell(new JoinQueue(user, tc));
+        mm.Tell(new JoinQueue(user, tc, heartbeat));
         return ExpectMsg<object>();
     }
 
@@ -144,10 +144,26 @@ public sealed class MatchmakingActorTests() : TestKit(AkkaConfig.InMemoryPersist
         Join(mm, A, "5+3");
         Matched matched = Assert.IsType<Matched>(Join(mm, B, "5+3"));
 
-        Matched again = Assert.IsType<Matched>(Join(mm, A, "5+3")); // A's heartbeat raced the pairing
+        Matched again = Assert.IsType<Matched>(Join(mm, A, "5+3", heartbeat: true)); // raced the pairing
 
         Assert.Equal(matched.GameId, again.GameId);
         Assert.Single(Starter.Started);
+    }
+
+    [Fact]
+    public void A_fresh_join_after_a_pairing_seeks_a_new_game()
+    {
+        IActorRef mm = Matchmaker();
+        Join(mm, A, "5+3");
+        Assert.IsType<Matched>(Join(mm, B, "5+3"));
+
+        // The game ended fast (an abort, a bullet loss) and A queues again within the minute.
+        Waiting fresh = Assert.IsType<Waiting>(Join(mm, A, "5+3"));
+        Matched next = Assert.IsType<Matched>(Join(mm, C, "5+3"));
+
+        Assert.Equal((1, 1), (fresh.Position, fresh.WaitingCount));
+        Assert.Equal(2, Starter.Started.Count);
+        Assert.Equal([A, C], new[] { next.WhiteId, next.BlackId }.Order());
     }
 
     [Fact]

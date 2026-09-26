@@ -85,7 +85,9 @@ Choosing a tile does the following:
 
 - `POST /api/matchmaking/{tc}` is sent;
 - if the answer is `matched`, go to the game;
-- otherwise open `queue:{tc}` (its frame carries the waiting count and `lastPairing`) and re-POST every 25 s;
+- otherwise open `queue:{tc}` (its frame carries the waiting count and `lastPairing`) and re-POST with
+  `?heartbeat=true` every 25 s (only a heartbeat may be answered with a recent pairing; a plain POST always seeks
+  a new game);
 - the first of the frame naming this user or a heartbeat answering `matched` navigates to the game;
 - Cancel, or leaving the page, sends `DELETE`.
 
