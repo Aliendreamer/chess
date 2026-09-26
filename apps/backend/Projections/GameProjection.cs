@@ -79,6 +79,8 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
             TimeControl = c.TimeControl,
             Status = RmGame.Playing,
             LastFen = StartFen,
+            WhiteMs = c.InitialMs,
+            BlackMs = c.InitialMs,
             CreatedAt = c.At,
             UpdatedAt = c.At,
         };
@@ -104,6 +106,10 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
         });
         game.Ply = m.Ply;
         game.LastFen = m.FenAfter;
+        game.LastUci = m.Uci;
+        game.LastSan = m.San;
+        game.WhiteMs = m.WhiteMs;
+        game.BlackMs = m.BlackMs;
         game.UpdatedAt = m.At;
         return game;
     }
@@ -121,6 +127,8 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
         game.Reason = end.Reason;
         game.EndedAt = end.At;
         game.UpdatedAt = end.At;
+        game.WhiteMs = end.WhiteMs;
+        game.BlackMs = end.BlackMs;
         game.Pgn = Pgn.Build(new PgnGame(Site, game.CreatedAt, game.WhiteName, game.BlackName, game.TimeControl, end.Result, end.Reason, san));
         return game;
     }

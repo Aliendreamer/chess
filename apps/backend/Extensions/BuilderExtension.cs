@@ -48,6 +48,7 @@ internal static class BuilderExtension
         services.AddSignalR();
         // One source per live kind; the resolver refuses two for the same kind at startup.
         services.AddSingleton<ILiveTopicSource, PingLiveSource>();
+        services.AddSingleton<IEndedGameReader, ReplicaEndedGameReader>();
         services.AddSingleton<ILiveTopicSource, GameLiveSource>();
         services.AddSingleton<IGameStarter, GameStarter>();
         services.AddSingleton<LiveTopicResolver>();

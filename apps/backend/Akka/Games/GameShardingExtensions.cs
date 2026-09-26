@@ -44,8 +44,18 @@ internal sealed class GameMessageExtractor(int shardCount) : HashCodeMessageExtr
     public override string? EntityId(object message) => message is IGameCommand c ? c.GameId.ToString("N") : null;
 }
 
-/// <summary>The <c>game</c> live kind: a subscriber's snapshot is the game's current view (D5), which also wakes it.</summary>
-internal sealed partial class GameLiveSource(IRequiredActor<GameActor> region) : ILiveTopicSource
+/// <summary>Reads an ended game's view from the read side, or null when the replica doesn't have its ending (yet).</summary>
+internal interface IEndedGameReader
+{
+    Task<GameView?> ReadEndedAsync(Guid gameId, CancellationToken ct);
+}
+
+/// <summary>
+/// The <c>game</c> live kind: a subscriber's snapshot is the game's current view (D5). A finished game is answered from
+/// <c>rm_games</c> on the replica so it isn't woken (game-history); a live one, or one whose ending the replica hasn't
+/// caught up with, from its actor — which also wakes a dormant game and re-arms its clocks.
+/// </summary>
+internal sealed partial class GameLiveSource(IRequiredActor<GameActor> region, IEndedGameReader endedGames) : ILiveTopicSource
 {
     public const string KindName = "game";
 
@@ -57,7 +67,23 @@ internal sealed partial class GameLiveSource(IRequiredActor<GameActor> region) :
 
     public async Task<LiveFrame?> SnapshotAsync(string id, CancellationToken ct)
     {
-        object reply = await region.ActorRef.Ask(new GetGameView(Guid.ParseExact(id, "N")), AskTimeout, ct);
+        Guid gameId = Guid.ParseExact(id, "N");
+        GameView? ended = null;
+        try
+        {
+            ended = await endedGames.ReadEndedAsync(gameId, ct);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            // The read side is an optimisation here; the actor can always answer.
+        }
+
+        if (ended is not null)
+        {
+            return ToFrame(ended);
+        }
+
+        object reply = await region.ActorRef.Ask(new GetGameView(gameId), AskTimeout, ct);
         return reply is GameView view ? ToFrame(view) : null;
     }
 

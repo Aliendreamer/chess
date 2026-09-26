@@ -53,6 +53,7 @@ public sealed class GameProjectionTests
 
             RmGame game = await db.RmGames.AsNoTracking().SingleAsync();
             Assert.Equal((Game, "testuser", "player", "5+3", "playing", 0, StartFen, 1L), (game.GameId, game.WhiteName, game.BlackName, game.TimeControl, game.Status, game.Ply, game.LastFen, game.LastSeq));
+            Assert.Equal((300_000L, 300_000L), (game.WhiteMs, game.BlackMs));
             Assert.Equal((T0, T0), (game.CreatedAt, game.UpdatedAt));
 
             List<RmGamePlayer> players = await db.RmGamePlayers.AsNoTracking().OrderBy(r => r.UserId).ToListAsync();
@@ -85,6 +86,7 @@ public sealed class GameProjectionTests
             Assert.Equal((1, "f2f3", "f3", "rnbqkbnr/pppppppp/8/8/8/5P2/PPPPP1PP/RNBQKBNR b KQkq - 0 1"), (move.Ply, move.Uci, move.San, move.FenAfter));
             RmGame game = await db.RmGames.AsNoTracking().SingleAsync();
             Assert.Equal((1, move.FenAfter, 2L, T0.AddSeconds(2)), (game.Ply, game.LastFen, game.LastSeq, game.UpdatedAt));
+            Assert.Equal(("f2f3", "f3", 300_000L, 300_000L), (game.LastUci, game.LastSan, game.WhiteMs, game.BlackMs));
         }
     }
 
@@ -118,6 +120,7 @@ public sealed class GameProjectionTests
 
             RmGame game = await db.RmGames.AsNoTracking().SingleAsync();
             Assert.Equal(("ended", "0-1", "Checkmate", end, end, 6L), (game.Status, game.Result, game.Reason, game.EndedAt, game.UpdatedAt, game.LastSeq));
+            Assert.Equal(("d8h4", "Qh4#"), (game.LastUci, game.LastSan));
             Assert.Equal(
                 """
                 [Event "Live game"]
@@ -143,10 +146,11 @@ public sealed class GameProjectionTests
         (ProjectDbContext db, GameProjection p) = Build();
         using (db)
         {
-            await ApplyAll(p, Created(), Env("game.ended", 2, new GameEnded("*", "Aborted", 300_000, 300_000, T0.AddMinutes(1)), T0.AddMinutes(1)));
+            await ApplyAll(p, Created(), Env("game.ended", 2, new GameEnded("*", "Aborted", 299_000, 0, T0.AddMinutes(1)), T0.AddMinutes(1)));
 
             RmGame game = await db.RmGames.AsNoTracking().SingleAsync();
             Assert.Equal(("ended", "*", "Aborted"), (game.Status, game.Result, game.Reason));
+            Assert.Equal((299_000L, 0L), (game.WhiteMs, game.BlackMs)); // the ending's clocks, not the last move's
             Assert.EndsWith("\n*\n", game.Pgn, StringComparison.Ordinal);
         }
     }

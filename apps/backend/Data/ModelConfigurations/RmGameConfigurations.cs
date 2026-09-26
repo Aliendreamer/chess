@@ -16,6 +16,8 @@ internal sealed class RmGameConfiguration : IEntityTypeConfiguration<RmGame>
         builder.Property(g => g.Result).HasMaxLength(8);
         builder.Property(g => g.Reason).HasMaxLength(64);
         builder.Property(g => g.LastFen).HasMaxLength(100);
+        builder.Property(g => g.LastUci).HasMaxLength(5);
+        builder.Property(g => g.LastSan).HasMaxLength(10);
         // The watermark is the concurrency token: a consumer that lost a rebalance race fails its save (event-publishing).
         builder.Property(g => g.LastSeq).IsConcurrencyToken();
         // Keyset paging for the lists: status filter, then (UpdatedAt, GameId) DESC.

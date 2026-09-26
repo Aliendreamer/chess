@@ -34,6 +34,15 @@ internal sealed class RmGame
 
     public required string LastFen { get; set; }
 
+    public string? LastUci { get; set; }
+
+    public string? LastSan { get; set; }
+
+    /// <summary>Clocks after the last move, or as the game ended (a flag fall ends at 0): an ended game's view needs no actor.</summary>
+    public long WhiteMs { get; set; }
+
+    public long BlackMs { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset? EndedAt { get; set; }

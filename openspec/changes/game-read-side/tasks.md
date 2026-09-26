@@ -44,14 +44,18 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 3. Read endpoints and ended-game snapshots
 
-- [ ] 3.1 Failing tests (`GameListQueryTests`): the pure query and mapping pieces, i.e. the status filter,
+- [x] 3.1 Failing tests (`GameListQueryTests`): the pure query and mapping pieces, i.e. the status filter,
       item mapping, and "my games" colour and opponent. The keyset paging itself is proved on Postgres in 4.1.
-- [ ] 3.2 Implement the five endpoints (`WebApi/Games/`) on `ReadDbContext`: 503 on a replica failure, 404 for
+- [x] 3.2 Implement the five endpoints (`WebApi/Games/`) on `ReadDbContext`: 503 on a replica failure, 404 for
       an unknown game or a PGN that doesn't exist yet.
-- [ ] 3.3 Failing test (`GameLiveSourceTests`): with an ended row on the read side, the snapshot comes from the
+- [x] 3.3 Failing test (`GameLiveSourceTests`): with an ended row on the read side, the snapshot comes from the
       row and the region probe receives nothing. With a playing row or no row, it asks the region as before.
       Then implement it.
-- [ ] 3.4 Commit: `feat(backend): game lists, history and pgn from the replica`.
+      _As built:_ `rm_games` gained `LastUci`, `LastSan`, `WhiteMs` and `BlackMs` (migration `AddGameViewColumns`),
+      so an ended game's view comes from one row, with the ending's own clocks (a flag fall ends at 0). The replica
+      read sits behind `IEndedGameReader`. If it fails, the source falls back to the actor instead of failing the
+      subscribe.
+- [x] 3.4 Commit: `feat(backend): game lists, history and pgn from the replica`.
 
 ## 4. Integration 🐳
 
