@@ -42,7 +42,7 @@ the live feed`.
 
 ## 5. End to end and docs 🐳
 
-- [ ] 5.1 🐳 Playwright: start a game from an invite, both move once, close Black's page; within ~2 min White is
+- [x] 5.1 🐳 Playwright: start a game from an invite, both move once, close Black's page; within ~2 min White is
       offered the claim, claims the win, and sees `1–0` · abandonment. Proof: `pnpm exec playwright test`.
-- [ ] 5.2 ROADMAP D15 (the lease and instance key), `openspec/architecture.md` (presence in the game's life) and
+- [x] 5.2 ROADMAP D15 (the lease and instance key), `openspec/architecture.md` (presence in the game's life) and
       CLAUDE.md. Commit: `docs(repo): presence and abandonment in architecture`.

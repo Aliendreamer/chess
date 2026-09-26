@@ -241,12 +241,30 @@ stateDiagram-v2
     Playing --> Playing: MoveMade (clocks run from Black's first reply; −elapsed +increment)
     Playing --> Ended: checkmate · stalemate · insufficient material · threefold · 50-move
     Playing --> Ended: resign · draw agreed · flag fall (timer, no message needed)
+    Playing --> Ended: opponent away 1 min, then claimed (win or draw) → abandonment
     Ended --> [*]: passivate after 1 min
 ```
 
 The rules go only through `Games/ChessRules` (Gera.Chess behind an alias). Every event
-(`GameCreated`, `MoveMade`, `DrawOffered`, `DrawDeclined`, `GameEnded`) goes to `game.events` keyed
+(`GameCreated`, `MoveMade`, `DrawOffered`, `DrawDeclined`, `GameEnded`, and the presence events `PlayerLeft`,
+`PlayerReturned`, `AbandonmentOffered`) goes to `game.events` keyed
 `game:{id}`, and to the live relay as a `game:{id}` frame.
+
+### Presence and abandonment (presence-and-abandonment)
+
+- The BFF knows every browser socket, so it reports presence. For `game:` topics the multiplexer counts each
+  signed-in user's sockets and calls the hub's `Present` / `Absent` on the first and last, under a per-process
+  instance id. It re-sends every held presence every 30 s and after a hub reconnect.
+- `GameActor` keeps who is present per instance in memory. A player counts as gone when their last instance says
+  `Absent` or goes 75 s without a refresh, which covers a crashed BFF or a dead hub node with no cleanup. Only the
+  transitions are persisted (`PlayerLeft` / `PlayerReturned`), and only while playing after both first moves.
+  Tracking switches on at a game's first report, so games played only through the API never count anyone as away.
+- After 60 s away, the other player (if present) gets `claimableBy`. It's persisted as the marker `AbandonmentOffered`
+  so the frame has a newer seq. `POST /api/games/{id}/claim {"outcome":"win"|"draw"}` then ends the game with reason
+  `Abandonment` (PGN `abandoned`). A recovery restarts the minute (D14 forgiveness), and the other player is presumed
+  present for one lease.
+- The page shows the claim panel (Claim win / Call it a draw / Keep waiting) to `claimableBy`, and `useLiveTopic`
+  reconnects a dropped socket after 1, 2, 4, 8 and then every 15 s, except after 4400/4401.
 
 ### Matchmaking and invites (`Akka/Matchmaking`, `Akka/Invites`)
 

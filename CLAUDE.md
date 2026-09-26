@@ -159,7 +159,11 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   `POST|DELETE /api/matchmaking/{tc}`; `?heartbeat=true` every ~25 s keeps your place, 60 s silence drops you) or an invite
   (`Akka/Invites/InviteActor`, sharded `invites`, 24 h; `POST /api/invites`, `GET /api/invites/{id}`, `…/accept`,
   `…/cancel`). Live kinds `queue:{tc}` and `invite:{id}`.
-  Commands: `POST /api/games/{id}/moves|resign|draw/offer|draw/accept|draw/decline|abort`, `GET …/live`.
+  Commands: `POST /api/games/{id}/moves|resign|draw/offer|draw/accept|draw/decline|abort|claim`, `GET …/live`.
+  Presence: the BFF multiplexer reports `Present`/`Absent` for `game:` topics (per-process instance id, 30 s refresh);
+  the actor's 75 s lease and 60 s abandonment are `Akka:PresenceLeaseSeconds` / `Akka:AbandonAfterSeconds`
+  (integration tests shorten them). Every event a game persists must be tagged for `game.events`: consumers stall
+  on a seq gap.
   Read side: `GameProjection` fills `rm_games` / `rm_game_players` / `rm_moves` (names = Keycloak
   `preferred_username` snapshotted per game, D23; PGN built at the end, D22); `GET /api/games?status=`,
   `/api/me/games`, `/api/games/{id}`, `…/moves`, `…/pgn` read the replica; a finished game's live snapshot comes from
