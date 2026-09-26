@@ -17,14 +17,14 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 2. Read models and projection
 
-- [ ] 2.0 Failing tests (`UserProvisioningServiceTests`): a new user stores `preferred_username` as `Username`;
+- [x] 2.0 Failing tests (`UserProvisioningServiceTests`): a new user stores `preferred_username` as `Username`;
       an existing user with a null `Username` gets it filled on the next provisioning; an existing name is not
       overwritten by an empty claim. Then add `users.Username` (migration `AddUserUsername`) and pass the claim
       through `UserProvisioningPreProcessor`.
-- [ ] 2.1 Entities `RmGame`, `RmGamePlayer`, `RmMove` with configurations: uuid key, `LastSeq` as a
+- [x] 2.1 Entities `RmGame`, `RmGamePlayer`, `RmMove` with configurations: uuid key, `LastSeq` as a
       concurrency token, and the D2 indexes. Map them in `ProjectDbContext` and `ReadDbContext`. Migration
       `AddGameReadModels`.
-- [ ] 2.2 Failing tests (`GameProjectionTests`, InMemory):
+- [x] 2.2 Failing tests (`GameProjectionTests`, InMemory):
 
   - `game.created` inserts the game and both player rows, with both names snapshotted (and `Player {id}` when a name is missing);
   - each move adds one `rm_moves` row and updates ply, last FEN and `UpdatedAt`;
@@ -35,8 +35,12 @@ touches. 🐳 marks steps that need Docker or the live stack.
   - draw events only advance the watermark;
   - foreign event types are ignored.
 
-- [ ] 2.3 Implement `GameProjection` and register it (DI, as `PingProjection` is).
-- [ ] 2.4 Commit: `feat(backend): project games into rm_games, rm_game_players and rm_moves`.
+- [x] 2.3 Implement `GameProjection` and register it (DI, as `PingProjection` is).
+      _As built:_ "my games" joins `rm_game_players` to `rm_games` for status and result instead of copying them
+      onto both player rows, so the ending updates one row only. Both tables are on the replica. Names are still
+      snapshotted on both, so there's no join to `users` (D23). Draw events move only the watermark, not
+      `UpdatedAt`, so the lists order by play activity. The PGN `Site` tag is the constant `chess`.
+- [x] 2.4 Commit: `feat(backend): project games into rm_games, rm_game_players and rm_moves`.
 
 ## 3. Read endpoints and ended-game snapshots
 

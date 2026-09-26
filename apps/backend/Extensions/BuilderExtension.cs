@@ -111,6 +111,8 @@ internal static class BuilderExtension
         // interface-only registration cannot serve.
         services.AddScoped<PingProjection>();
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<PingProjection>());
+        services.AddScoped<GameProjection>();
+        services.AddScoped<IProjection>(sp => sp.GetRequiredService<GameProjection>());
         if (kafka.Enabled)
         {
             services.AddHostedService<KafkaConsumerHost>();

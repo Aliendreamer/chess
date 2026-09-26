@@ -11,7 +11,7 @@ public sealed class UserProvisioningPreProcessorTests
     {
         CurrentUser current = new();
         Mock<IUserProvisioningService> provisioning = new();
-        provisioning.Setup(p => p.EnsureUserAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync(42);
+        provisioning.Setup(p => p.EnsureUserAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync(42);
         DefaultHttpContext http = new()
         {
             User = user,
@@ -41,7 +41,7 @@ public sealed class UserProvisioningPreProcessorTests
 
         await new UserProvisioningPreProcessor().PreProcessAsync(ctx, CancellationToken.None);
 
-        provisioning.Verify(p => p.EnsureUserAsync("sub-1", "a@b.c", "Ann", It.IsAny<CancellationToken>()), Times.Once);
+        provisioning.Verify(p => p.EnsureUserAsync("sub-1", "a@b.c", "Ann", null, It.IsAny<CancellationToken>()), Times.Once);
         Assert.True(current.IsAuthenticated);
         Assert.Equal(42, current.Id);
         Assert.Equal("sub-1", current.Subject);
@@ -65,7 +65,7 @@ public sealed class UserProvisioningPreProcessorTests
 
         await new UserProvisioningPreProcessor().PreProcessAsync(ctx, CancellationToken.None);
 
-        provisioning.Verify(p => p.EnsureUserAsync("sub-2", "z@b.c", "zed", It.IsAny<CancellationToken>()), Times.Once);
+        provisioning.Verify(p => p.EnsureUserAsync("sub-2", "z@b.c", "zed", "zed", It.IsAny<CancellationToken>()), Times.Once);
         Assert.Equal("zed", current.FullName);
     }
 

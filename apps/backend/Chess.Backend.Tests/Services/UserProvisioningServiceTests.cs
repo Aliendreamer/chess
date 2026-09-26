@@ -13,14 +13,15 @@ public sealed class UserProvisioningServiceTests
         using ProjectDbContext db = TestDb.Create();
         UserProvisioningService svc = Build(db);
 
-        long first = await svc.EnsureUserAsync("sub-1", "a@b.c", "Ann", CancellationToken.None);
-        long again = await svc.EnsureUserAsync("sub-1", "changed@b.c", "Ann", CancellationToken.None);
+        long first = await svc.EnsureUserAsync("sub-1", "a@b.c", "Ann", "ann", CancellationToken.None);
+        long again = await svc.EnsureUserAsync("sub-1", "changed@b.c", "Ann", "ann", CancellationToken.None);
 
         Assert.Equal(first, again);
         User user = await db.Users.SingleAsync();
         Assert.Equal("sub-1", user.Sub);
         Assert.Equal("a@b.c", user.Email);
         Assert.Equal("Ann", user.FullName);
+        Assert.Equal("ann", user.Username);
     }
 
     [Fact]
@@ -34,7 +35,7 @@ public sealed class UserProvisioningServiceTests
         }
 
         using ProjectDbContext db = TestDb.Create(name: dbName);
-        long id = await Build(db).EnsureUserAsync("sub-2", null, null, CancellationToken.None);
+        long id = await Build(db).EnsureUserAsync("sub-2", null, null, null, CancellationToken.None);
 
         Assert.Equal((await db.Users.SingleAsync()).Id, id);
         Assert.Equal(1, await db.Users.CountAsync());
@@ -46,8 +47,8 @@ public sealed class UserProvisioningServiceTests
         using ProjectDbContext db = TestDb.Create();
         UserProvisioningService svc = Build(db);
 
-        long a = await svc.EnsureUserAsync("a", null, null, CancellationToken.None);
-        long b = await svc.EnsureUserAsync("b", null, null, CancellationToken.None);
+        long a = await svc.EnsureUserAsync("a", null, null, null, CancellationToken.None);
+        long b = await svc.EnsureUserAsync("b", null, null, null, CancellationToken.None);
 
         Assert.NotEqual(a, b);
         Assert.Equal(2, await db.Users.CountAsync());
@@ -57,6 +58,26 @@ public sealed class UserProvisioningServiceTests
     public async Task Rejects_empty_subject()
     {
         using ProjectDbContext db = TestDb.Create();
-        await Assert.ThrowsAsync<ArgumentException>(() => Build(db).EnsureUserAsync(string.Empty, null, null, CancellationToken.None));
+        await Assert.ThrowsAsync<ArgumentException>(() => Build(db).EnsureUserAsync(string.Empty, null, null, null, CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData(null, "ann", "ann")] // backfilled on the next login (D23)
+    [InlineData("ann", "", "ann")] // an empty claim never erases a name
+    [InlineData("ann", null, "ann")]
+    [InlineData("ann", "ann-renamed", "ann")] // a username, once set, is not rewritten by login (snapshots handle history)
+    public async Task An_existing_users_username_is_filled_but_never_erased(string? stored, string? claim, string expected)
+    {
+        string dbName = Guid.NewGuid().ToString("N");
+        using (ProjectDbContext seed = TestDb.Create(name: dbName))
+        {
+            seed.Users.Add(new User { Sub = "sub-9", Username = stored });
+            await seed.SaveChangesAsync();
+        }
+
+        using ProjectDbContext db = TestDb.Create(name: dbName);
+        await Build(db).EnsureUserAsync("sub-9", null, null, claim, CancellationToken.None);
+
+        Assert.Equal(expected, (await db.Users.AsNoTracking().SingleAsync()).Username);
     }
 }

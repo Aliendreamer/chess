@@ -3,6 +3,7 @@ using System;
 using Chess.Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Chess.Backend.Data.Migrations
 {
     [DbContext(typeof(ProjectDbContext))]
-    partial class ProjectDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260926091044_AddUserUsername")]
+    partial class AddUserUsername
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -204,145 +207,6 @@ namespace Chess.Backend.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("user_sessions", (string)null);
-                });
-
-            modelBuilder.Entity("Chess.Backend.Data.ReadModels.RmGame", b =>
-                {
-                    b.Property<Guid>("GameId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<long>("BlackId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("BlackName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset?>("EndedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastFen")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<long>("LastSeq")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Pgn")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Ply")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Reason")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<string>("Result")
-                        .HasMaxLength(8)
-                        .HasColumnType("character varying(8)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
-
-                    b.Property<string>("TimeControl")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("WhiteId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("WhiteName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.HasKey("GameId");
-
-                    b.HasIndex("Status", "UpdatedAt", "GameId");
-
-                    b.ToTable("rm_games", (string)null);
-                });
-
-            modelBuilder.Entity("Chess.Backend.Data.ReadModels.RmGamePlayer", b =>
-                {
-                    b.Property<long>("UserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("character varying(8)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("OpponentId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("OpponentName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.HasKey("UserId", "GameId");
-
-                    b.HasIndex("UserId", "CreatedAt", "GameId");
-
-                    b.ToTable("rm_game_players", (string)null);
-                });
-
-            modelBuilder.Entity("Chess.Backend.Data.ReadModels.RmMove", b =>
-                {
-                    b.Property<Guid>("GameId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Ply")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("At")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("BlackMs")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("FenAfter")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("San")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
-                    b.Property<string>("Uci")
-                        .IsRequired()
-                        .HasMaxLength(5)
-                        .HasColumnType("character varying(5)");
-
-                    b.Property<long>("WhiteMs")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("GameId", "Ply");
-
-                    b.ToTable("rm_moves", (string)null);
                 });
 
             modelBuilder.Entity("Chess.Backend.Data.ReadModels.RmPing", b =>

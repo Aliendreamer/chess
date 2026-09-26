@@ -13,6 +13,12 @@ internal sealed class ReadDbContext : DbContext
 
     public DbSet<RmPing> RmPings => Set<RmPing>();
 
+    public DbSet<RmGame> RmGames => Set<RmGame>();
+
+    public DbSet<RmGamePlayer> RmGamePlayers => Set<RmGamePlayer>();
+
+    public DbSet<RmMove> RmMoves => Set<RmMove>();
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess) =>
         throw new InvalidOperationException("ReadDbContext is read-only (replica).");
 
@@ -22,5 +28,8 @@ internal sealed class ReadDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new RmPingConfiguration());
+        modelBuilder.ApplyConfiguration(new RmGameConfiguration());
+        modelBuilder.ApplyConfiguration(new RmGamePlayerConfiguration());
+        modelBuilder.ApplyConfiguration(new RmMoveConfiguration());
     }
 }

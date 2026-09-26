@@ -12,6 +12,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(u => u.Sub).IsUnique();
         builder.Property(u => u.Email).HasMaxLength(320);
         builder.Property(u => u.FullName).HasMaxLength(255);
+        builder.Property(u => u.Username).HasMaxLength(255);
         builder.Property(u => u.Version).IsConcurrencyToken();
     }
 }

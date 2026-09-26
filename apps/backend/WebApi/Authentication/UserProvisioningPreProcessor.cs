@@ -29,7 +29,8 @@ internal sealed class UserProvisioningPreProcessor : IGlobalPreProcessor
         List<string> roles = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).Distinct(StringComparer.Ordinal).ToList();
 
         IUserProvisioningService provisioning = http.RequestServices.GetRequiredService<IUserProvisioningService>();
-        long id = await provisioning.EnsureUserAsync(subject, email, fullName, ct);
+        string? username = principal.FindFirstValue(Constants.Claims.PreferredUsername);
+        long id = await provisioning.EnsureUserAsync(subject, email, fullName, username, ct);
 
         if (http.RequestServices.GetRequiredService<ICurrentUser>() is CurrentUser current)
         {

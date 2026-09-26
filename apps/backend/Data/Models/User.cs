@@ -10,4 +10,10 @@ internal sealed class User : AuditableEntity
     public string? Email { get; set; }
 
     public string? FullName { get; set; }
+
+    /// <summary>
+    /// Keycloak <c>preferred_username</c>: the public display name (ROADMAP D23), unique in the realm. Never the email or
+    /// full name. Snapshotted onto each game when it is created, so a later change never rewrites past games.
+    /// </summary>
+    public string? Username { get; set; }
 }

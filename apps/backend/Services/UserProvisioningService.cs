@@ -9,26 +9,32 @@ internal sealed class UserProvisioningService(
 {
     private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
 
-    public async Task<long> EnsureUserAsync(string subject, string? email, string? fullName, CancellationToken ct)
+    public async Task<long> EnsureUserAsync(string subject, string? email, string? fullName, string? username, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrEmpty(subject);
         return await cache.GetOrSetAsync(
             Constants.Cache.UserIdBySubject + subject,
             async (FusionCacheFactoryExecutionContext<long> _, CancellationToken token) =>
-                await UpsertAsync(subject, email, fullName, token),
+                await UpsertAsync(subject, email, fullName, username, token),
             options => options.SetDuration(CacheTtl),
             ct);
     }
 
-    private async Task<long> UpsertAsync(string subject, string? email, string? fullName, CancellationToken ct)
+    private async Task<long> UpsertAsync(string subject, string? email, string? fullName, string? username, CancellationToken ct)
     {
         User? existing = await Context.Users.SingleOrDefaultAsync(u => u.Sub == subject, ct);
         if (existing is not null)
         {
+            if (existing.Username is null && !string.IsNullOrEmpty(username))
+            {
+                existing.Username = username; // users created before D23 get their name on their next login
+                await Context.SaveChangesAsync(ct);
+            }
+
             return existing.Id;
         }
 
-        User user = new() { Sub = subject, Email = email, FullName = fullName };
+        User user = new() { Sub = subject, Email = email, FullName = fullName, Username = NullIfEmpty(username) };
         Context.Users.Add(user);
         try
         {
@@ -46,4 +52,6 @@ internal sealed class UserProvisioningService(
             return winner.Id;
         }
     }
+
+    private static string? NullIfEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;
 }

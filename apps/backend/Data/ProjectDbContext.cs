@@ -17,6 +17,12 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<ProjectionDeadLetter> ProjectionDeadLetters => Set<ProjectionDeadLetter>();
 
+    public DbSet<RmGame> RmGames => Set<RmGame>();
+
+    public DbSet<RmGamePlayer> RmGamePlayers => Set<RmGamePlayer>();
+
+    public DbSet<RmMove> RmMoves => Set<RmMove>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();
