@@ -85,7 +85,10 @@ e2e logs each user in once (`auth.setup.ts` storageState) and reuses it; D15 abo
 The user keeps a local Stockfish build in `apps/backend/chessEngine/` (git- and docker-ignored, GPLv3). When the
 engine is wired in, the Dockerfile should download a pinned release (URL + SHA-256), not copy the folder.
 
-Next: change 4 `presence-and-abandonment`.
+Change 4 `presence-and-abandonment` archived 2026-09-26: BFF presence (instance id, 30 s refresh, 75 s lease),
+1-min abandonment claim (win/draw, reason Abandonment), browser auto-reconnect. Part 1 is complete. Every event a
+game persists must be tagged for `game.events` (projections stall on a seq gap) — the integration test caught it.
+The user will review the code next; nothing after bbb8e3e is pushed yet.
 
 ## Specs and plans — OpenSpec (from 2026-09-22)
 
