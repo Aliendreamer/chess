@@ -13,12 +13,15 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 2. GameActor: moves, draws, endings
 
-- [ ] 2.1 Failing TestKit tests (`GameActorTests`, in-memory journal): - `Create` is idempotent; - a non-player gets `forbidden`, moving out of turn gets `conflict`, and an illegal move gets `illegal`,
+- [x] 2.1 Failing TestKit tests (`GameActorTests`, in-memory journal): - `Create` is idempotent; - a non-player gets `forbidden`, moving out of turn gets `conflict`, and an illegal move gets `illegal`,
       none of them persisting anything; - a legal move persists `MoveMade` with every field; - fool's mate persists `GameEnded(0-1, checkmate)`; - the draw lifecycle (offer, lapse on the opponent's move, re-offer blocked until the offerer moves,
       accept ends `½-½ agreement`, decline); - resign after the first move ends the game for the opponent; - every command after `GameEnded` gets `conflict`; - `LiveFrame` is published after each event with the event's seq.
-- [ ] 2.2 Implement `GameActor`, messages, `GameView` and `GameSnapshot` (move list, D2). Snapshot every 20
+- [x] 2.2 Implement `GameActor`, messages, `GameView` and `GameSnapshot` (move list, D2). Snapshot every 20
       events. Failing test first: a threefold that spans a snapshot and a restart still ends the game.
-- [ ] 2.3 Commit: `feat(backend): game actor with moves, draws and endings`.
+      _As built:_ offering a draw while the opponent's offer is pending **accepts** it, since both players want a
+      draw. The spec doesn't forbid this, and it saves the UI from a race between the two buttons. A move from the
+      offerer keeps their own offer pending; only the opponent's move makes it lapse.
+- [x] 2.3 Commit: `feat(backend): game actor with moves, draws and endings`.
 
 ## 3. Clocks and abort
 
