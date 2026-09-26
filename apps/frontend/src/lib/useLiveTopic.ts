@@ -15,7 +15,7 @@ export interface LiveTopicOptions<T> {
   kind: string
   /** The id as the topic spells it (for guids: 32 hex, no dashes). */
   id: string
-  /** What the page already shows (the loader's state): a frame applies only if its seq is newer. */
+  /** What the page shows when subscribing (the loader's state): a frame applies only if its seq is newer. */
   initial: LiveFrame<T> | undefined
   isPayload: (value: unknown) => value is T
   /** Called once per applied frame, in order — for pages that keep a history, not just the latest. */
@@ -47,17 +47,13 @@ export function useLiveTopic<T>({
   const callbacks = useRef({ isPayload, onFrame })
   callbacks.current = { isPayload, onFrame }
 
-  // A newer server-rendered state (the loader re-ran) moves the baseline forward, never back.
+  // `initial` is the baseline when (re)subscribing only: a page that re-runs its loader shows that state itself,
+  // and moving the baseline here would make the socket's own push for the same change look stale.
+  const baseline = useRef(initial)
+  baseline.current = initial
   useEffect(() => {
-    if (initial === undefined) return
-    const next = applyFrame(shown.current, initial)
-    if (next === initial) {
-      shown.current = initial
-      setFrame(initial)
-    }
-  }, [initial])
-
-  useEffect(() => {
+    shown.current = baseline.current
+    setFrame(baseline.current)
     setStatus('connecting')
     setError(null)
     const topic = `${kind}:${id}`

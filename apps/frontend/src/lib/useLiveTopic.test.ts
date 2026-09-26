@@ -56,18 +56,21 @@ describe('useLiveTopic', () => {
     expect(onFrame).toHaveBeenCalledOnce()
   })
 
-  it('a newer server-rendered state moves the view forward, an older one does not', () => {
+  it('takes initial as the baseline when subscribing; a later initial does not move it', () => {
     vi.stubGlobal('WebSocket', FakeSocket)
+    const onFrame = vi.fn()
     const { result, rerender } = renderHook(
-      ({ initial }) => useLiveTopic({ kind: 'game', id: 'abc', initial, isPayload }),
-      {
-        initialProps: { initial: at(2) },
-      },
+      ({ initial }) => useLiveTopic({ kind: 'game', id: 'abc', initial, isPayload, onFrame }),
+      { initialProps: { initial: at(2) } },
     )
 
-    rerender({ initial: at(5) })
-    expect(result.current.frame?.seq).toBe(5)
-    rerender({ initial: at(4) })
-    expect(result.current.frame?.seq).toBe(5)
+    // The page re-ran its loader (seq 3) before the socket pushed that same change: the push still counts.
+    rerender({ initial: at(3) })
+    act(() =>
+      FakeSocket.last!.onmessage?.({ data: JSON.stringify({ kind: 'frame', frame: at(3) }) }),
+    )
+
+    expect(result.current.frame?.seq).toBe(3)
+    expect(onFrame).toHaveBeenCalledOnce()
   })
 })

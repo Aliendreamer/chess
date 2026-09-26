@@ -1,19 +1,5 @@
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
-const USER = process.env.E2E_USER ?? 'testuser'
-const PASS = process.env.E2E_PASS ?? 'Test123!'
-
-async function loginThroughKeycloak(page: Page) {
-  await page.goto('/')
-  await expect(page).toHaveURL(/keycloak\.chess\.localhost/)
-  // Keycloak 26's theme: the password field shares its label text with the "Show password" toggle,
-  // so target the textboxes by role rather than by label.
-  await page.getByRole('textbox', { name: /username|email/i }).fill(USER)
-  await page.getByRole('textbox', { name: 'Password', exact: true }).fill(PASS)
-  await page.getByRole('button', { name: /sign in|log in/i }).click()
-  await expect(page).toHaveURL(/app\.chess\.localhost/)
-}
+import { USER, loginThroughKeycloak } from './support'
 
 test('anonymous visit is bounced to the Keycloak login form', async ({ page }) => {
   await page.goto('/')
@@ -27,7 +13,7 @@ test('after login the identity chip and dashboard render', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText(/Hello,/)
 })
 
-test('SSR-with-data: raw server HTML already carries identity and live tiles, no Loading', async ({
+test('SSR-with-data: raw server HTML already carries identity and your games, no Loading', async ({
   page,
   request,
 }) => {
@@ -37,8 +23,8 @@ test('SSR-with-data: raw server HTML already carries identity and live tiles, no
   const res = await request.get('/', { headers: { cookie: cookieHeader }, maxRedirects: 0 })
   expect(res.status()).toBe(200)
   const html = await res.text()
-  expect(html).toMatch(/data-testid="me-subject"/)
-  expect(html).toMatch(/data-testid="health-status"/)
+  expect(html).toMatch(/data-testid="identity-name"/)
+  expect(html).toMatch(/Quick pairing/)
   expect(html).not.toMatch(/Loading/i)
 })
 
