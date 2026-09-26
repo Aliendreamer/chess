@@ -17,7 +17,11 @@ internal sealed record LeaveQueue(long UserId, string TimeControl);
 internal sealed record GetQueue(string TimeControl);
 
 /// <summary>Queued: your place (1 = next to be paired) and how many are waiting.</summary>
-internal sealed record Waiting(string TimeControl, int Position, int WaitingCount);
+/// <summary>
+/// Still waiting. <paramref name="Seq"/> is the queue's live seq as of this answer: a client ignores pairings in
+/// frames up to it, which may still show an earlier game of theirs (the last pairing stays on the queue's view).
+/// </summary>
+internal sealed record Waiting(string TimeControl, int Position, int WaitingCount, long Seq);
 
 internal sealed record Matched(string TimeControl, Guid GameId, long WhiteId, long BlackId);
 
@@ -130,8 +134,8 @@ internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
         Entry entry = new(join.UserId, join.TimeControl, now) { LastSeen = now };
         queue.Add(entry);
         _byUser[join.UserId] = entry;
+        Publish(join.TimeControl); // first, so the answer's seq covers this join's own frame
         Sender.Tell(WaitingFor(entry));
-        Publish(join.TimeControl);
     }
 
     private void HandleLeave(LeaveQueue leave)
@@ -201,7 +205,7 @@ internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
     private Waiting WaitingFor(Entry entry)
     {
         List<Entry> queue = Queue(entry.TimeControl);
-        return new Waiting(entry.TimeControl, queue.IndexOf(entry) + 1, queue.Count);
+        return new Waiting(entry.TimeControl, queue.IndexOf(entry) + 1, queue.Count, _seq.GetValueOrDefault(entry.TimeControl));
     }
 
     private QueueView View(string tc) =>

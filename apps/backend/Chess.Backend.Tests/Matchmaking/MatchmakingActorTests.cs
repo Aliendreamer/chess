@@ -204,6 +204,25 @@ public sealed class MatchmakingActorTests() : TestKit(AkkaConfig.InMemoryPersist
         Assert.True(afterMatch.Seq > afterJoin.Seq);
     }
 
+    [Fact]
+    public void A_waiting_answer_carries_the_queue_seq_of_its_own_frame()
+    {
+        TestProbe mediator = CreateTestProbe();
+        IActorRef mm = Matchmaker(mediator.Ref);
+        Join(mm, A, "5+3");
+        Frame(mediator);
+        Join(mm, B, "5+3");
+        Frame(mediator);
+
+        // A queues again at once: that frame still shows the old pairing naming A, and the answer's seq says
+        // "ignore anything up to here", so a client can never be sent back to the finished game.
+        Waiting fresh = Assert.IsType<Waiting>(Join(mm, A, "5+3"));
+        QueueView frame = Frame(mediator);
+
+        Assert.Equal((3L, 3L), (fresh.Seq, frame.Seq));
+        Assert.Contains(A, new[] { frame.LastPairing!.WhiteId, frame.LastPairing.BlackId });
+    }
+
     private static QueueView Frame(TestProbe mediator)
     {
         Publish p = mediator.ExpectMsg<Publish>();

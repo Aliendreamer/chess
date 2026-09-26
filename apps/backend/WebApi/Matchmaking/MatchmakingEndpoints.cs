@@ -6,7 +6,10 @@ using Chess.Backend.WebApi.Games;
 
 namespace Chess.Backend.WebApi.Matchmaking;
 
-/// <summary>What <c>POST /api/matchmaking/{tc}</c> answers: still waiting (with your place), or matched (with the game).</summary>
+/// <summary>
+/// What <c>POST /api/matchmaking/{tc}</c> answers: still waiting (with your place and the queue's live seq), or
+/// matched (with the game).
+/// </summary>
 internal sealed record QueueStatus(
     string Status,
     string TimeControl,
@@ -14,15 +17,16 @@ internal sealed record QueueStatus(
     int? Waiting,
     Guid? GameId,
     long? WhiteId,
-    long? BlackId);
+    long? BlackId,
+    long? Seq);
 
 /// <summary>Matchmaking replies → HTTP (the tested piece behind the thin endpoints).</summary>
 internal static class MatchmakingHttp
 {
     public static (int Status, QueueStatus? Body) Map(object reply) => reply switch
     {
-        Waiting w => (StatusCodes.Status200OK, new QueueStatus("waiting", w.TimeControl, w.Position, w.WaitingCount, null, null, null)),
-        Matched m => (StatusCodes.Status200OK, new QueueStatus("matched", m.TimeControl, null, null, m.GameId, m.WhiteId, m.BlackId)),
+        Waiting w => (StatusCodes.Status200OK, new QueueStatus("waiting", w.TimeControl, w.Position, w.WaitingCount, null, null, null, w.Seq)),
+        Matched m => (StatusCodes.Status200OK, new QueueStatus("matched", m.TimeControl, null, null, m.GameId, m.WhiteId, m.BlackId, null)),
         QueueRejected => (StatusCodes.Status400BadRequest, null),
         Left => (StatusCodes.Status204NoContent, null),
         _ => (StatusCodes.Status502BadGateway, null),
