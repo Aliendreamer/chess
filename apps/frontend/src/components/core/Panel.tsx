@@ -16,13 +16,22 @@ export interface PanelProps {
   meta?: string
   variant?: PanelVariant
   className?: string
+  testId?: string
   children?: ReactNode
 }
 
 /** A card. Accent is for the one thing per view that is "yours right now" (your seek, your invite). */
-export function Panel({ title, meta, variant = 'outlined', className, children }: PanelProps) {
+export function Panel({
+  title,
+  meta,
+  variant = 'outlined',
+  className,
+  testId,
+  children,
+}: PanelProps) {
   return (
     <div
+      data-testid={testId}
       className={['flex flex-col gap-2.5 rounded-card p-4', VARIANTS[variant], className]
         .filter(Boolean)
         .join(' ')}

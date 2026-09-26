@@ -138,6 +138,7 @@ describe('mergeMoves', () => {
 describe('isGameView', () => {
   it('accepts a view and rejects anything else', () => {
     expect(isGameView(view)).toBe(true)
+    expect(isGameView({ ...view, absentId: 22, claimableBy: 11 })).toBe(true)
     expect(isGameView({ ...view, fen: 3 })).toBe(false)
     expect(isGameView({ count: 1 })).toBe(false)
     expect(isGameView(null)).toBe(false)

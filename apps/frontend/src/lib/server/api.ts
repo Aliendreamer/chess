@@ -59,6 +59,7 @@ function guid(id: string): string {
 }
 
 const UCI = /^[a-h][1-8][a-h][1-8][nbrq]?$/
+const CLAIM_OUTCOMES: ReadonlyArray<string> = ['win', 'draw']
 const COMMAND_KINDS: ReadonlyArray<GameCommand['kind']> = [
   'move',
   'resign',
@@ -66,6 +67,7 @@ const COMMAND_KINDS: ReadonlyArray<GameCommand['kind']> = [
   'draw-accept',
   'draw-decline',
   'abort',
+  'claim',
 ]
 
 function command(input: GameCommand): GameCommand {
@@ -73,6 +75,11 @@ function command(input: GameCommand): GameCommand {
   if (input.kind === 'move') {
     if (!UCI.test(input.uci)) throw new Error('not a UCI move')
     return { kind: 'move', uci: input.uci }
+  }
+  if (input.kind === 'claim') {
+    // The type says win | draw, but this arrives from the browser: check the value itself.
+    if (!CLAIM_OUTCOMES.includes(input.outcome)) throw new Error('not a claim')
+    return { kind: 'claim', outcome: input.outcome }
   }
   return { kind: input.kind }
 }

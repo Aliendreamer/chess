@@ -8,6 +8,7 @@ export type CommandOutcome<T> = { ok: true; view: T } | { ok: false; status: num
 
 export type GameCommand =
   | { kind: 'move'; uci: string }
+  | { kind: 'claim'; outcome: 'win' | 'draw' }
   | { kind: 'resign' | 'draw-offer' | 'draw-accept' | 'draw-decline' | 'abort' }
 
 const COMMAND_PATH: Record<GameCommand['kind'], string> = {
@@ -17,6 +18,7 @@ const COMMAND_PATH: Record<GameCommand['kind'], string> = {
   'draw-accept': 'draw/accept',
   'draw-decline': 'draw/decline',
   abort: 'abort',
+  claim: 'claim',
 }
 
 /** The message of an API problem-details body (FastEndpoints puts `ThrowError`'s text in `errors[0].reason`). */
@@ -98,6 +100,10 @@ export function sendGameCommand(
   return postCommand<GameView>(
     fetchImpl,
     path,
-    command.kind === 'move' ? { uci: command.uci } : undefined,
+    command.kind === 'move'
+      ? { uci: command.uci }
+      : command.kind === 'claim'
+        ? { outcome: command.outcome }
+        : undefined,
   )
 }

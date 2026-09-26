@@ -33,10 +33,10 @@ endpoint`.
 
 ## 4. The page
 
-- [ ] 4.1 Failing tests: `useLiveTopic` reconnects after 1/2/4/8/15 s with `status: 'reconnecting'`, not after
+- [x] 4.1 Failing tests: `useLiveTopic` reconnects after 1/2/4/8/15 s with `status: 'reconnecting'`, not after
       4400/4401 or unmount; `GameView` guard accepts the new fields; the claim command posts
       `{"outcome":…}` to `…/claim`.
-- [ ] 4.2 Game page: the claim panel (Claim win / Call it a draw / Keep waiting) for `claimableBy === me.id`, the
+- [x] 4.2 Game page: the claim panel (Claim win / Call it a draw / Keep waiting) for `claimableBy === me.id`, the
       reconnect banner, and the signed-out message. Commit: `feat(frontend): claim abandoned games and reconnect
 the live feed`.
 

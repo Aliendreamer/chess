@@ -7,12 +7,14 @@ import type { LiveFrame } from './live'
 
 class FakeSocket {
   static last: FakeSocket | undefined
+  static opened = 0
   onopen: (() => void) | null = null
-  onclose: (() => void) | null = null
+  onclose: ((e: { code: number }) => void) | null = null
   onmessage: ((e: { data: string }) => void) | null = null
   close = vi.fn()
   constructor(readonly url: string) {
     FakeSocket.last = this
+    FakeSocket.opened += 1
   }
 }
 
@@ -23,6 +25,8 @@ const at = (seq: number): LiveFrame<Payload> => ({ topic: 'game:abc', seq, paylo
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.useRealTimers()
+  FakeSocket.opened = 0
 })
 
 describe('liveUrl', () => {
@@ -72,5 +76,89 @@ describe('useLiveTopic', () => {
 
     expect(result.current.frame?.seq).toBe(3)
     expect(onFrame).toHaveBeenCalledOnce()
+  })
+
+  it('reconnects after 1, 2, 4, 8 and then 15 seconds, reporting that it is reconnecting', () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('WebSocket', FakeSocket)
+    const { result } = renderHook(() =>
+      useLiveTopic({ kind: 'game', id: 'abc', initial: at(2), isPayload }),
+    )
+    const opensAfter = (ms: number) => {
+      const before = FakeSocket.opened
+      act(() => FakeSocket.last!.onclose?.({ code: 1006 }))
+      act(() => vi.advanceTimersByTime(ms - 1))
+      const early = FakeSocket.opened
+      act(() => vi.advanceTimersByTime(1))
+      return [early - before, FakeSocket.opened - before]
+    }
+
+    expect(opensAfter(1000)).toEqual([0, 1])
+    expect(result.current.status).toBe('reconnecting')
+    expect([
+      opensAfter(2000),
+      opensAfter(4000),
+      opensAfter(8000),
+      opensAfter(15000),
+      opensAfter(15000),
+    ]).toEqual([
+      [0, 1],
+      [0, 1],
+      [0, 1],
+      [0, 1],
+      [0, 1],
+    ])
+  })
+
+  it('a successful reconnect is live again and starts the backoff over', () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('WebSocket', FakeSocket)
+    const { result } = renderHook(() =>
+      useLiveTopic({ kind: 'game', id: 'abc', initial: at(2), isPayload }),
+    )
+    act(() => FakeSocket.last!.onclose?.({ code: 1006 }))
+    act(() => vi.advanceTimersByTime(1000))
+    act(() => FakeSocket.last!.onopen?.())
+    expect(result.current.status).toBe('live')
+
+    const before = FakeSocket.opened
+    act(() => FakeSocket.last!.onclose?.({ code: 1006 }))
+    act(() => vi.advanceTimersByTime(1000))
+    expect(FakeSocket.opened - before).toBe(1)
+  })
+
+  it.each([
+    [4401, 'Your session has ended. Reload to sign in again.'],
+    [4400, 'This live feed does not exist.'],
+  ])('does not retry a %i close', (code, message) => {
+    vi.useFakeTimers()
+    vi.stubGlobal('WebSocket', FakeSocket)
+    const { result } = renderHook(() =>
+      useLiveTopic({ kind: 'game', id: 'abc', initial: at(2), isPayload }),
+    )
+    const before = FakeSocket.opened
+
+    act(() => FakeSocket.last!.onclose?.({ code }))
+    act(() => vi.advanceTimersByTime(60_000))
+
+    expect(FakeSocket.opened).toBe(before)
+    expect(result.current.error).toBe(message)
+    expect(result.current.status).toBe('closed')
+  })
+
+  it('does not reconnect after unmount', () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('WebSocket', FakeSocket)
+    const { unmount } = renderHook(() =>
+      useLiveTopic({ kind: 'game', id: 'abc', initial: at(2), isPayload }),
+    )
+    const socket = FakeSocket.last!
+    const before = FakeSocket.opened
+
+    unmount()
+    act(() => socket.onclose?.({ code: 1006 }))
+    act(() => vi.advanceTimersByTime(60_000))
+
+    expect(FakeSocket.opened).toBe(before)
   })
 })

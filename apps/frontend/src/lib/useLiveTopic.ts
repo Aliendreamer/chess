@@ -2,7 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import { applyFrame, parseSocketMessage } from './live'
 import type { LiveFrame } from './live'
 
-export type LiveStatus = 'connecting' | 'live' | 'closed'
+export type LiveStatus = 'connecting' | 'live' | 'reconnecting' | 'closed'
+
+/** Delays before each reconnect attempt; the last one repeats (presence-and-abandonment D7). */
+export const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 15000] as const
+
+/** Closes that no retry can fix: the relay refused the topic (4400) or the session is over (4401). */
+const FINAL_CLOSES: Record<number, string> = {
+  4400: 'This live feed does not exist.',
+  4401: 'Your session has ended. Reload to sign in again.',
+}
 
 /** Same origin as the page, always — the relay is the only thing that knows the API host. */
 export function liveUrl(host: string, protocol: string, kind: string, id: string): string {
@@ -57,10 +66,27 @@ export function useLiveTopic<T>({
     setStatus('connecting')
     setError(null)
     const topic = `${kind}:${id}`
-    const socket = new WebSocket(liveUrl(window.location.host, window.location.protocol, kind, id))
-    socket.onopen = () => setStatus('live')
-    socket.onclose = () => setStatus('closed')
-    socket.onmessage = (event: { data: unknown }) => {
+    let socket: WebSocket | null = null
+    let retry: ReturnType<typeof setTimeout> | null = null
+    let attempt = 0
+    let disposed = false
+
+    // A dropped socket is reopened with backoff; its snapshot then brings the view up to date by seq.
+    const onClose = (event: { code: number }) => {
+      if (disposed) return
+      const final = FINAL_CLOSES[event.code]
+      if (final) {
+        setStatus('closed')
+        setError(final)
+        return
+      }
+      setStatus('reconnecting')
+      const delay = RECONNECT_DELAYS_MS[Math.min(attempt, RECONNECT_DELAYS_MS.length - 1)]
+      attempt += 1
+      retry = setTimeout(open, delay)
+    }
+
+    const onMessage = (event: { data: unknown }) => {
       const message = typeof event.data === 'string' ? parseSocketMessage(event.data) : null
       if (!message) return
       if (message.kind === 'error') {
@@ -75,7 +101,24 @@ export function useLiveTopic<T>({
       setFrame(next)
       callbacks.current.onFrame?.(next)
     }
-    return () => socket.close()
+
+    function open() {
+      socket = new WebSocket(liveUrl(window.location.host, window.location.protocol, kind, id))
+      socket.onopen = () => {
+        attempt = 0
+        setStatus('live')
+        setError(null)
+      }
+      socket.onclose = onClose
+      socket.onmessage = onMessage
+    }
+
+    open()
+    return () => {
+      disposed = true
+      if (retry !== null) clearTimeout(retry)
+      socket?.close()
+    }
   }, [kind, id])
 
   return { frame, status, error }

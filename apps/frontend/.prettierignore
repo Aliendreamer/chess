@@ -8,3 +8,4 @@ src/routeTree.gen.ts
 # Playwright run artifacts (gitignored, but prettier does not read .gitignore).
 test-results/
 playwright-report/
+e2e/.auth/

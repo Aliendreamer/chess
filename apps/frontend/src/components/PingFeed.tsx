@@ -18,6 +18,7 @@ export function relayUrl(host: string, protocol: string, id: string): string {
 const STATUS_LABEL: Record<LiveStatus, string> = {
   connecting: 'connecting…',
   live: 'live',
+  reconnecting: 'reconnecting…',
   closed: 'disconnected',
 }
 

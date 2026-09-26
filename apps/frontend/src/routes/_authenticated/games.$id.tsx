@@ -70,6 +70,8 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   const [promotion, setPromotion] = useState<{ from: string; to: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // "Keep waiting" hides the offer until it goes away (they came back); if they leave again, it shows again.
+  const [waiting, setWaiting] = useState(false)
 
   // Every new server view: drop the optimistic move and bring the move list along (D4). Keyed on seq, which
   // identifies the view; the list is read through a ref so the effect never runs a fetch inside a state updater.
@@ -109,6 +111,11 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   }, [id, summary])
 
   const clocks = useLocalClocks(current)
+
+  const offered = current.claimableBy === me.id && current.status !== 'Ended'
+  useEffect(() => {
+    if (!offered) setWaiting(false)
+  }, [offered])
 
   const mine = myColor(current, me.id)
   const side = orientation(current, me.id)
@@ -207,7 +214,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
                 ? 'live'
                 : live.status === 'connecting'
                   ? 'connecting…'
-                  : 'disconnected — reload to reconnect'}
+                  : 'offline'}
             </span>
           </div>
           <h1 className="m-0 mt-0.5 font-display text-display-md font-normal">
@@ -226,6 +233,43 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
             {current.reason ? (
               <p className="m-0 text-sm text-fg-secondary">{reasonText(current.reason)}</p>
             ) : null}
+          </Panel>
+        ) : null}
+
+        {live.status === 'reconnecting' ? (
+          <p
+            role="status"
+            className="m-0 rounded-card border border-line-accent bg-surface-accent-soft px-3 py-2 text-sm"
+          >
+            Connection lost — reconnecting…
+          </p>
+        ) : null}
+        {live.status === 'closed' && live.error ? (
+          <p role="status" className="m-0 text-sm text-status-loss" data-testid="game-live-error">
+            {live.error}
+          </p>
+        ) : null}
+
+        {offered && !waiting ? (
+          <Panel variant="accent" title="Your opponent left" className="gap-3" testId="claim-panel">
+            <p className="m-0 text-sm text-fg-body">
+              They have been away for a minute. You can end the game now, or keep waiting for them.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="primary"
+                disabled={busy}
+                onClick={() => void send({ kind: 'claim', outcome: 'win' })}
+              >
+                Claim win
+              </Button>
+              <Button disabled={busy} onClick={() => void send({ kind: 'claim', outcome: 'draw' })}>
+                Call it a draw
+              </Button>
+              <Button disabled={busy} onClick={() => setWaiting(true)}>
+                Keep waiting
+              </Button>
+            </div>
           </Panel>
         ) : null}
 

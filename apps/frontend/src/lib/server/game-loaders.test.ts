@@ -92,6 +92,15 @@ describe('sendGameCommand', () => {
     expect(calls).toEqual([{ url, method: 'POST', body: null }])
   })
 
+  it.each([
+    ['win', '{"outcome":"win"}'],
+    ['draw', '{"outcome":"draw"}'],
+  ] as const)('a %s claim posts its outcome to …/claim', async (outcome, body) => {
+    const calls: Array<Call> = []
+    await sendGameCommand(fakeFetch(200, { seq: 9 }, calls), ID, { kind: 'claim', outcome })
+    expect(calls).toEqual([{ url: `/api/games/${ID}/claim`, method: 'POST', body }])
+  })
+
   it('a refusal is an outcome carrying the server reason, not an exception', async () => {
     expect(
       await sendGameCommand(fakeFetch(409, problem('Not your turn.')), ID, {

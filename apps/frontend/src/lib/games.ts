@@ -24,6 +24,10 @@ export interface GameView {
   result: string | null
   reason: string | null
   seq: number
+  /** A player counted away (presence-and-abandonment); nobody's UI shows it, the claim panel keys off `claimableBy`. */
+  absentId?: number | null
+  /** Who may end the game by abandonment right now. */
+  claimableBy?: number | null
 }
 
 /** Mirrors `GET /api/games/{id}` (the replica): names are snapshotted per game (D23). */
