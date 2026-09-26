@@ -13,9 +13,17 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 2. GameActor: moves, draws, endings
 
-- [x] 2.1 Failing TestKit tests (`GameActorTests`, in-memory journal): - `Create` is idempotent; - a non-player gets `forbidden`, moving out of turn gets `conflict`, and an illegal move gets `illegal`,
-      none of them persisting anything; - a legal move persists `MoveMade` with every field; - fool's mate persists `GameEnded(0-1, checkmate)`; - the draw lifecycle (offer, lapse on the opponent's move, re-offer blocked until the offerer moves,
-      accept ends `½-½ agreement`, decline); - resign after the first move ends the game for the opponent; - every command after `GameEnded` gets `conflict`; - `LiveFrame` is published after each event with the event's seq.
+- [x] 2.1 Failing TestKit tests (`GameActorTests`, in-memory journal):
+
+  - `Create` is idempotent;
+  - a non-player gets `forbidden`, moving out of turn gets `conflict`, and an illegal move gets `illegal`, none of them persisting anything;
+  - a legal move persists `MoveMade` with every field;
+  - fool's mate persists `GameEnded(0-1, checkmate)`;
+  - the draw lifecycle (offer, lapse on the opponent's move, re-offer blocked until the offerer moves, accept ends `½-½ agreement`, decline);
+  - resign after the first move ends the game for the opponent;
+  - every command after `GameEnded` gets `conflict`;
+  - `LiveFrame` is published after each event with the event's seq.
+
 - [x] 2.2 Implement `GameActor`, messages, `GameView` and `GameSnapshot` (move list, D2). Snapshot every 20
       events. Failing test first: a threefold that spans a snapshot and a restart still ends the game.
       _As built:_ offering a draw while the opponent's offer is pending **accepts** it, since both players want a
@@ -25,7 +33,18 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 3. Clocks and abort
 
-- [x] 3.1 Failing TestKit tests using `TestScheduler` and a fake `TimeProvider`: - no clock runs before each side's first move; - elapsed time plus increment gives the spec's 3+2 example; - flag fall fires with no message and ends `0-1 timeout`; - flag fall against king + knight ends `½-½`; - a stale timer doesn't end the game; - no first move within 1 minute ends `*, aborted`, and Black's first reply has its own minute; - abort before your first move works, and after both first moves it's `conflict`; - recovery restores the clock of the player to move as of the last event and re-arms the timer (D14); - an ended game passivates itself after 1 minute.
+- [x] 3.1 Failing TestKit tests using `TestScheduler` and a fake `TimeProvider`:
+
+  - no clock runs before each side's first move;
+  - elapsed time plus increment gives the spec's 3+2 example;
+  - flag fall fires with no message and ends `0-1 timeout`;
+  - flag fall against king + knight ends `½-½`;
+  - a stale timer doesn't end the game;
+  - no first move within 1 minute ends `*, aborted`, and Black's first reply has its own minute;
+  - abort before your first move works, and after both first moves it's `conflict`;
+  - recovery restores the clock of the player to move as of the last event and re-arms the timer (D14);
+  - an ended game passivates itself after 1 minute.
+
 - [x] 3.2 Implement the timers, recovery forgiveness and `PassivationPolicy` (live controls only for now). The `games` region has idle
       passivation off (design D8).
 - [x] 3.3 Commit: `feat(backend): game clocks, flag fall and abort`.
@@ -39,7 +58,15 @@ touches. 🐳 marks steps that need Docker or the live stack.
       (`WebApi/Games/`) and `GameLiveSource`. Frontend `KINDS` gains `game`, with a failing `live-relay.test.ts`
       case first (a valid 32-hex id is accepted, `not-a-guid` gives 4400).
 - [x] 4.3 Integration-test auth: a per-request `X-Test-Subject` header, so one factory can act as two players.
-- [x] 4.4 🐳 Failing integration test (`GameFlowTests`, `StackFixture`): - `IGameStarter` creates a game; - two players play fool's mate over HTTP; - a spectator's move is 403; - each reply carries the new state; - the `game.events` envelopes arrive in seq order under `game:{id}`; - a `LiveHub` subscribe returns the current view, and later moves push frames.
+- [x] 4.4 🐳 Failing integration test (`GameFlowTests`, `StackFixture`):
+
+  - `IGameStarter` creates a game;
+  - two players play fool's mate over HTTP;
+  - a spectator's move is 403;
+  - each reply carries the new state;
+  - the `game.events` envelopes arrive in seq order under `game:{id}`;
+  - a `LiveHub` subscribe returns the current view, and later moves push frames.
+
 - [x] 4.5 🐳 Failing integration test: failover forgiveness end to end. A game mid-turn is stopped and
       restarted in a fresh app process, and the clock of the player to move equals its last event's value.
       _As built:_ the integration tests caught two real faults, both fixed. - Every endpoint without a body (live, resign, draw, abort) used an empty DTO that FastEndpoints refuses to

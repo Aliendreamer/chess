@@ -30,7 +30,14 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 3. BFF service identity
 
-- [x] 3.1 Failing vitest (`service-token.test.ts`, injected `fetch` and clock): - the first call fetches; - a call within lifetime reuses the token; - within 30 s of expiry it refetches; - concurrent calls share one fetch; - a non-2xx is a named error.
+- [x] 3.1 Failing vitest (`service-token.test.ts`, injected `fetch` and clock):
+
+  - the first call fetches;
+  - a call within lifetime reuses the token;
+  - within 30 s of expiry it refetches;
+  - concurrent calls share one fetch;
+  - a non-2xx is a named error.
+
 - [x] 3.2 Implement `ServiceToken` and the `config.ts` accessors. Extend the client-bundle guard to
       `RELAY_CLIENT_SECRET`.
       _As built:_ there was no client-bundle guard to extend, only a comment in `env.d.ts`. `config.test.ts`
@@ -43,16 +50,35 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 4. Frames and multiplexer (frontend)
 
-- [x] 4.1 Failing vitest (`live.test.ts`): - `parseFrame` accepts `{topic, seq, payload}` and drops junk; - `applyFrame(undefined, f7)` gives f7, `(f7, f8)` gives f8, `(f8, f7)` keeps f8, `(f8, f8)` keeps
-      current.
-- [x] 4.2 Failing vitest (`hub-multiplexer.test.ts`, fake `HubPort`): - two sockets on one topic → one `start`, two `Subscribe` invokes, each snapshot to its own socket only; - a push reaches only that topic's sockets; - the last unsubscribe invokes `Unsubscribe` and keeps the connection; - reconnect re-subscribes every topic and snapshots all of its sockets; - a final close sends an error, closes the sockets with 1011, and the next subscribe restarts; - a failed start affects only the subscribing socket.
+- [x] 4.1 Failing vitest (`live.test.ts`):
+
+  - `parseFrame` accepts `{topic, seq, payload}` and drops junk;
+  - `applyFrame(undefined, f7)` gives f7, `(f7, f8)` gives f8, `(f8, f7)` keeps f8, `(f8, f8)` keeps current.
+
+- [x] 4.2 Failing vitest (`hub-multiplexer.test.ts`, fake `HubPort`):
+
+  - two sockets on one topic → one `start`, two `Subscribe` invokes, each snapshot to its own socket only;
+  - a push reaches only that topic's sockets;
+  - the last unsubscribe invokes `Unsubscribe` and keeps the connection;
+  - reconnect re-subscribes every topic and snapshots all of its sockets;
+  - a final close sends an error, closes the sockets with 1011, and the next subscribe restarts;
+  - a failed start affects only the subscribing socket.
+
 - [x] 4.3 Implement `live.ts`, `hub-multiplexer.ts` and `live-hub.ts` (the SignalR `HubPort` with
       `accessTokenFactory` from `ServiceToken`, WebSockets transport, automatic reconnect).
 - [x] 4.4 Commit: `feat(frontend): one live hub connection per process`.
 
 ## 5. Relay hosts and the ping page
 
-- [x] 5.1 Failing vitest (`live-relay.test.ts`): - `parseLiveUrl` accepts `/api/ws/live/ping/abc-1` and rejects an unknown kind or bad id; - `openRelay` with no cookie or `loadMe` null → 4401, no subscribe; - a valid session → subscribe; - re-validation turning invalid → 4401 and unsubscribe; - `close()` → unsubscribe and clear the timer; - an unknown kind → 4400.
+- [x] 5.1 Failing vitest (`live-relay.test.ts`):
+
+  - `parseLiveUrl` accepts `/api/ws/live/ping/abc-1` and rejects an unknown kind or bad id;
+  - `openRelay` with no cookie or `loadMe` null → 4401, no subscribe;
+  - a valid session → subscribe;
+  - re-validation turning invalid → 4401 and unsubscribe;
+  - `close()` → unsubscribe and clear the timer;
+  - an unknown kind → 4400.
+
 - [x] 5.2 Implement `live-relay.ts`. Add the route `server/routes/api/ws/live/[kind]/[id].ts` and
       `dev-live-relay.ts`. Remove `ping-hub.ts`, `ping-relay.ts`, `dev-ping-relay.ts` and the old route.
       `PingFeed` uses `/api/ws/live/ping/{id}` and `applyFrame`, with a failing `PingFeed.test.tsx` case first:

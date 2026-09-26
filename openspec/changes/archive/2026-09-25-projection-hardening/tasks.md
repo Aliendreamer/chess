@@ -41,7 +41,12 @@ steps that need Docker or a human-run gate.
 
 ## 4. Replay, admin endpoints, health
 
-- [x] 4.1 Failing tests (`DeadLetterReplayerTests`): - replay of `seq 7, 8` applies both in order, deletes them, and lifts the quarantine; - a failure on `seq 7` stops the replay with `seq 7, 8` still parked and returns the error with applied = 0; - an unknown group returns a not-found result.
+- [x] 4.1 Failing tests (`DeadLetterReplayerTests`):
+
+  - replay of `seq 7, 8` applies both in order, deletes them, and lifts the quarantine;
+  - a failure on `seq 7` stops the replay with `seq 7, 8` still parked and returns the error with applied = 0;
+  - an unknown group returns a not-found result.
+
 - [x] 4.2 Implement `DeadLetterReplayer : BaseService, IDeadLetterReplayer`. Add the thin
       `[ExcludeFromCodeCoverage]` endpoints under `WebApi/Admin/`: - `GET api/admin/projections/dead-letters`: keyset paging, `?groupId=` filter; - `POST api/admin/projections/{groupId}/dead-letters/{aggregateId}/replay`: `200` / `404` / `409`.
 
@@ -56,8 +61,14 @@ steps that need Docker or a human-run gate.
 
 - [x] 5.1 🐳 In `Chess.Backend.IntegrationTests`, two contexts race a first insert for the same ping. The loser
       is recognised by `ConflictDetector` as `23505`, and after the runner's retry `rm_pings.Count == 1`.
-- [x] 5.2 🐳 A test-only projection throws on one aggregate: - `seq 1` is parked; - `seq 2` of the same aggregate is parked without a call; - another aggregate on the same topic is applied; - the Kafka offset has advanced past all three; - after a fix flag is flipped, replay applies `seq 1, 2`, the next produced `seq 3` applies live,
-      and the table is empty.
+- [x] 5.2 🐳 A test-only projection throws on one aggregate:
+
+  - `seq 1` is parked;
+  - `seq 2` of the same aggregate is parked without a call;
+  - another aggregate on the same topic is applied;
+  - the Kafka offset has advanced past all three;
+  - after a fix flag is flipped, replay applies `seq 1, 2`, the next produced `seq 3` applies live, and the table is empty.
+
 - [x] 5.3 🐳 A replay and a concurrent park for one aggregate never leave an orphan row with the quarantine
       lifted. Hold the D5 lock from the test and assert the consumer waits.
 - [x] 5.4 🐳 Gate: `pnpm exec nx integration-test backend` green, run by a human if the sandbox is on.
