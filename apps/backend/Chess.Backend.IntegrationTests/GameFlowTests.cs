@@ -21,8 +21,6 @@ public sealed class GameFlowTests(StackFixture stack)
     private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(4);
     private static readonly TimeControl Blitz = TimeControl.Presets.Single(tc => tc.ToString() == "5+3");
 
-    private sealed record Me(long Id, string Subject);
-
     private sealed record View(Guid GameId, long WhiteId, long BlackId, string Status, int Ply, string? LastSan, long WhiteMs, long BlackMs, string? Result, string? Reason, long Seq);
 
     private sealed record Frame(string Topic, long Seq, View Payload);
@@ -35,9 +33,9 @@ public sealed class GameFlowTests(StackFixture stack)
         await using PingApiFactory app = new();
         using HttpClient client = await app.CreateReadyClientAsync(ct);
         string run = Guid.NewGuid().ToString("N")[..8];
-        long white = await ProvisionAsync(client, $"it-white-{run}", ct);
-        long black = await ProvisionAsync(client, $"it-black-{run}", ct);
-        await ProvisionAsync(client, $"it-watch-{run}", ct);
+        long white = await Api.ProvisionAsync(client, $"it-white-{run}", ct);
+        long black = await Api.ProvisionAsync(client, $"it-black-{run}", ct);
+        await Api.ProvisionAsync(client, $"it-watch-{run}", ct);
 
         GameView started = await app.Services.GetRequiredService<IGameStarter>().StartAsync(white, black, Blitz, ct);
         Guid id = started.GameId;
@@ -56,14 +54,14 @@ public sealed class GameFlowTests(StackFixture stack)
         Frame? snapshot = await hub.InvokeAsync<Frame?>("Subscribe", $"game:{id:N}", ct);
         Assert.Equal(("Created", 0), (snapshot!.Payload.Status, snapshot.Payload.Ply));
 
-        Assert.Equal(HttpStatusCode.Forbidden, (await MoveAsync(client, id, $"it-watch-{run}", "e2e4", ct)).StatusCode);
-        Assert.Equal(HttpStatusCode.Conflict, (await MoveAsync(client, id, $"it-black-{run}", "e7e5", ct)).StatusCode);
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await MoveAsync(client, id, $"it-white-{run}", "e2e5", ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Api.MoveAsync(client, id, $"it-watch-{run}", "e2e4", ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await Api.MoveAsync(client, id, $"it-black-{run}", "e7e5", ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await Api.MoveAsync(client, id, $"it-white-{run}", "e2e5", ct)).StatusCode);
 
         View? last = null;
         foreach ((string who, string uci) in new[] { ("white", "f2f3"), ("black", "e7e5"), ("white", "g2g4"), ("black", "d8h4") })
         {
-            using HttpResponseMessage r = await MoveAsync(client, id, $"it-{who}-{run}", uci, ct);
+            using HttpResponseMessage r = await Api.MoveAsync(client, id, $"it-{who}-{run}", uci, ct);
             Assert.Equal(HttpStatusCode.OK, r.StatusCode);
             last = await r.Content.ReadFromJsonAsync<View>(Api.Json, ct);
         }
@@ -98,12 +96,12 @@ public sealed class GameFlowTests(StackFixture stack)
         await using (PingApiFactory first = new())
         {
             using HttpClient client = await first.CreateReadyClientAsync(ct);
-            long white = await ProvisionAsync(client, $"it-white-{run}", ct);
-            long black = await ProvisionAsync(client, $"it-black-{run}", ct);
+            long white = await Api.ProvisionAsync(client, $"it-white-{run}", ct);
+            long black = await Api.ProvisionAsync(client, $"it-black-{run}", ct);
             id = (await first.Services.GetRequiredService<IGameStarter>().StartAsync(white, black, Blitz, ct)).GameId;
             foreach ((string who, string uci) in new[] { ("white", "e2e4"), ("black", "e7e5"), ("white", "g1f3") })
             {
-                using HttpResponseMessage r = await MoveAsync(client, id, $"it-{who}-{run}", uci, ct);
+                using HttpResponseMessage r = await Api.MoveAsync(client, id, $"it-{who}-{run}", uci, ct);
                 Assert.Equal(HttpStatusCode.OK, r.StatusCode);
             }
 
@@ -143,21 +141,7 @@ public sealed class GameFlowTests(StackFixture stack)
         }
     }
 
-    private static async Task<long> ProvisionAsync(HttpClient client, string subject, CancellationToken ct)
-    {
-        using HttpRequestMessage me = new(HttpMethod.Get, "/api/me");
-        me.Headers.Add(PingApiFactory.SubjectHeader, subject);
-        using HttpResponseMessage r = await client.SendAsync(me, ct);
-        Assert.Equal(HttpStatusCode.OK, r.StatusCode);
-        return (await r.Content.ReadFromJsonAsync<Me>(Api.Json, ct))!.Id;
-    }
 
-    private static async Task<HttpResponseMessage> MoveAsync(HttpClient client, Guid id, string subject, string uci, CancellationToken ct)
-    {
-        HttpRequestMessage req = new(HttpMethod.Post, $"/api/games/{id:N}/moves") { Content = JsonContent.Create(new { uci }, options: Api.Json) };
-        req.Headers.Add(PingApiFactory.SubjectHeader, subject);
-        return await client.SendAsync(req, ct);
-    }
 
     private static int Count(List<Frame> frames)
     {

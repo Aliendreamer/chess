@@ -71,4 +71,32 @@ public static class Api
 
         throw new TimeoutException($"not within {timeout.TotalSeconds:F0}s: {what}");
     }
+
+    private sealed record Me(long Id, string Subject);
+
+    /// <summary>Signs in as <paramref name="subject"/> once (JIT-provisions the user, username = subject) and returns its users.id.</summary>
+    public static async Task<long> ProvisionAsync(HttpClient client, string subject, CancellationToken ct)
+    {
+        using HttpRequestMessage me = new(HttpMethod.Get, "/api/me");
+        me.Headers.Add(PingApiFactory.SubjectHeader, subject);
+        using HttpResponseMessage r = await client.SendAsync(me, ct);
+        Assert.Equal(HttpStatusCode.OK, r.StatusCode);
+        return (await r.Content.ReadFromJsonAsync<Me>(Json, ct))!.Id;
+    }
+
+    /// <summary>A game move (UCI) as <paramref name="subject"/>; the caller owns the response.</summary>
+    public static Task<HttpResponseMessage> MoveAsync(HttpClient client, Guid gameId, string subject, string uci, CancellationToken ct)
+    {
+        HttpRequestMessage req = new(HttpMethod.Post, $"/api/games/{gameId:N}/moves") { Content = JsonContent.Create(new { uci }, options: Json) };
+        req.Headers.Add(PingApiFactory.SubjectHeader, subject);
+        return client.SendAsync(req, ct);
+    }
+
+    /// <summary>A GET as <paramref name="subject"/>.</summary>
+    public static Task<HttpResponseMessage> GetAsync(HttpClient client, string url, string subject, CancellationToken ct)
+    {
+        HttpRequestMessage req = new(HttpMethod.Get, url);
+        req.Headers.Add(PingApiFactory.SubjectHeader, subject);
+        return client.SendAsync(req, ct);
+    }
 }

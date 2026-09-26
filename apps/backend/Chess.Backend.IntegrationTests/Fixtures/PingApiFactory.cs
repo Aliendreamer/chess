@@ -152,6 +152,7 @@ public sealed class PingApiFactory(Action<IServiceCollection>? configureServices
             [
                 new(Utils.Constants.Claims.Subject, subject),
                 new(Utils.Constants.Claims.Email, $"{subject}@chess.localhost"),
+                new(Utils.Constants.Claims.PreferredUsername, subject), // Keycloak sends it; it becomes users.Username (D23)
                 new(ClaimTypes.Role, Utils.Constants.Roles.User),
             ];
             foreach (string role in Request.Headers[RolesHeader].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))

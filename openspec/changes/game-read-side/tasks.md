@@ -59,7 +59,7 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 4. Integration 🐳
 
-- [ ] 4.1 🐳 Failing integration test (`GameHistoryTests`, `StackFixture`): two players play fool's mate through `IGameStarter` and HTTP.
+- [x] 4.1 🐳 Failing integration test (`GameHistoryTests`, `StackFixture`): two players play fool's mate through `IGameStarter` and HTTP.
 
   - Eventually the game is in `status=ended` and in both players' `me/games`, with their colours.
   - `/moves` returns 4 plies with SAN and FEN.
@@ -67,8 +67,13 @@ touches. 🐳 marks steps that need Docker or the live stack.
   - Paging `status=ended` with `limit=1` walks every row once (uuid tiebreak on Postgres).
   - An ended game's hub snapshot comes from the read side, and the actor is not asked.
 
-- [ ] 4.2 🐳 `nx integration-test backend` green.
-- [ ] 4.3 Commit: `test(backend): game history end to end`.
+  _As built:_ the integration test checks the ended snapshot's content. That the actor is not asked is proved by
+  the unit test (`GameLiveSourceTests`, the region probe receives nothing); showing it in integration would need a
+  game old enough to have passivated. The integration test auth now sends `preferred_username` (= subject) as
+  Keycloak does, and `ProvisionAsync` / `MoveAsync` moved from `GameFlowTests` into the shared `Api` helpers.
+
+- [x] 4.2 🐳 `nx integration-test backend` green.
+- [x] 4.3 Commit: `test(backend): game history end to end`.
 
 ## 5. Docs
 
