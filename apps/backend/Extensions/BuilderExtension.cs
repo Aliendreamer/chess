@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Threading.RateLimiting;
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
+using Chess.Backend.Akka.Invites;
 using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Akka.Ping;
@@ -52,6 +53,7 @@ internal static class BuilderExtension
         services.AddSingleton<IEndedGameReader, ReplicaEndedGameReader>();
         services.AddSingleton<ILiveTopicSource, GameLiveSource>();
         services.AddSingleton<ILiveTopicSource, QueueLiveSource>();
+        services.AddSingleton<ILiveTopicSource, InviteLiveSource>();
         services.AddSingleton<IGameStarter, GameStarter>();
         services.AddSingleton<LiveTopicResolver>();
         builder.AddActorSystem((akka, sp) =>
@@ -59,6 +61,7 @@ internal static class BuilderExtension
             akka.WithPingSharding(sp.GetRequiredService<AkkaOptions>());
             akka.WithGameSharding(sp.GetRequiredService<AkkaOptions>());
             akka.WithMatchmaking();
+            akka.WithInviteSharding(sp.GetRequiredService<AkkaOptions>());
             if (sp.GetRequiredService<KafkaOptions>().Enabled)
             {
                 akka.WithJournalPublisher();

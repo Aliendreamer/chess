@@ -27,7 +27,7 @@ touches. 🐳 marks steps that need Docker or the live stack. Expected values in
 
 ## 2. Invites
 
-- [ ] 2.1 Failing TestKit tests (`InviteActorTests`, in-memory journal, fake clock, fake starter):
+- [x] 2.1 Failing TestKit tests (`InviteActorTests`, in-memory journal, fake clock, fake starter):
 
   - create gives `open`;
   - a stranger accepts and the game starts with the creator's colour honoured (`black` makes the acceptor White);
@@ -40,9 +40,9 @@ touches. 🐳 marks steps that need Docker or the live stack. Expected values in
   - an accepted invite survives a restart with its game id;
   - an `invite:{id}` frame is published on accept.
 
-- [ ] 2.2 Implement `InviteActor` (stashing while the start is in flight), events, sharding (`invites`, v4 ids),
+- [x] 2.2 Implement `InviteActor` (stashing while the start is in flight), events, sharding (`invites`, v4 ids),
       and `InviteLiveSource`.
-- [ ] 2.3 Commit: `feat(backend): invite links that start a game`.
+- [x] 2.3 Commit: `feat(backend): invite links that start a game`.
 
 ## 3. HTTP and live kinds
 
