@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { getMe } from '#/lib/server/api'
-import { IdentityBar } from '#/components/IdentityBar'
+import { Shell } from '#/components/Shell'
 
 /**
  * Pathless layout: the SSR gate. Anonymous requests never render a child — they are 302'd to the login
@@ -21,11 +21,8 @@ export const Route = createFileRoute('/_authenticated')({
 function AuthenticatedLayout() {
   const { me } = Route.useRouteContext()
   return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-4 py-6">
-      <IdentityBar me={me} />
-      <main className="flex-1">
-        <Outlet />
-      </main>
-    </div>
+    <Shell me={me}>
+      <Outlet />
+    </Shell>
   )
 }

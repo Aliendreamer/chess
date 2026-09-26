@@ -1,14 +1,145 @@
 @import 'tailwindcss';
 
+/* Self-hosted fonts (latin subset, only the weights the Club design uses): no third-party request. */
+@import '@fontsource/newsreader/latin-400.css';
+@import '@fontsource/newsreader/latin-500.css';
+@import '@fontsource/newsreader/latin-400-italic.css';
+@import '@fontsource/ibm-plex-sans/latin-400.css';
+@import '@fontsource/ibm-plex-sans/latin-500.css';
+@import '@fontsource/ibm-plex-sans/latin-600.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';
+
+/*
+ * The Club design system (Design/, untracked): one warm near-black ramp, a parchment text ramp and a single brass
+ * accent. The ramps are raw values; components use only the semantic names below, as Tailwind utilities
+ * (bg-surface-card, text-fg-muted, border-line-default, font-display, text-display-xl, rounded-card, ...).
+ * Dark only, like the design.
+ */
 @theme {
-  --color-board-light: #f0d9b5;
-  --color-board-dark: #b58863;
+  /* Ramps */
+  --color-ink-950: oklch(0.15 0.008 70);
+  --color-ink-900: oklch(0.17 0.008 70);
+  --color-ink-850: oklch(0.19 0.01 70);
+  --color-ink-800: oklch(0.2 0.01 70);
+  --color-ink-750: oklch(0.22 0.01 70);
+  --color-ink-700: oklch(0.24 0.012 70);
+  --color-ink-650: oklch(0.25 0.01 70);
+  --color-ink-600: oklch(0.28 0.012 70);
+  --color-ink-550: oklch(0.3 0.012 70);
+  --color-ink-500: oklch(0.36 0.015 70);
+  --color-parchment-50: oklch(0.94 0.012 80);
+  --color-parchment-200: oklch(0.86 0.012 80);
+  --color-parchment-300: oklch(0.8 0.015 75);
+  --color-parchment-400: oklch(0.7 0.015 75);
+  --color-parchment-500: oklch(0.62 0.015 75);
+  --color-brass-300: oklch(0.88 0.08 80);
+  --color-brass-400: oklch(0.8 0.1 80);
+  --color-brass-600: oklch(0.5 0.07 80);
+  --color-brass-800: oklch(0.3 0.04 80);
+  --color-brass-900: oklch(0.22 0.03 80);
+  --color-brass-950: oklch(0.2 0.02 80);
+  --color-moss-400: oklch(0.8 0.12 150);
+  --color-clay-400: oklch(0.7 0.14 30);
+
+  /* Surfaces */
+  --color-surface-page: var(--color-ink-900);
+  --color-surface-rail: var(--color-ink-950);
+  --color-surface-card: var(--color-ink-850);
+  --color-surface-raised: var(--color-ink-800);
+  --color-surface-hover: var(--color-ink-750);
+  --color-surface-selected: var(--color-ink-700);
+  --color-surface-inset: var(--color-ink-950);
+  --color-surface-accent-tint: var(--color-brass-900);
+  --color-surface-accent-soft: var(--color-brass-950);
+  /* Lines */
+  --color-line-divider: var(--color-ink-650);
+  --color-line-default: var(--color-ink-600);
+  --color-line-strong: var(--color-ink-550);
+  --color-line-accent: var(--color-brass-400);
+  --color-line-accent-soft: var(--color-brass-600);
+  /* Text ("fg": Tailwind's --text-* namespace is font sizes) */
+  --color-fg-primary: var(--color-parchment-50);
+  --color-fg-body: var(--color-parchment-300);
+  --color-fg-secondary: var(--color-parchment-400);
+  --color-fg-muted: var(--color-parchment-500);
+  --color-fg-accent: var(--color-brass-400);
+  --color-fg-on-accent: var(--color-ink-900);
+  /* Status */
+  --color-status-win: var(--color-moss-400);
+  --color-status-loss: var(--color-clay-400);
+  --color-status-draw: var(--color-parchment-400);
+  --color-status-healthy: var(--color-moss-400);
+  --color-status-turn: var(--color-brass-400);
+  --color-status-waiting: var(--color-parchment-500);
+  /* Board */
+  --color-board-light: oklch(0.84 0.035 85);
+  --color-board-dark: oklch(0.55 0.05 60);
+  --color-board-last-light: oklch(0.86 0.09 95);
+  --color-board-last-dark: oklch(0.66 0.09 85);
+  --color-piece-white: oklch(0.98 0.01 85);
+  --color-piece-white-stroke: oklch(0.25 0.01 70);
+  --color-piece-black: oklch(0.18 0.01 70);
+
+  /* Type */
+  --font-display: 'Newsreader', Georgia, serif;
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --text-display-xl: 44px;
+  --text-display-xl--line-height: 1.05;
+  --text-display-lg: 40px;
+  --text-display-lg--line-height: 1.05;
+  --text-display-md: 30px;
+  --text-display-md--line-height: 1.05;
+  --text-display-sm: 28px;
+  --text-display-sm--line-height: 1;
+  --text-display-xs: 22px;
+  --text-display-xs--line-height: 1.05;
+  --text-note: 17px;
+  --text-base: 14px;
+  --text-base--line-height: 1.45;
+  --text-sm: 13px;
+  --text-sm--line-height: 1.45;
+  --text-xs: 12px;
+  --text-xs--line-height: 1.45;
+  --text-2xs: 11px;
+  --text-2xs--line-height: 1.4;
+  --text-clock: 28px;
+  --text-clock--line-height: 1.2;
+  --tracking-eyebrow: 0.08em;
+
+  /* Shape */
+  --radius-board: 4px;
+  --radius-control: 6px;
+  --radius-card: 8px;
+  --radius-count: 10px;
+  --radius-pill: 16px;
 }
 
-html {
-  color-scheme: light dark;
+:root {
+  color-scheme: dark;
+  --rail-width: 248px;
+  --content-max: 1120px;
+  --board-max: 600px;
 }
 
-body {
-  @apply bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
+/* In the base layer, so any utility on an element (a Link styled as a button, say) wins. */
+@layer base {
+  body {
+    margin: 0;
+    background: var(--color-surface-page);
+    color: var(--color-fg-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--color-brass-400);
+  }
+
+  a:hover {
+    color: var(--color-brass-300);
+  }
 }

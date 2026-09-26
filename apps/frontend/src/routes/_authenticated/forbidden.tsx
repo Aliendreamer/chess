@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
+import { Panel, SectionHeading } from '#/components/core/Panel'
 
 export const Route = createFileRoute('/_authenticated/forbidden')({
   component: Forbidden,
@@ -6,12 +7,10 @@ export const Route = createFileRoute('/_authenticated/forbidden')({
 
 function Forbidden() {
   return (
-    <section className="rounded-xl border border-amber-300 bg-amber-50 p-6 dark:border-amber-700 dark:bg-amber-950">
-      <h1 className="text-xl font-semibold">Not allowed</h1>
-      <p className="mt-2 text-sm">Your account does not have the role this page needs.</p>
-      <Link to="/" className="mt-4 inline-block underline">
-        Back to the dashboard
-      </Link>
-    </section>
+    <Panel variant="filled" className="max-w-xl gap-3 p-6">
+      <SectionHeading size="xl">Not allowed</SectionHeading>
+      <p className="text-fg-body">Your account does not have the role this page needs.</p>
+      <Link to="/">Back home</Link>
+    </Panel>
   )
 }

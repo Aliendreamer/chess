@@ -1,14 +1,6 @@
 import { isRedirect } from '@tanstack/react-router'
 import { describe, expect, it } from 'vitest'
-import {
-  ADMIN_ROLE,
-  hasRole,
-  loadHealth,
-  loadMe,
-  loadPingLive,
-  sendPing,
-  settle,
-} from './api-loaders'
+import { ADMIN_ROLE, hasRole, loadMe, loadPingLive, sendPing } from './api-loaders'
 import type { Me } from './api-loaders'
 import type { PingState } from '../pings'
 
@@ -17,7 +9,7 @@ function fetchWith(status: number, body: string, contentType = 'application/json
     Promise.resolve(new Response(body, { status, headers: { 'content-type': contentType } }))
 }
 
-const me: Me = { id: 1, subject: 'sub-1', email: 'a@b.c', roles: ['User'] }
+const me: Me = { id: 1, subject: 'sub-1', email: 'a@b.c', roles: ['User'], username: 'ann' }
 const pingState: PingState = {
   pingId: 'p1',
   count: 2,
@@ -35,37 +27,6 @@ describe('loadMe', () => {
   })
   it('throws on other failures', async () => {
     await expect(loadMe(fetchWith(500, 'boom'))).rejects.toThrow(/500/)
-  })
-})
-
-describe('loadHealth', () => {
-  it('returns the status text', async () => {
-    const h = await loadHealth(fetchWith(200, 'Healthy', 'text/plain'))
-    expect(h.status).toBe('Healthy')
-    expect(h.checkedAt).toMatch(/\d{4}-\d{2}-\d{2}T/)
-  })
-  it('defaults an empty body to Healthy', async () => {
-    expect((await loadHealth(fetchWith(200, '', 'text/plain'))).status).toBe('Healthy')
-  })
-  it('redirects to login on 401', async () => {
-    const err = await loadHealth(fetchWith(401, '')).catch((e: unknown) => e)
-    expect(isRedirect(err)).toBe(true)
-  })
-  it('throws on 5xx', async () => {
-    await expect(loadHealth(fetchWith(503, 'Unhealthy'))).rejects.toThrow(/503/)
-  })
-})
-
-describe('settle', () => {
-  it('wraps data', async () => {
-    expect(await settle(Promise.resolve(42))).toEqual({ data: 42, error: false })
-  })
-  it('wraps errors as a degraded tile', async () => {
-    expect(await settle(Promise.reject(new Error('down')))).toEqual({ data: null, error: true })
-  })
-  it('re-throws redirects so a revoked session still bounces to login', async () => {
-    const err = await settle(loadHealth(fetchWith(401, ''))).catch((e: unknown) => e)
-    expect(isRedirect(err)).toBe(true)
   })
 })
 

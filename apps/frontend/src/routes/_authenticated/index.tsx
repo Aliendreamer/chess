@@ -1,19 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { getHealth } from '#/lib/server/api'
-import { settle } from '#/lib/server/api-loaders'
-import { Dashboard } from '#/components/Dashboard'
+import { SectionHeading } from '#/components/core/Panel'
 
-/** SSR-with-data: the loader runs server functions, the component only renders props. */
+/** Home. Quick pairing, play a friend and recent games arrive with part1-ui group 3. */
 export const Route = createFileRoute('/_authenticated/')({
-  loader: async () => {
-    const [health] = await Promise.all([settle(getHealth())])
-    return { health }
-  },
-  component: DashboardPage,
+  component: HomePage,
 })
 
-function DashboardPage() {
+function HomePage() {
   const { me } = Route.useRouteContext()
-  const { health } = Route.useLoaderData()
-  return <Dashboard me={me} health={health} />
+  return (
+    <div className="flex flex-col gap-8">
+      <header>
+        <SectionHeading size="xl">{`Hello, ${me.username}.`}</SectionHeading>
+      </header>
+    </div>
+  )
 }

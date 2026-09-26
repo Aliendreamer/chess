@@ -6,12 +6,12 @@ Components stay presentational; the logic they show lives in pure, tested helper
 
 - [x] 1.1 Backend: failing `MeResponseFactory` test expecting `Username` (from `ICurrentUser`, the D23 name);
       then add it to `MeResponse`. Commit: `feat(backend): me returns the display name`.
-- [ ] 1.2 `styles.css`: the Club ramps and semantic tokens on `:root`, the `@theme` mapping (D1), base body
+- [x] 1.2 `styles.css`: the Club ramps and semantic tokens on `:root`, the `@theme` mapping (D1), base body
       styles; `@fontsource` packages for the three families (D2). Drop the zinc classes.
-- [ ] 1.3 Components in TS (`src/components/core`, `navigation`): `Button`, `Badge`, `Chip`, `OptionTile`,
+- [x] 1.3 Components in TS (`src/components/core`, `navigation`): `Button`, `Badge`, `Chip`, `OptionTile`,
       `Panel`, `SectionHeading`, `Wordmark`, `NavGroup`, `NavItem`. Render tests only where there is behaviour
       (variants, `selected`, `disabled`).
-- [ ] 1.4 The shell: `_authenticated.tsx` renders the 248px sidebar (wordmark, Play / Games nav, name from
+- [x] 1.4 The shell: `_authenticated.tsx` renders the 248px sidebar (wordmark, Play / Games nav, name from
       `me.username`) and the content column. `Dashboard`, `IdentityBar` and `Tile` go. The auth e2e's
       `identity-*` test ids move to the sidebar. Commit: `feat(frontend): club design tokens, fonts and shell`.
 

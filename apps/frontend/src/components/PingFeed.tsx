@@ -66,11 +66,11 @@ export function PingFeed({ id, initial }: PingFeedProps) {
   const latest = frames.at(-1) ?? initial
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <section className="rounded-card border border-line-default bg-surface-card p-4">
       <header className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Live feed</h2>
+        <h2 className="text-2xs tracking-eyebrow text-fg-muted uppercase">Live feed</h2>
         <span
-          className="text-xs text-zinc-500"
+          className="font-mono text-2xs text-fg-muted"
           data-testid="ping-status"
           aria-live="polite"
           aria-label={`relay ${STATUS_LABEL[status]}`}
@@ -81,13 +81,13 @@ export function PingFeed({ id, initial }: PingFeedProps) {
 
       {/* One interpolation, not `count {n}`: React separates those with a comment marker in the SSR
           HTML, and the e2e asserts on the raw server bytes before any JS runs. */}
-      <p className="text-2xl font-semibold tabular-nums" data-testid="ping-count">
+      <p className="font-display text-display-sm tabular-nums" data-testid="ping-count">
         {`count ${latest.count}`}
       </p>
-      <p className="mt-1 text-sm text-zinc-500">{latest.lastText ?? 'no text yet'}</p>
+      <p className="mt-1 text-sm text-fg-secondary">{latest.lastText ?? 'no text yet'}</p>
 
       {error ? (
-        <p className="mt-3 text-sm text-amber-700 dark:text-amber-400" role="status">
+        <p className="mt-3 text-sm text-status-loss" role="status">
           Relay error: {error}
         </p>
       ) : null}
@@ -95,7 +95,7 @@ export function PingFeed({ id, initial }: PingFeedProps) {
       <ul className="mt-4 space-y-1 text-sm" data-testid="ping-feed">
         {frames.map((state) => (
           <li key={state.lastSeq} className="flex gap-3 font-mono text-xs">
-            <span className="text-zinc-500">#{state.lastSeq}</span>
+            <span className="text-fg-muted">#{state.lastSeq}</span>
             <span>{`count ${state.count}`}</span>
             <span className="truncate">{state.lastText}</span>
           </li>

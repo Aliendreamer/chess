@@ -23,8 +23,7 @@ test('anonymous visit is bounced to the Keycloak login form', async ({ page }) =
 
 test('after login the identity chip and dashboard render', async ({ page }) => {
   await loginThroughKeycloak(page)
-  await expect(page.getByTestId('identity-email')).toContainText(/@/)
-  await expect(page.getByTestId('identity-roles')).toContainText(/User/)
+  await expect(page.getByTestId('identity-name')).toHaveText(USER)
   await expect(page.getByRole('heading', { level: 1 })).toContainText(/Hello,/)
 })
 

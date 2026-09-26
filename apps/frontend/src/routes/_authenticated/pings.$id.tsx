@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { getPingLive, postPing } from '#/lib/server/api'
 import { PingFeed } from '#/components/PingFeed'
+import { Button } from '#/components/core/Button'
 
 /**
  * The Part 0 spine, end to end in one page: the loader reads the sharded actor through the BFF
@@ -34,10 +35,10 @@ function PingPage() {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <section className="sm:col-span-2">
-        <h1 className="text-2xl font-semibold">
+        <h1 className="m-0 font-display text-display-md font-normal">
           Ping <span className="font-mono">{id}</span>
         </h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-fg-secondary">
           Server-rendered from the actor; updated live through the SSR relay.
         </p>
       </section>
@@ -53,16 +54,11 @@ function PingPage() {
           maxLength={200}
           required
           onChange={(e) => setText(e.target.value)}
-          className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          className="flex-1 rounded-control border border-line-default bg-surface-inset px-3 py-2 text-sm text-fg-primary"
         />
-        <button
-          type="submit"
-          disabled={sending}
-          data-testid="ping-submit"
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
-        >
+        <Button type="submit" variant="primary" disabled={sending} data-testid="ping-submit">
           Ping
-        </button>
+        </Button>
       </form>
 
       <PingFeed id={id} initial={state} />
