@@ -17,19 +17,19 @@ Components stay presentational; the logic they show lives in pure, tested helper
 
 ## 2. The game page
 
-- [ ] 2.1 Failing tests for `lib/games.ts`: clock text (`183000 → "3:03"`, `9500 → "0:09.5"` under 10 s,
+- [x] 2.1 Failing tests for `lib/games.ts`: clock text (`183000 → "3:03"`, `9500 → "0:09.5"` under 10 s,
       negative → `"0:00"`), move pairing (`["e4","e5","Nf3"] → [["e4","e5"],["Nf3"]]`), orientation and "my
       colour" from ids, result glyphs (`1-0 → "1–0"`, `1/2-1/2 → "½"`), the local countdown (D5) as a pure
       function of view + elapsed ms, and the frame-merge rule for the move list (append on ply+1, refetch
       otherwise).
-- [ ] 2.2 `useLiveTopic` (D9) with tests against the `live-fakes` socket; move `PingFeed` onto it (its test ids
+- [x] 2.2 `useLiveTopic` (D9) with tests against the `live-fakes` socket; move `PingFeed` onto it (its test ids
       unchanged).
-- [ ] 2.3 `Board` in TS: FEN → squares, orientation, last-move and selection highlights, legal-target dots,
+- [x] 2.3 `Board` in TS: FEN → squares, orientation, last-move and selection highlights, legal-target dots,
       click-to-move, promotion picker; `Clock`, `PlayerStrip`, `MoveList`. Tests: a click on a piece then a legal
       square calls `onMove("e2e4")`; an illegal square does not; Black orientation puts `a1` top-right.
-- [ ] 2.4 Server functions and loaders (D8): game live/summary/moves, move, resign, draw offer/accept/decline,
+- [x] 2.4 Server functions and loaders (D8): game live/summary/moves, move, resign, draw offer/accept/decline,
       abort; loader tests with a fake fetch (401 redirects, 409 is an outcome, 5xx throws).
-- [ ] 2.5 Route `/games/$id`: loader (D4), chess.js optimistic move and revert (D3), live frames, controls for
+- [x] 2.5 Route `/games/$id`: loader (D4), chess.js optimistic move and revert (D3), live frames, controls for
       players only, result + PGN link when ended. Add `chess.js`.
       Commit: `feat(frontend): the game page with live board and clocks`.
 

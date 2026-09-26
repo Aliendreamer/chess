@@ -14,6 +14,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedForbiddenRouteImport } from './routes/_authenticated/forbidden'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthenticatedPingsIdRouteImport } from './routes/_authenticated/pings.$id'
+import { Route as AuthenticatedGamesIdRouteImport } from './routes/_authenticated/games.$id'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -39,16 +40,23 @@ const AuthenticatedPingsIdRoute = AuthenticatedPingsIdRouteImport.update({
   path: '/pings/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedGamesIdRoute = AuthenticatedGamesIdRouteImport.update({
+  id: '/games/$id',
+  path: '/games/$id',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/forbidden': typeof AuthenticatedForbiddenRoute
+  '/games/$id': typeof AuthenticatedGamesIdRoute
   '/pings/$id': typeof AuthenticatedPingsIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/forbidden': typeof AuthenticatedForbiddenRoute
   '/': typeof AuthenticatedIndexRoute
+  '/games/$id': typeof AuthenticatedGamesIdRoute
   '/pings/$id': typeof AuthenticatedPingsIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -57,19 +65,21 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_authenticated/forbidden': typeof AuthenticatedForbiddenRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/games/$id': typeof AuthenticatedGamesIdRoute
   '/_authenticated/pings/$id': typeof AuthenticatedPingsIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/forbidden' | '/pings/$id' | '/api/auth/$'
+  fullPaths: '/' | '/forbidden' | '/games/$id' | '/pings/$id' | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/forbidden' | '/' | '/pings/$id' | '/api/auth/$'
+  to: '/forbidden' | '/' | '/games/$id' | '/pings/$id' | '/api/auth/$'
   id:
     | '__root__'
     | '/_authenticated'
     | '/_authenticated/forbidden'
     | '/_authenticated/'
+    | '/_authenticated/games/$id'
     | '/_authenticated/pings/$id'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -116,18 +126,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPingsIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/games/$id': {
+      id: '/_authenticated/games/$id'
+      path: '/games/$id'
+      fullPath: '/games/$id'
+      preLoaderRoute: typeof AuthenticatedGamesIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedForbiddenRoute: typeof AuthenticatedForbiddenRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedGamesIdRoute: typeof AuthenticatedGamesIdRoute
   AuthenticatedPingsIdRoute: typeof AuthenticatedPingsIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedForbiddenRoute: AuthenticatedForbiddenRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedGamesIdRoute: AuthenticatedGamesIdRoute,
   AuthenticatedPingsIdRoute: AuthenticatedPingsIdRoute,
 }
 

@@ -61,7 +61,7 @@ function PingPage() {
         </Button>
       </form>
 
-      <PingFeed id={id} initial={state} />
+      <PingFeed key={id} id={id} initial={state} />
     </div>
   )
 }

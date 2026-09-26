@@ -32,6 +32,7 @@
     "@tanstack/react-router": "1.170.15",
     "@tanstack/react-start": "1.168.25",
     "@tanstack/router-plugin": "1.168.18",
+    "chess.js": "1.4.0",
     "eventsource": "2.0.2",
     "fetch-cookie": "2.2.0",
     "react": "19.2.7",
