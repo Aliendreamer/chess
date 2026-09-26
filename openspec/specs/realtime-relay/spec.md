@@ -17,7 +17,7 @@ A live topic SHALL be `"{kind}:{id}"`. The backend MUST accept a topic only if a
 its kind, and the BFF MUST accept a browser socket at `/api/ws/live/{kind}/{id}` only if `kind` is on its
 allow-list and `id` matches that kind's id rule. Every frame on the wire MUST be a `LiveFrame` with `topic`,
 `seq` and a kind-specific `payload`. The hub and the relay MUST NOT depend on payload types. The allow-list
-MUST contain `ping` (id `^[a-z0-9-]{1,64}$`) and `game` (id: a Guid in 32-hex-digit `N` form, lower case).
+MUST contain `ping` (id `^[a-z0-9-]{1,64}$`), `game` and `invite` (id: a Guid in 32-hex-digit `N` form, lower case), and `queue` (id: a time control written `{minutes}+{increment}`, e.g. `5+3`; the backend accepts only the D12 presets).
 
 #### Scenario: Known kind
 
@@ -43,6 +43,16 @@ MUST contain `ping` (id `^[a-z0-9-]{1,64}$`) and `game` (id: a Guid in 32-hex-di
 
 - **WHEN** the relay invokes `Subscribe("nope:abc-1")`
 - **THEN** the hub rejects the call with an error and adds no group membership
+
+#### Scenario: Queue kind
+
+- **WHEN** a browser with a valid session opens `/api/ws/live/queue/5+3`
+- **THEN** it is subscribed to topic `queue:5+3`
+
+#### Scenario: Queue for a time control that isn't a preset
+
+- **WHEN** the relay invokes `Subscribe("queue:4+2")`
+- **THEN** the hub rejects the call, because 4+2 is not a D12 preset
 
 ### Requirement: One backend hub connection per SSR process
 
