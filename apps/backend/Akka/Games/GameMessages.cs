@@ -24,6 +24,8 @@ internal sealed record AbortGame(Guid GameId, long UserId) : IGameCommand;
 
 internal sealed record GetGameView(Guid GameId) : IGameCommand;
 
+/// <summary>Written as its name (<c>"Playing"</c>) on the wire, over HTTP and the live relay alike.</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<GameStatus>))]
 internal enum GameStatus
 {
     /// <summary>Both players known, no move yet.</summary>

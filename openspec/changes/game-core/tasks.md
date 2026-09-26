@@ -32,17 +32,23 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 4. Outbox, starter, HTTP and live kind
 
-- [ ] 4.1 Failing tests: the five mappers produce envelopes (topic `game.events`, key `game:{id}`, seq, `type`
+- [x] 4.1 Failing tests: the five mappers produce envelopes (topic `game.events`, key `game:{id}`, seq, `type`
       and `v`); `TopicTagger.BoundTypes` contains all five; `GameLiveSource` accepts only 32-hex ids and wraps
       `GameView` as a `LiveFrame`.
-- [ ] 4.2 Implement the mappers, the tagger entries, `IGameStarter`, the sharding registration, the endpoints
+- [x] 4.2 Implement the mappers, the tagger entries, `IGameStarter`, the sharding registration, the endpoints
       (`WebApi/Games/`) and `GameLiveSource`. Frontend `KINDS` gains `game`, with a failing `live-relay.test.ts`
       case first (a valid 32-hex id is accepted, `not-a-guid` gives 4400).
-- [ ] 4.3 Integration-test auth: a per-request `X-Test-Subject` header, so one factory can act as two players.
-- [ ] 4.4 🐳 Failing integration test (`GameFlowTests`, `StackFixture`): - `IGameStarter` creates a game; - two players play fool's mate over HTTP; - a spectator's move is 403; - each reply carries the new state; - the `game.events` envelopes arrive in seq order under `game:{id}`; - a `LiveHub` subscribe returns the current view, and later moves push frames.
-- [ ] 4.5 🐳 Failing integration test: failover forgiveness end to end. A game mid-turn is stopped and
+- [x] 4.3 Integration-test auth: a per-request `X-Test-Subject` header, so one factory can act as two players.
+- [x] 4.4 🐳 Failing integration test (`GameFlowTests`, `StackFixture`): - `IGameStarter` creates a game; - two players play fool's mate over HTTP; - a spectator's move is 403; - each reply carries the new state; - the `game.events` envelopes arrive in seq order under `game:{id}`; - a `LiveHub` subscribe returns the current view, and later moves push frames.
+- [x] 4.5 🐳 Failing integration test: failover forgiveness end to end. A game mid-turn is stopped and
       restarted in a fresh app process, and the clock of the player to move equals its last event's value.
-- [ ] 4.6 Commit: `feat(backend): game commands over http, kafka and the live relay`.
+      _As built:_ the integration tests caught two real faults, both fixed. - Every endpoint without a body (live, resign, draw, abort) used an empty DTO that FastEndpoints refuses to
+      bind, which would have been a 500. They now use `EmptyRequest`. - `GameStatus` went out as a number; it is now a string (`"Playing"`) over HTTP and the relay.
+
+      Restarting the app on the same Akka port can hit "address already in use" while the old socket closes, so
+      the failover test retries that bind instead of sleeping.
+
+- [x] 4.6 Commit: `feat(backend): game commands over http, kafka and the live relay`.
 
 ## 5. Verify and document 🐳
 

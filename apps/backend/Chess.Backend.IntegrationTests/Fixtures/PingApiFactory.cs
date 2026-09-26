@@ -24,6 +24,9 @@ public sealed class PingApiFactory(Action<IServiceCollection>? configureServices
     /// <summary>Comma-separated extra realm roles for one request, e.g. <c>Admin</c>; absent means a plain User.</summary>
     public const string RolesHeader = "X-Test-Roles";
 
+    /// <summary>Acts as another user for one request (JIT-provisioned like a real login); absent means <see cref="Subject"/>.</summary>
+    public const string SubjectHeader = "X-Test-Subject";
+
     /// <summary>
     /// Deliberately NOT "Development": that environment's appsettings hard-codes localhost connection
     /// strings, and <c>AddSharedConfiguration</c> layers the json files on top of the web host builder's
@@ -124,10 +127,11 @@ public sealed class PingApiFactory(Action<IServiceCollection>? configureServices
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            string subject = Request.Headers[SubjectHeader].ToString() is { Length: > 0 } s ? s : Subject;
             List<Claim> claims =
             [
-                new(Utils.Constants.Claims.Subject, Subject),
-                new(Utils.Constants.Claims.Email, "it@chess.localhost"),
+                new(Utils.Constants.Claims.Subject, subject),
+                new(Utils.Constants.Claims.Email, $"{subject}@chess.localhost"),
                 new(ClaimTypes.Role, Utils.Constants.Roles.User),
             ];
             foreach (string role in Request.Headers[RolesHeader].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))

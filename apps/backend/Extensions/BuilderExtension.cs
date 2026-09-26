@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Threading.RateLimiting;
 using Chess.Backend.Akka;
+using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Akka.Ping;
 using Chess.Backend.Data.Auth;
@@ -47,10 +48,13 @@ internal static class BuilderExtension
         services.AddSignalR();
         // One source per live kind; the resolver refuses two for the same kind at startup.
         services.AddSingleton<ILiveTopicSource, PingLiveSource>();
+        services.AddSingleton<ILiveTopicSource, GameLiveSource>();
+        services.AddSingleton<IGameStarter, GameStarter>();
         services.AddSingleton<LiveTopicResolver>();
         builder.AddActorSystem((akka, sp) =>
         {
             akka.WithPingSharding(sp.GetRequiredService<AkkaOptions>());
+            akka.WithGameSharding(sp.GetRequiredService<AkkaOptions>());
             if (sp.GetRequiredService<KafkaOptions>().Enabled)
             {
                 akka.WithJournalPublisher();
@@ -113,6 +117,10 @@ internal static class BuilderExtension
             services.AddSingleton(configuration.GetSection(ProjectionDeadLetterOptions.SectionName).Get<ProjectionDeadLetterOptions>() ?? new ProjectionDeadLetterOptions());
             services.AddSingleton<ProjectionRunner>();
             services.AddSingleton<IJournalEventMapper, PingedJournalMapper>();
+            foreach (IJournalEventMapper mapper in GameJournalMappers.All())
+            {
+                services.AddSingleton(mapper);
+            }
             services.AddSingleton<JournalEventMappers>();
             services.AddSingleton(new JournalPublisherOptions());
             services.AddSingleton<IPublisherLeaseProvider>(_ => new PostgresPublisherLeaseProvider(

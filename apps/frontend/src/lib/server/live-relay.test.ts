@@ -4,6 +4,17 @@ import type { RelayDeps } from './live-relay'
 import type { HubMultiplexer, LocalSocket } from './hub-multiplexer'
 
 describe('parseLiveUrl', () => {
+  it('accepts the game kind with an N-form guid id', () => {
+    expect(parseLiveUrl('/api/ws/live/game/0199f1c2a3b47c5d8e9f0a1b2c3d4e5f')).toEqual({
+      kind: 'game',
+      id: '0199f1c2a3b47c5d8e9f0a1b2c3d4e5f',
+      topic: 'game:0199f1c2a3b47c5d8e9f0a1b2c3d4e5f',
+    })
+    expect(parseLiveUrl('/api/ws/live/game/not-a-guid')).toBeNull()
+    expect(parseLiveUrl('/api/ws/live/game/0199F1C2A3B47C5D8E9F0A1B2C3D4E5F')).toBeNull()
+    expect(parseLiveUrl('/api/ws/live/game/0199f1c2-a3b4-7c5d-8e9f-0a1b2c3d4e5f')).toBeNull()
+  })
+
   it('accepts a known kind with a valid id, absolute or relative, with a query', () => {
     const want = { kind: 'ping', id: 'abc-1', topic: 'ping:abc-1' }
     expect(parseLiveUrl('http://app.chess.localhost/api/ws/live/ping/abc-1')).toEqual(want)

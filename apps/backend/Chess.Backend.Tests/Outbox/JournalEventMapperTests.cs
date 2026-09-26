@@ -54,8 +54,8 @@ public sealed class JournalEventMapperTests
     [Fact]
     public void Every_tagged_type_has_a_mapper()
     {
-        // The tagger decides what leaves the process; the registry must be able to map all of it.
-        JournalEventMappers registry = Registry();
+        // The tagger decides what leaves the process; the registry (as production registers it) must map all of it.
+        JournalEventMappers registry = new([new PingedJournalMapper(), .. GameJournalMappers.All()]);
         Assert.All(TopicTagger.BoundTypes, t => Assert.True(registry.CanMap(t), $"{t} is tagged but has no mapper"));
     }
 }

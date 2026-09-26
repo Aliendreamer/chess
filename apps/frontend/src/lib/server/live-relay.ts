@@ -19,6 +19,7 @@ export const UNAUTHENTICATED = 4401
 /** The kinds the BFF relays, each with its backend id rule (kept in sync by tests, not imports). */
 const KINDS: Record<string, RegExp> = {
   ping: /^[a-z0-9-]{1,64}$/, // PingIds.Pattern
+  game: /^[0-9a-f]{32}$/, // GameLiveSource: a Guid v7 in N form (ROADMAP D11)
 }
 
 export interface LiveTarget {

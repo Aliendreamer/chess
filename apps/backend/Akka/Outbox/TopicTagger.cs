@@ -14,13 +14,15 @@ internal sealed class TopicTagger : IWriteEventAdapter
     public const string Name = "topic-tagger";
 
     /// <summary>Every event type the tagger knows; the journal binds the adapter to exactly these.</summary>
-    public static readonly Type[] BoundTypes = [typeof(Pinged)];
+    public static readonly Type[] BoundTypes =
+        [typeof(Pinged), typeof(GameCreated), typeof(MoveMade), typeof(DrawOffered), typeof(DrawDeclined), typeof(GameEnded)];
 
     public string Manifest(object evt) => string.Empty;
 
     public object ToJournal(object evt) => evt switch
     {
         Pinged => new Tagged(evt, [PingTopics.Kafka]),
+        GameCreated or MoveMade or DrawOffered or DrawDeclined or GameEnded => new Tagged(evt, [GameTopics.Kafka]),
         _ => evt,
     };
 }
