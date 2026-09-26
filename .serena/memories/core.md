@@ -64,6 +64,18 @@ Postgres TCP keepalives are set so a dead publisher's lease drops in about 30 s.
 The UI for Part 1 will be done by the user in Design. Next up is the Part 1 design conversation (the user
 drives architecture; see `mem:agent_workflow`).
 
+## State after 2026-09-26 — Part 1 backend changes 1–3 archived and pushed
+
+Also archived: `game-core` (spec `game-play`), `game-read-side` (`game-history`), `matchmaking-and-invites`
+(`game-matchmaking`). D6 switched to **Gera.Chess** (behind `Games/ChessRules`); D13–D23 decided. Backend has
+game actor + clocks, read side on the replica with PGN, a matchmaking singleton (heartbeat POSTs) and sharded
+invite links. `tools/localdev/verify-part1.sh` plays a real invite game on the live stack;
+`apps/backend/Chess.Backend.http` lists every route (paste `mp_sid` from `SID_ONLY=1 verify-auth.sh`). Route ids
+accept Guids with or without dashes. Pushed to origin/main at 1fa8a6f.
+
+Next: discuss how to build the UI from the user's `Design/` folder (untracked; never commit it). Later: change 4
+`presence-and-abandonment` (BFF presence, 1-min abandon where the remaining player chooses, in-game heartbeat).
+
 ## Specs and plans — OpenSpec (from 2026-09-22)
 
 The user installed OpenSpec (CLI 1.2.0) to write specs and plans down "so we have history": scaffold
