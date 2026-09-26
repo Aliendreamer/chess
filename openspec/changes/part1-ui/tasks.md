@@ -4,7 +4,7 @@ Components stay presentational; the logic they show lives in pure, tested helper
 
 ## 1. Foundation: tokens, fonts, shell
 
-- [ ] 1.1 Backend: failing `MeResponseFactory` test expecting `Username` (from `ICurrentUser`, the D23 name);
+- [x] 1.1 Backend: failing `MeResponseFactory` test expecting `Username` (from `ICurrentUser`, the D23 name);
       then add it to `MeResponse`. Commit: `feat(backend): me returns the display name`.
 - [ ] 1.2 `styles.css`: the Club ramps and semantic tokens on `:root`, the `@theme` mapping (D1), base body
       styles; `@fontsource` packages for the three families (D2). Drop the zinc classes.

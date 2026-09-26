@@ -12,6 +12,9 @@ internal interface ICurrentUser
 
     string? FullName { get; }
 
+    /// <summary>Keycloak <c>preferred_username</c>: the display name (D23).</summary>
+    string? Username { get; }
+
     IReadOnlyList<string> Roles { get; }
 
     bool IsInRole(string role);

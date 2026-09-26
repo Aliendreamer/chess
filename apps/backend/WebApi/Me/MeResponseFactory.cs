@@ -13,7 +13,7 @@ internal static class MeResponseFactory
             return false;
         }
 
-        response = new MeResponse(user.Id.Value, user.Subject, user.Email, [.. user.Roles]);
+        response = new MeResponse(user.Id.Value, user.Subject, user.Email, [.. user.Roles], user.Username ?? $"Player {user.Id.Value}");
         return true;
     }
 }

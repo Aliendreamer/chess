@@ -90,5 +90,5 @@ public sealed class UserProvisioningPreProcessorTests
 
     [Fact]
     public void CurrentUser_populate_rejects_empty_subject() =>
-        Assert.Throws<ArgumentException>(() => new CurrentUser().Populate(1, string.Empty, null, null, []));
+        Assert.Throws<ArgumentException>(() => new CurrentUser().Populate(1, string.Empty, null, null, null, []));
 }

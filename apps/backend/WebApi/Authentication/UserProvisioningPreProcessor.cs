@@ -34,7 +34,7 @@ internal sealed class UserProvisioningPreProcessor : IGlobalPreProcessor
 
         if (http.RequestServices.GetRequiredService<ICurrentUser>() is CurrentUser current)
         {
-            current.Populate(id, subject, email, fullName, roles);
+            current.Populate(id, subject, email, fullName, username, roles);
         }
     }
 }
