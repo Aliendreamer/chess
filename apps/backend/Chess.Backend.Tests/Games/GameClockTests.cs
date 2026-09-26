@@ -1,74 +1,16 @@
 using Akka.Actor;
 using Akka.Cluster.Sharding;
 using Akka.TestKit;
-using Akka.TestKit.Xunit2;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Games;
 
 namespace Chess.Backend.Tests.Games;
 
 /// <summary>
-/// Clocks, flag fall, abort, failover forgiveness and passivation under virtual time: <see cref="FakeClock"/> is what
-/// the actor reads as "now", Akka's <see cref="TestScheduler"/> is what fires its timers, and <see cref="Advance"/>
-/// moves both together.
+/// Clocks, flag fall, abort, failover forgiveness and passivation under virtual time (see <see cref="GameActorTestBase"/>).
 /// </summary>
-public sealed class GameClockTests : TestKit
+public sealed class GameClockTests() : GameActorTestBase(virtualTime: true)
 {
-    private const long White = 11;
-    private const long Black = 22;
-    private static readonly DateTimeOffset T0 = DateTimeOffset.Parse("2026-09-26T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
-
-    public GameClockTests()
-        : base("""
-               akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-               akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.inmem"
-               akka.scheduler.implementation = "Akka.TestKit.TestScheduler, Akka.TestKit"
-               """)
-    {
-    }
-
-    private FakeClock Clock { get; } = new(T0);
-
-    private TestScheduler Scheduler => (TestScheduler)Sys.Scheduler;
-
-    private static TimeControl Tc(string text) => TimeControl.Presets.Single(tc => tc.ToString() == text);
-
-    private void Advance(TimeSpan by)
-    {
-        Clock.Advance(by);
-        Scheduler.Advance(by);
-    }
-
-    private Props GameProps(Guid id) => Props.Create(() => new GameActor(id, null, Clock));
-
-    private (Guid Id, IActorRef Actor, TestProbe Parent) Started(string tc)
-    {
-        Guid id = Guid.CreateVersion7();
-        TestProbe parent = CreateTestProbe();
-        IActorRef actor = parent.ChildActorOf(GameProps(id));
-        actor.Tell(new CreateGame(id, White, Black, Tc(tc)), TestActor);
-        ExpectMsg<GameView>();
-        return (id, actor, parent);
-    }
-
-    private object Send(IActorRef actor, object command)
-    {
-        actor.Tell(command, TestActor);
-        return ExpectMsg<object>();
-    }
-
-    private GameView Move(IActorRef actor, Guid id, long user, string uci) =>
-        Assert.IsType<GameView>(Send(actor, new MakeMove(id, user, uci)));
-
-    private GameView View(IActorRef actor, Guid id) => Assert.IsType<GameView>(Send(actor, new GetGameView(id)));
-
-    /// <summary>Both first moves: from here White's clock runs.</summary>
-    private void Opened(IActorRef actor, Guid id)
-    {
-        Move(actor, id, White, "e2e4");
-        Move(actor, id, Black, "e7e5");
-    }
-
     [Fact]
     public void No_clock_runs_before_each_sides_first_move()
     {
@@ -175,13 +117,13 @@ public sealed class GameClockTests : TestKit
         (Guid id, IActorRef actor, _) = Started("5+3");
         Move(actor, id, White, "e2e4");
 
-        Assert.Equal(RejectionCode.Conflict, Assert.IsType<GameRejected>(Send(actor, new AbortGame(id, White))).Code);
+        AssertRejected(Send(actor, new AbortGame(id, White)), RejectionCode.Conflict);
         GameView aborted = Assert.IsType<GameView>(Send(actor, new AbortGame(id, Black)));
         Assert.Equal(("*", "Aborted"), (aborted.Result, aborted.Reason));
 
         (Guid id2, IActorRef actor2, _) = Started("5+3");
         Opened(actor2, id2);
-        Assert.Equal(RejectionCode.Conflict, Assert.IsType<GameRejected>(Send(actor2, new AbortGame(id2, Black))).Code);
+        AssertRejected(Send(actor2, new AbortGame(id2, Black)), RejectionCode.Conflict);
     }
 
     [Fact]
@@ -194,12 +136,10 @@ public sealed class GameClockTests : TestKit
         Assert.Equal(60_000, atLastEvent.BlackMs);
 
         Advance(TimeSpan.FromSeconds(3)); // Black thinks 3 s, then the node dies
-        Watch(actor);
-        Sys.Stop(actor);
-        ExpectTerminated(actor);
+        StopAndWait(actor);
         Advance(TimeSpan.FromSeconds(2)); // 2 s of outage
 
-        IActorRef recovered = Sys.ActorOf(GameProps(id));
+        IActorRef recovered = Spawn(id);
         GameView view = View(recovered, id); // a read alone must re-arm the timer (wake-on-subscribe)
         Assert.Equal((60_000L, 50_000L), (view.BlackMs, view.WhiteMs));
 

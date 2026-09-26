@@ -32,12 +32,13 @@ public sealed class KeycloakOidcClientTests
     private static HttpResponseMessage Json(string json, HttpStatusCode status = HttpStatusCode.OK) =>
         new(status) { Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json") };
 
+    /// <summary>Serves <see cref="Discovery"/> and answers every other request with <paramref name="endpoint"/>.</summary>
+    private static Func<HttpRequestMessage, Task<HttpResponseMessage>> WithDiscovery(Func<HttpRequestMessage, HttpResponseMessage> endpoint) =>
+        req => Task.FromResult(req.RequestUri!.AbsolutePath.EndsWith("openid-configuration", StringComparison.Ordinal) ? Json(Discovery) : endpoint(req));
+
     private static (KeycloakOidcClient Client, Handler Handler) Build(Func<HttpRequestMessage, Task<HttpResponseMessage>>? respond = null)
     {
-        Handler handler = new(respond ?? (req => Task.FromResult(
-            req.RequestUri!.AbsolutePath.EndsWith("openid-configuration", StringComparison.Ordinal)
-                ? Json(Discovery)
-                : Json("""{"access_token":"at","refresh_token":"rt","expires_in":300,"refresh_expires_in":1800}"""))));
+        Handler handler = new(respond ?? WithDiscovery(_ => Json("""{"access_token":"at","refresh_token":"rt","expires_in":300,"refresh_expires_in":1800}""")));
         Mock<IHttpClientFactory> factory = new();
         factory.Setup(f => f.CreateClient(Constants.KeycloakHttpClient)).Returns(() => new HttpClient(handler, disposeHandler: false));
         KeycloakOptions options = new()
@@ -105,10 +106,7 @@ public sealed class KeycloakOidcClientTests
     [Fact]
     public async Task Token_endpoint_failure_throws_http_request_exception()
     {
-        (KeycloakOidcClient client, _) = Build(req => Task.FromResult(
-            req.RequestUri!.AbsolutePath.EndsWith("openid-configuration", StringComparison.Ordinal)
-                ? Json(Discovery)
-                : Json("""{"error":"invalid_grant"}""", HttpStatusCode.BadRequest)));
+        (KeycloakOidcClient client, _) = Build(WithDiscovery(_ => Json("""{"error":"invalid_grant"}""", HttpStatusCode.BadRequest)));
         HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.RefreshAsync("rt", CancellationToken.None));
         Assert.Equal(HttpStatusCode.BadRequest, ex.StatusCode);
     }
@@ -116,10 +114,7 @@ public sealed class KeycloakOidcClientTests
     [Fact]
     public async Task Empty_access_token_is_an_error()
     {
-        (KeycloakOidcClient client, _) = Build(req => Task.FromResult(
-            req.RequestUri!.AbsolutePath.EndsWith("openid-configuration", StringComparison.Ordinal)
-                ? Json(Discovery)
-                : Json("""{"access_token":"","expires_in":1}""")));
+        (KeycloakOidcClient client, _) = Build(WithDiscovery(_ => Json("""{"access_token":"","expires_in":1}""")));
         await Assert.ThrowsAsync<InvalidOperationException>(() => client.ExchangeCodeAsync("c", "v", CancellationToken.None));
     }
 
@@ -150,20 +145,15 @@ public sealed class KeycloakOidcClientTests
     [Fact]
     public async Task Revocation_is_best_effort()
     {
-        (KeycloakOidcClient ok, Handler handler) = Build(req => Task.FromResult(
-            req.RequestUri!.AbsolutePath.EndsWith("openid-configuration", StringComparison.Ordinal) ? Json(Discovery) : new HttpResponseMessage(HttpStatusCode.OK)));
+        (KeycloakOidcClient ok, Handler handler) = Build(WithDiscovery(_ => new HttpResponseMessage(HttpStatusCode.OK)));
         await ok.RevokeRefreshTokenAsync("rt", CancellationToken.None);
         Assert.Contains("token=rt", handler.Requests[^1].Body, StringComparison.Ordinal);
         Assert.Contains("token_type_hint=refresh_token", handler.Requests[^1].Body, StringComparison.Ordinal);
 
-        (KeycloakOidcClient failing, _) = Build(req => req.RequestUri!.AbsolutePath.EndsWith("openid-configuration", StringComparison.Ordinal)
-            ? Task.FromResult(Json(Discovery))
-            : Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError)));
+        (KeycloakOidcClient failing, _) = Build(WithDiscovery(_ => new HttpResponseMessage(HttpStatusCode.InternalServerError)));
         await failing.RevokeRefreshTokenAsync("rt", CancellationToken.None);
 
-        (KeycloakOidcClient throwing, _) = Build(req => req.RequestUri!.AbsolutePath.EndsWith("openid-configuration", StringComparison.Ordinal)
-            ? Task.FromResult(Json(Discovery))
-            : throw new HttpRequestException("down"));
+        (KeycloakOidcClient throwing, _) = Build(WithDiscovery(_ => throw new HttpRequestException("down")));
         await throwing.RevokeRefreshTokenAsync("rt", CancellationToken.None);
     }
 

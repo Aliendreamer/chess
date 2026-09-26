@@ -1,15 +1,13 @@
 using Chess.Backend.Data.ReadModels;
-using Chess.Backend.Events;
 using Chess.Backend.Projections;
 
 namespace Chess.Backend.Tests.Projections;
 
 public sealed class PingProjectionTests
 {
-    private static readonly DateTimeOffset T0 = DateTimeOffset.Parse("2026-09-22T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
+    private static readonly DateTimeOffset T0 = Time.Utc("2026-09-22T10:00:00Z");
 
-    private static string Event(string id, long seq, string text) =>
-        EventJson.Serialize(new EventEnvelope<Pinged>(EventTypes.Pinged, 1, id, seq, T0.AddSeconds(seq), new Pinged(text, 1, T0.AddSeconds(seq))));
+    private static string Event(string id, long seq, string text) => Envelopes.Pinged(id, seq, text, T0.AddSeconds(seq));
 
     [Fact]
     public async Task Applies_events_in_order_and_ignores_replays()

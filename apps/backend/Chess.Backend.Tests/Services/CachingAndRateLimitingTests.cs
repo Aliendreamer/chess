@@ -48,18 +48,17 @@ public sealed class CachingAndRateLimitingTests
         Assert.Contains(services, d => d.ServiceType == typeof(IFusionCacheBackplane) || d.ServiceType == typeof(IFusionCache));
     }
 
-    [Fact]
-    public void Rate_limiter_is_registered_in_both_modes()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("redis:6379")]
+    public void Rate_limiter_is_registered_in_both_modes(string? redis)
     {
-        foreach (string? redis in new[] { null, "redis:6379" })
-        {
-            ServiceCollection services = Base();
-            services.AddRateLimiting(redis);
-            using ServiceProvider provider = services.BuildServiceProvider();
-            RateLimiterOptions options = provider.GetRequiredService<IOptions<RateLimiterOptions>>().Value;
-            Assert.Equal(StatusCodes.Status429TooManyRequests, options.RejectionStatusCode);
-            Assert.NotNull(options.GlobalLimiter);
-        }
+        ServiceCollection services = Base();
+        services.AddRateLimiting(redis);
+        using ServiceProvider provider = services.BuildServiceProvider();
+        RateLimiterOptions options = provider.GetRequiredService<IOptions<RateLimiterOptions>>().Value;
+        Assert.Equal(StatusCodes.Status429TooManyRequests, options.RejectionStatusCode);
+        Assert.NotNull(options.GlobalLimiter);
     }
 
     [Fact]

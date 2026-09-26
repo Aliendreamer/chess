@@ -4,7 +4,7 @@ namespace Chess.Backend.Tests.Projections;
 
 public sealed class DeadLetterStoreTests
 {
-    private static readonly DateTimeOffset T0 = DateTimeOffset.Parse("2026-09-24T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
+    private static readonly DateTimeOffset T0 = Time.Utc("2026-09-24T10:00:00Z");
 
     private static DeadLetterStore Store(ProjectDbContext db, TimeProvider? clock = null) =>
         new(db, NullLogger<DeadLetterStore>.Instance, clock ?? new FakeClock(T0));
@@ -97,15 +97,5 @@ public sealed class DeadLetterStoreTests
 
         Assert.Equal(2, counts["g1"]);
         Assert.Equal(1, counts["g2"]);
-    }
-
-    [Fact]
-    public async Task The_aggregate_lock_runs_the_body_and_returns_its_result()
-    {
-        using ProjectDbContext db = TestDb.Create();
-
-        int result = await Store(db).WithAggregateLockAsync("g", "a", _ => Task.FromResult(42), CancellationToken.None);
-
-        Assert.Equal(42, result);
     }
 }

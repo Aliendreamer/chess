@@ -6,11 +6,21 @@ namespace Chess.Backend.Messaging;
 /// <summary>Healthy when the broker returns metadata with at least one broker known.</summary>
 internal sealed class KafkaHealthCheck : IHealthCheck, IDisposable
 {
+    internal static readonly TimeSpan DefaultMetadataTimeout = TimeSpan.FromSeconds(3);
+
     private readonly IAdminClient _admin;
+    private readonly TimeSpan _metadataTimeout;
 
     public KafkaHealthCheck(KafkaOptions options)
+        : this(options, DefaultMetadataTimeout)
+    {
+    }
+
+    /// <summary>Internal so DI only sees the public constructor; tests shorten the metadata timeout.</summary>
+    internal KafkaHealthCheck(KafkaOptions options, TimeSpan metadataTimeout)
     {
         ArgumentNullException.ThrowIfNull(options);
+        _metadataTimeout = metadataTimeout;
         _admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = options.BootstrapServers }).Build();
     }
 
@@ -18,7 +28,7 @@ internal sealed class KafkaHealthCheck : IHealthCheck, IDisposable
     {
         try
         {
-            Metadata metadata = _admin.GetMetadata(TimeSpan.FromSeconds(3));
+            Metadata metadata = _admin.GetMetadata(_metadataTimeout);
             HealthCheckResult result = metadata.Brokers.Count > 0
                 ? HealthCheckResult.Healthy($"{metadata.Brokers.Count} broker(s) reachable")
                 : HealthCheckResult.Unhealthy("No brokers returned");

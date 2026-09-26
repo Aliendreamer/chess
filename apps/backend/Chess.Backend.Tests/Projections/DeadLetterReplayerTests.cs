@@ -1,5 +1,4 @@
 using Chess.Backend.Data.ReadModels;
-using Chess.Backend.Events;
 using Chess.Backend.Projections;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -7,7 +6,7 @@ namespace Chess.Backend.Tests.Projections;
 
 public sealed class DeadLetterReplayerTests
 {
-    private static readonly DateTimeOffset T0 = DateTimeOffset.Parse("2026-09-24T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
+    private static readonly DateTimeOffset T0 = ProjectionHost.T0;
 
     /// <summary>A PingProjection that can be switched into "still buggy" mode, the way a bad deploy would behave.</summary>
     private sealed class Switch
@@ -29,57 +28,35 @@ public sealed class DeadLetterReplayerTests
 
     private sealed class Harness
     {
-        public Harness()
-        {
-            string db = Guid.NewGuid().ToString("N");
-            ServiceCollection services = new();
-            services.AddLogging();
-            services.AddSingleton(Switch);
-            services.AddSingleton<TimeProvider>(new FakeClock(T0));
-            services.AddScoped(_ => TestDb.Create(name: db));
-            services.AddScoped<IDeadLetterStore, DeadLetterStore>();
-            services.AddScoped<SwitchableProjection>();
-            services.AddScoped<IProjection>(sp => sp.GetRequiredService<SwitchableProjection>());
-            Provider = services.BuildServiceProvider();
-        }
+        public Harness() =>
+            Host = new ProjectionHost(services =>
+            {
+                services.AddSingleton(Switch);
+                services.AddScoped<SwitchableProjection>();
+                services.AddScoped<IProjection>(sp => sp.GetRequiredService<SwitchableProjection>());
+            });
 
         public Switch Switch { get; } = new();
 
-        public ServiceProvider Provider { get; }
+        public ProjectionHost Host { get; }
 
-        public async Task<ReplayResult> ReplayAsync(string group, string aggregateId)
-        {
-            using IServiceScope scope = Provider.CreateScope();
-            DeadLetterReplayer replayer = new(
-                scope.ServiceProvider.GetRequiredService<ProjectDbContext>(),
-                NullLogger<DeadLetterReplayer>.Instance,
-                scope.ServiceProvider.GetRequiredService<IDeadLetterStore>(),
-                scope.ServiceProvider.GetRequiredService<IServiceScopeFactory>());
-            return await replayer.ReplayAsync(group, aggregateId, CancellationToken.None);
-        }
+        public Task<ReplayResult> ReplayAsync(string group, string aggregateId) =>
+            Host.ScopedAsync(sp => new DeadLetterReplayer(
+                    sp.GetRequiredService<ProjectDbContext>(),
+                    NullLogger<DeadLetterReplayer>.Instance,
+                    sp.GetRequiredService<IDeadLetterStore>(),
+                    sp.GetRequiredService<IServiceScopeFactory>())
+                .ReplayAsync(group, aggregateId, CancellationToken.None));
 
-        public async Task<T> WithDbAsync<T>(Func<ProjectDbContext, Task<T>> read)
-        {
-            using IServiceScope scope = Provider.CreateScope();
-            return await read(scope.ServiceProvider.GetRequiredService<ProjectDbContext>());
-        }
+        public Task<T> WithDbAsync<T>(Func<ProjectDbContext, Task<T>> read) => Host.WithDbAsync(read);
 
-        public async Task ApplyLiveAsync(string id, long seq)
-        {
-            using IServiceScope scope = Provider.CreateScope();
-            await scope.ServiceProvider.GetRequiredService<SwitchableProjection>().ApplyAsync(id, Event(id, seq), CancellationToken.None);
-        }
+        public Task ApplyLiveAsync(string id, long seq) =>
+            Host.ScopedAsync(sp => sp.GetRequiredService<SwitchableProjection>().ApplyAsync(id, Event(id, seq), CancellationToken.None));
 
-        public async Task ParkAsync(string id, long seq)
-        {
-            using IServiceScope scope = Provider.CreateScope();
-            await scope.ServiceProvider.GetRequiredService<IDeadLetterStore>()
-                .ParkAsync(new ParkRequest("chess.rm-pings", id, seq, id, Event(id, seq), 5, "bug", T0), CancellationToken.None);
-        }
+        public Task ParkAsync(string id, long seq) => Host.ParkAsync("chess.rm-pings", id, seq, Event(id, seq));
     }
 
-    private static string Event(string id, long seq) =>
-        EventJson.Serialize(new EventEnvelope<Pinged>(EventTypes.Pinged, 1, id, seq, T0.AddSeconds(seq), new Pinged($"t{seq}", 1, T0.AddSeconds(seq))));
+    private static string Event(string id, long seq) => Envelopes.Pinged(id, seq, $"t{seq}", T0.AddSeconds(seq));
 
     [Fact]
     public async Task Replay_after_a_fix_applies_in_seq_order_and_lifts_the_quarantine()

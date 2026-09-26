@@ -8,7 +8,10 @@ namespace Chess.Backend.Tests.Akka;
 
 public sealed class PingActorTests : TestKit
 {
-    public PingActorTests() : base("akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\"\nakka.persistence.snapshot-store.plugin = \"akka.persistence.snapshot-store.inmem\"") { }
+    public PingActorTests()
+        : base(AkkaConfig.InMemoryPersistence)
+    {
+    }
 
     private IActorRef Create(string id, IActorRef? mediator = null) =>
         Sys.ActorOf(Props.Create(() => new PingActor(id, mediator)), $"ping-{id}-{Guid.NewGuid():N}");

@@ -6,7 +6,7 @@ namespace Chess.Backend.Tests.Auth;
 
 public sealed class SessionCookiesTests
 {
-    private static readonly DateTimeOffset T0 = DateTimeOffset.Parse("2026-09-21T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
+    private static readonly DateTimeOffset T0 = Time.Utc("2026-09-21T10:00:00Z");
 
     private static SessionCookies Build(string environment, string domain = ".chess.localhost")
     {

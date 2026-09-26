@@ -15,6 +15,8 @@ public sealed class JwtSubjectReaderTests
     [InlineData("")]
     [InlineData("onlyonepart")]
     [InlineData("a.!!!.c")]
+    [InlineData("e30.bm90IGpzb24.")] // payload "not json"
+    [InlineData("e30.W10.")] // payload "[]"
     public void Rejects_malformed_tokens(string? jwt)
     {
         Assert.False(JwtSubjectReader.TryReadSubject(jwt, out string? sub));
@@ -27,21 +29,5 @@ public sealed class JwtSubjectReaderTests
         Assert.False(JwtSubjectReader.TryReadSubject(Jwt.Unsigned(new { exp = 1 }), out _));
         Assert.False(JwtSubjectReader.TryReadSubject(Jwt.Unsigned(new { sub = 5 }), out _));
         Assert.False(JwtSubjectReader.TryReadSubject(Jwt.Unsigned(new { sub = "" }), out _));
-    }
-
-    [Fact]
-    public void Rejects_non_json_payload()
-    {
-        string header = Base64Url.Encode("{}"u8);
-        string payload = Base64Url.Encode("not json"u8);
-        Assert.False(JwtSubjectReader.TryReadSubject($"{header}.{payload}.", out _));
-    }
-
-    [Fact]
-    public void Rejects_array_payload()
-    {
-        string header = Base64Url.Encode("{}"u8);
-        string payload = Base64Url.Encode("[]"u8);
-        Assert.False(JwtSubjectReader.TryReadSubject($"{header}.{payload}.", out _));
     }
 }

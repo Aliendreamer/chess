@@ -36,14 +36,13 @@ public sealed class JwtBearerOptionsTests
         Assert.Null(options.Audience);
     }
 
-    [Fact]
-    public void Every_deployed_environment_sets_the_chess_api_audience()
+    [Theory]
+    [InlineData("Development")]
+    [InlineData("Production")]
+    public void Every_deployed_environment_sets_the_chess_api_audience(string env)
     {
-        foreach (string env in new[] { "Development", "Production" })
-        {
-            string json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Config", $"appsettings.{env}.json"));
-            using System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse(json);
-            Assert.Equal("chess_api", doc.RootElement.GetProperty("Keycloak").GetProperty("Audience").GetString());
-        }
+        string json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Config", $"appsettings.{env}.json"));
+        using System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse(json);
+        Assert.Equal("chess_api", doc.RootElement.GetProperty("Keycloak").GetProperty("Audience").GetString());
     }
 }

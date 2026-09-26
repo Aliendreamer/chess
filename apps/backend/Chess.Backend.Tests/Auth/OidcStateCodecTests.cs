@@ -19,16 +19,10 @@ public sealed class OidcStateCodecTests
     [InlineData("!!!not-base64url!!!")]
     [InlineData("bm90IGpzb24")] // "not json"
     [InlineData("e30")] // "{}" → no nonce
+    [InlineData("WzEsMl0")] // "[1,2]"
     public void Rejects_garbage(string? encoded)
     {
         Assert.False(OidcStateCodec.TryDecode(encoded, out OidcState? state));
         Assert.Null(state);
-    }
-
-    [Fact]
-    public void Rejects_json_array()
-    {
-        string encoded = Base64Url.Encode("[1,2]"u8);
-        Assert.False(OidcStateCodec.TryDecode(encoded, out _));
     }
 }

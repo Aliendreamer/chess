@@ -38,31 +38,24 @@ public sealed class CallbackValidatorTests
         Assert.Contains("access_denied", CallbackValidator.Validate(req, Pkce.ToCookieValue()).Error, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void Rejects_missing_code()
+    [Theory]
+    [InlineData(null, "own", true)] // no code
+    [InlineData("abc", "own", false)] // no PKCE cookie
+    [InlineData("abc", "%%%", true)] // state that does not decode
+    [InlineData("abc", "foreign", true)] // state nonce does not match the cookie's
+    public void Rejects_a_callback_that_cannot_be_trusted(string? code, string state, bool withCookie)
     {
-        CallbackRequest req = new() { State = State(Pkce.Nonce) };
-        Assert.NotNull(CallbackValidator.Validate(req, Pkce.ToCookieValue()).Error);
-    }
+        CallbackRequest req = new()
+        {
+            Code = code,
+            State = state switch
+            {
+                "own" => State(Pkce.Nonce),
+                "foreign" => State("someone-elses-nonce"),
+                _ => state,
+            },
+        };
 
-    [Fact]
-    public void Rejects_missing_pkce_cookie()
-    {
-        CallbackRequest req = new() { Code = "abc", State = State(Pkce.Nonce) };
-        Assert.NotNull(CallbackValidator.Validate(req, null).Error);
-    }
-
-    [Fact]
-    public void Rejects_malformed_state()
-    {
-        CallbackRequest req = new() { Code = "abc", State = "%%%" };
-        Assert.NotNull(CallbackValidator.Validate(req, Pkce.ToCookieValue()).Error);
-    }
-
-    [Fact]
-    public void Rejects_nonce_mismatch_between_state_and_cookie()
-    {
-        CallbackRequest req = new() { Code = "abc", State = State("someone-elses-nonce") };
-        Assert.NotNull(CallbackValidator.Validate(req, Pkce.ToCookieValue()).Error);
+        Assert.NotNull(CallbackValidator.Validate(req, withCookie ? Pkce.ToCookieValue() : null).Error);
     }
 }

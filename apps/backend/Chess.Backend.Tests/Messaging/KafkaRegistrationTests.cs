@@ -57,7 +57,8 @@ public sealed class KafkaRegistrationTests
         on.AddMessaging(Configuration("redpanda:9092"));
         using ServiceProvider provider = on.BuildServiceProvider();
         JournalEventMappers mappers = provider.GetRequiredService<JournalEventMappers>();
-        Assert.All(TopicTagger.BoundTypes, t => Assert.True(mappers.CanMap(t)));
+        // The tagger decides what leaves the process; the registry production builds must map all of it.
+        Assert.All(TopicTagger.BoundTypes, t => Assert.True(mappers.CanMap(t), $"{t} is tagged but has no mapper"));
         Assert.NotNull(provider.GetRequiredService<JournalPublisherOptions>());
         // No Postgres connection string in this configuration: the lease provider must say so, not NRE.
         Assert.Throws<InvalidOperationException>(provider.GetRequiredService<IPublisherLeaseProvider>);
@@ -88,34 +89,33 @@ public sealed class KafkaRegistrationTests
         }
     }
 
-    [Fact]
-    public void Kafka_health_check_registers_only_when_enabled()
+    [Theory]
+    [InlineData("", false)]
+    [InlineData("redpanda:9092", true)]
+    public void Kafka_health_check_registers_only_when_enabled(string bootstrapServers, bool expected)
     {
-        foreach ((string bootstrapServers, bool expected) in new[] { (string.Empty, false), ("redpanda:9092", true) })
+        ServiceCollection services = Base();
+        KafkaOptions kafka = new() { BootstrapServers = bootstrapServers };
+        IHealthChecksBuilder health = services.AddHealthChecks();
+
+        // Drives the real production registration (FastEndpointSetup.AddKafkaHealthCheck), not a copy of
+        // it, so this test fails if that branch is ever removed or inverted.
+        health.AddKafkaHealthCheck(services, kafka);
+
+        bool registered = services.Any(d => d.ServiceType == typeof(KafkaHealthCheck) && d.Lifetime == ServiceLifetime.Singleton);
+        Assert.Equal(expected, registered);
+
+        using ServiceProvider provider = services.AddSingleton(TimeProvider.System)
+            .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
+            .BuildServiceProvider();
+        HealthCheckRegistration? lag = provider.GetRequiredService<IOptions<HealthCheckServiceOptions>>().Value.Registrations
+            .SingleOrDefault(r => r.Name == "journal-publisher");
+        Assert.Equal(expected, lag is not null);
+        if (lag is not null)
         {
-            ServiceCollection services = Base();
-            KafkaOptions kafka = new() { BootstrapServers = bootstrapServers };
-            IHealthChecksBuilder health = services.AddHealthChecks();
-
-            // Drives the real production registration (FastEndpointSetup.AddKafkaHealthCheck), not a copy of
-            // it, so this test fails if that branch is ever removed or inverted.
-            health.AddKafkaHealthCheck(services, kafka);
-
-            bool registered = services.Any(d => d.ServiceType == typeof(KafkaHealthCheck) && d.Lifetime == ServiceLifetime.Singleton);
-            Assert.Equal(expected, registered);
-
-            using ServiceProvider provider = services.AddSingleton(TimeProvider.System)
-                .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
-                .BuildServiceProvider();
-            HealthCheckRegistration? lag = provider.GetRequiredService<IOptions<HealthCheckServiceOptions>>().Value.Registrations
-                .SingleOrDefault(r => r.Name == "journal-publisher");
-            Assert.Equal(expected, lag is not null);
-            if (lag is not null)
-            {
-                // A stalled publisher must never take the API out of rotation.
-                Assert.Equal(HealthStatus.Degraded, lag.FailureStatus);
-                Assert.IsType<PublisherLagHealthCheck>(lag.Factory(provider));
-            }
+            // A stalled publisher must never take the API out of rotation.
+            Assert.Equal(HealthStatus.Degraded, lag.FailureStatus);
+            Assert.IsType<PublisherLagHealthCheck>(lag.Factory(provider));
         }
     }
 

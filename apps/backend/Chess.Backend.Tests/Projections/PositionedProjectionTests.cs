@@ -6,8 +6,6 @@ namespace Chess.Backend.Tests.Projections;
 
 public sealed class PositionedProjectionTests
 {
-    private static readonly DateTimeOffset T0 = DateTimeOffset.UnixEpoch;
-
     /// <summary>Stands in for a Part 1 consumer with no per-aggregate row: every event adds a row elsewhere.</summary>
     private sealed class CountingProjection(ProjectDbContext db, bool fail = false)
         : PositionedProjection<Pinged>(db, NullLogger<PositionedProjection<Pinged>>.Instance)
@@ -31,8 +29,7 @@ public sealed class PositionedProjectionTests
         }
     }
 
-    private static string Event(string id, long seq) =>
-        EventJson.Serialize(new EventEnvelope<Pinged>(EventTypes.Pinged, 1, id, seq, T0, new Pinged("x", 1, T0)));
+    private static string Event(string id, long seq) => Envelopes.Pinged(id, seq);
 
     [Fact]
     public async Task Applies_once_per_seq_and_tracks_the_position()

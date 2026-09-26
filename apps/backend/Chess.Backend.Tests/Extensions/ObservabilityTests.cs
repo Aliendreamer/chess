@@ -15,15 +15,10 @@ public sealed class ObservabilityTests
         .Build();
 
     [Fact]
-    public void The_actor_activity_source_is_the_one_the_tracer_subscribes_to()
+    public void An_actor_span_comes_from_the_traced_source_and_carries_the_ping_id_and_sequence()
     {
-        Assert.Equal("chess.actors", ActorTracing.SourceName);
-        Assert.Equal(ActorTracing.SourceName, ActorTracing.Source.Name);
-    }
+        Assert.Equal("chess.actors", ActorTracing.SourceName); // the name the tracer subscribes to
 
-    [Fact]
-    public void An_actor_span_carries_the_ping_id_and_sequence()
-    {
         // Without a listener ActivitySource returns null, which is exactly what production does when
         // tracing is off — so the tags are asserted under a listener that samples everything.
         using ActivityListener listener = new()
@@ -35,22 +30,21 @@ public sealed class ObservabilityTests
 
         using Activity? activity = ActorTracing.StartPingHandle("p1", 3);
 
-        Assert.NotNull(activity);
+        Assert.NotNull(activity); // non-null only because the source's name matched SourceName
         Assert.Equal("ping.handle", activity.OperationName);
         Assert.Equal("p1", activity.GetTagItem("ping.id"));
         Assert.Equal(3L, activity.GetTagItem("ping.seq"));
     }
 
-    [Fact]
-    public void Tracing_is_registered_only_when_the_console_exporter_is_switched_on()
+    [Theory]
+    [InlineData(null, false)]
+    [InlineData("false", false)]
+    [InlineData("true", true)]
+    public void Tracing_is_registered_only_when_the_console_exporter_is_switched_on(string? setting, bool expected)
     {
-        foreach ((string? setting, bool expected) in new[] { ((string?)null, false), ("false", false), ("true", true) })
-        {
-            ServiceCollection services = new();
-            services.AddObservability(Configuration(setting));
+        ServiceCollection services = new();
+        services.AddObservability(Configuration(setting));
 
-            bool registered = services.Any(d => d.ServiceType == typeof(TracerProvider));
-            Assert.Equal(expected, registered);
-        }
+        Assert.Equal(expected, services.Any(d => d.ServiceType == typeof(TracerProvider)));
     }
 }

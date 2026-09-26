@@ -7,7 +7,8 @@ public sealed class EventJsonTests
     [Fact]
     public void Round_trips_an_envelope()
     {
-        EventEnvelope<Pinged> e = new(EventTypes.Pinged, 1, "p1", 7, DateTimeOffset.Parse("2026-09-22T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture), new Pinged("hello", 42, DateTimeOffset.Parse("2026-09-22T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture)));
+        DateTimeOffset at = Time.Utc("2026-09-22T10:00:00Z");
+        EventEnvelope<Pinged> e = new(EventTypes.Pinged, 1, "p1", 7, at, new Pinged("hello", 42, at));
         string json = EventJson.Serialize(e);
         Assert.Contains("\"type\":\"ping.pinged\"", json, StringComparison.Ordinal);
         Assert.True(EventJson.TryDeserialize(json, out EventEnvelope<Pinged>? back));

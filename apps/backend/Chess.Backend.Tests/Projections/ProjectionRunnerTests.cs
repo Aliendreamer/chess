@@ -1,4 +1,3 @@
-using Chess.Backend.Events;
 using Chess.Backend.Projections;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -7,7 +6,6 @@ namespace Chess.Backend.Tests.Projections;
 public sealed class ProjectionRunnerTests
 {
     private const string Group = "test.runner";
-    private static readonly DateTimeOffset T0 = DateTimeOffset.Parse("2026-09-24T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>What the fake projection does on each call, in order; after the queue runs dry it succeeds.</summary>
     private sealed class Script
@@ -41,47 +39,34 @@ public sealed class ProjectionRunnerTests
     {
         public Harness(int maxAttempts = 5)
         {
-            string db = Guid.NewGuid().ToString("N");
-            ServiceCollection services = new();
-            services.AddLogging();
-            services.AddSingleton(Script);
-            services.AddSingleton<TimeProvider>(new FakeClock(T0));
-            services.AddScoped(_ => TestDb.Create(name: db));
-            services.AddScoped<IDeadLetterStore, DeadLetterStore>();
-            services.AddScoped<ScriptedProjection>();
-            Provider = services.BuildServiceProvider();
+            Host = new ProjectionHost(services =>
+            {
+                services.AddSingleton(Script);
+                services.AddScoped<ScriptedProjection>();
+            });
             Runner = new ProjectionRunner(
-                Provider.GetRequiredService<IServiceScopeFactory>(),
+                Host.Provider.GetRequiredService<IServiceScopeFactory>(),
                 new ProjectionDeadLetterOptions { MaxAttempts = maxAttempts, BaseDelay = TimeSpan.FromMilliseconds(1), MaxDelay = TimeSpan.FromMilliseconds(2) },
-                new FakeClock(T0),
+                new FakeClock(ProjectionHost.T0),
                 NullLogger<ProjectionRunner>.Instance);
         }
 
         public Script Script { get; } = new();
 
-        public ServiceProvider Provider { get; }
+        public ProjectionHost Host { get; }
 
         public ProjectionRunner Runner { get; }
 
         public Task RunAsync(string value, string key = "k", string group = Group, CancellationToken ct = default) =>
             Runner.RunAsync(typeof(ScriptedProjection), group, key, value, ct);
 
-        public async Task<List<ProjectionDeadLetter>> ParkedAsync()
-        {
-            using IServiceScope scope = Provider.CreateScope();
-            return await scope.ServiceProvider.GetRequiredService<ProjectDbContext>().ProjectionDeadLetters.OrderBy(d => d.Seq).ToListAsync();
-        }
+        public Task<List<ProjectionDeadLetter>> ParkedAsync() =>
+            Host.WithDbAsync(db => db.ProjectionDeadLetters.OrderBy(d => d.Seq).ToListAsync());
 
-        public async Task SeedParkedAsync(string group, string aggregateId, long seq)
-        {
-            using IServiceScope scope = Provider.CreateScope();
-            await scope.ServiceProvider.GetRequiredService<IDeadLetterStore>()
-                .ParkAsync(new ParkRequest(group, aggregateId, seq, aggregateId, "{}", 5, "seeded", T0), CancellationToken.None);
-        }
+        public Task SeedParkedAsync(string group, string aggregateId, long seq) => Host.ParkAsync(group, aggregateId, seq);
     }
 
-    private static string Event(string id, long seq) =>
-        EventJson.Serialize(new EventEnvelope<Pinged>(EventTypes.Pinged, 1, id, seq, T0, new Pinged("x", 1, T0)));
+    private static string Event(string id, long seq) => Envelopes.Pinged(id, seq, at: ProjectionHost.T0);
 
     [Fact]
     public async Task A_transient_failure_recovers_before_the_limit_and_nothing_is_parked()

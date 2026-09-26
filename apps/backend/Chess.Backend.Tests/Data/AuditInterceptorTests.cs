@@ -2,7 +2,7 @@ namespace Chess.Backend.Tests.Data;
 
 public sealed class AuditInterceptorTests
 {
-    private static readonly DateTimeOffset T0 = DateTimeOffset.Parse("2026-09-21T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
+    private static readonly DateTimeOffset T0 = Time.Utc("2026-09-21T10:00:00Z");
 
     [Fact]
     public async Task Stamps_created_and_updated_on_insert_then_bumps_version_on_update()

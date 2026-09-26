@@ -18,31 +18,22 @@ public sealed class PublisherLagHealthCheckTests
     private static Task<HealthCheckResult> Run(PublisherLagHealthCheck check) =>
         check.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
-    [Fact]
-    public async Task Caught_up_is_healthy_and_reports_the_numbers()
+    [Theory]
+    [InlineData(41, 41, 600, HealthStatus.Healthy)] // caught up, however long ago it last moved
+    [InlineData(40, 45, 5, HealthStatus.Healthy)] // behind but recently advanced
+    [InlineData(40, 45, 31, HealthStatus.Degraded)] // behind and stuck past the threshold: degraded, never unhealthy
+    public async Task Status_depends_on_lag_and_time_since_the_last_advance(long lastOrdering, long journalHead, int secondsSinceAdvance, HealthStatus expected)
     {
-        HealthCheckResult r = await Run(Check(new PublisherLag("game.events", 41, 41, Now.AddMinutes(-10))));
+        HealthCheckResult r = await Run(Check(new PublisherLag("game.events", lastOrdering, journalHead, Now.AddSeconds(-secondsSinceAdvance))));
 
-        Assert.Equal(HealthStatus.Healthy, r.Status);
-        Assert.Equal(0L, r.Data["game.events.lag"]);
-        Assert.Equal(41L, r.Data["game.events.lastOrdering"]);
-        Assert.Equal(41L, r.Data["game.events.journalHead"]);
-    }
-
-    [Fact]
-    public async Task Behind_but_recently_advanced_is_healthy()
-    {
-        HealthCheckResult r = await Run(Check(new PublisherLag("game.events", 40, 45, Now.AddSeconds(-5))));
-        Assert.Equal(HealthStatus.Healthy, r.Status);
-        Assert.Equal(5L, r.Data["game.events.lag"]);
-    }
-
-    [Fact]
-    public async Task Behind_and_stuck_past_the_threshold_is_degraded_never_unhealthy()
-    {
-        HealthCheckResult r = await Run(Check(new PublisherLag("game.events", 40, 45, Now.AddSeconds(-31))));
-        Assert.Equal(HealthStatus.Degraded, r.Status);
-        Assert.Contains("game.events", r.Description, StringComparison.Ordinal);
+        Assert.Equal(expected, r.Status);
+        Assert.Equal(journalHead - lastOrdering, r.Data["game.events.lag"]);
+        Assert.Equal(lastOrdering, r.Data["game.events.lastOrdering"]);
+        Assert.Equal(journalHead, r.Data["game.events.journalHead"]);
+        if (expected == HealthStatus.Degraded)
+        {
+            Assert.Contains("game.events", r.Description, StringComparison.Ordinal);
+        }
     }
 
     [Fact]

@@ -2,7 +2,7 @@ namespace Chess.Backend.Tests.Services;
 
 public sealed class SessionStoreTests
 {
-    private static readonly DateTimeOffset T0 = DateTimeOffset.Parse("2026-09-21T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture);
+    private static readonly DateTimeOffset T0 = Time.Utc("2026-09-21T10:00:00Z");
 
     private static (SessionStore Store, ProjectDbContext Db, FakeClock Clock) Build()
     {
