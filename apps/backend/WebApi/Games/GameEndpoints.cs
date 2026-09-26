@@ -21,9 +21,13 @@ internal static class GameReplyMapper
         _ => new(false, StatusCodes.Status502BadGateway, null, "Unexpected reply from the game."),
     };
 
-    /// <summary>Game ids travel in <c>N</c> form (32 lower-case hex), the same as live topics.</summary>
+    /// <summary>
+    /// Route ids (games, invites) are lower-case Guids in <c>N</c> form (32 hex, as live topics spell them) or <c>D</c>
+    /// form (with dashes, as JSON responses spell them), so an id from a response can be pasted straight into a URL.
+    /// </summary>
     public static bool TryParseId(string? text, out Guid id) =>
-        Guid.TryParseExact(text, "N", out id) && string.Equals(id.ToString("N"), text, StringComparison.Ordinal);
+        (Guid.TryParseExact(text, "N", out id) && string.Equals(id.ToString("N"), text, StringComparison.Ordinal))
+        || (Guid.TryParseExact(text, "D", out id) && string.Equals(id.ToString("D"), text, StringComparison.Ordinal));
 }
 
 /// <summary>
@@ -40,7 +44,7 @@ internal abstract class GameEndpointBase<TRequest>(IRequiredActor<GameActor> reg
     {
         if (!GameReplyMapper.TryParseId(Route<string>("id"), out Guid id))
         {
-            ThrowError("Game id must be 32 lower-case hex digits.", StatusCodes.Status400BadRequest);
+            ThrowError("Game id must be a lower-case Guid, with or without dashes.", StatusCodes.Status400BadRequest);
         }
 
         object reply;

@@ -143,7 +143,7 @@ internal abstract class GameReadEndpointBase<TResponse>(ReadDbContext read) : En
     {
         if (!GameReplyMapper.TryParseId(Route<string>("id"), out Guid id))
         {
-            ThrowError("Game id must be 32 lower-case hex digits.", StatusCodes.Status400BadRequest);
+            ThrowError("Game id must be a lower-case Guid, with or without dashes.", StatusCodes.Status400BadRequest);
         }
 
         return id;

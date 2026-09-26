@@ -121,7 +121,7 @@ internal abstract class InviteEndpointBase<TRequest>(IRequiredActor<InviteActor>
     {
         if (!GameReplyMapper.TryParseId(Route<string>("id"), out Guid id))
         {
-            ThrowError("Invite id must be 32 lower-case hex digits.", StatusCodes.Status400BadRequest);
+            ThrowError("Invite id must be a lower-case Guid, with or without dashes.", StatusCodes.Status400BadRequest);
         }
 
         return id;

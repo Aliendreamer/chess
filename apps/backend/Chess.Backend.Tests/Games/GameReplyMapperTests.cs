@@ -36,8 +36,19 @@ public sealed class GameReplyMapperTests
 
     [Theory]
     [InlineData("0199f1c2a3b47c5d8e9f0a1b2c3d4e5f", true)]
-    [InlineData("0199f1c2-a3b4-7c5d-8e9f-0a1b2c3d4e5f", false)]
+    [InlineData("0199f1c2-a3b4-7c5d-8e9f-0a1b2c3d4e5f", true)] // as JSON responses spell it
+    [InlineData("0199F1C2A3B47C5D8E9F0A1B2C3D4E5F", false)]
+    [InlineData("{0199f1c2-a3b4-7c5d-8e9f-0a1b2c3d4e5f}", false)]
     [InlineData("nope", false)]
-    public void Route_ids_are_n_form_guids(string text, bool ok) =>
+    public void Route_ids_are_lower_case_guids_with_or_without_dashes(string text, bool ok) =>
         Assert.Equal(ok, GameReplyMapper.TryParseId(text, out _));
+
+    [Fact]
+    public void Both_forms_name_the_same_id()
+    {
+        GameReplyMapper.TryParseId("0199f1c2a3b47c5d8e9f0a1b2c3d4e5f", out Guid n);
+        GameReplyMapper.TryParseId("0199f1c2-a3b4-7c5d-8e9f-0a1b2c3d4e5f", out Guid d);
+
+        Assert.Equal(n, d);
+    }
 }
