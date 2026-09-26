@@ -44,7 +44,7 @@ Components stay presentational; the logic they show lives in pure, tested helper
 
 ## 4. History and PGN
 
-- [ ] 4.1 Route `/games` (history, keyset "Load more") and a BFF server route `/games/$id/pgn` that streams the
+- [x] 4.1 Route `/games` (history, keyset "Load more") and a BFF server route `/games/$id/pgn` that streams the
       API's PGN as a download (cookie forwarded, never the API host). Commit:
       `feat(frontend): game history and pgn download`.
 

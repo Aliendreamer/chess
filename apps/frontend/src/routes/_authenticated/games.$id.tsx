@@ -220,6 +220,9 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
             <p className="m-0 font-display text-display-sm" data-testid="game-result">
               {resultText(current.result)}
             </p>
+            <a href={`/pgn/${topic}`} download className="text-sm" data-testid="game-pgn">
+              Download PGN
+            </a>
             {current.reason ? (
               <p className="m-0 text-sm text-fg-secondary">{reasonText(current.reason)}</p>
             ) : null}
