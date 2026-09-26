@@ -4,7 +4,7 @@
 
 A signed-in user SHALL join a queue with `POST /api/matchmaking/{tc}` for any D12 preset. Any other time control
 MUST be 400. When another user is already waiting in that queue, the two MUST be paired at once, the one who
-waited longest first. A game MUST be started for them with random colours, and both MUST learn its id. A user
+waited longest first (with immediate pairing a queue holds at most one waiting seeker). A game MUST be started for them with random colours, and both MUST learn its id. A user
 MUST NOT be paired with themselves.
 
 #### Scenario: Second seeker makes a game
@@ -12,10 +12,10 @@ MUST NOT be paired with themselves.
 - **WHEN** user A has joined `5+3` and user B then joins `5+3`
 - **THEN** a 5+3 game between A and B is started, B's response carries its id, and A learns it from the queue
 
-#### Scenario: Oldest seeker first
+#### Scenario: A queue holds at most one seeker
 
-- **WHEN** A then C join `3+2`, and B joins `3+2` after them
-- **THEN** B is paired with A, and C keeps waiting
+- **WHEN** A joins `3+2` and B joins `3+2`
+- **THEN** A and B are paired at once, the queue is empty again, and the next seeker C waits alone
 
 #### Scenario: Not a preset
 

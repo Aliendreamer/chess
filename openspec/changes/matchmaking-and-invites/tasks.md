@@ -3,7 +3,7 @@ touches. 🐳 marks steps that need Docker or the live stack. Expected values in
 
 ## 1. Matchmaking
 
-- [ ] 1.1 Failing TestKit tests (`MatchmakingActorTests`, fake `IGameStarter`, seeded `Random`, fake clock and
+- [x] 1.1 Failing TestKit tests (`MatchmakingActorTests`, fake `IGameStarter`, seeded `Random`, fake clock and
       `TestScheduler`):
 
   - the second seeker is paired with the first (the joiner gets `Matched`, a `queue:5+3` frame is published);
@@ -16,9 +16,14 @@ touches. 🐳 marks steps that need Docker or the live stack. Expected values in
   - colours follow the seeded `Random`;
   - the frame payload carries the waiting count and the pairing.
 
-- [ ] 1.2 Implement `MatchmakingActor` (singleton registration on the backend role), messages, and
+- [x] 1.2 Implement `MatchmakingActor` (singleton registration on the backend role), messages, and
       `QueueLiveSource` (kind `queue`, preset ids only).
-- [ ] 1.3 Commit: `feat(backend): matchmaking queues per time control`.
+      _As built:_ pairing is immediate, so a queue holds at most one waiting seeker. "Oldest first" only matters if a
+      start fails and the opponent is put back at the head. The spec scenario that assumed several waiting seekers was
+      corrected. A pairing is remembered for 60 s, so a heartbeat that raced it answers with the same game instead of
+      queueing the player again.
+
+- [x] 1.3 Commit: `feat(backend): matchmaking queues per time control`.
 
 ## 2. Invites
 
