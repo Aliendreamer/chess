@@ -22,11 +22,7 @@ public sealed class ProjectionConflictTests(PostgresFixture pg) : IClassFixture<
 
     public async Task InitializeAsync()
     {
-        string name = "t" + Guid.NewGuid().ToString("N");
-        await ExecAsync(pg.ConnectionString, $"CREATE DATABASE {name}");
-        _db = new NpgsqlConnectionStringBuilder(pg.ConnectionString) { Database = name }.ConnectionString;
-        await using ProjectDbContext db = Context();
-        await db.Database.MigrateAsync();
+        _db = await pg.CreateDatabaseAsync();
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -193,12 +189,4 @@ public sealed class ProjectionConflictTests(PostgresFixture pg) : IClassFixture<
 
     private static string Event(string id, long seq) =>
         EventJson.Serialize(new EventEnvelope<Pinged>(EventTypes.Pinged, 1, id, seq, T0, new Pinged("x", 1, T0)));
-
-    private static async Task ExecAsync(string connectionString, string sql)
-    {
-        await using NpgsqlConnection c = new(connectionString);
-        await c.OpenAsync();
-        await using NpgsqlCommand cmd = new(sql, c);
-        await cmd.ExecuteNonQueryAsync();
-    }
 }

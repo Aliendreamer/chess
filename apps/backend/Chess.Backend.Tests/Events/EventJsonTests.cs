@@ -15,6 +15,25 @@ public sealed class EventJsonTests
         Assert.Equal(e, back);
     }
 
+    [Fact]
+    public void Reads_the_pinned_wire_format()
+    {
+        const string Wire = """{"type":"ping.pinged","v":1,"aggregateId":"p1","seq":7,"at":"2026-09-22T10:00:00+00:00","payload":{"text":"hello","userId":42,"at":"2026-09-22T10:00:00+00:00"}}""";
+        DateTimeOffset at = Time.Utc("2026-09-22T10:00:00Z");
+
+        Assert.True(EventJson.TryDeserialize(Wire, out EventEnvelope<Pinged>? e));
+        Assert.Equal(new EventEnvelope<Pinged>("ping.pinged", 1, "p1", 7, at, new Pinged("hello", 42, at)), e);
+    }
+
+    [Fact]
+    public void Writes_the_pinned_wire_format()
+    {
+        DateTimeOffset at = Time.Utc("2026-09-22T10:00:00Z");
+        Assert.Equal(
+            """{"type":"ping.pinged","v":1,"aggregateId":"p1","seq":7,"at":"2026-09-22T10:00:00+00:00","payload":{"text":"hello","userId":42,"at":"2026-09-22T10:00:00+00:00"}}""",
+            EventJson.Serialize(new EventEnvelope<Pinged>(EventTypes.Pinged, 1, "p1", 7, at, new Pinged("hello", 42, at))));
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("not json")]

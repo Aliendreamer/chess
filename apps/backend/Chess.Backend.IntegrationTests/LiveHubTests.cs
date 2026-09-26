@@ -1,8 +1,5 @@
 using System.Net;
-using System.Net.Http.Json;
-using System.Text.Json;
 using Chess.Backend.IntegrationTests.Fixtures;
-using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 
@@ -15,7 +12,6 @@ namespace Chess.Backend.IntegrationTests;
 [Collection(StackFixture.Collection)]
 public sealed class LiveHubTests(StackFixture stack)
 {
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(3);
 
     private sealed record PingPayload(string PingId, long Count, string? LastText, long LastSeq);
@@ -28,15 +24,12 @@ public sealed class LiveHubTests(StackFixture stack)
         ArgumentNullException.ThrowIfNull(stack);
         using CancellationTokenSource cts = new(TestTimeout);
         CancellationToken ct = cts.Token;
-        string id = $"it-{Guid.NewGuid():N}"[..20];
+        string id = Api.NewId();
         await using PingApiFactory app = new();
         using HttpClient client = await app.CreateReadyClientAsync(ct);
-        using (HttpResponseMessage first = await client.PostAsJsonAsync($"/api/pings/{id}", new { text = "before" }, Json, ct))
-        {
-            Assert.Equal(HttpStatusCode.OK, first.StatusCode);
-        }
+        await Api.PostPingAsync(client, id, "before", ct);
 
-        await using HubConnection relay = Connect(app, "Relay");
+        await using HubConnection relay = app.ConnectHub("Relay");
         TaskCompletionSource<Frame> pushed = new(TaskCreationOptions.RunContinuationsAsynchronously);
         relay.On<Frame>("frame", f => pushed.TrySetResult(f));
         await relay.StartAsync(ct);
@@ -46,10 +39,7 @@ public sealed class LiveHubTests(StackFixture stack)
         Assert.NotNull(snapshot);
         Assert.Equal(($"ping:{id}", 1L, "before"), (snapshot.Topic, snapshot.Seq, snapshot.Payload.LastText));
 
-        using (HttpResponseMessage second = await client.PostAsJsonAsync($"/api/pings/{id}", new { text = "after" }, Json, ct))
-        {
-            Assert.Equal(HttpStatusCode.OK, second.StatusCode);
-        }
+        await Api.PostPingAsync(client, id, "after", ct);
 
         Frame push = await pushed.Task.WaitAsync(TimeSpan.FromSeconds(15), ct);
         Assert.Equal((2L, "after"), (push.Seq, push.Payload.LastText));
@@ -59,22 +49,8 @@ public sealed class LiveHubTests(StackFixture stack)
         Assert.Equal(HubConnectionState.Connected, relay.State);
 
         // A plain user session (role User only) cannot negotiate the hub at all.
-        await using HubConnection user = Connect(app, roles: null);
+        await using HubConnection user = app.ConnectHub(roles: null);
         HttpRequestException refused = await Assert.ThrowsAsync<HttpRequestException>(() => user.StartAsync(ct));
         Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
     }
-
-    private static HubConnection Connect(PingApiFactory app, string? roles) =>
-        new HubConnectionBuilder()
-            .WithUrl(new Uri(app.Server.BaseAddress, "hub/live"), o =>
-            {
-                // TestServer has no socket to upgrade; long polling runs over its in-memory handler.
-                o.Transports = HttpTransportType.LongPolling;
-                o.HttpMessageHandlerFactory = _ => app.Server.CreateHandler();
-                if (roles is not null)
-                {
-                    o.Headers[PingApiFactory.RolesHeader] = roles;
-                }
-            })
-            .Build();
 }

@@ -15,6 +15,10 @@ public sealed class Base64UrlTests
         Assert.Equal(bytes, decoded);
     }
 
+    [Fact]
+    public void Encodes_with_the_url_alphabet_and_no_padding() =>
+        Assert.Equal("-_-_AAE", Base64Url.Encode([0xfb, 0xff, 0xbf, 0x00, 0x01]));
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

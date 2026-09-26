@@ -1,6 +1,5 @@
 using Akka.Persistence.Journal;
 using Chess.Backend.Akka.Outbox;
-using Chess.Backend.Akka.Ping;
 using Chess.Backend.Events;
 
 namespace Chess.Backend.Tests.Outbox;
@@ -17,7 +16,7 @@ public sealed class TopicTaggerTests
         Tagged tagged = Assert.IsType<Tagged>(_tagger.ToJournal(evt));
 
         Assert.Same(evt, tagged.Payload);
-        Assert.Equal([PingTopics.Kafka], tagged.Tags);
+        Assert.Equal(["game.events"], tagged.Tags);
     }
 
     [Fact]

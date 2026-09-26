@@ -59,5 +59,5 @@ public sealed class JournalConfigTests : IAsyncLifetime
 
     [Fact]
     public void Journal_lives_in_the_akka_schema() =>
-        Assert.Equal(Chess.Backend.Akka.AkkaHostingExtensions.PersistenceSchema, _config.GetString("akka.persistence.journal.sql.default.schema-name"));
+        Assert.Equal("akka", _config.GetString("akka.persistence.journal.sql.default.schema-name"));
 }

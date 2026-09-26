@@ -1,8 +1,5 @@
-using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Chess.Backend.IntegrationTests.Fixtures;
 
 namespace Chess.Backend.IntegrationTests;
@@ -18,39 +15,34 @@ public sealed class PingRoundTripTests
     // it to have run, not to read from it.
     public PingRoundTripTests(StackFixture stack) => ArgumentNullException.ThrowIfNull(stack);
 
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan ProjectionTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(3);
 
     private sealed record PingState(string PingId, long Count, string? LastText, DateTimeOffset? LastAt, long LastSeq);
-
-    private sealed record PingListItem(string PingId, long Count, string? LastText, DateTimeOffset? LastAt, long LastSeq, DateTimeOffset UpdatedAt);
-
-    private sealed record PingListResponse(IReadOnlyList<PingListItem> Items, string? NextCursor, int Limit);
 
     [Fact]
     public async Task A_ping_is_answered_by_the_actor_and_shows_up_in_the_read_model()
     {
         using CancellationTokenSource cts = new(TestTimeout);
         CancellationToken ct = cts.Token;
-        string id = $"it-{Guid.NewGuid():N}"[..20];
+        string id = Api.NewId();
         await using PingApiFactory app = new();
         using HttpClient client = await app.CreateReadyClientAsync(ct);
 
         HttpResponseMessage posted = await client.PostAsJsonAsync(
             $"/api/pings/{id}",
             new { text = "round trip" },
-            Json,
+            Api.Json,
             ct);
 
         Assert.Equal(HttpStatusCode.OK, posted.StatusCode);
-        PingState? state = await posted.Content.ReadFromJsonAsync<PingState>(Json, ct);
+        PingState? state = await posted.Content.ReadFromJsonAsync<PingState>(Api.Json, ct);
         Assert.NotNull(state);
         Assert.Equal(1, state.Count);
         Assert.Equal("round trip", state.LastText);
 
         // Eventually consistent on purpose: the row only appears once the Kafka consumer has projected it.
-        PingListItem projected = await Eventually(client, id, ct);
+        PingListItem projected = await Api.WaitForPingAsync(client, id, _ => true, ProjectionTimeout, ct);
         Assert.Equal(1, projected.Count);
         Assert.Equal("round trip", projected.LastText);
     }
@@ -60,18 +52,17 @@ public sealed class PingRoundTripTests
     {
         using CancellationTokenSource cts = new(TestTimeout);
         CancellationToken ct = cts.Token;
-        string[] ids = [.. Enumerable.Range(0, 3).Select(_ => $"it-{Guid.NewGuid():N}"[..20])];
+        string[] ids = [.. Enumerable.Range(0, 3).Select(_ => Api.NewId())];
         await using PingApiFactory app = new();
         using HttpClient client = await app.CreateReadyClientAsync(ct);
         foreach (string id in ids)
         {
-            HttpResponseMessage posted = await client.PostAsJsonAsync($"/api/pings/{id}", new { text = "paged" }, Json, ct);
-            Assert.Equal(HttpStatusCode.OK, posted.StatusCode);
+            await Api.PostPingAsync(client, id, "paged", ct);
         }
 
         foreach (string id in ids)
         {
-            _ = await Eventually(client, id, ct);
+            _ = await Api.WaitForPingAsync(client, id, _ => true, ProjectionTimeout, ct);
         }
 
         // limit=1 makes every row its own page, so the seek predicate (the row-value comparison) runs each hop.
@@ -80,7 +71,7 @@ public sealed class PingRoundTripTests
         do
         {
             string url = cursor is null ? "/api/pings?limit=1" : $"/api/pings?limit=1&cursor={Uri.EscapeDataString(cursor)}";
-            PingListResponse? page = await client.GetFromJsonAsync<PingListResponse>(url, Json, ct);
+            PingListResponse? page = await client.GetFromJsonAsync<PingListResponse>(url, Api.Json, ct);
             Assert.NotNull(page);
             Assert.Equal(1, page.Limit);
             walked.AddRange(page.Items);
@@ -101,16 +92,11 @@ public sealed class PingRoundTripTests
     {
         using CancellationTokenSource cts = new(TestTimeout);
         CancellationToken ct = cts.Token;
-        string id = $"it-{Guid.NewGuid():N}"[..20];
+        string id = Api.NewId();
         await using (PingApiFactory first = new())
         {
             using HttpClient client = await first.CreateReadyClientAsync(ct);
-            HttpResponseMessage posted = await client.PostAsJsonAsync(
-                $"/api/pings/{id}",
-                new { text = "before restart" },
-                Json,
-                ct);
-            Assert.Equal(HttpStatusCode.OK, posted.StatusCode);
+            await Api.PostPingAsync(client, id, "before restart", ct);
         }
 
         // Same containers, same journal, a brand new ActorSystem: the count must survive.
@@ -118,32 +104,11 @@ public sealed class PingRoundTripTests
         using HttpClient client2 = await second.CreateReadyClientAsync(ct);
         PingState? recovered = await client2.GetFromJsonAsync<PingState>(
             $"/api/pings/{id}/live",
-            Json,
+            Api.Json,
             ct);
 
         Assert.NotNull(recovered);
         Assert.Equal(1, recovered.Count);
         Assert.Equal("before restart", recovered.LastText);
-    }
-
-    private static async Task<PingListItem> Eventually(HttpClient client, string id, CancellationToken ct)
-    {
-        Stopwatch elapsed = Stopwatch.StartNew();
-        while (elapsed.Elapsed < ProjectionTimeout)
-        {
-            PingListResponse? list = await client.GetFromJsonAsync<PingListResponse>(
-                "/api/pings?limit=200",
-                Json,
-                ct);
-            PingListItem? found = list?.Items.FirstOrDefault(i => string.Equals(i.PingId, id, StringComparison.Ordinal));
-            if (found is not null)
-            {
-                return found;
-            }
-
-            await Task.Delay(TimeSpan.FromMilliseconds(500), ct);
-        }
-
-        throw new TimeoutException($"ping '{id}' never reached rm_pings within {ProjectionTimeout.TotalSeconds:F0}s");
     }
 }

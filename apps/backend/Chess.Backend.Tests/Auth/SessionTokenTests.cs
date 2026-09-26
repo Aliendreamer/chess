@@ -29,5 +29,9 @@ public sealed class SessionTokenTests
     }
 
     [Fact]
+    public void Hash_is_lower_case_sha256_hex_of_the_utf8_token() =>
+        Assert.Equal("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", SessionToken.Hash("abc"));
+
+    [Fact]
     public void Hash_rejects_empty() => Assert.Throws<ArgumentException>(() => SessionToken.Hash(string.Empty));
 }

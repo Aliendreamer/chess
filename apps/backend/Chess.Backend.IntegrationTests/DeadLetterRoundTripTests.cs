@@ -1,7 +1,5 @@
-using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json;
 using Chess.Backend.Data;
 using Chess.Backend.Events;
 using Chess.Backend.IntegrationTests.Fixtures;
@@ -24,7 +22,6 @@ namespace Chess.Backend.IntegrationTests;
 public sealed class DeadLetterRoundTripTests(StackFixture stack)
 {
     private const string Group = "it.flaky";
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(4);
 
@@ -59,8 +56,8 @@ public sealed class DeadLetterRoundTripTests(StackFixture stack)
     {
         using CancellationTokenSource cts = new(TestTimeout);
         CancellationToken ct = cts.Token;
-        string poison = NewId();
-        string healthy = NewId();
+        string poison = Api.NewId();
+        string healthy = Api.NewId();
         FlakyProjection.PoisonId = poison;
         FlakyProjection.Fixed = false;
         await using PingApiFactory app = new(services =>
@@ -71,17 +68,17 @@ public sealed class DeadLetterRoundTripTests(StackFixture stack)
         using HttpClient client = await app.CreateReadyClientAsync(ct);
 
         // seq 1 fails 5 times and is parked; seq 2 is parked behind the quarantine without a call.
-        await PostAsync(client, poison, "one", ct);
-        await EventuallyAsync(async () => (await ParkedAsync(poison, ct)).Count == 1, "seq 1 parked", ct);
-        await PostAsync(client, poison, "two", ct);
-        await EventuallyAsync(async () => (await ParkedAsync(poison, ct)).Count == 2, "seq 2 parked behind the quarantine", ct);
+        await Api.PostPingAsync(client, poison, "one", ct);
+        await Api.EventuallyAsync(async () => (await ParkedAsync(poison, ct)).Count == 1, "seq 1 parked", Timeout, ct);
+        await Api.PostPingAsync(client, poison, "two", ct);
+        await Api.EventuallyAsync(async () => (await ParkedAsync(poison, ct)).Count == 2, "seq 2 parked behind the quarantine", Timeout, ct);
         List<(long Seq, int Attempts)> parked = await ParkedAsync(poison, ct);
         Assert.Equal([(1L, 5), (2L, 0)], parked);
 
         // Another aggregate on the same topic and group still flows, and the group's offset reaches the end.
-        await PostAsync(client, healthy, "fine", ct);
-        await EventuallyAsync(async () => await PositionAsync(healthy, ct) == 1, "healthy aggregate applied", ct);
-        await EventuallyAsync(async () => await LagAsync(ct) == 0, "offset committed past the parked records", ct);
+        await Api.PostPingAsync(client, healthy, "fine", ct);
+        await Api.EventuallyAsync(async () => await PositionAsync(healthy, ct) == 1, "healthy aggregate applied", Timeout, ct);
+        await Api.EventuallyAsync(async () => await LagAsync(ct) == 0, "offset committed past the parked records", Timeout, ct);
 
         // The admin list shows them; a non-admin can neither list nor replay.
         using (HttpResponseMessage forbidden = await client.PostAsync(ReplayUri(poison), null, ct))
@@ -94,7 +91,7 @@ public sealed class DeadLetterRoundTripTests(StackFixture stack)
             list.Headers.Add(PingApiFactory.RolesHeader, "Admin");
             using HttpResponseMessage listed = await client.SendAsync(list, ct);
             Assert.Equal(HttpStatusCode.OK, listed.StatusCode);
-            DeadLetterPage? page = await listed.Content.ReadFromJsonAsync<DeadLetterPage>(Json, ct);
+            DeadLetterPage? page = await listed.Content.ReadFromJsonAsync<DeadLetterPage>(Api.Json, ct);
             Assert.Equal(poison, Assert.Single(page!.Items).AggregateId);
             Assert.NotNull(page.NextCursor); // two parked, limit 1: the keyset seek has somewhere to go
         }
@@ -111,20 +108,12 @@ public sealed class DeadLetterRoundTripTests(StackFixture stack)
         Assert.Empty(await ParkedAsync(poison, ct));
         Assert.Equal(2, await PositionAsync(poison, ct));
 
-        await PostAsync(client, poison, "three", ct);
-        await EventuallyAsync(async () => await PositionAsync(poison, ct) == 3, "seq 3 applied live after replay", ct);
+        await Api.PostPingAsync(client, poison, "three", ct);
+        await Api.EventuallyAsync(async () => await PositionAsync(poison, ct) == 3, "seq 3 applied live after replay", Timeout, ct);
         Assert.Empty(await ParkedAsync(poison, ct));
     }
 
-    private static string NewId() => $"it-{Guid.NewGuid():N}"[..20];
-
     private static string ReplayUri(string aggregateId) => $"/api/admin/projections/{Group}/dead-letters/{aggregateId}/replay";
-
-    private static async Task PostAsync(HttpClient client, string id, string text, CancellationToken ct)
-    {
-        using HttpResponseMessage posted = await client.PostAsJsonAsync($"/api/pings/{id}", new { text }, Json, ct);
-        Assert.Equal(HttpStatusCode.OK, posted.StatusCode);
-    }
 
     private static async Task<ReplayResponse> ReplayAsync(HttpClient client, string aggregateId, HttpStatusCode expected, CancellationToken ct)
     {
@@ -132,7 +121,7 @@ public sealed class DeadLetterRoundTripTests(StackFixture stack)
         request.Headers.Add(PingApiFactory.RolesHeader, "Admin");
         using HttpResponseMessage response = await client.SendAsync(request, ct);
         Assert.Equal(expected, response.StatusCode);
-        return (await response.Content.ReadFromJsonAsync<ReplayResponse>(Json, ct))!;
+        return (await response.Content.ReadFromJsonAsync<ReplayResponse>(Api.Json, ct))!;
     }
 
     private ProjectDbContext Db() =>
@@ -176,21 +165,5 @@ public sealed class DeadLetterRoundTripTests(StackFixture stack)
         }).Build();
         ct.ThrowIfCancellationRequested();
         return committed.Sum(p => probe.QueryWatermarkOffsets(p.TopicPartition, TimeSpan.FromSeconds(5)).High.Value - p.Offset.Value);
-    }
-
-    private static async Task EventuallyAsync(Func<Task<bool>> condition, string what, CancellationToken ct)
-    {
-        Stopwatch elapsed = Stopwatch.StartNew();
-        while (elapsed.Elapsed < Timeout)
-        {
-            if (await condition())
-            {
-                return;
-            }
-
-            await Task.Delay(TimeSpan.FromMilliseconds(250), ct);
-        }
-
-        throw new TimeoutException($"not within {Timeout.TotalSeconds:F0}s: {what}");
     }
 }

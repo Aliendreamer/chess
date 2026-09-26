@@ -5,7 +5,6 @@ using Chess.Backend.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql;
 
 namespace Chess.Backend.IntegrationTests;
 
@@ -20,14 +19,14 @@ public sealed class DeadLetterSchemaTests(PostgresFixture pg) : IClassFixture<Po
     [Fact]
     public async Task A_row_parked_before_the_uuid_migration_survives_it_with_the_same_id()
     {
-        string db = await CreateDatabaseAsync();
+        string db = await pg.CreateDatabaseAsync(migrate: false);
         await using (ProjectDbContext before = Context(db))
         {
             await before.GetService<IMigrator>().MigrateAsync("AddProjectionDeadLetters");
         }
 
         Guid id = Guid.CreateVersion7();
-        await ExecAsync(db, $"""
+        await PostgresFixture.ExecAsync(db, $"""
             INSERT INTO projection_dead_letters ("Id", "GroupId", "AggregateId", "Seq", "KafkaKey", "Value", "Attempts", "LastError", "FirstFailedAt", "ParkedAt")
             VALUES ('{id:N}', 'g', 'a', 7, 'a', '{"{}"}', 5, 'bug', now(), now())
             """);
@@ -42,9 +41,8 @@ public sealed class DeadLetterSchemaTests(PostgresFixture pg) : IClassFixture<Po
     [Fact]
     public async Task Keyset_pages_with_a_uuid_tiebreak_walk_every_row_once()
     {
-        string db = await CreateDatabaseAsync();
+        string db = await pg.CreateDatabaseAsync();
         await using ProjectDbContext ctx = Context(db);
-        await ctx.Database.MigrateAsync();
         // Same ParkedAt for three rows, so the uuid tiebreak is what separates the pages.
         List<ProjectionDeadLetter> rows = [.. Enumerable.Range(1, 5).Select(i => new ProjectionDeadLetter
         {
@@ -81,19 +79,4 @@ public sealed class DeadLetterSchemaTests(PostgresFixture pg) : IClassFixture<Po
 
     private static ProjectDbContext Context(string connectionString) =>
         new(new DbContextOptionsBuilder<ProjectDbContext>().UseNpgsql(connectionString).Options);
-
-    private async Task<string> CreateDatabaseAsync()
-    {
-        string name = "t" + Guid.NewGuid().ToString("N");
-        await ExecAsync(pg.ConnectionString, $"CREATE DATABASE {name}");
-        return new NpgsqlConnectionStringBuilder(pg.ConnectionString) { Database = name }.ConnectionString;
-    }
-
-    private static async Task ExecAsync(string connectionString, string sql)
-    {
-        await using NpgsqlConnection c = new(connectionString);
-        await c.OpenAsync();
-        await using NpgsqlCommand cmd = new(sql, c);
-        await cmd.ExecuteNonQueryAsync();
-    }
 }

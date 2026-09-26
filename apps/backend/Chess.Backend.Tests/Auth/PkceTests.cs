@@ -1,6 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
-
 namespace Chess.Backend.Tests.Auth;
 
 public sealed class PkceTests
@@ -10,12 +7,15 @@ public sealed class PkceTests
     {
         PkceValues pkce = Pkce.Create();
 
-        string expected = Base64Url.Encode(SHA256.HashData(Encoding.ASCII.GetBytes(pkce.Verifier)));
-        Assert.Equal(expected, pkce.Challenge);
+        Assert.Equal(Pkce.ComputeChallenge(pkce.Verifier), pkce.Challenge); // the algorithm itself is pinned below
         Assert.Equal(43, pkce.Verifier.Length);
         Assert.NotEmpty(pkce.Nonce);
         Assert.NotEqual(Pkce.Create().Verifier, pkce.Verifier);
     }
+
+    [Fact]
+    public void ComputeChallenge_matches_the_rfc_7636_appendix_b_vector() =>
+        Assert.Equal("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", Pkce.ComputeChallenge("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"));
 
     [Fact]
     public void Cookie_value_round_trips()

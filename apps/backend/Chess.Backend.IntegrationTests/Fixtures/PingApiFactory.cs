@@ -3,7 +3,9 @@ using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -116,6 +118,24 @@ public sealed class PingApiFactory(Action<IServiceCollection>? configureServices
         client.Dispose();
         throw new TimeoutException($"node not healthy within {ReadyTimeout.TotalSeconds:F0}s; last /health: {last}");
     }
+
+    /// <summary>
+    /// A SignalR client on the live hub, as the BFF would be; <paramref name="roles"/> are extra realm roles
+    /// (<c>Relay</c> to get in), null for a plain user. Long polling: TestServer has no socket to upgrade, so it
+    /// runs over the in-memory handler.
+    /// </summary>
+    public HubConnection ConnectHub(string? roles) =>
+        new HubConnectionBuilder()
+            .WithUrl(new Uri(Server.BaseAddress, "hub/live"), o =>
+            {
+                o.Transports = HttpTransportType.LongPolling;
+                o.HttpMessageHandlerFactory = _ => Server.CreateHandler();
+                if (roles is not null)
+                {
+                    o.Headers[RolesHeader] = roles;
+                }
+            })
+            .Build();
 
     internal sealed class TestAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,

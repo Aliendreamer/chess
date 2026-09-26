@@ -9,10 +9,10 @@ public sealed class KeysetTests
     private static readonly DateTimeOffset T0 = new(2026, 9, 23, 12, 0, 0, TimeSpan.Zero);
 
     [Theory]
-    [InlineData(0, Keyset.MaxLimit, Keyset.DefaultLimit)]
-    [InlineData(-3, Keyset.MaxLimit, Keyset.DefaultLimit)]
-    [InlineData(10, Keyset.MaxLimit, 10)]
-    [InlineData(10_000, Keyset.MaxLimit, Keyset.MaxLimit)]
+    [InlineData(0, 500, 50)]
+    [InlineData(-3, 500, 50)]
+    [InlineData(10, 500, 10)]
+    [InlineData(10_000, 500, 500)]
     [InlineData(999, 200, 200)]
     [InlineData(0, 20, 20)]
     public void ClampLimit_defaults_and_bounds(int requested, int max, int expected) =>
@@ -25,6 +25,19 @@ public sealed class KeysetTests
         Assert.True(KeysetCursor.TryDecode(cursor.Encode(), out KeysetCursor back));
         Assert.Equal(cursor, back);
         Assert.Equal(TimeSpan.Zero, back.At.Offset);
+    }
+
+    [Fact]
+    public void Defaults_are_fifty_per_page_and_at_most_five_hundred() =>
+        Assert.Equal((50, 500), (Keyset.DefaultLimit, Keyset.MaxLimit));
+
+    [Fact]
+    public void Cursor_encodes_utc_ticks_bar_id_as_base64url()
+    {
+        // base64url("639257616000000000|b"): cursors outlive a deploy, so the format is pinned.
+        Assert.Equal("NjM5MjU3NjE2MDAwMDAwMDAwfGI", new KeysetCursor(T0, "b").Encode());
+        Assert.True(KeysetCursor.TryDecode("NjM5MjU3NjE2MDAwMDAwMDAwfGI", out KeysetCursor back));
+        Assert.Equal(new KeysetCursor(T0, "b"), back);
     }
 
     [Fact]

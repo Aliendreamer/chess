@@ -36,7 +36,7 @@ public sealed class HubFanOutActorTests : TestKit
 
         LiveFrame frame = new("ping:p1", 1, new { any = "payload" });
         actor.Tell(frame);
-        AwaitAssert(() => group.Verify(g => g.SendCoreAsync(LiveTopics.FrameMethod, It.Is<object?[]>(a => a.Length == 1 && ReferenceEquals(a[0], frame)), It.IsAny<CancellationToken>()), Times.Once));
+        AwaitAssert(() => group.Verify(g => g.SendCoreAsync("frame", It.Is<object?[]>(a => a.Length == 1 && ReferenceEquals(a[0], frame)), It.IsAny<CancellationToken>()), Times.Once));
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class HubFanOutActorTests : TestKit
     {
         TestProbe mediator = CreateTestProbe();
         (Mock<IHubContext<LiveHub>> hub, Mock<IClientProxy> group) = Hub("ping:p1");
-        group.Setup(g => g.SendCoreAsync(LiveTopics.FrameMethod, It.IsAny<object?[]>(), It.IsAny<CancellationToken>()))
+        group.Setup(g => g.SendCoreAsync("frame", It.IsAny<object?[]>(), It.IsAny<CancellationToken>()))
             .Returns(Task.FromException(new InvalidOperationException("boom")));
 
         IActorRef actor = Sys.ActorOf(Props.Create(() => new HubFanOutActor(hub.Object, mediator.Ref)));
@@ -55,6 +55,6 @@ public sealed class HubFanOutActorTests : TestKit
 
         // The actor survived the faulted push and still handles further frames.
         actor.Tell(frame with { Seq = 2 });
-        AwaitAssert(() => group.Verify(g => g.SendCoreAsync(LiveTopics.FrameMethod, It.IsAny<object?[]>(), It.IsAny<CancellationToken>()), Times.Exactly(2)));
+        AwaitAssert(() => group.Verify(g => g.SendCoreAsync("frame", It.IsAny<object?[]>(), It.IsAny<CancellationToken>()), Times.Exactly(2)));
     }
 }

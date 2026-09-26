@@ -6,7 +6,6 @@ using Chess.Backend.Akka.Games;
 using Chess.Backend.Games;
 using Chess.Backend.IntegrationTests.Fixtures;
 using Confluent.Kafka;
-using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -19,7 +18,6 @@ namespace Chess.Backend.IntegrationTests;
 [Collection(StackFixture.Collection)]
 public sealed class GameFlowTests(StackFixture stack)
 {
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(4);
     private static readonly TimeControl Blitz = TimeControl.Presets.Single(tc => tc.ToString() == "5+3");
 
@@ -45,14 +43,7 @@ public sealed class GameFlowTests(StackFixture stack)
         Guid id = started.GameId;
 
         // A watcher on the live hub (as the BFF would be) gets the current view, then every move.
-        await using HubConnection hub = new HubConnectionBuilder()
-            .WithUrl(new Uri(app.Server.BaseAddress, "hub/live"), o =>
-            {
-                o.Transports = HttpTransportType.LongPolling;
-                o.HttpMessageHandlerFactory = _ => app.Server.CreateHandler();
-                o.Headers[PingApiFactory.RolesHeader] = "Relay";
-            })
-            .Build();
+        await using HubConnection hub = app.ConnectHub("Relay");
         List<Frame> pushed = [];
         hub.On<Frame>("frame", f =>
         {
@@ -74,13 +65,13 @@ public sealed class GameFlowTests(StackFixture stack)
         {
             using HttpResponseMessage r = await MoveAsync(client, id, $"it-{who}-{run}", uci, ct);
             Assert.Equal(HttpStatusCode.OK, r.StatusCode);
-            last = await r.Content.ReadFromJsonAsync<View>(Json, ct);
+            last = await r.Content.ReadFromJsonAsync<View>(Api.Json, ct);
         }
 
         Assert.Equal(("Ended", "0-1", "Checkmate", "Qh4#", 4), (last!.Status, last.Result, last.Reason, last.LastSan, last.Ply));
 
         // The hub pushed each move (and the ending) with rising seq, the last one being the final view.
-        await EventuallyAsync(() => Task.FromResult(Count(pushed) >= 5), "live frames for 4 moves + the ending", ct);
+        await Api.EventuallyAsync(() => Task.FromResult(Count(pushed) >= 5), "live frames for 4 moves + the ending", TimeSpan.FromSeconds(30), ct, TimeSpan.FromMilliseconds(200));
         List<Frame> frames;
         lock (pushed)
         {
@@ -124,7 +115,7 @@ public sealed class GameFlowTests(StackFixture stack)
         await using PingApiFactory _ = second;
         using HttpClient __ = again;
         using HttpResponseMessage live = await again.GetAsync(new Uri($"/api/games/{id:N}/live", UriKind.Relative), ct);
-        View view = (await live.Content.ReadFromJsonAsync<View>(Json, ct))!;
+        View view = (await live.Content.ReadFromJsonAsync<View>(Api.Json, ct))!;
 
         // Forgiven: only the time since recovery counts, not the 2 s of thinking nor the several seconds of restart.
         Assert.Equal("Playing", view.Status);
@@ -158,12 +149,12 @@ public sealed class GameFlowTests(StackFixture stack)
         me.Headers.Add(PingApiFactory.SubjectHeader, subject);
         using HttpResponseMessage r = await client.SendAsync(me, ct);
         Assert.Equal(HttpStatusCode.OK, r.StatusCode);
-        return (await r.Content.ReadFromJsonAsync<Me>(Json, ct))!.Id;
+        return (await r.Content.ReadFromJsonAsync<Me>(Api.Json, ct))!.Id;
     }
 
     private static async Task<HttpResponseMessage> MoveAsync(HttpClient client, Guid id, string subject, string uci, CancellationToken ct)
     {
-        HttpRequestMessage req = new(HttpMethod.Post, $"/api/games/{id:N}/moves") { Content = JsonContent.Create(new { uci }, options: Json) };
+        HttpRequestMessage req = new(HttpMethod.Post, $"/api/games/{id:N}/moves") { Content = JsonContent.Create(new { uci }, options: Api.Json) };
         req.Headers.Add(PingApiFactory.SubjectHeader, subject);
         return await client.SendAsync(req, ct);
     }
@@ -202,21 +193,5 @@ public sealed class GameFlowTests(StackFixture stack)
 
         consumer.Close();
         return seen;
-    }
-
-    private static async Task EventuallyAsync(Func<Task<bool>> condition, string what, CancellationToken ct)
-    {
-        Stopwatch elapsed = Stopwatch.StartNew();
-        while (elapsed.Elapsed < TimeSpan.FromSeconds(30))
-        {
-            if (await condition())
-            {
-                return;
-            }
-
-            await Task.Delay(TimeSpan.FromMilliseconds(200), ct);
-        }
-
-        throw new TimeoutException($"not within 30 s: {what}");
     }
 }

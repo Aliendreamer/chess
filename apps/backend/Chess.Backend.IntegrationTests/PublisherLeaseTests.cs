@@ -1,8 +1,5 @@
 using Chess.Backend.Akka.Outbox;
-using Chess.Backend.Data;
 using Chess.Backend.IntegrationTests.Fixtures;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace Chess.Backend.IntegrationTests;
 
@@ -19,8 +16,7 @@ public sealed class PublisherLeaseTests(PostgresFixture pg) : IClassFixture<Post
     public async Task InitializeAsync()
     {
         // A database per test: the seed depends on what the journal holds when the migration runs.
-        _db = await CreateDatabaseAsync();
-        await MigrateAsync(_db);
+        _db = await pg.CreateDatabaseAsync();
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -67,7 +63,7 @@ public sealed class PublisherLeaseTests(PostgresFixture pg) : IClassFixture<Post
         await lease.EnsureHeldAsync(CancellationToken.None);
 
         // What a network partition or a DB failover looks like from the holder's side.
-        await ExecAsync(pg.ConnectionString,
+        await PostgresFixture.ExecAsync(pg.ConnectionString,
             "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name = 'chess-journal-publisher'");
 
         await Assert.ThrowsAnyAsync<Exception>(() => lease.EnsureHeldAsync(CancellationToken.None));
@@ -79,33 +75,12 @@ public sealed class PublisherLeaseTests(PostgresFixture pg) : IClassFixture<Post
     [Fact]
     public async Task Existing_journal_is_seeded_at_its_head()
     {
-        string db = await CreateDatabaseAsync();
+        string db = await pg.CreateDatabaseAsync(migrate: false);
         // Shape of the Akka.Persistence.Sql journal as far as the seed cares: schema akka, bigint ordering.
-        await ExecAsync(db, "CREATE SCHEMA akka; CREATE TABLE akka.journal (ordering bigint); INSERT INTO akka.journal VALUES (3), (41), (7);");
-        await MigrateAsync(db);
+        await PostgresFixture.ExecAsync(db, "CREATE SCHEMA akka; CREATE TABLE akka.journal (ordering bigint); INSERT INTO akka.journal VALUES (3), (41), (7);");
+        await PostgresFixture.MigrateAsync(db);
 
         await using IPublisherLease lease = (await new PostgresPublisherLeaseProvider(db).TryAcquireAsync(CancellationToken.None))!;
         Assert.Equal(41, await lease.LoadOffsetAsync(Stream, CancellationToken.None));
-    }
-
-    private async Task<string> CreateDatabaseAsync()
-    {
-        string name = "t" + Guid.NewGuid().ToString("N");
-        await ExecAsync(pg.ConnectionString, $"CREATE DATABASE {name}");
-        return new NpgsqlConnectionStringBuilder(pg.ConnectionString) { Database = name }.ConnectionString;
-    }
-
-    private static async Task MigrateAsync(string connectionString)
-    {
-        await using ProjectDbContext db = new(new DbContextOptionsBuilder<ProjectDbContext>().UseNpgsql(connectionString).Options);
-        await db.Database.MigrateAsync();
-    }
-
-    private static async Task ExecAsync(string connectionString, string sql)
-    {
-        await using NpgsqlConnection c = new(connectionString);
-        await c.OpenAsync();
-        await using NpgsqlCommand cmd = new(sql, c);
-        await cmd.ExecuteNonQueryAsync();
     }
 }

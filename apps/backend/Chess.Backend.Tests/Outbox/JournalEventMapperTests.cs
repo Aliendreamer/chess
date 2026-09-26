@@ -17,9 +17,11 @@ public sealed class JournalEventMapperTests
 
         OutboxRecord r = Registry().Map("ping-abc", 3, evt);
 
-        Assert.Equal((PingTopics.Kafka, "ping:abc"), (r.Topic, r.Key));
-        // Byte-identical to the envelope the actor used to publish itself: type, v1, id without prefix, seq, at.
-        Assert.Equal(EventJson.Serialize(new EventEnvelope<Pinged>(EventTypes.Pinged, 1, "abc", 3, At, evt)), r.Json);
+        Assert.Equal(("game.events", "ping:abc"), (r.Topic, r.Key));
+        // The wire format, pinned as a literal: type, v1, id without prefix, seq, at, camelCase payload.
+        Assert.Equal(
+            """{"type":"ping.pinged","v":1,"aggregateId":"abc","seq":3,"at":"2026-09-23T10:00:00+00:00","payload":{"text":"hello","userId":42,"at":"2026-09-23T10:00:00+00:00"}}""",
+            r.Json);
     }
 
     [Fact]
