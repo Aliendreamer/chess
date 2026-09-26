@@ -54,3 +54,6 @@ apps/*/.claude/
 
 # Playwright sessions saved by apps/frontend/e2e/auth.setup.ts (live cookies)
 apps/frontend/e2e/.auth/
+
+# Local Stockfish download (GPLv3 binary, ~80 MB): never committed. Images will fetch a pinned release instead.
+apps/backend/chessEngine/

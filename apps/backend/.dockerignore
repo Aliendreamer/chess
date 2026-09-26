@@ -7,3 +7,4 @@ Chess.Backend.Tests/
 .mcp.json
 *.md
 .git/
+chessEngine/
