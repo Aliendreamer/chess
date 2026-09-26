@@ -55,7 +55,7 @@ internal static class Pgn
     private static string Termination(string reason) => reason switch
     {
         nameof(EndReason.Timeout) or nameof(EndReason.TimeoutVsInsufficientMaterial) => "time forfeit",
-        nameof(EndReason.Aborted) => "abandoned",
+        nameof(EndReason.Aborted) or nameof(EndReason.Abandonment) => "abandoned",
         _ => "normal",
     };
 

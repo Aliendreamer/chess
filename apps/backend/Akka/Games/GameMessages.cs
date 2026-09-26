@@ -24,6 +24,15 @@ internal sealed record AbortGame(Guid GameId, long UserId) : IGameCommand;
 
 internal sealed record GetGameView(Guid GameId) : IGameCommand;
 
+/// <summary>
+/// From the BFF through the hub (presence-and-abandonment D1–D2): <paramref name="UserId"/> has (or no longer has) a
+/// socket on this game at BFF process <paramref name="Instance"/>. Re-sent every 30 s as a lease; no reply.
+/// </summary>
+internal sealed record ReportPresence(Guid GameId, long UserId, string Instance, bool Present) : IGameCommand;
+
+/// <summary>The remaining player ends a game whose opponent has been away a minute: a win, or a draw (D5).</summary>
+internal sealed record ClaimAbandonment(Guid GameId, long UserId, bool Win) : IGameCommand;
+
 /// <summary>Written as its name (<c>"Playing"</c>) on the wire, over HTTP and the live relay alike.</summary>
 [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<GameStatus>))]
 internal enum GameStatus
@@ -48,6 +57,7 @@ internal sealed record GameRejected(Guid GameId, RejectionCode Code, string Reas
 /// <summary>
 /// What a command answers and what the live relay carries (the <c>game</c> kind's payload). Clocks are as of
 /// <see cref="ClockAt"/>, so a client can count the side to move down locally and correct itself on the next frame.
+/// <see cref="AbsentId"/> is a player counted away; <see cref="ClaimableBy"/> is who may end the game by abandonment.
 /// </summary>
 internal sealed record GameView(
     Guid GameId,
@@ -66,7 +76,9 @@ internal sealed record GameView(
     long? DrawOfferedBy,
     string? Result,
     string? Reason,
-    long Seq);
+    long Seq,
+    long? AbsentId = null,
+    long? ClaimableBy = null);
 
 /// <summary>
 /// Journal snapshot: the UCI move list, not a FEN, because threefold repetition needs the history (design D2).
@@ -86,4 +98,5 @@ internal sealed record GameSnapshot(
     string? Result,
     string? Reason,
     DateTimeOffset CreatedAt,
-    DateTimeOffset LastMoveAt);
+    DateTimeOffset LastMoveAt,
+    long[]? Absent = null);

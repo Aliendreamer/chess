@@ -72,6 +72,12 @@ Neither event goes to Kafka. They aren't mapped or tagged, as with invites. On `
 **60 s**. When it fires, the actor publishes a view with `claimableBy` set to the other player, if that player is
 present. If they aren't, both are gone, and `claimableBy` is set when one of them returns.
 
+As built: the claim opening is itself persisted as a marker event, `AbandonmentOffered(claimantId, at)`. A frame
+that only said "claimable now" would carry the previous frame's seq, and browsers drop frames that aren't newer.
+It's journal-only like the other two. Presence tracking also switches on only once a game gets its first report,
+or when its journal holds presence events. Games played only through the API (tests, `verify-part1.sh`) never
+count anyone as absent.
+
 ### D4. On recovery, absence restarts from the recovery time (forgiveness)
 
 After recovery, the in-memory presence is empty. It fills from the next `Present` (a refresh within 30 s, or at

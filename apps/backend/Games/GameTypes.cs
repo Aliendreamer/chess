@@ -29,6 +29,9 @@ internal enum EndReason
     /// <summary>The flag fell, but the opponent had no mating material: a draw (D18).</summary>
     TimeoutVsInsufficientMaterial,
     Aborted,
+
+    /// <summary>The opponent was away a minute and the remaining player claimed the win or a draw.</summary>
+    Abandonment,
 }
 
 internal sealed record GameOutcome(GameResult Result, EndReason Reason);

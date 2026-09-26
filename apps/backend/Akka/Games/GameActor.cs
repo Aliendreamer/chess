@@ -24,11 +24,24 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private const string FlagTimer = "flag";
     private const string AbortTimer = "abort";
     private const string PassivateTimer = "passivate";
+    private const string PresenceTimer = "presence";
 
     private readonly Guid _gameId;
     private readonly IActorRef? _mediator;
     private readonly TimeProvider _clock;
+    private readonly PresenceTimings _timings;
     private readonly ILoggingAdapter _log = Context.GetLogger();
+
+    // Presence (presence-and-abandonment D2): who reported each player present, per BFF instance, and when last.
+    // In memory only; after a recovery it refills from the BFF's next refresh.
+    private readonly Dictionary<long, Dictionary<string, DateTimeOffset>> _presence = [];
+    private readonly HashSet<long> _reported = [];
+    private DateTimeOffset _incarnatedAt;
+
+    // Persisted through PlayerLeft / PlayerReturned: who is away, and since when (restarted on recovery, D4).
+    private readonly Dictionary<long, DateTimeOffset> _absentSince = [];
+    private bool _tracking;
+    private long? _offeredTo;
 
     private bool _created;
     private long _white;
@@ -51,17 +64,28 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private DateTimeOffset? _turnStartedAt;
 
     public GameActor(Guid gameId, IActorRef? mediator, TimeProvider clock)
+        : this(gameId, mediator, clock, PresenceTimings.Default)
+    {
+    }
+
+    public GameActor(Guid gameId, IActorRef? mediator, TimeProvider clock, PresenceTimings timings)
     {
         ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(timings);
         _gameId = gameId;
         _mediator = mediator;
         _clock = clock;
+        _timings = timings;
+        _incarnatedAt = clock.GetUtcNow();
 
         Recover<GameCreated>(Apply);
         Recover<MoveMade>(e => Apply(e, replay: true));
         Recover<DrawOffered>(Apply);
         Recover<DrawDeclined>(Apply);
         Recover<GameEnded>(Apply);
+        Recover<PlayerLeft>(Apply);
+        Recover<PlayerReturned>(Apply);
+        Recover<AbandonmentOffered>(Apply);
         Recover<SnapshotOffer>(offer =>
         {
             if (offer.Snapshot is GameSnapshot s)
@@ -78,6 +102,9 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         Command<AcceptDraw>(HandleAcceptDraw);
         Command<DeclineDraw>(HandleDeclineDraw);
         Command<AbortGame>(HandleAbort);
+        Command<ReportPresence>(HandlePresence);
+        Command<ClaimAbandonment>(HandleClaim);
+        Command<PresenceCheck>(_ => EvaluatePresence());
         Command<FlagCheck>(_ => HandleFlagCheck());
         Command<AbortCheck>(_ => HandleAbortCheck());
         Command<PassivateNow>(_ => Context.Parent.Tell(new global::Akka.Cluster.Sharding.Passivate(PoisonPill.Instance)));
@@ -102,13 +129,25 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             : new GameOutcome(GameResult.Draw, EndReason.TimeoutVsInsufficientMaterial);
     }
 
-    /// <summary>Recovery (D14): the side to move gets its clock back as of the last event, and the turn restarts now.</summary>
+    /// <summary>
+    /// Recovery (D14): the side to move gets its clock back as of the last event, and the turn restarts now. Likewise an
+    /// absence restarts now (presence-and-abandonment D4), so an outage never brings a claim closer.
+    /// </summary>
     protected override void OnReplaySuccess()
     {
+        DateTimeOffset now = _clock.GetUtcNow();
         if (ClocksRunning)
         {
-            _turnStartedAt = _clock.GetUtcNow();
+            _turnStartedAt = now;
         }
+
+        _incarnatedAt = now;
+        foreach (long away in _absentSince.Keys.ToList())
+        {
+            _absentSince[away] = now;
+        }
+
+        _offeredTo = null;
 
         Rearm();
     }
@@ -295,6 +334,101 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         PersistAndReply([Ended(GameResult.None, EndReason.Aborted, _clock.GetUtcNow())]);
     }
 
+    private void HandlePresence(ReportPresence report)
+    {
+        // Fire-and-forget from the hub: spectators and finished games are simply ignored.
+        if (!_created || _status == GameStatus.Ended || (report.UserId != _white && report.UserId != _black))
+        {
+            return;
+        }
+
+        _tracking = true;
+        if (!_presence.TryGetValue(report.UserId, out Dictionary<string, DateTimeOffset>? byInstance))
+        {
+            _presence[report.UserId] = byInstance = [];
+        }
+
+        if (report.Present)
+        {
+            byInstance[report.Instance] = _clock.GetUtcNow();
+        }
+        else
+        {
+            byInstance.Remove(report.Instance);
+        }
+
+        _reported.Add(report.UserId);
+        EvaluatePresence();
+    }
+
+    private void HandleClaim(ClaimAbandonment cmd)
+    {
+        if (Refuse(cmd.UserId) is { } refused)
+        {
+            Reply(refused);
+            return;
+        }
+
+        DateTimeOffset now = _clock.GetUtcNow();
+        if (ClaimableBy(now) != cmd.UserId)
+        {
+            Reply(Rejected(RejectionCode.Conflict, _absentSince.ContainsKey(Opponent(cmd.UserId))
+                ? "Your opponent has not been away for a minute yet."
+                : "Your opponent is here."));
+            return;
+        }
+
+        GameResult result = cmd.Win ? SideOf(cmd.UserId).WinFor() : GameResult.Draw;
+        PersistAndReply([Ended(result, EndReason.Abandonment, now)]);
+    }
+
+    /// <summary>
+    /// Persists what changed about presence: a player gone or back (D3), or the claim opening (a marker, so its frame
+    /// has a newer seq). Runs on every report and on the presence timer.
+    /// </summary>
+    private void EvaluatePresence()
+    {
+        if (!PresenceActive)
+        {
+            return;
+        }
+
+        DateTimeOffset now = _clock.GetUtcNow();
+        List<object> events = [];
+        foreach (long player in (long[])[_white, _black])
+        {
+            bool present = IsPresent(player, now);
+            bool away = _absentSince.ContainsKey(player);
+            if (!present && !away)
+            {
+                events.Add(new PlayerLeft(player, now));
+            }
+            else if (present && away)
+            {
+                events.Add(new PlayerReturned(player, now));
+            }
+        }
+
+        if (events.Count == 0 && ClaimableBy(now) is { } claimant && _offeredTo != claimant)
+        {
+            events.Add(new AbandonmentOffered(claimant, now));
+        }
+
+        if (events.Count == 0)
+        {
+            Rearm();
+            return;
+        }
+
+        PersistAll(events, e =>
+        {
+            ApplyLive(e);
+            Publish();
+            MaybeSnapshot();
+            Rearm();
+        });
+    }
+
     private void HandleFlagCheck()
     {
         if (_status == GameStatus.Ended || !ClocksRunning)
@@ -383,6 +517,15 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             case GameEnded g:
                 Apply(g);
                 break;
+            case PlayerLeft l:
+                Apply(l);
+                break;
+            case PlayerReturned r:
+                Apply(r);
+                break;
+            case AbandonmentOffered o:
+                Apply(o);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown game event {e.GetType().Name}.");
         }
@@ -450,6 +593,20 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _turnStartedAt = null;
     }
 
+    private void Apply(PlayerLeft e)
+    {
+        _tracking = true;
+        _absentSince[e.UserId] = e.At;
+    }
+
+    private void Apply(PlayerReturned e)
+    {
+        _absentSince.Remove(e.UserId);
+        _offeredTo = null;
+    }
+
+    private void Apply(AbandonmentOffered e) => _offeredTo = e.ClaimantId;
+
     private void Restore(GameSnapshot s)
     {
         _created = true;
@@ -470,6 +627,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _createdAt = s.CreatedAt;
         _lastMoveAt = s.LastMoveAt;
         _turnStartedAt = _status == GameStatus.Playing && Ply >= 2 ? s.LastMoveAt : null;
+        foreach (long away in s.Absent ?? [])
+        {
+            _tracking = true;
+            _absentSince[away] = s.LastMoveAt; // restarted in OnReplaySuccess
+        }
     }
 
     private void MaybeSnapshot()
@@ -482,7 +644,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _eventsSinceSnapshot = 0;
         SaveSnapshot(new GameSnapshot(
             _white, _black, _timeControl.ToString(), [.. _rules.Moves], _lastSan, _whiteMs, _blackMs, _status,
-            _drawOfferedBy, _drawBlocked, _result, _reason, _createdAt, _lastMoveAt));
+            _drawOfferedBy, _drawBlocked, _result, _reason, _createdAt, _lastMoveAt, [.. _absentSince.Keys]));
     }
 
     private void Publish() => _mediator?.Tell(new Publish(LiveTopics.PubSub, new LiveFrame(Topic, LastSequenceNr, View())));
@@ -538,11 +700,105 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         if (ClocksRunning)
         {
             Timers.StartSingleTimer(FlagTimer, FlagCheck.Instance, TimeSpan.FromMilliseconds(RemainingMs(now)));
-            return;
+        }
+        else
+        {
+            TimeSpan untilAbort = FirstMoveDeadline - now;
+            Timers.StartSingleTimer(AbortTimer, AbortCheck.Instance, untilAbort > TimeSpan.Zero ? untilAbort : TimeSpan.Zero);
         }
 
-        TimeSpan untilAbort = FirstMoveDeadline - now;
-        Timers.StartSingleTimer(AbortTimer, AbortCheck.Instance, untilAbort > TimeSpan.Zero ? untilAbort : TimeSpan.Zero);
+        if (NextPresenceCheck(now) is { } at)
+        {
+            Timers.StartSingleTimer(PresenceTimer, PresenceCheck.Instance, at > now ? at - now : TimeSpan.Zero);
+        }
+    }
+
+    // ---- presence (presence-and-abandonment) -------------------------------------------------------------------
+
+    /// <summary>Absence counts only while playing after both first moves, and only once the BFF reports on this game.</summary>
+    private bool PresenceActive => _tracking && _status == GameStatus.Playing && Ply >= 2;
+
+    /// <summary>
+    /// Present while any BFF instance reported the player within the lease. A player not reported since this
+    /// incarnation began keeps their persisted state for one lease: absent stays absent, present is presumed (D4).
+    /// </summary>
+    private bool IsPresent(long player, DateTimeOffset now)
+    {
+        if (_presence.TryGetValue(player, out Dictionary<string, DateTimeOffset>? byInstance)
+            && byInstance.Values.Any(seen => now - seen < _timings.Lease))
+        {
+            return true;
+        }
+
+        return !_reported.Contains(player) && !_absentSince.ContainsKey(player) && now - _incarnatedAt < _timings.Lease;
+    }
+
+    /// <summary>The present player may claim once the other has been away for <see cref="PresenceTimings.AbandonAfter"/>.</summary>
+    private long? ClaimableBy(DateTimeOffset now)
+    {
+        if (!PresenceActive || _absentSince.Count != 1)
+        {
+            return null; // nobody away, or both away: nobody can claim
+        }
+
+        (long away, DateTimeOffset since) = _absentSince.Single();
+        return now - since >= _timings.AbandonAfter ? Opponent(away) : null;
+    }
+
+    private long? AbsentId => _status == GameStatus.Ended || _absentSince.Count == 0
+        ? null
+        : _absentSince.ContainsKey(_white) ? _white : _black;
+
+    /// <summary>When presence next needs a look: a lease running out, a presumption ending, a claim opening.</summary>
+    private DateTimeOffset? NextPresenceCheck(DateTimeOffset now)
+    {
+        if (!PresenceActive)
+        {
+            return null;
+        }
+
+        DateTimeOffset? next = null;
+        void Consider(DateTimeOffset at) => next = next is null || at < next ? at : next;
+
+        foreach (long player in (long[])[_white, _black])
+        {
+            bool present = IsPresent(player, now);
+            if (_absentSince.TryGetValue(player, out DateTimeOffset since))
+            {
+                if (present)
+                {
+                    Consider(now);
+                }
+                else if (since + _timings.AbandonAfter > now)
+                {
+                    Consider(since + _timings.AbandonAfter);
+                }
+                else if (ClaimableBy(now) is { } claimant && _offeredTo != claimant)
+                {
+                    Consider(now); // due and not yet offered (never when both are away: nobody can claim)
+                }
+
+                continue;
+            }
+
+            if (!present)
+            {
+                Consider(now);
+                continue;
+            }
+
+            if (_presence.TryGetValue(player, out Dictionary<string, DateTimeOffset>? byInstance) && byInstance.Count > 0)
+            {
+                Consider(byInstance.Values.Max() + _timings.Lease);
+            }
+
+            if (!_reported.Contains(player))
+            {
+                Consider(_incarnatedAt + _timings.Lease);
+            }
+        }
+
+        return next;
     }
 
     private long PlayerToMove => _rules.SideToMove == Side.White ? _white : _black;
@@ -555,7 +811,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _gameId, _white, _black, _timeControl.ToString(), _status, _rules.Fen, Ply, _rules.SideToMove.ToString(),
         _rules.Moves.Count > 0 ? _rules.Moves[^1] : null, _lastSan,
         CurrentMs(Side.White, _clock.GetUtcNow()), CurrentMs(Side.Black, _clock.GetUtcNow()), _clock.GetUtcNow(),
-        _drawOfferedBy, _result, _reason, LastSequenceNr);
+        _drawOfferedBy, _result, _reason, LastSequenceNr, AbsentId, ClaimableBy(_clock.GetUtcNow()));
 
     private GameRejected NotFound() => Rejected(RejectionCode.NotFound, "No such game.");
 
@@ -582,4 +838,18 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     {
         public static readonly PassivateNow Instance = new();
     }
+
+    private sealed class PresenceCheck
+    {
+        public static readonly PresenceCheck Instance = new();
+    }
+}
+
+/// <summary>
+/// How long a player may be away before the claim opens, and how long a BFF instance's report lasts without a refresh
+/// (presence-and-abandonment D2–D3). Configurable so integration tests need not wait minutes.
+/// </summary>
+internal sealed record PresenceTimings(TimeSpan AbandonAfter, TimeSpan Lease)
+{
+    public static readonly PresenceTimings Default = new(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(75));
 }

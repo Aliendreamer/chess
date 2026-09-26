@@ -38,3 +38,19 @@ internal sealed record GameEnded(
     [property: JsonPropertyName("whiteMs")] long WhiteMs,
     [property: JsonPropertyName("blackMs")] long BlackMs,
     [property: JsonPropertyName("at")] DateTimeOffset At);
+
+// Presence transitions (presence-and-abandonment D3): journal only, never tagged for Kafka — no read model needs them.
+
+/// <summary>Every BFF instance lost <see cref="UserId"/> (last socket closed, or the lease ran out).</summary>
+internal sealed record PlayerLeft(
+    [property: JsonPropertyName("userId")] long UserId,
+    [property: JsonPropertyName("at")] DateTimeOffset At);
+
+internal sealed record PlayerReturned(
+    [property: JsonPropertyName("userId")] long UserId,
+    [property: JsonPropertyName("at")] DateTimeOffset At);
+
+/// <summary>The claim opened for <see cref="ClaimantId"/>: persisted so the frame that says so has a newer seq.</summary>
+internal sealed record AbandonmentOffered(
+    [property: JsonPropertyName("claimantId")] long ClaimantId,
+    [property: JsonPropertyName("at")] DateTimeOffset At);

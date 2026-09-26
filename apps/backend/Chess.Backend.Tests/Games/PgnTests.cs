@@ -45,6 +45,8 @@ public sealed class PgnTests
     [InlineData("1-0", "Timeout", "time forfeit")]
     [InlineData("1/2-1/2", "TimeoutVsInsufficientMaterial", "time forfeit")]
     [InlineData("*", "Aborted", "abandoned")]
+    [InlineData("1-0", "Abandonment", "abandoned")]
+    [InlineData("1/2-1/2", "Abandonment", "abandoned")]
     [InlineData("0-1", "Resignation", "normal")]
     [InlineData("1/2-1/2", "ThreefoldRepetition", "normal")]
     public void Termination_follows_the_end_reason(string result, string reason, string termination) =>
