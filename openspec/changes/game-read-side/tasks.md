@@ -17,12 +17,16 @@ touches. 🐳 marks steps that need Docker or the live stack.
 
 ## 2. Read models and projection
 
+- [ ] 2.0 Failing tests (`UserProvisioningServiceTests`): a new user stores `preferred_username` as `Username`;
+      an existing user with a null `Username` gets it filled on the next provisioning; an existing name is not
+      overwritten by an empty claim. Then add `users.Username` (migration `AddUserUsername`) and pass the claim
+      through `UserProvisioningPreProcessor`.
 - [ ] 2.1 Entities `RmGame`, `RmGamePlayer`, `RmMove` with configurations: uuid key, `LastSeq` as a
       concurrency token, and the D2 indexes. Map them in `ProjectDbContext` and `ReadDbContext`. Migration
       `AddGameReadModels`.
 - [ ] 2.2 Failing tests (`GameProjectionTests`, InMemory):
 
-  - `game.created` inserts the game and both player rows;
+  - `game.created` inserts the game and both player rows, with both names snapshotted (and `Player {id}` when a name is missing);
   - each move adds one `rm_moves` row and updates ply, last FEN and `UpdatedAt`;
   - a redelivered move is skipped;
   - seq 7 after 5 throws `ProjectionGapException`;

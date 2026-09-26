@@ -27,6 +27,10 @@ In the code:
   All three are written in one `SaveChanges`, under the Part 0 guarantees: the `IdempotencyGuard` watermark as
   a concurrency token, the dead-letter path, and stalling on a gap.
 
+- **Display names**: `users.Username` from Keycloak `preferred_username` (unique in the realm, not a real name),
+  filled on first login and backfilled on the next login for existing users. `GameProjection` snapshots both
+  players' names onto the game when `game.created` is projected, so PGN keeps the names as they were when the
+  game was played, and lists need no join. The fallback is `Player {id}`.
 - **PGN builder**: `Games/Pgn.cs` builds headers and movetext from the stored SAN list without the rules
   library. It runs when `GameEnded` is projected.
 - **Read endpoints**, served from the replica (`ReadDbContext`) and keyset-paged:
@@ -45,7 +49,7 @@ In the code:
 - `open` games waiting for an opponent (change 3 adds that status to `rm_games`).
 - Presence (change 4).
 - UI and BFF loaders, which follow the Design work.
-- Ratings (D21), and player display names (open question below).
+- Ratings (D21) and editable profiles; names come from Keycloak.
 
 **ROADMAP decisions**: implements D19 and the PGN half of D22. Depends on D11 (uuid ids) and the Part 0
 projection guarantees (`event-publishing`).
@@ -66,6 +70,7 @@ that's specified here.
 ## Impact
 
 - **Backend**:
+  - `users.Username` (migration) and `UserProvisioningService` filling and backfilling it;
   - `Projections/GameProjection.cs`, `Games/Pgn.cs`;
   - `Data/ReadModels/RmGame`, `RmGamePlayer`, `RmMove`, with configurations and a migration;
   - `ReadDbContext` maps the three tables;

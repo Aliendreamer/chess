@@ -41,11 +41,11 @@ unknown `type` is ignored, like a foreign event.
 
 ### D2. Tables
 
-| Table             | Key                | Columns                                                                                                                                            | Indexes                                      |
-| ----------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| `rm_games`        | `GameId` uuid      | WhiteId, BlackId, TimeControl, Status (`playing` / `ended`), Result?, Reason?, Ply, LastFen, CreatedAt, EndedAt?, UpdatedAt, LastSeq (token), Pgn? | `(Status, UpdatedAt, GameId)` for the lists  |
-| `rm_game_players` | `(UserId, GameId)` | Color, OpponentId, CreatedAt                                                                                                                       | `(UserId, CreatedAt, GameId)` for "my games" |
-| `rm_moves`        | `(GameId, Ply)`    | Uci, San, FenAfter, WhiteMs, BlackMs, At                                                                                                           | the PK serves ply order                      |
+| Table             | Key                | Columns                                                                                                                                                                  | Indexes                                      |
+| ----------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| `rm_games`        | `GameId` uuid      | WhiteId, WhiteName, BlackId, BlackName, TimeControl, Status (`playing` / `ended`), Result?, Reason?, Ply, LastFen, CreatedAt, EndedAt?, UpdatedAt, LastSeq (token), Pgn? | `(Status, UpdatedAt, GameId)` for the lists  |
+| `rm_game_players` | `(UserId, GameId)` | Color, OpponentId, OpponentName, CreatedAt                                                                                                                               | `(UserId, CreatedAt, GameId)` for "my games" |
+| `rm_moves`        | `(GameId, Ply)`    | Uci, San, FenAfter, WhiteMs, BlackMs, At                                                                                                                                 | the PK serves ply order                      |
 
 - **Status:** a game is `playing` from creation. An aborted game is `ended` with result `*`.
 - **"Most recently active":** `UpdatedAt` is the time of the last event. The playing list orders by it, and
@@ -66,7 +66,7 @@ When `game.ended` is projected, the moves already on the primary are read in ply
 it's stored on `rm_games.Pgn` in the same transaction. This is ROADMAP D22's "generated when a game ends,
 stored with the finished game". It doesn't use the rules library, so PGN stays independent of Gera.Chess.
 
-Player names are `Player {users.id}` until profiles exist (open question 1). Emails never go into PGN.
+The White and Black tags use the names snapshotted on the game (D6). Emails and full names never go into PGN.
 
 ### D4. Read endpoints on the replica
 
@@ -93,6 +93,21 @@ Right after an ending, the replica may not have it yet, so the actor answers. It
 passivates only 1 minute after the end. The row lacks only `DrawOfferedBy` (always null once ended) and
 `ClockAt` (set to `EndedAt`), so the view is complete.
 
+### D6. Display names: Keycloak username, snapshotted per game
+
+`users` gains `Username` (nullable text) from the `preferred_username` claim. It's unique in the realm and chosen
+by the user; `FullName` is a real name and stays private. `UserProvisioningService` sets it on insert, and on a
+later login fills it if it's null. The provisioning cache means that happens at most once per 10 minutes per
+user, which is cheap.
+
+When `game.created` is projected, `GameProjection` reads both users' names on the primary, in the same
+transaction, and stores `WhiteName` / `BlackName` on `rm_games` and `OpponentName` on each `rm_game_players` row.
+This snapshot is deliberate. A PGN is a historical record, so a rename mustn't rewrite old games, and the lists
+need no join to `users`. If a name is null, `Player {id}` is used.
+
+_Alternative:_ joining `users` at read time. Rejected: names would change retroactively, and the replica lists
+would need a second table's replication to line up.
+
 ## Risks / Trade-offs
 
 - [Lists lag the game by the replication delay] Measured ~250–500 ms in Part 0. → That's acceptable for lists.
@@ -111,5 +126,5 @@ image; the tables are then simply unused.
 
 ## Open Questions
 
-1. **Player display names** in PGN and lists: until profiles exist, `Player {id}`. Do we want a `DisplayName`
-   on `users` (from Keycloak `preferred_username`?) in this change, or later?
+None. Display names were settled with the owner on 2026-09-26: the Keycloak username, snapshotted per game
+(D6).

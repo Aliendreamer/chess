@@ -55,7 +55,7 @@ both clocks. An unknown game MUST be 404. Any signed-in user MAY read any game (
 When `GameEnded` is projected, the game's PGN SHALL be built from its moves' SAN and stored on `rm_games`.
 `GET /api/games/{id}/pgn` MUST return it as `application/x-chess-pgn`, with the seven-tag roster (Event, Site,
 Date, Round, White, Black, Result) plus `TimeControl` and `Termination`, and movetext ending in the result. An
-unfinished game's PGN MUST be 404. Player names are `Player {users.id}` until profiles exist.
+unfinished game's PGN MUST be 404.
 
 #### Scenario: Fool's mate
 
@@ -72,3 +72,21 @@ projection has caught up.
 
 - **WHEN** a signed-in user opens the live page of a game that ended yesterday
 - **THEN** the snapshot is the ended view and the game's actor is not started
+
+### Requirement: Players are shown by their username, as it was when the game was played
+
+Each user SHALL have a display name taken from the Keycloak `preferred_username` claim. It's set when the user
+is first provisioned and backfilled on a later login if missing. When a game is projected as created, both
+players' display names MUST be stored with the game and used in every list, summary and PGN for that game. A
+later rename MUST NOT change past games. A player with no display name MUST be shown as `Player {users.id}`.
+Emails and full names MUST never appear in any game read model or PGN.
+
+#### Scenario: Names in a finished game
+
+- **WHEN** `testuser` (White) and `player` (Black) finish a game
+- **THEN** its PGN has `[White "testuser"]` and `[Black "player"]`, and "my games" shows each the other's name
+
+#### Scenario: A user without a username
+
+- **WHEN** a player's `users.Username` is empty
+- **THEN** the game shows them as `Player {id}`
