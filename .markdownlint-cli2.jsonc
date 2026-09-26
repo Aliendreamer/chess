@@ -19,7 +19,8 @@
     ".github/**",
     ".superpowers/**",
     ".serena/**",
-    "openspec/**"
+    "openspec/**",
+    "Design/**"
   ],
   "config": {
     "default": true,

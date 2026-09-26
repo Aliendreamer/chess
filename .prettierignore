@@ -35,3 +35,6 @@ apps/frontend/src/routeTree.gen.ts
 # Playwright run artifacts (gitignored, but prettier does not read .gitignore).
 test-results/
 playwright-report/
+
+# Owner's Design workspace (UI prompts, kits, mockups): used for design, not authored to repo gates.
+Design/

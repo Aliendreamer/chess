@@ -16,7 +16,8 @@
     "**/TestResults/**",
     "**/Migrations/**",
     "**/*.gen.ts",
-    "**/*.slnx"
+    "**/*.slnx",
+    "Design/**"
   ],
   "words": [
     "acks",
