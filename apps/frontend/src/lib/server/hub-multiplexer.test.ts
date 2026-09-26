@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { HUB_UNAVAILABLE, createHubMultiplexer } from './hub-multiplexer'
-import type { HubPort, LocalSocket } from './hub-multiplexer'
+import { createHubMultiplexer } from './hub-multiplexer'
+import type { HubPort } from './hub-multiplexer'
 import type { LiveFrame } from '../live'
-
-const frame = (topic: string, seq: number): LiveFrame => ({ topic, seq, payload: { seq } })
+import { frame, fakeSocket as socket } from '#/test/live-fakes'
 
 /** A scriptable stand-in for the SignalR connection. */
 function fakeHub(opts: { failStart?: boolean } = {}) {
@@ -30,16 +29,6 @@ function fakeHub(opts: { failStart?: boolean } = {}) {
     reconnect: () => onReconnected(),
     close: () => onClose(),
   }
-}
-
-function socket() {
-  const sent: Array<unknown> = []
-  const s: LocalSocket & { sent: Array<unknown>; closed?: [number, string] } = {
-    sent,
-    send: (data) => sent.push(JSON.parse(data)),
-    close: (code, reason) => (s.closed = [code, reason]),
-  }
-  return s
 }
 
 const invokes = (port: HubPort) => (port.invoke as ReturnType<typeof vi.fn>).mock.calls
@@ -128,7 +117,7 @@ describe('HubMultiplexer', () => {
     first.close()
 
     expect(a.sent.at(-1)).toEqual({ kind: 'error', message: 'live connection lost' })
-    expect(a.closed).toEqual([HUB_UNAVAILABLE, 'hub closed'])
+    expect(a.closed).toEqual([1011, 'hub closed'])
     expect(mux.topicCount()).toBe(0)
 
     await mux.subscribe('ping:a', socket())
@@ -145,7 +134,7 @@ describe('HubMultiplexer', () => {
     await mux.subscribe('ping:a', a)
 
     expect(a.sent).toEqual([{ kind: 'error', message: 'refused' }])
-    expect(a.closed).toEqual([HUB_UNAVAILABLE, 'hub unavailable'])
+    expect(a.closed).toEqual([1011, 'hub unavailable'])
     expect(mux.topicCount()).toBe(0)
 
     const b = socket()

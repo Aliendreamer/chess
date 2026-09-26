@@ -70,6 +70,10 @@ describe('settle', () => {
 })
 
 describe('hasRole', () => {
+  it('names the backend realm role exactly', () => {
+    expect(ADMIN_ROLE).toBe('Admin')
+  })
+
   it('checks roles and tolerates null', () => {
     expect(hasRole({ ...me, roles: [ADMIN_ROLE] }, ADMIN_ROLE)).toBe(true)
     expect(hasRole(me, ADMIN_ROLE)).toBe(false)

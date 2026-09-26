@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { applyFrame, parseSocketMessage } from './live'
-import type { LiveFrame } from './live'
+import { frame } from '#/test/live-fakes'
 
-const f = (seq: number): LiveFrame => ({ topic: 'ping:p1', seq, payload: { seq } })
+const f = (seq: number) => frame('ping:p1', seq)
 
 describe('parseSocketMessage', () => {
   it('accepts a frame and an error', () => {

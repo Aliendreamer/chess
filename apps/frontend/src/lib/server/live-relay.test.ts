@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { BAD_TOPIC, UNAUTHENTICATED, openRelay, parseLiveUrl } from './live-relay'
+import { HUB_UNAVAILABLE } from './hub-multiplexer'
 import type { RelayDeps } from './live-relay'
-import type { HubMultiplexer, LocalSocket } from './hub-multiplexer'
+import type { HubMultiplexer } from './hub-multiplexer'
+import { fakeSocket as socket } from '#/test/live-fakes'
 
 describe('parseLiveUrl', () => {
   it('accepts the game kind with an N-form guid id', () => {
@@ -35,14 +37,6 @@ describe('parseLiveUrl', () => {
     expect(parseLiveUrl(url)).toBeNull()
   })
 })
-
-function socket() {
-  const s: LocalSocket & { closed?: [number, string] } = {
-    send: vi.fn(),
-    close: (code, reason) => (s.closed = [code, reason]),
-  }
-  return s
-}
 
 function harness(session: Array<boolean | Error>) {
   const mux: HubMultiplexer = {
@@ -153,6 +147,6 @@ describe('openRelay', () => {
   })
 
   it('exposes the close codes the browser sees', () => {
-    expect([BAD_TOPIC, UNAUTHENTICATED]).toEqual([4400, 4401])
+    expect([BAD_TOPIC, UNAUTHENTICATED, HUB_UNAVAILABLE]).toEqual([4400, 4401, 1011])
   })
 })
