@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding three apps:
+An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding four apps:
 
 - `apps/backend` — .NET 10 API (`Chess.Backend`): FastEndpoints + EF Core/Npgsql, Keycloak PKCE login,
   **server-owned opaque cookie session** (`mp_sid`; tokens never leave the server; logout revokes).
@@ -12,6 +12,8 @@ An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding three apps:
 - `apps/frontend` — TanStack Start SSR app (`chess-frontend`) that **is the BFF**: proxies `/api/auth/*`
   server-to-server, re-homes cookies, fetches page data via server functions. The browser only ever talks
   to `app.chess.localhost`. Built from the `fe-ssr-tanstack` prompt.
+- `apps/engine` — .NET 10 worker (`Chess.Engine`): Stockfish 19 behind Kafka for games against the computer,
+  outside the Akka cluster. Its image bakes in the Stockfish archive from `apps/engine/stockfish/` (git-ignored, GPLv3).
 - `apps/proxy` — nginx edge for deployment (`/api/` → backend, `/` → frontend, `/hc` local 200).
 
 Node ≥ 24, pnpm pinned in `package.json#packageManager` (bump deliberately). Docker is required for
@@ -46,6 +48,10 @@ pnpm exec nx integration-test backend          # Testcontainers round-trip + rec
 ./build_migration.sh "AddSomething"            # EF migration (dotnet-ef 10.x)
 dotnet format Chess.Backend.slnx --verify-no-changes   # = nx lint backend
 
+# engine (apps/engine)
+dotnet build Chess.Engine.csproj && dotnet test Chess.Engine.Tests   # UCI client + worker against a fake engine
+dotnet format Chess.Engine.slnx --verify-no-changes                   # = nx lint engine
+
 # frontend (apps/frontend)
 pnpm generate-routes                           # after adding/renaming route files
 pnpm typecheck && pnpm lint && pnpm check      # = nx lint frontend
@@ -57,6 +63,7 @@ tools/localdev/verify-stack.sh                 # replica streaming + write→rea
 tools/localdev/verify-part0.sh [--cluster]     # login→ping→live→list→hub gate; --cluster kills backend-1 and re-checks
 tools/localdev/verify-part1.sh [--cluster]     # two logins → queue pairing → invite → fool's mate → ended 0-1 + PGN;
                                                # --cluster: 6 games, SIGTERM backend-1, all answer from the survivor
+tools/localdev/verify-part2.sh [--quick]       # vs Stockfish: 10 moves at 1320/2000/max, engine restart mid-think, a full game
 tools/localdev/stack.sh up --cluster            # adds backend-2 (down/ps/logs always include it)
 tools/e2e.sh                                   # Playwright against the live stack
 ```
@@ -86,7 +93,7 @@ Redpanda Kafka API `127.0.0.1:19092`.
 
 ## Commit rules (load-bearing)
 
-Conventional commits with a **required scope** from `frontend | backend | repo | deps | proxy | ci |
+Conventional commits with a **required scope** from `frontend | backend | engine | repo | deps | proxy | ci |
 release`, lower-case subject — enforced by commitlint on `commit-msg`. Nx Release derives version
 bumps and per-project changelogs from these (`projectsRelationship: independent`, tags
 `{project}@{version}`), so a non-conforming message is rejected, not just discouraged.
@@ -200,6 +207,19 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   `preferred_username` snapshotted per game, D23; PGN built at the end, D22); `GET /api/games?status=`,
   `/api/me/games`, `/api/games/{id}`, `…/moves`, `…/pgn` read the replica; a finished game's live snapshot comes from
   `rm_games` (`IEndedGameReader`) so its actor is not woken.
+
+- **Games against the computer (engine-play)** — engine players are seeded `users` (ids -1…-5 = Stockfish 1320,
+  1600, 2000, 2400, max; `Games/EngineLevel`), and `GameCreated`/`CreateGame` carry an optional `EnginePlayer(side,
+level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or increment; never a preset, so not in the
+  queue or invites; the first-move abort only while a person is to move; idle passivation after
+  `Akka:UntimedIdleMinutes`), ignore presence (no abandonment) and refuse draw offers. `Engine/`:
+  `EngineRequestConsumer` (on `game.events`, watermark on its `engine_games` row, kept after the end) produces to
+  `engine.moves.requests` whenever the engine is to move, with a think time from `Engine:MinThinkMs`–`MaxThinkMs`
+  (5–10 s); the worker (`apps/engine`, one Stockfish process + consumer per `Engine:Processes`, commit after produce)
+  answers on `engine.moves.results`; `EngineMoveConsumer` sends `MakeMove(…, AtPly)` as the level's user, so stale or
+  duplicate answers are refused. A game whose engine is silent for `Engine:StallSeconds` asks again through
+  `IEngineRequests` — the one actor-side producer, owned by that service. Endpoints: `POST /api/engine-games`,
+  `GET /api/engine-levels`.
 
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/
   `.slnx`/`Directory.*.props`/runsettings so JS edits don't bust the backend cache and vice versa.

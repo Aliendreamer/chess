@@ -280,19 +280,39 @@ The rules go only through `Games/ChessRules` (Gera.Chess behind an alias). Every
   `IGameStarter` and stashes every other command meanwhile, so two accepts never start two games. Its view is the
   live kind `invite:{id}`; invite events stay in the journal (not tagged for Kafka).
 
+### Games against the computer (engine-play)
+
+```text
+GameActor ──journal──▶ game.events ──▶ EngineRequestConsumer ──▶ engine.moves.requests ──▶ apps/engine (Stockfish)
+    ▲                                                                                           │
+    └──── MakeMove(level's user, AtPly) ◀── EngineMoveConsumer ◀── engine.moves.results ◀───────┘
+```
+
+- The engine is a player: five seeded users (Stockfish 1320 … max), so names, PGN and lists need nothing new. A game
+  against it is `untimed`; presence is ignored (no abandonment) and draw offers are refused.
+- Nothing new is journalled for the engine: the request consumer derives "the engine is to move" from each event and
+  keeps its watermark on an `engine_games` row. The answer is an ordinary move pinned to its ply, so an answer that
+  arrives twice or late is refused by the game.
+- **Recovery:** the worker commits a request only after its answer is produced, so a restart mid-think re-reads it
+  (verified on the live stack). If a request is lost anyway, the game asks again after `Engine:StallSeconds` — the
+  one place an actor produces to Kafka, through a service that owns its producer; a request is not a domain fact, and a
+  duplicate is harmless.
+- **Strength and time:** `UCI_LimitStrength` + `UCI_Elo` (1320–3190), or full strength for max. Stockfish thinks for
+  the whole `go movetime` at every level; the think time is drawn from 5–10 s per move.
+
 ### The screens (`apps/frontend`, part1-ui)
 
 The UI is the owner's Club design (`Design/`, untracked) in TypeScript: tokens as CSS variables in Tailwind's
-`@theme` (`styles.css`), self-hosted fonts, presentational components in `src/components/{core,navigation,chess,play}`,
-and pure, tested rules in `src/lib/{games,moveInput,play}.ts`.
+`@theme` (`styles.css`), self-hosted fonts, presentational components in `src/components/{ui,layout,games,pings}.tsx`,
+and pure, tested rules in `src/lib/{games,moveInput,play,live}.ts` (frontend-layout).
 
-| Route            | Reads (server functions)                                                       | Live                       | Acts                                               |
-| ---------------- | ------------------------------------------------------------------------------ | -------------------------- | -------------------------------------------------- |
-| `/` Home         | `/api/me/games`                                                                | `queue:{tc}` while seeking | join / heartbeat / leave a queue, create an invite |
-| `/invites/{id}`  | `/api/invites/{id}`                                                            | `invite:{id}`              | accept, cancel                                     |
-| `/games/{id}`    | `…/live` (actor), `/api/games/{id}` and `…/moves` (replica)                    | `game:{id}`                | move, resign, draw, abort                          |
-| `/games` History | `/api/me/games` (keyset "Load more")                                           | —                          | —                                                  |
-| `/pgn/{id}`      | a BFF download of `…/pgn` (not under `/api/`, which the edge sends to the API) | —                          | —                                                  |
+| Route            | Reads (server functions)                                                       | Live                       | Acts                                                                  |
+| ---------------- | ------------------------------------------------------------------------------ | -------------------------- | --------------------------------------------------------------------- |
+| `/` Home         | `/api/me/games`, `/api/engine-levels`                                          | `queue:{tc}` while seeking | join / heartbeat / leave a queue, create an invite, play the computer |
+| `/invites/{id}`  | `/api/invites/{id}`                                                            | `invite:{id}`              | accept, cancel                                                        |
+| `/games/{id}`    | `…/live` (actor), `/api/games/{id}` and `…/moves` (replica)                    | `game:{id}`                | move, resign, draw, abort                                             |
+| `/games` History | `/api/me/games` (keyset "Load more")                                           | —                          | —                                                                     |
+| `/pgn/{id}`      | a BFF download of `…/pgn` (not under `/api/`, which the edge sends to the API) | —                          | —                                                                     |
 
 - **chess.js is feedback only (D3):** legal-target dots, the optimistic board and the promotion choice. Every move
   is posted; the answer or the next frame replaces the position, and a refusal snaps it back with the server's
