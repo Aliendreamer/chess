@@ -11,13 +11,19 @@ response and summary, endpoints that use FastEndpoints' standard features, and t
 
 Backend source files SHALL NOT be tiny single-purpose files: no file MAY hold only one or two small functions or a
 single small class with one method. An interface MUST live with its implementation and options with the code that
-reads them. Code SHALL be grouped by functionality, and a folder MUST hold a real group, never a single file. The
-only exception is the per-endpoint folder pattern in `WebApi/`.
+reads them. Code SHALL be grouped by functionality, and a folder MUST hold a real group, never a single file. There
+are two exceptions: the per-endpoint folder pattern in `WebApi/`, and the domain models (`Data/Models`,
+`Data/ReadModels`) and their EF configurations (`Data/ModelConfigurations`), which are one class per file.
 
 #### Scenario: Adding a small helper
 
 - **WHEN** a 15-line helper is needed for session cookies
 - **THEN** it goes into `Authentication/Session.cs` next to the code that uses it, not into a new file
+
+#### Scenario: A new entity
+
+- **WHEN** a table `rm_ratings` is added
+- **THEN** its entity is `Data/ReadModels/RmRating.cs` and its configuration `Data/ModelConfigurations/RmRatingConfiguration.cs`
 
 #### Scenario: A new interface
 

@@ -8,7 +8,7 @@ import type { LiveFrame, SocketMessage } from '../live'
  * reference-counted: the first local subscriber joins the backend group, the last one leaves it. Every subscriber
  * gets its own snapshot from `Subscribe`; pushes fan out by `frame.topic`. On `game:` topics it also reports each
  * signed-in user's presence (presence-and-abandonment D1–D2). Transport-injected (`HubPort`) so all of it is
- * unit-tested without SignalR; `live-hub.ts` provides the real port.
+ * unit-tested without SignalR; `signalRPort` below is the real one.
  */
 
 /** A browser socket, as the relay host exposes it. */

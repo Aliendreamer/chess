@@ -12,7 +12,7 @@ import type { RelayHandle } from '../../../../../../src/lib/server/live-relay'
  * The live relay in the BUILT server: browser ↔ `app.` (this) ↔ one shared hub connection ↔ backend `/hub/live`.
  *
  * Scanned by Nitro (`scanDirs: ['server']`), which only exists after `vite build` — `vite dev` serves the same path
- * through `src/lib/server/dev-live-relay.ts`. Both only adapt the socket; `openRelay` decides everything else.
+ * through `devLiveRelay` in `src/lib/server/live-relay.ts`. Both only adapt the socket; `openRelay` decides everything else.
  */
 
 const RELAY = 'liveRelay'

@@ -143,17 +143,21 @@ to each app's own lint target). Keep `--no-stash`.
   `_authenticated.tsx#beforeLoad` calls `getMe()` and 302s anonymous users to `/api/auth/login?returnTo=`;
   route loaders call server functions (`lib/server/api.ts`) that re-attach the cookie and hit `API_URL`
   server-side. Components are presentational. **No `VITE_API_URL` ever** — the client bundle must not
-  mention the API host.
+  mention the API host. Layout (`frontend-layout` spec): files by feature, no tiny files, no one-file folders —
+  `components/{ui,layout,games,pings}.tsx`; client-safe types and helpers in `lib/{auth,live,games,play,pings,moveInput}.ts`;
+  `lib/server/` = `api.ts` (server functions + input checks), `cookies.ts`, `upstream.ts` (env, `LOGIN_REDIRECT`,
+  `isGuid`, `readJson`, `postCommand` — defined once, never copied), and one file per feature (`auth`, `games`, `play`,
+  `pings`, `live-relay`, `live-hub`). Client code never imports `lib/server/` except `api.ts`; imports use `#/` only.
 - **Live relay (frontend + backend)** — browsers open `/api/ws/live/{kind}/{id}` on `app.`; `lib/server/live-relay.ts`
   checks the kind allow-list, validates the session with `GET /api/me` (4400/4401 otherwise, re-checked every
-  `RELAY_REVALIDATE_MS`) and subscribes through `hub-multiplexer.ts`: ONE SignalR connection per SSR process to
-  `/hub/live`, authenticated as the `chess_bff` service account (`service-token.ts`, client credentials,
+  `RELAY_REVALIDATE_MS`) and subscribes through `lib/server/live-hub.ts`: ONE SignalR connection per SSR process to
+  `/hub/live`, authenticated as the `chess_bff` service account (service token in the same file, client credentials,
   `KEYCLOAK_TOKEN_URL` must be the PUBLIC issuer). `Messaging/LiveRelay.cs`: `LiveHub` admits only role `Relay`; `Subscribe(topic)` joins
   the group, then returns the kind's snapshot (`ILiveTopicSource`). Actors publish `LiveFrame(topic, seq,
 payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's group. The browser applies a
   frame only if its seq is newer (`lib/live.ts#applyFrame`). A new live kind = one `ILiveTopicSource` + one
-  entry in the BFF's `KINDS`. Both relay hosts (Nitro route, `dev-live-relay.ts`) only adapt sockets.
-  Pages use `lib/useLiveTopic.ts` (initial = the loader's state as a frame; it is the baseline at subscribe only).
+  entry in the BFF's `KINDS`. Both relay hosts (Nitro route, `devLiveRelay` in `live-relay.ts`) only adapt sockets.
+  Pages use `useLiveTopic` from `lib/live.ts` (initial = the loader's state as a frame; it is the baseline at subscribe only).
 - **UI (frontend)** — the Club design (`Design/`, untracked, never committed) as TS: tokens are CSS variables in
   `styles.css`'s `@theme` (use `bg-surface-*`, `text-fg-*`, `border-line-*`, `font-display`, `rounded-card`; no zinc,
   dark only), fonts via `@fontsource` (no third-party requests). Screens: `/` (quick pairing, invite, recent
