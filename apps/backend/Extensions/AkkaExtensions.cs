@@ -125,6 +125,21 @@ internal static class PingShardingExtensions
 internal static class MatchmakingRegistration
 {
     /// <summary>The matchmaking singleton on the backend role, with a proxy so every node's endpoints reach it.</summary>
+    /// <summary>The correspondence deadline sweeper (correspondence-games D3): one per cluster, on the backend role.</summary>
+    public static AkkaConfigurationBuilder WithDeadlineSweeper(this AkkaConfigurationBuilder akka)
+    {
+        ArgumentNullException.ThrowIfNull(akka);
+        return akka.WithSingleton<DeadlineSweeper>(
+            DeadlineSweeper.SingletonName,
+            (_, registry, resolver) => Props.Create(() => new DeadlineSweeper(
+                registry.Get<GameActor>(),
+                resolver.GetService<IDueDeadlines>(),
+                resolver.GetService<TimeProvider>(),
+                TimeSpan.FromSeconds(resolver.GetService<CorrespondenceOptions>().SweepSeconds))),
+            new ClusterSingletonOptions { Role = AkkaOptions.BackendRole },
+            createProxyToo: false);
+    }
+
     public static AkkaConfigurationBuilder WithMatchmaking(this AkkaConfigurationBuilder akka, AkkaOptions options)
     {
         ArgumentNullException.ThrowIfNull(akka);

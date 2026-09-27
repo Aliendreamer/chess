@@ -64,6 +64,7 @@ internal static class BuilderExtension
             akka.WithGameSharding(sp.GetRequiredService<AkkaOptions>());
             akka.WithMatchmaking(sp.GetRequiredService<AkkaOptions>());
             akka.WithInviteSharding(sp.GetRequiredService<AkkaOptions>());
+            akka.WithDeadlineSweeper();
             if (sp.GetRequiredService<KafkaOptions>().Enabled)
             {
                 akka.WithJournalPublisher();
@@ -127,6 +128,10 @@ internal static class BuilderExtension
         // Games against the engine (engine-play D6): one consumer asks for moves, the other applies the answers.
         EngineOptions engine = services.AddSettings<EngineOptions>(configuration, EngineOptions.SectionName);
         services.AddSettings<CorrespondenceOptions>(configuration, CorrespondenceOptions.SectionName);
+        // Correspondence deadlines (correspondence-games D3): the projection fills game_deadlines, the sweeper reads it.
+        services.AddScoped<DeadlineProjection>();
+        services.AddScoped<IProjection>(sp => sp.GetRequiredService<DeadlineProjection>());
+        services.AddSingleton<IDueDeadlines, DueDeadlines>();
         services.AddScoped<EngineRequestConsumer>();
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<EngineRequestConsumer>());
         services.AddScoped<EngineMoveConsumer>();

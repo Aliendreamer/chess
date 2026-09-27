@@ -26,6 +26,8 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<EngineGame> EngineGames => Set<EngineGame>();
 
+    public DbSet<GameDeadline> GameDeadlines => Set<GameDeadline>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();

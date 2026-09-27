@@ -8,7 +8,7 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
 
 - [x] 2.1 `7d` time control, invites accept it, the queue does not; `GameActor` deadline rules, `CheckDeadline`, no
       presence claims, idle passivation; `Correspondence` settings. Tests. Commit `feat(backend): correspondence games`.
-- [ ] 2.2 `DeadlineProjection` + `game_deadlines` (migration) + `DeadlineSweeper` singleton. Tests. Commit
+- [x] 2.2 `DeadlineProjection` + `game_deadlines` (migration) + `DeadlineSweeper` singleton. Tests. Commit
       `feat(backend): correspondence deadlines from the database`.
 - [ ] 2.3 `IMailer` (MailKit / log), `NotificationConsumer` + `notification_positions` (migration), `Smtp` settings.
       Tests. Commit `feat(backend): email notifications for correspondence games`.
