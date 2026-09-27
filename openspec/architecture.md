@@ -266,7 +266,7 @@ The rules go only through `Games/ChessRules` (Gera.Chess behind an alias). Every
 - The page shows the claim panel (Claim win / Call it a draw / Keep waiting) to `claimableBy`, and `useLiveTopic`
   reconnects a dropped socket after 1, 2, 4, 8 and then every 15 s, except after 4400/4401.
 
-### Matchmaking and invites (`Akka/Matchmaking`, `Akka/Invites`)
+### Matchmaking and invites (`Akka/Matchmaking`)
 
 - `MatchmakingActor` is a cluster singleton holding one first-come-first-served queue per preset time control
   (D16). Pairing is immediate, so a queue holds at most one seeker. Queues are memory only: the client re-POSTs

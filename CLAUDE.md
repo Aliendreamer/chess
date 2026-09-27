@@ -84,7 +84,8 @@ to each app's own lint target). Keep `--no-stash`.
 
 ## Architecture notes that span files
 
-- **Auth flow (backend)** — `WebApi/Auth/`: `LoginEndpoint` sets a short-lived `mp_pkce` cookie
+- **Auth flow (backend)** — endpoints in `WebApi/Auth/`, everything else in `Authentication/` (`Session.cs`, `Oidc.cs`,
+  `CurrentUser.cs`): `LoginEndpoint` sets a short-lived `mp_pkce` cookie
   (`"<nonce>.<verifier>"`) and 302s to Keycloak; `CallbackEndpoint` → `CallbackValidator` (state nonce must match
   the cookie) → `KeycloakOidcClient.ExchangeCodeAsync` → `ISessionStore.CreateAsync` (stores only the SHA-256
   of the raw token) → `mp_sid` cookie → 302 to `{AppBaseUrl}{returnTo}` (`ReturnToSanitizer`: relative path
@@ -104,6 +105,19 @@ to each app's own lint target). Keep `--no-stash`.
   (CIDRs) / `KnownProxies`; default is ASP.NET's loopback-only, `ForwardLimit = 1`. The compose network is
   pinned to `172.30.0.0/24` and passed as `ForwardedHeaders__KnownNetworks__0`. **Every deployment must set
   this to the edge's network**, otherwise the per-client rate limiter keys on the proxy's IP.
+- **Backend layout** — two rules: no tiny files (interfaces with their implementations, options with the code that
+  reads them, small related types in one file) and code grouped by functionality (no one-file folders).
+  `WebApi/{Area}/{Name}/` holds one endpoint per folder: `{Name}Endpoint`, `{Name}Request` (+ its `Validator<>`),
+  `{Name}Response`, `{Name}Summary` (`Summary<TEndpoint>`); an area's shared base/mapper sits in the area root, and
+  endpoint folders use the area's namespace (folder names like `Resign` would clash with the actor commands). Every
+  endpoint declares its auth (`Policies(Constants.Policies.SignedIn)`, `Roles(Admin)`, or the anonymous auth group),
+  validates input with a validator (malformed input = 400 before any actor is asked), sets `no-store` on live/command
+  answers and `private, max-age=86400, immutable` on a finished game's reads, and takes timeouts/page size from
+  `ApiOptions` (section `Api`). A POST whose request is route/query only must call `ClearDefaultAccepts()`, or a
+  body-less call is a 415. Non-endpoint code: `Authentication/`, `Messaging/` (Kafka + `LiveRelay`), `Extensions/`
+  (all startup wiring: builder, application, one `DatabaseExtensions`, one `AkkaExtensions`), `Akka/{Feature}/`,
+  `Games/`, `Events/`, `Data/`, `Projections/`, `Utils/`. `Events/` and `Data/Models`/`Data/ReadModels` keep their
+  namespaces: the journal stores `Chess.Backend.Events.X` type names and the EF snapshot names the entities.
 - **Backend conventions** — everything `internal sealed` (tests via `InternalsVisibleTo`; Moq via
   `DynamicProxyGenAssembly2`); logging through `Utils/Log.cs` `[LoggerMessage]` methods (CA1873 forbids boxing
   args); config lives in `Config/appsettings*.json` (env vars override, `Keycloak__*` etc.); services named
@@ -123,7 +137,7 @@ to each app's own lint target). Keep `--no-stash`.
   checks the kind allow-list, validates the session with `GET /api/me` (4400/4401 otherwise, re-checked every
   `RELAY_REVALIDATE_MS`) and subscribes through `hub-multiplexer.ts`: ONE SignalR connection per SSR process to
   `/hub/live`, authenticated as the `chess_bff` service account (`service-token.ts`, client credentials,
-  `KEYCLOAK_TOKEN_URL` must be the PUBLIC issuer). `LiveHub` admits only role `Relay`; `Subscribe(topic)` joins
+  `KEYCLOAK_TOKEN_URL` must be the PUBLIC issuer). `Messaging/LiveRelay.cs`: `LiveHub` admits only role `Relay`; `Subscribe(topic)` joins
   the group, then returns the kind's snapshot (`ILiveTopicSource`). Actors publish `LiveFrame(topic, seq,
 payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's group. The browser applies a
   frame only if its seq is newer (`lib/live.ts#applyFrame`). A new live kind = one `ILiveTopicSource` + one
@@ -157,7 +171,7 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   region has idle passivation OFF (Akka default 120 s would kill clocks); `PassivationPolicy` passivates 1 min
   after the end. Games start only through `IGameStarter`: from matchmaking (`Akka/Matchmaking/MatchmakingActor`, a cluster singleton;
   `POST|DELETE /api/matchmaking/{tc}`; `?heartbeat=true` every ~25 s keeps your place, 60 s silence drops you) or an invite
-  (`Akka/Invites/InviteActor`, sharded `invites`, 24 h; `POST /api/invites`, `GET /api/invites/{id}`, `…/accept`,
+  (`Akka/Matchmaking/InviteActor`, sharded `invites`, 24 h; `POST /api/invites`, `GET /api/invites/{id}`, `…/accept`,
   `…/cancel`). Live kinds `queue:{tc}` and `invite:{id}`.
   Commands: `POST /api/games/{id}/moves|resign|draw/offer|draw/accept|draw/decline|abort|claim`, `GET …/live`.
   Presence: the BFF multiplexer reports `Present`/`Absent` for `game:` topics (per-process instance id, 30 s refresh);
