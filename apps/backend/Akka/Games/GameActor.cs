@@ -1,6 +1,7 @@
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Event;
 using Akka.Persistence;
+using Chess.Backend.Engine;
 using Chess.Backend.Events;
 using Chess.Backend.Games;
 using Chess.Backend.Messaging;
@@ -25,6 +26,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private const string AbortTimer = "abort";
     private const string PassivateTimer = "passivate";
     private const string PresenceTimer = "presence";
+    private const string EngineStallTimer = "engine-stall";
 
     private readonly Guid _gameId;
     private readonly IActorRef? _mediator;
@@ -63,6 +65,9 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     /// <summary>The engine's side and level in a game against it; null between people (engine-play D3, D5).</summary>
     private EnginePlayer? _engine;
 
+    /// <summary>Asks the engine again when it has not moved within <see cref="GameTimings.EngineStall"/> (engine-play D6).</summary>
+    private readonly IEngineRequests _engineRequests;
+
     /// <summary>When the side to move's clock started running; null while no clock runs (before both first moves).</summary>
     private DateTimeOffset? _turnStartedAt;
 
@@ -72,7 +77,14 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     }
 
     public GameActor(Guid gameId, IActorRef? mediator, TimeProvider clock, GameTimings timings)
+        : this(gameId, mediator, clock, timings, NoEngineRequests.Instance)
     {
+    }
+
+    public GameActor(Guid gameId, IActorRef? mediator, TimeProvider clock, GameTimings timings, IEngineRequests engineRequests)
+    {
+        ArgumentNullException.ThrowIfNull(engineRequests);
+        _engineRequests = engineRequests;
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(timings);
         _gameId = gameId;
@@ -110,6 +122,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         Command<PresenceCheck>(_ => EvaluatePresence());
         Command<FlagCheck>(_ => HandleFlagCheck());
         Command<AbortCheck>(_ => HandleAbortCheck());
+        Command<EngineStall>(_ => HandleEngineStall());
         Command<PassivateNow>(_ => Context.Parent.Tell(new global::Akka.Cluster.Sharding.Passivate(PoisonPill.Instance)));
         Command<SaveSnapshotSuccess>(_ => { });
         Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "snapshot failed for game {0}", _gameId));
@@ -197,6 +210,12 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         if (cmd.UserId != PlayerToMove)
         {
             Reply(Rejected(RejectionCode.Conflict, "It is not your turn."));
+            return;
+        }
+
+        if (cmd.AtPly is { } atPly && atPly != Ply)
+        {
+            Reply(Rejected(RejectionCode.Conflict, "That move was for an earlier position."));
             return;
         }
 
@@ -470,7 +489,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
 
     private void HandleAbortCheck()
     {
-        if (_status == GameStatus.Ended || Ply >= 2)
+        if (_status == GameStatus.Ended || Ply >= 2 || EngineToMove)
         {
             return;
         }
@@ -489,6 +508,17 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             MaybeSnapshot();
             Rearm();
         });
+    }
+
+    /// <summary>The engine has not moved in time: a request was lost, or the game moved node mid-think. Ask again.</summary>
+    private void HandleEngineStall()
+    {
+        if (EngineToMove && _engine is { } engine)
+        {
+            _engineRequests.Nudge(_gameId, Ply, _rules.Fen, engine.Level);
+        }
+
+        Rearm();
     }
 
     /// <summary>Common gate: the game must exist, the sender must be a player (D10), and it must not be over.</summary>
@@ -680,6 +710,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
 
     private bool ClocksRunning => _status == GameStatus.Playing && _turnStartedAt is not null;
 
+    /// <summary>A game against the engine, not over, with the engine's side to move.</summary>
+    private bool EngineToMove =>
+        _engine is { } engine && _status != GameStatus.Ended
+        && string.Equals(engine.Side, _rules.SideToMove.ToString(), StringComparison.OrdinalIgnoreCase);
+
     private DateTimeOffset FirstMoveDeadline => (Ply == 0 ? _createdAt : _lastMoveAt) + FirstMoveWindow;
 
     /// <summary>The side to move's remaining time at <paramref name="at"/>.</summary>
@@ -724,8 +759,9 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         {
             Timers.StartSingleTimer(FlagTimer, FlagCheck.Instance, TimeSpan.FromMilliseconds(RemainingMs(now)));
         }
-        else if (Ply < 2)
+        else if (Ply < 2 && !EngineToMove)
         {
+            // The first-move abort is for people; the engine's first move is covered by its stall timer (engine-play D4).
             TimeSpan untilAbort = FirstMoveDeadline - now;
             Timers.StartSingleTimer(AbortTimer, AbortCheck.Instance, untilAbort > TimeSpan.Zero ? untilAbort : TimeSpan.Zero);
         }
@@ -733,6 +769,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         {
             // Untimed and under way: nothing to time, so the game may leave memory once nobody has acted for a while.
             Timers.StartSingleTimer(PassivateTimer, PassivateNow.Instance, idle);
+        }
+
+        if (EngineToMove)
+        {
+            Timers.StartSingleTimer(EngineStallTimer, EngineStall.Instance, _timings.EngineStall);
         }
 
         if (NextPresenceCheck(now) is { } at)
@@ -871,6 +912,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         public static readonly AbortCheck Instance = new();
     }
 
+    private sealed class EngineStall
+    {
+        public static readonly EngineStall Instance = new();
+    }
+
     private sealed class PassivateNow
     {
         public static readonly PassivateNow Instance = new();
@@ -883,10 +929,12 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
 }
 
 /// <summary>
-/// The actor's configurable timings: presence (presence-and-abandonment D2–D3) and how long an untimed game may sit idle
-/// before it passivates (engine-play D4). Configurable so integration tests need not wait minutes.
+/// The actor's configurable timings: presence (presence-and-abandonment D2–D3), how long an untimed game may sit idle
+/// before it passivates (engine-play D4), and how long the engine may stay silent before the game asks again (D6).
+/// Configurable so integration tests need not wait minutes.
 /// </summary>
-internal sealed record GameTimings(TimeSpan AbandonAfter, TimeSpan Lease, TimeSpan UntimedIdle)
+internal sealed record GameTimings(TimeSpan AbandonAfter, TimeSpan Lease, TimeSpan UntimedIdle, TimeSpan EngineStall)
 {
-    public static readonly GameTimings Default = new(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(75), TimeSpan.FromMinutes(30));
+    public static readonly GameTimings Default =
+        new(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(75), TimeSpan.FromMinutes(30), TimeSpan.FromSeconds(60));
 }

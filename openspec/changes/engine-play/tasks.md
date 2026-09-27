@@ -23,7 +23,7 @@ typecheck, lint, check, test, build; engine: build, unit tests, format). 🐳 ma
       abort kept, idle passivation). Tests. Commit: `feat(backend): untimed games`.
 - [x] 3.2 Engine users (migration), `GameCreated.Engine`, `CreateGame`/`IGameStarter` engine argument, presence and draw
       exemptions, `GameView.engineSide/engineLevel`. Tests. Commit: `feat(backend): games against an engine player`.
-- [ ] 3.3 `EngineRequestConsumer` (+ `engine_games` table), `EngineMoveConsumer`, `IEngineNudger` and the stall timer, the
+- [x] 3.3 `EngineRequestConsumer` (+ `engine_games` table), `EngineMoveConsumer`, `IEngineNudger` and the stall timer, the
       `Engine` settings. Tests. Commit: `feat(backend): engine moves over kafka`.
 - [ ] 3.4 `POST /api/engine-games`, `GET /api/engine-levels` (WebApi folders). Commit: `feat(backend): engine game
 endpoints`.

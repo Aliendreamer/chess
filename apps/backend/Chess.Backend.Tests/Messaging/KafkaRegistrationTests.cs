@@ -1,3 +1,6 @@
+using Akka.Actor;
+using Akka.Hosting;
+using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Extensions;
 using Chess.Backend.Messaging;
@@ -40,7 +43,7 @@ public sealed class KafkaRegistrationTests
         services.AddMessaging(Configuration("redpanda:9092"));
 
         Assert.Contains(services, d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(KafkaConsumerHost));
-        // The journal publisher builds its own producer inside the singleton; nothing else may produce.
+        // The journal publisher and the engine requests (engine-play D6) build their own producers; nothing else may produce.
         Assert.DoesNotContain(services, d => d.ServiceType == typeof(IProducer<string, string>));
     }
 
@@ -75,6 +78,10 @@ public sealed class KafkaRegistrationTests
         ServiceCollection services = Base();
         services.AddSingleton(TestDb.Create());
         services.AddMessaging(Configuration("redpanda:9092"));
+        // What the running app gets from its actor system and API settings; the engine answers go through the games region.
+        services.AddSingleton<IRequiredActor<GameActor>>(new FixedRegion<GameActor>(ActorRefs.Nobody));
+        services.AddSingleton(Options.Create(new ApiOptions()));
+        services.AddSingleton(TimeProvider.System);
 
         using ServiceProvider provider = services.BuildServiceProvider();
         using IServiceScope scope = provider.CreateScope();

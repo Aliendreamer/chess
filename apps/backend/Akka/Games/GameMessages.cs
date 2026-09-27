@@ -13,7 +13,8 @@ internal interface IGameCommand
 internal sealed record CreateGame(Guid GameId, long WhiteId, long BlackId, TimeControl TimeControl, EnginePlayer? Engine = null)
     : IGameCommand;
 
-internal sealed record MakeMove(Guid GameId, long UserId, string Uci) : IGameCommand;
+/// <summary>A move; <paramref name="AtPly"/>, when given, must be the game's ply count, so a stale engine answer is refused (engine-play D6).</summary>
+internal sealed record MakeMove(Guid GameId, long UserId, string Uci, int? AtPly = null) : IGameCommand;
 
 internal sealed record Resign(Guid GameId, long UserId) : IGameCommand;
 

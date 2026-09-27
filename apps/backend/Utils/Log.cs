@@ -33,6 +33,18 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Warning, Message = "{GroupId}: {AggregateId} starts with {Type}, not a creation; not a game, skipping")]
     public static partial void ProjectionSkippedUncreated(ILogger logger, string groupId, string aggregateId, string type);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Game {GameId:N}: asked the engine ({Level}) for ply {Ply}")]
+    public static partial void EngineRequested(ILogger logger, Guid gameId, int ply, string level);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Game {GameId:N}: the engine has not moved at ply {Ply}; asking again")]
+    public static partial void EngineNudged(ILogger logger, Guid gameId, int ply);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Game {GameId:N}: asking the engine again at ply {Ply} failed: {Reason}")]
+    public static partial void EngineNudgeFailed(ILogger logger, Guid gameId, int ply, string reason);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Game {GameId:N}: dropped the engine's answer for ply {Ply}: {Reason}")]
+    public static partial void EngineMoveDropped(ILogger logger, Guid gameId, int ply, string reason);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "{GroupId}: gap for {AggregateId} after seq {LastSeq}, got {Seq}; stalling")]
     public static partial void ProjectionGap(ILogger logger, string groupId, string aggregateId, long lastSeq, long seq);
 

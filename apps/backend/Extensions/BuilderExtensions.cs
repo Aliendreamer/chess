@@ -4,6 +4,7 @@ using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Akka.Ping;
+using Chess.Backend.Engine;
 using Chess.Backend.Messaging;
 using Chess.Backend.Projections;
 using Microsoft.AspNetCore.Authentication;
@@ -122,8 +123,20 @@ internal static class BuilderExtension
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<PingProjection>());
         services.AddScoped<GameProjection>();
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<GameProjection>());
-        if (kafka.Enabled)
+        // Games against the engine (engine-play D6): one consumer asks for moves, the other applies the answers.
+        EngineOptions engine = services.AddSettings<EngineOptions>(configuration, EngineOptions.SectionName);
+        services.AddScoped<EngineRequestConsumer>();
+        services.AddScoped<IProjection>(sp => sp.GetRequiredService<EngineRequestConsumer>());
+        services.AddScoped<EngineMoveConsumer>();
+        services.AddScoped<IProjection>(sp => sp.GetRequiredService<EngineMoveConsumer>());
+        if (!kafka.Enabled)
         {
+            services.AddSingleton<IEngineRequests>(NoEngineRequests.Instance);
+        }
+        else
+        {
+            services.AddSingleton<IEngineRequests>(sp => KafkaEngineRequests.Create(
+                kafka.BootstrapServers, engine, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILogger<KafkaEngineRequests>>()));
             services.AddHostedService<KafkaConsumerHost>();
             services.AddSingleton<ProjectionRunner>();
             services.AddSingleton<IJournalEventMapper, PingedJournalMapper>();

@@ -105,7 +105,8 @@ Resign and abort work as usual.
   `Engine:MinThinkMs`–`Engine:MaxThinkMs` (5000–10000).
 - It knows a game's engine side and level from a small `engine_games` table that it fills from `game.created`. That
   keeps every later event self-sufficient.
-- On `game.ended` it deletes the row.
+- On `game.ended` it marks the row ended, and keeps it: a replay of the game's events is then skipped by the watermark
+  instead of asking the engine to move again.
 
 **Results.** `EngineMoveConsumer` is on `engine.moves.results`, group `chess.engine-moves`.
 

@@ -24,6 +24,8 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<RmMove> RmMoves => Set<RmMove>();
 
+    public DbSet<EngineGame> EngineGames => Set<EngineGame>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();

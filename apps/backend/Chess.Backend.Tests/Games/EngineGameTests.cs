@@ -3,6 +3,7 @@ using Akka.TestKit;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Events;
 using Chess.Backend.Games;
+using Chess.Backend.Tests.Engine;
 
 namespace Chess.Backend.Tests.Games;
 
@@ -15,10 +16,12 @@ public sealed class EngineGameTests() : GameActorTestBase(virtualTime: true)
     /// <summary>The Breyer Ruy Lopez to move 11: 22 plies, past a snapshot (every 20 events).</summary>
     private const string LongLine = "e2e4 e7e5 g1f3 b8c6 f1b5 a7a6 b5a4 g8f6 e1g1 f8e7 f1e1 b7b5 a4b3 d7d6 c2c3 e8g8 h2h3 c6b8 d2d4 b8d7 c3c4 c7c6";
 
+    private RecordingEngineRequests Requests { get; } = new();
+
     private (Guid Id, IActorRef Actor) EngineGame()
     {
         Guid id = Guid.CreateVersion7();
-        IActorRef actor = CreateTestProbe().ChildActorOf(GameProps(id));
+        IActorRef actor = CreateTestProbe().ChildActorOf(Props.Create(() => new GameActor(id, null, Clock, GameTimings.Default, Requests)));
         GameView created = Assert.IsType<GameView>(Send(actor, new CreateGame(id, White, Level.UserId, TimeControl.Untimed, AsBlack)));
         Assert.Equal(("black", "1600"), (created.EngineSide, created.EngineLevel));
         return (id, actor);
@@ -110,7 +113,61 @@ public sealed class EngineGameTests() : GameActorTestBase(virtualTime: true)
 
         Assert.Equal((before.Seq, before.Fen, "black", "1600"), (after.Seq, after.Fen, after.EngineSide, after.EngineLevel));
     }
+
+    [Fact]
+    public void An_answer_for_an_earlier_position_is_refused()
+    {
+        (Guid id, IActorRef actor) = EngineGame();
+        Play(actor, id, "e2e4 e7e5 g1f3");
+
+        AssertRejected(Send(actor, new MakeMove(id, Level.UserId, "b8c6", AtPly: 1)), RejectionCode.Conflict);
+        Assert.Equal(4, Assert.IsType<GameView>(Send(actor, new MakeMove(id, Level.UserId, "b8c6", AtPly: 3))).Ply);
+    }
+
+    [Fact]
+    public void A_silent_engine_is_asked_again_after_the_stall_time_and_again_after_that()
+    {
+        (Guid id, IActorRef actor) = EngineGame();
+        GameView afterE4 = Move(actor, id, White, "e2e4");
+
+        Advance(GameTimings.Default.EngineStall - TimeSpan.FromSeconds(1));
+        Assert.Empty(Requests.Sent);
+        Advance(TimeSpan.FromSeconds(2));
+        AwaitCondition(() => Requests.Sent.Count == 1); // the actor re-arms on its own thread before time moves on
+        View(actor, id);
+        Advance(GameTimings.Default.EngineStall);
+        AwaitCondition(() => Requests.Sent.Count == 2);
+
+        Assert.Equal([(id, 1, afterE4.Fen, "1600", true), (id, 1, afterE4.Fen, "1600", true)], Requests.Sent);
+    }
+
+    [Fact]
+    public void The_engines_first_move_is_never_aborted_but_the_humans_is()
+    {
+        (Guid id, IActorRef actor) = EngineGame();
+        Move(actor, id, White, "e2e4");
+
+        Advance(GameActor.FirstMoveWindow * 3);
+        Assert.Equal(GameStatus.Playing, View(actor, id).Status); // the engine is to move: only its stall timer runs
+
+        Move(actor, id, Level.UserId, "e7e5");
+        (Guid other, IActorRef fresh) = EngineGame();
+        Advance(GameActor.FirstMoveWindow + TimeSpan.FromSeconds(1));
+        Assert.Equal("Aborted", View(fresh, other).Reason); // a human who never moves still aborts the game
+    }
+
+    [Fact]
+    public void No_one_is_nudged_while_the_human_is_to_move()
+    {
+        (Guid id, IActorRef actor) = EngineGame();
+        Play(actor, id, "e2e4 e7e5");
+
+        Advance(GameTimings.Default.EngineStall * 3);
+
+        Assert.Empty(Requests.Sent);
+    }
 }
+
 
 public sealed class EngineLevelTests
 {

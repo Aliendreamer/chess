@@ -13,7 +13,7 @@ public sealed class AkkaOptionsTests
         Assert.Equal(["backend"], o.EffectiveRoles);
         Assert.Equal(50, o.ShardCount);
         Assert.Equal(["akka.tcp://chess@localhost:8091"], o.EffectiveSeedNodes());
-        Assert.Equal((TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(75)), (o.GameTimings().AbandonAfter, o.GameTimings().Lease));
+        Assert.Equal((TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(75)), (o.GameTimings(TimeSpan.FromSeconds(60)).AbandonAfter, o.GameTimings(TimeSpan.FromSeconds(60)).Lease));
     }
 
     [Fact]
