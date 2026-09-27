@@ -44,6 +44,14 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
                 throw new ProjectionGapException(GroupId, e.AggregateId, lastSeq, e.Seq);
         }
 
+        // A game's stream starts with its creation. Anything else first is not a game: GameActor used to journal an
+        // abort for ids that were never created, and there is no row to put it on.
+        if (game is null && e.Type != "game.created")
+        {
+            Log.ProjectionSkippedUncreated(logger, GroupId, e.AggregateId, e.Type);
+            return;
+        }
+
         game = e.Type switch
         {
             "game.created" => await CreateAsync(gameId, Payload<GameCreated>(e), ct),

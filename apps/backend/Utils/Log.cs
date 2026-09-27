@@ -30,6 +30,9 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Debug, Message = "Projection skipped replayed event {AggregateId}#{Seq}")]
     public static partial void ProjectionSkippedReplay(ILogger logger, string aggregateId, long seq);
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{GroupId}: {AggregateId} starts with {Type}, not a creation; not a game, skipping")]
+    public static partial void ProjectionSkippedUncreated(ILogger logger, string groupId, string aggregateId, string type);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "{GroupId}: gap for {AggregateId} after seq {LastSeq}, got {Seq}; stalling")]
     public static partial void ProjectionGap(ILogger logger, string groupId, string aggregateId, long lastSeq, long seq);
 

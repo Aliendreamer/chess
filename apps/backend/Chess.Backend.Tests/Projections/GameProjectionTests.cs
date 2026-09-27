@@ -110,6 +110,20 @@ public sealed class GameProjectionTests
         await Assert.ThrowsAsync<ProjectionGapException>(() => ApplyAll(Build().Projection, FoolsMate[0]));
 
     [Fact]
+    public async Task A_stream_that_does_not_start_with_creation_is_skipped_not_parked()
+    {
+        // What an uncreated GameActor used to journal: an "Aborted" ending as seq 1, for a game that never existed.
+        (ProjectDbContext db, GameProjection p) = Build();
+        using (db)
+        {
+            await ApplyAll(p, Env("game.ended", 1, new GameEnded("*", "Aborted", 0, 0, T0), T0));
+
+            Assert.Equal(0, await db.RmGames.CountAsync());
+            Assert.Equal(0, await db.RmMoves.CountAsync());
+        }
+    }
+
+    [Fact]
     public async Task The_ending_closes_the_game_and_stores_its_pgn()
     {
         (ProjectDbContext db, GameProjection p) = Build();

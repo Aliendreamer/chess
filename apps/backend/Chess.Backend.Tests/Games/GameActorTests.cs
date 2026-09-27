@@ -31,6 +31,21 @@ public sealed class GameActorTests() : GameActorTestBase(virtualTime: false)
         AssertRejected(Send(Spawn(Guid.CreateVersion7()), new GetGameView(Guid.Empty)), RejectionCode.NotFound);
 
     [Fact]
+    public void Waking_an_unknown_game_persists_nothing()
+    {
+        // A game that was never created has no abort deadline: before the fix its timer fired at once and journalled an
+        // "Aborted" ending as seq 1, which the read side could not project (a game ended without being created).
+        Guid id = Guid.CreateVersion7();
+        IActorRef actor = Spawn(id);
+        AssertRejected(Send(actor, new GetGameView(id)), RejectionCode.NotFound);
+        ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+
+        GameView created = Assert.IsType<GameView>(Send(actor, new CreateGame(id, White, Black, Blitz)));
+
+        Assert.Equal((1L, GameStatus.Created), (created.Seq, created.Status));
+    }
+
+    [Fact]
     public void Out_of_turn_and_illegal_moves_are_rejected_without_persisting()
     {
         (Guid id, IActorRef actor, _) = Started();

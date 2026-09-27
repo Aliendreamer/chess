@@ -686,6 +686,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private void Rearm()
     {
         Timers.CancelAll();
+        if (!_created)
+        {
+            return; // nothing to time: an uncreated game has no deadline, and aborting it would journal a ghost game
+        }
+
         DateTimeOffset now = _clock.GetUtcNow();
         if (_status == GameStatus.Ended)
         {
