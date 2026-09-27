@@ -1,7 +1,7 @@
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
 import appCss from '#/styles.css?url'
 import type { ReactNode } from 'react'
-import type { Me } from '#/lib/server/api-loaders'
+import type { Me } from '#/lib/auth'
 
 export interface RouterContext {
   me: Me | null

@@ -1,8 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
-import type { Me } from '#/lib/server/api-loaders'
+import type { Me } from '#/lib/auth'
 import type { LinkProps } from '@tanstack/react-router'
-import { LOGOUT_HREF } from '#/lib/auth/session'
+import { LOGOUT_HREF } from '#/lib/auth'
 
 /** The Club layout: a 248px rail (wordmark, navigation, who you are) and the content column. */
 export function Shell({ me, children }: { me: Me; children: ReactNode }) {

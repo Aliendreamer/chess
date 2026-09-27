@@ -1,21 +1,6 @@
 import { redirect } from '@tanstack/react-router'
+import type { Me } from '../auth'
 import type { PingState } from '../pings'
-
-/** Mirrors the API's `GET api/me` response. */
-export interface Me {
-  id: number
-  subject: string
-  email?: string | null
-  roles: Array<string>
-  /** The display name (D23): Keycloak `preferred_username`, else `Player {id}`. */
-  username: string
-}
-
-export const ADMIN_ROLE = 'Admin'
-
-export function hasRole(me: Me | null | undefined, role: string): boolean {
-  return me?.roles.includes(role) ?? false
-}
 
 const LOGIN_REDIRECT = '/api/auth/login?returnTo=/'
 

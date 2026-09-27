@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createHubMultiplexer } from './hub-multiplexer'
 import type { HubPort } from './hub-multiplexer'
 import type { LiveFrame } from '../live'
-import { frame, fakeSocket as socket } from '#/test/live-fakes'
+import { frame, fakeSocket as socket } from '#/testing'
 
 /** A scriptable stand-in for the SignalR connection. */
 function fakeHub(opts: { failStart?: boolean } = {}) {

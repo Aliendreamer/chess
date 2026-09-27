@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { InviteView } from '#/lib/play'
 import type { LiveFrame } from '#/lib/live'
-import type { Me } from '#/lib/server/api-loaders'
+import type { Me } from '#/lib/auth'
 import { getInvite, postAcceptInvite, postCancelInvite } from '#/lib/server/api'
 import { category, topicId } from '#/lib/games'
 import { guestColor, isInviteView } from '#/lib/play'
-import { useLiveTopic } from '#/lib/useLiveTopic'
+import { useLiveTopic } from '#/lib/live'
 import { Button, Panel, SectionHeading } from '#/components/ui'
 
 /**

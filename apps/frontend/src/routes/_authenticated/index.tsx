@@ -4,7 +4,7 @@ import type { InviteView, QueueStatus } from '#/lib/play'
 import { getMyGames, postCreateInvite, postJoinQueue, postLeaveQueue } from '#/lib/server/api'
 import { PRESETS, category } from '#/lib/games'
 import { isQueueView, pairingGame } from '#/lib/play'
-import { useLiveTopic } from '#/lib/useLiveTopic'
+import { useLiveTopic } from '#/lib/live'
 import { Button, Chip, OptionTile, Panel, SectionHeading, buttonClass } from '#/components/ui'
 import { RecentGames } from '#/components/games'
 

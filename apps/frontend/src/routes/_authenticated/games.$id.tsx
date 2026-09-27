@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import type { GameSummary, GameView, MoveItem } from '#/lib/games'
 import type { GameCommand } from '#/lib/server/game-loaders'
 import type { LiveFrame } from '#/lib/live'
-import type { Me } from '#/lib/server/api-loaders'
+import type { Me } from '#/lib/auth'
 import { getGameMoves, getGamePage, getGameSummary, postGameCommand } from '#/lib/server/api'
 import {
   category,
@@ -16,9 +16,8 @@ import {
   resultText,
   topicId,
 } from '#/lib/games'
-import { applyFrame } from '#/lib/live'
+import { applyFrame, useLiveTopic } from '#/lib/live'
 import { applyOptimistic, clickSquare, legalTargets, needsPromotion } from '#/lib/moveInput'
-import { useLiveTopic } from '#/lib/useLiveTopic'
 import { Board, MoveList, PlayerStrip, PromotionPicker } from '#/components/games'
 import { Button, Panel } from '#/components/ui'
 

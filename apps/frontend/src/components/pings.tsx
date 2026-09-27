@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { PingState } from '#/lib/pings'
-import type { LiveStatus } from '#/lib/useLiveTopic'
+import type { LiveStatus } from '#/lib/live'
 import { isPingState } from '#/lib/pings'
-import { useLiveTopic } from '#/lib/useLiveTopic'
+import { useLiveTopic } from '#/lib/live'
 
 export interface PingFeedProps {
   id: string

@@ -13,7 +13,7 @@ test && pnpm build`. 🐳 marks steps that need the live stack.
 
 ## 3. Client lib
 
-- [ ] 3.1 `lib/auth.ts` (session + `Me`), `lib/live.ts` (+ `useLiveTopic`), `src/testing.ts`; remove `hasRole`,
+- [x] 3.1 `lib/auth.ts` (session + `Me`), `lib/live.ts` (+ `useLiveTopic`), `src/testing.ts`; remove `hasRole`,
       `ADMIN_ROLE` and `/forbidden`. Commit: `refactor(frontend): client lib grouped by feature`.
 
 ## 4. Server lib

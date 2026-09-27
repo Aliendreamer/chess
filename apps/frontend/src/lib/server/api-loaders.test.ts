@@ -1,7 +1,7 @@
 import { isRedirect } from '@tanstack/react-router'
 import { describe, expect, it } from 'vitest'
-import { ADMIN_ROLE, hasRole, loadMe, loadPingLive, sendPing } from './api-loaders'
-import type { Me } from './api-loaders'
+import { loadMe, loadPingLive, sendPing } from './api-loaders'
+import type { Me } from '../auth'
 import type { PingState } from '../pings'
 
 function fetchWith(status: number, body: string, contentType = 'application/json'): typeof fetch {
@@ -27,19 +27,6 @@ describe('loadMe', () => {
   })
   it('throws on other failures', async () => {
     await expect(loadMe(fetchWith(500, 'boom'))).rejects.toThrow(/500/)
-  })
-})
-
-describe('hasRole', () => {
-  it('names the backend realm role exactly', () => {
-    expect(ADMIN_ROLE).toBe('Admin')
-  })
-
-  it('checks roles and tolerates null', () => {
-    expect(hasRole({ ...me, roles: [ADMIN_ROLE] }, ADMIN_ROLE)).toBe(true)
-    expect(hasRole(me, ADMIN_ROLE)).toBe(false)
-    expect(hasRole(null, ADMIN_ROLE)).toBe(false)
-    expect(hasRole(undefined, 'User')).toBe(false)
   })
 })
 

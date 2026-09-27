@@ -3,7 +3,7 @@ import { BAD_TOPIC, UNAUTHENTICATED, openRelay, parseLiveUrl } from './live-rela
 import { HUB_UNAVAILABLE } from './hub-multiplexer'
 import type { RelayDeps } from './live-relay'
 import type { HubMultiplexer } from './hub-multiplexer'
-import { fakeSocket as socket } from '#/test/live-fakes'
+import { fakeSocket as socket } from '#/testing'
 
 describe('parseLiveUrl', () => {
   it('accepts the game kind with an N-form guid id', () => {
