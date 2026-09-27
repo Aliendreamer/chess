@@ -57,5 +57,4 @@ apps/frontend/e2e/.auth/
 
 # Local Stockfish download (GPLv3 binary, ~80 MB): never committed. The engine image bakes it in from here
 # (engine-play D1); downloading a pinned release at build time comes later.
-apps/backend/chessEngine/
 apps/engine/stockfish/
