@@ -88,7 +88,7 @@ engine is wired in, the Dockerfile should download a pinned release (URL + SHA-2
 Change 4 `presence-and-abandonment` archived 2026-09-26: BFF presence (instance id, 30 s refresh, 75 s lease),
 1-min abandonment claim (win/draw, reason Abandonment), browser auto-reconnect. Part 1 is complete. Every event a
 game persists must be tagged for `game.events` (projections stall on a seq gap) — the integration test caught it.
-The user will review the code next; nothing after bbb8e3e is pushed yet.
+2026-09-27: after the user's code review — domain models/EF configs one class per file, dead letters one `DeadLetterService` (also its health check), `PublisherLagHealthCheck` merged with its reader, frontend regrouped (`frontend-layout` spec: components/{ui,layout,games,pings}, lib/server by feature + `upstream.ts`, `useCommand`/`ErrorText`/`liveStatusText`, markup out of routes), and a fix: an uncreated `GameActor` no longer journals an abort. Nothing after bbb8e3e is pushed yet (ask first).
 
 ## Specs and plans — OpenSpec (from 2026-09-22)
 
