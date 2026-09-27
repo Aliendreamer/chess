@@ -15,8 +15,8 @@ test('a game against the computer: it thinks, answers, and takes no draw offers'
   // Choices only stick once the page has hydrated: retry until the tile reports itself selected.
   const form = page.getByTestId('engine-form')
   await expect(async () => {
-    await form.getByRole('button', { name: 'Level 1320' }).click()
-    await expect(form.getByRole('button', { name: 'Level 1320' })).toHaveAttribute(
+    await form.getByRole('button', { name: 'Level Casual' }).click()
+    await expect(form.getByRole('button', { name: 'Level Casual' })).toHaveAttribute(
       'aria-pressed',
       'true',
       {
@@ -28,7 +28,7 @@ test('a game against the computer: it thinks, answers, and takes no draw offers'
   await form.getByRole('button', { name: 'Play the computer' }).click()
   await expect(page).toHaveURL(/\/games\//)
 
-  await expect(page.getByTestId('strip-black')).toContainText('Stockfish 1320')
+  await expect(page.getByTestId('strip-black')).toContainText('Stockfish (Casual)')
   await expect(page.getByText('Untimed ·')).toBeVisible()
   await expect(page.getByTestId('strip-white')).not.toContainText(':') // no clock
 
@@ -37,7 +37,7 @@ test('a game against the computer: it thinks, answers, and takes no draw offers'
   await origin.click()
   await page.locator('[data-square="e4"]').click()
 
-  await expect(page.getByTestId('engine-thinking')).toHaveText('Stockfish 1320 is thinking…')
+  await expect(page.getByTestId('engine-thinking')).toHaveText('Stockfish (Casual) is thinking…')
   // The answer arrives as a live frame; the board is White's again.
   await expect(page.getByTestId('move-list')).toHaveText(/^1\.e4\S+$/, { timeout: 45_000 })
   await expect(page.getByTestId('engine-thinking')).toHaveCount(0)

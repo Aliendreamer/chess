@@ -259,9 +259,8 @@ function EngineForm({
         {levels.map((l) => (
           <OptionTile
             key={l.level}
-            figure={l.level === 'max' ? 'Max' : l.level}
-            caption={l.level === 'max' ? 'full strength' : 'Elo'}
-            label={`Level ${l.level}`}
+            figure={l.label}
+            label={`Level ${l.label}`}
             align="center"
             selected={l.level === level}
             onClick={() => setLevel(l.level)}

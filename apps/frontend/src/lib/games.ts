@@ -37,6 +37,8 @@ export interface GameView {
 /** A level the computer plays at, as `GET /api/engine-levels` lists it. */
 export interface EngineLevel {
   level: string
+  /** What people see: Casual, Club, Expert, Master, Maximum. */
+  label: string
   name: string
 }
 

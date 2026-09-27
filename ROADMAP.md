@@ -154,7 +154,7 @@ Goal: the architecture exists end to end with a trivial domain, so every later p
 - Built as `engine-play` (2026-09-27): the Stockfish pool lives in its own worker container (`apps/engine`), not an
   `EngineActor` — it keeps engine CPU away from the game clocks and scales on its own. Moves use their own topics
   (`engine.moves.requests` / `.results`); `analysis.*` stays for Part 4. Strength via `UCI_LimitStrength` +
-  `UCI_Elo` (levels 1320, 1600, 2000, 2400, max); engine games are untimed for now, 5–10 s per engine move.
+  `UCI_Elo` (levels 1320, 1600, 2000, 2400, max, shown as Casual, Club, Expert, Master, Maximum); engine games are untimed for now, 5–10 s per engine move.
 - The same `GameActor` — the engine is a seeded player, not a special game type.
 - Verify: `tools/localdev/verify-part2.sh` (three strengths, an engine restart mid-think, a full game).
 
@@ -189,8 +189,8 @@ Goal: the architecture exists end to end with a trivial domain, so every later p
 - ~~Whether Cluster.Sharding is in scope for Part 1~~ — settled by Part 0: every entity is sharded.
 - Notification channel for Part 3 (email vs in-app only).
 - Engine levels for people: Stockfish's `UCI_Elo` is calibrated at 120 s + 1 s and anchored to CCRL 40/4 (engines,
-  not humans), so "1320" is far stronger than a 1320 human — in `verify-part2.sh` it beat full-strength Stockfish at
-  200 ms a move. Human-feeling levels need our own handicaps (shallower search, deliberate inaccuracies) or other
-  names. To decide before advertising levels by Elo.
+  not humans), so level 1320 is far stronger than a 1320 human — in `verify-part2.sh` it beat full-strength Stockfish
+  at 200 ms a move. The levels are now named Casual … Maximum instead of by Elo (2026-09-27); making the bottom level
+  beatable for beginners still needs our own handicaps (shallower search, deliberate inaccuracies).
 - A desktop app for the UI: how to package or build one (for example wrapping the web UI, or a native client over
   the same BFF). Parked on purpose; to be thought through later, not now.

@@ -208,8 +208,9 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   `/api/me/games`, `/api/games/{id}`, `…/moves`, `…/pgn` read the replica; a finished game's live snapshot comes from
   `rm_games` (`IEndedGameReader`) so its actor is not woken.
 
-- **Games against the computer (engine-play)** — engine players are seeded `users` (ids -1…-5 = Stockfish 1320,
-  1600, 2000, 2400, max; `Games/EngineLevel`), and `GameCreated`/`CreateGame` carry an optional `EnginePlayer(side,
+- **Games against the computer (engine-play)** — engine players are seeded `users` (ids -1…-5 = levels 1320,
+  1600, 2000, 2400, max, shown as Stockfish (Casual/Club/Expert/Master/Maximum) because `UCI_Elo` is an engine
+  scale; `Games/EngineLevel`), and `GameCreated`/`CreateGame` carry an optional `EnginePlayer(side,
 level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or increment; never a preset, so not in the
   queue or invites; the first-move abort only while a person is to move; idle passivation after
   `Akka:UntimedIdleMinutes`), ignore presence (no abandonment) and refuse draw offers. `Engine/`:

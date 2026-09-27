@@ -288,7 +288,8 @@ GameActor ──journal──▶ game.events ──▶ EngineRequestConsumer ─
     └──── MakeMove(level's user, AtPly) ◀── EngineMoveConsumer ◀── engine.moves.results ◀───────┘
 ```
 
-- The engine is a player: five seeded users (Stockfish 1320 … max), so names, PGN and lists need nothing new. A game
+- The engine is a player: five seeded users, Stockfish (Casual) … (Maximum) for the
+  levels 1320 … max, so names, PGN and lists need nothing new. A game
   against it is `untimed`; presence is ignored (no abandonment) and draw offers are refused.
 - Nothing new is journalled for the engine: the request consumer derives "the engine is to move" from each event and
   keeps its watermark on an `engine_games` row. The answer is an ordinary move pinned to its ply, so an answer that

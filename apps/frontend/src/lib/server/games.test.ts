@@ -248,7 +248,7 @@ describe('games against the computer', () => {
   })
 
   it('lists the levels', async () => {
-    const levels = [{ level: '1320', name: 'Stockfish 1320' }]
+    const levels = [{ level: '1320', label: 'Casual', name: 'Stockfish (Casual)' }]
 
     expect(await loadEngineLevels(fakeFetch(200, { levels }))).toEqual(levels)
   })

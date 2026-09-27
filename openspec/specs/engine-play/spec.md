@@ -9,14 +9,15 @@ moves requested and applied through the ordinary game path, and recovery when th
 
 ### Requirement: A player can start a game against the computer at a chosen level
 
-A signed-in player SHALL be able to start a game against Stockfish at one of five levels (1320, 1600, 2000, 2400, max)
+A signed-in player SHALL be able to start a game against Stockfish at one of five levels (1320, 1600, 2000, 2400, max,
+shown as Casual, Club, Expert, Master and Maximum because `UCI_Elo` is an engine scale, not a human one)
 choosing White, Black or random. Each level MUST be a seeded user, so the game has two players like any other and
 shows the engine's name in lists and PGN.
 
 #### Scenario: Starting as White against 1600
 
 - **WHEN** a player posts `/api/engine-games` with level 1600 and colour white
-- **THEN** a game starts with the player as White and `Stockfish 1600` as Black, and the answer is its view
+- **THEN** a game starts with the player as White and `Stockfish (Club)` as Black, and the answer is its view
 
 #### Scenario: An unknown level
 
@@ -42,7 +43,7 @@ through the same command path and rules as a human's move.
 
 #### Scenario: The engine replies
 
-- **WHEN** the human plays 1.e4 against Stockfish 2000
+- **WHEN** the human plays 1.e4 against Stockfish (Expert)
 - **THEN** within about 5–10 s a legal reply for Black appears in the game, its live frame and its move list
 
 #### Scenario: The engine plays first

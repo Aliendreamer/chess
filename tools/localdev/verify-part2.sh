@@ -86,7 +86,7 @@ for level in 1320 2000 max; do
   step "10 moves against $level"
   G="$(start "$level")"
   v="$(play "$G" 10)"
-  name="$( [[ "$level" == "max" ]] && echo "Stockfish" || echo "Stockfish $level")"
+  case "$level" in 1320) name="Stockfish (Casual)" ;; 2000) name="Stockfish (Expert)" ;; max) name="Stockfish (Maximum)" ;; esac
   [[ "$(as "http://$API_HOST/api/games/$G" | field black)" == "$name" ]] || fail "the read side does not name Black $name"
   echo "ok ($G, ply $(num ply <<<"$v"), Black is $name)"
 done
@@ -112,7 +112,7 @@ if [[ "$QUICK" == "0" ]]; then
     sleep 0.25
   done
   pgn="$(as "http://$API_HOST/api/games/$G/pgn")"
-  grep -q '\[Black "Stockfish 1320"\]' <<<"$pgn" || fail "PGN Black tag wrong: $pgn"
+  grep -q '\[Black "Stockfish (Casual)"\]' <<<"$pgn" || fail "PGN Black tag wrong: $pgn"
   grep -q "\[Result \"$result\"\]" <<<"$pgn" || fail "PGN Result tag is not $result"
   echo "ok ($G: $result by $reason after $(num ply <<<"$v") plies)"
 fi

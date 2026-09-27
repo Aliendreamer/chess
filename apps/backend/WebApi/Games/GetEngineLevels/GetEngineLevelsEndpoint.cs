@@ -19,6 +19,6 @@ internal sealed class GetEngineLevelsEndpoint : EndpointWithoutRequest<GetEngine
     public override Task HandleAsync(CancellationToken ct)
     {
         HttpContext.Response.Headers[HeaderNames.CacheControl] = "private, max-age=86400";
-        return Send.OkAsync(new GetEngineLevelsResponse([.. EngineLevel.All.Select(l => new EngineLevelItem(l.Level, l.Name))]), ct);
+        return Send.OkAsync(new GetEngineLevelsResponse([.. EngineLevel.All.Select(l => new EngineLevelItem(l.Level, l.Label, l.Name))]), ct);
     }
 }
