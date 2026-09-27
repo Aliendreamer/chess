@@ -26,6 +26,7 @@ public sealed class GameMapperTests
         { new PlayerLeft(2, At), "game.player-left" },
         { new PlayerReturned(2, At), "game.player-returned" },
         { new AbandonmentOffered(1, At), "game.abandonment-offered" },
+        { new GameCreated(1, -2, "untimed", 0, 0, At, new EnginePlayer("black", "1600")), "game.created" },
     };
 
     [Theory]
@@ -47,6 +48,16 @@ public sealed class GameMapperTests
 
         Assert.True(EventJson.TryDeserialize(r.Json, out EventEnvelope<MoveMade>? e));
         Assert.Equal(move, e.Payload);
+    }
+
+    [Fact]
+    public void An_engine_game_carries_its_engine_seat_on_the_wire()
+    {
+        OutboxRecord r = Registry().Map($"game-{Id}", 1, new GameCreated(1, -2, "untimed", 0, 0, At, new EnginePlayer("black", "1600")));
+
+        Assert.Contains("\"engine\":{\"side\":\"black\",\"level\":\"1600\"}", r.Json, StringComparison.Ordinal);
+        Assert.True(EventJson.TryDeserialize(r.Json, out EventEnvelope<GameCreated>? e));
+        Assert.Equal(new EnginePlayer("black", "1600"), e.Payload.Engine);
     }
 
     [Fact]

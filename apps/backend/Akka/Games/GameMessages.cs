@@ -1,3 +1,4 @@
+using Chess.Backend.Events;
 using Chess.Backend.Games;
 
 namespace Chess.Backend.Akka.Games;
@@ -8,7 +9,9 @@ internal interface IGameCommand
     Guid GameId { get; }
 }
 
-internal sealed record CreateGame(Guid GameId, long WhiteId, long BlackId, TimeControl TimeControl) : IGameCommand;
+/// <summary>A new game; <paramref name="Engine"/> names the side the engine plays in a game against it (engine-play D3).</summary>
+internal sealed record CreateGame(Guid GameId, long WhiteId, long BlackId, TimeControl TimeControl, EnginePlayer? Engine = null)
+    : IGameCommand;
 
 internal sealed record MakeMove(Guid GameId, long UserId, string Uci) : IGameCommand;
 
@@ -78,7 +81,9 @@ internal sealed record GameView(
     string? Reason,
     long Seq,
     long? AbsentId = null,
-    long? ClaimableBy = null);
+    long? ClaimableBy = null,
+    string? EngineSide = null,
+    string? EngineLevel = null);
 
 /// <summary>
 /// Journal snapshot: the UCI move list, not a FEN, because threefold repetition needs the history (design D2).
@@ -99,4 +104,5 @@ internal sealed record GameSnapshot(
     string? Reason,
     DateTimeOffset CreatedAt,
     DateTimeOffset LastMoveAt,
-    long[]? Absent = null);
+    long[]? Absent = null,
+    EnginePlayer? Engine = null);

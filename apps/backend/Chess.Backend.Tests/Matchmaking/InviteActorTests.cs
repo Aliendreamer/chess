@@ -4,6 +4,7 @@ using Akka.TestKit;
 using Akka.TestKit.Xunit2;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Matchmaking;
+using Chess.Backend.Events;
 using Chess.Backend.Games;
 using Chess.Backend.Messaging;
 
@@ -21,7 +22,7 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
     {
         public List<(long White, long Black, string Tc, Guid GameId)> Started { get; } = [];
 
-        public Task<GameView> StartAsync(long whiteId, long blackId, TimeControl timeControl, CancellationToken ct)
+        public Task<GameView> StartAsync(long whiteId, long blackId, TimeControl timeControl, CancellationToken ct, EnginePlayer? engine = null)
         {
             Guid id = Guid.CreateVersion7();
             lock (Started)

@@ -11,7 +11,16 @@ internal sealed record GameCreated(
     [property: JsonPropertyName("timeControl")] string TimeControl,
     [property: JsonPropertyName("initialMs")] long InitialMs,
     [property: JsonPropertyName("incrementMs")] long IncrementMs,
-    [property: JsonPropertyName("at")] DateTimeOffset At);
+    [property: JsonPropertyName("at")] DateTimeOffset At,
+    [property: JsonPropertyName("engine")] EnginePlayer? Engine = null);
+
+/// <summary>
+/// Which side the engine plays, at which level (engine-play D3); null in a game between people. Optional, so journal
+/// rows and Kafka payloads written before engine games still read.
+/// </summary>
+internal sealed record EnginePlayer(
+    [property: JsonPropertyName("side")] string Side,
+    [property: JsonPropertyName("level")] string Level);
 
 /// <summary>One accepted move: the canonical record (UCI + SAN), the position after it, and both clocks (D13, D22).</summary>
 internal sealed record MoveMade(

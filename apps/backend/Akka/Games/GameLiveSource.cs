@@ -1,5 +1,6 @@
 using Akka.Cluster.Sharding;
 using Chess.Backend.Data.ReadModels;
+using Chess.Backend.Events;
 using Chess.Backend.Extensions;
 using Chess.Backend.Games;
 using Chess.Backend.Messaging;
@@ -67,15 +68,16 @@ internal sealed partial class GameLiveSource(IRequiredActor<GameActor> region, I
 /// <summary>How games come into being (design D6). Matchmaking and invites (change 3) are its callers; no endpoint yet.</summary>
 internal interface IGameStarter
 {
-    Task<GameView> StartAsync(long whiteId, long blackId, TimeControl timeControl, CancellationToken ct);
+    /// <summary>Starts a game; <paramref name="engine"/> seats the engine in a game against it (engine-play D3).</summary>
+    Task<GameView> StartAsync(long whiteId, long blackId, TimeControl timeControl, CancellationToken ct, EnginePlayer? engine = null);
 }
 
 internal sealed class GameStarter(IRequiredActor<GameActor> region, IOptions<ApiOptions> api) : IGameStarter
 {
-    public async Task<GameView> StartAsync(long whiteId, long blackId, TimeControl timeControl, CancellationToken ct)
+    public async Task<GameView> StartAsync(long whiteId, long blackId, TimeControl timeControl, CancellationToken ct, EnginePlayer? engine = null)
     {
         Guid id = Guid.CreateVersion7();
-        object reply = await region.ActorRef.Ask(new CreateGame(id, whiteId, blackId, timeControl), api.Value.AskTimeout, ct);
+        object reply = await region.ActorRef.Ask(new CreateGame(id, whiteId, blackId, timeControl, engine), api.Value.AskTimeout, ct);
         return reply as GameView
             ?? throw new InvalidOperationException($"Game {id:N} was not created: {(reply as GameRejected)?.Reason ?? reply.GetType().Name}");
     }

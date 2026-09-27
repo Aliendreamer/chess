@@ -60,6 +60,9 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private DateTimeOffset _createdAt;
     private DateTimeOffset _lastMoveAt;
 
+    /// <summary>The engine's side and level in a game against it; null between people (engine-play D3, D5).</summary>
+    private EnginePlayer? _engine;
+
     /// <summary>When the side to move's clock started running; null while no clock runs (before both first moves).</summary>
     private DateTimeOffset? _turnStartedAt;
 
@@ -162,7 +165,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     {
         if (_created)
         {
-            bool same = cmd.WhiteId == _white && cmd.BlackId == _black && cmd.TimeControl == _timeControl;
+            bool same = cmd.WhiteId == _white && cmd.BlackId == _black && cmd.TimeControl == _timeControl && cmd.Engine == _engine;
             Reply(same ? View() : Rejected(RejectionCode.Conflict, "A different game already exists with this id."));
             return;
         }
@@ -173,8 +176,14 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
+        if (cmd.Engine is { } engine && !IsEngineSeat(engine, cmd.WhiteId, cmd.BlackId))
+        {
+            Reply(Rejected(RejectionCode.Conflict, "The engine must sit on its side as the player of its level."));
+            return;
+        }
+
         TimeControl tc = cmd.TimeControl;
-        PersistAndReply([new GameCreated(cmd.WhiteId, cmd.BlackId, tc.ToString(), tc.InitialMs, tc.IncrementMs, _clock.GetUtcNow())]);
+        PersistAndReply([new GameCreated(cmd.WhiteId, cmd.BlackId, tc.ToString(), tc.InitialMs, tc.IncrementMs, _clock.GetUtcNow(), cmd.Engine)]);
     }
 
     private void HandleMove(MakeMove cmd)
@@ -260,6 +269,12 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
+        if (_engine is not null)
+        {
+            Reply(Rejected(RejectionCode.Conflict, "The computer does not take draw offers."));
+            return;
+        }
+
         if (_drawOfferedBy == Opponent(cmd.UserId))
         {
             // Both want a draw: offering against a pending offer accepts it.
@@ -336,8 +351,9 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
 
     private void HandlePresence(ReportPresence report)
     {
-        // Fire-and-forget from the hub: spectators and finished games are simply ignored.
-        if (!_created || _status == GameStatus.Ended || (report.UserId != _white && report.UserId != _black))
+        // Fire-and-forget from the hub: spectators and finished games are simply ignored, and so is every report in a
+        // game against the engine, which never connects (engine-play D5: no abandonment there).
+        if (!_created || _engine is not null || _status == GameStatus.Ended || (report.UserId != _white && report.UserId != _black))
         {
             return;
         }
@@ -541,6 +557,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             : throw new InvalidOperationException($"Unknown time control {e.TimeControl} in the journal.");
         _whiteMs = e.InitialMs;
         _blackMs = e.InitialMs;
+        _engine = e.Engine;
         _status = GameStatus.Created;
         _rules = ChessRules.NewGame();
         _createdAt = e.At;
@@ -619,6 +636,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _lastSan = s.LastSan;
         _whiteMs = s.WhiteMs;
         _blackMs = s.BlackMs;
+        _engine = s.Engine;
         _status = s.Status;
         _drawOfferedBy = s.DrawOfferedBy;
         _drawBlocked = s.DrawBlocked;
@@ -644,7 +662,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _eventsSinceSnapshot = 0;
         SaveSnapshot(new GameSnapshot(
             _white, _black, _timeControl.ToString(), [.. _rules.Moves], _lastSan, _whiteMs, _blackMs, _status,
-            _drawOfferedBy, _drawBlocked, _result, _reason, _createdAt, _lastMoveAt, [.. _absentSince.Keys]));
+            _drawOfferedBy, _drawBlocked, _result, _reason, _createdAt, _lastMoveAt, [.. _absentSince.Keys], _engine));
     }
 
     private void Publish() => _mediator?.Tell(new Publish(LiveTopics.PubSub, new LiveFrame(Topic, LastSequenceNr, View())));
@@ -821,7 +839,16 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _gameId, _white, _black, _timeControl.ToString(), _status, _rules.Fen, Ply, _rules.SideToMove.ToString(),
         _rules.Moves.Count > 0 ? _rules.Moves[^1] : null, _lastSan,
         CurrentMs(Side.White, _clock.GetUtcNow()), CurrentMs(Side.Black, _clock.GetUtcNow()), _clock.GetUtcNow(),
-        _drawOfferedBy, _result, _reason, LastSequenceNr, AbsentId, ClaimableBy(_clock.GetUtcNow()));
+        _drawOfferedBy, _result, _reason, LastSequenceNr, AbsentId, ClaimableBy(_clock.GetUtcNow()), _engine?.Side, _engine?.Level);
+
+    /// <summary>The engine's seat is valid when its side is white or black and that side's player is its level's user.</summary>
+    private static bool IsEngineSeat(EnginePlayer engine, long whiteId, long blackId) =>
+        EngineLevel.Find(engine.Level) is { } level && engine.Side switch
+        {
+            "white" => whiteId == level.UserId,
+            "black" => blackId == level.UserId,
+            _ => false,
+        };
 
     private GameRejected NotFound() => Rejected(RejectionCode.NotFound, "No such game.");
 
