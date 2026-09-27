@@ -59,3 +59,28 @@ Imports across folders SHALL use the `#/…` alias. The `@/…` alias MUST NOT e
 
 - **WHEN** `routes/pgn/$id.ts` needs the PGN download handler
 - **THEN** it imports `#/lib/server/games`
+
+### Requirement: Shared page plumbing is defined once
+
+A page SHALL run its commands through `useCommand()` (`components/ui.tsx`: `busy`, `error`, `run`), show refusals with
+`<ErrorText>`, name its live connection with `liveStatusText()` (`lib/live.ts`), and hand `useLiveTopic` its loader
+state as `initial: { seq, payload }`. A page MUST NOT re-implement the busy/error state, the error line, the status
+text or the initial frame.
+
+#### Scenario: A new command button
+
+- **WHEN** a page adds a "takeback" button
+- **THEN** it calls `run(() => postGameCommand(...))` from the page's `useCommand()` and shows `error` with
+  `<ErrorText>`, with no `useState` for busy or error of its own
+
+### Requirement: Route files hold page logic; markup lives in components
+
+A route file SHALL hold the route definition and the page's state and wiring (loader data, live topic, commands).
+Presentational parts (panels, controls, lists) MUST live in `components/` and hooks that only derive data from a view
+(such as `useLocalClocks`) in `lib/`.
+
+#### Scenario: A new panel on the game page
+
+- **WHEN** the game page needs a "rematch" panel
+- **THEN** the panel is a component in `components/games.tsx` taking props and callbacks, and the route only decides
+  when to show it and what its callbacks do

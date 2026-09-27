@@ -147,7 +147,9 @@ to each app's own lint target). Keep `--no-stash`.
   `components/{ui,layout,games,pings}.tsx`; client-safe types and helpers in `lib/{auth,live,games,play,pings,moveInput}.ts`;
   `lib/server/` = `api.ts` (server functions + input checks), `cookies.ts`, `upstream.ts` (env, `LOGIN_REDIRECT`,
   `isGuid`, `readJson`, `postCommand` — defined once, never copied), and one file per feature (`auth`, `games`, `play`,
-  `pings`, `live-relay`, `live-hub`). Client code never imports `lib/server/` except `api.ts`; imports use `#/` only.
+  `pings`, `live-relay`, `live-hub`). Client code never imports `lib/server/` except `api.ts`; imports use `#/` only. Pages run commands through
+  `useCommand()` + `<ErrorText>` (`components/ui.tsx`), name the connection with `liveStatusText()`, give `useLiveTopic`
+  `initial: { seq, payload }`, and keep markup in `components/` (route files = state and wiring).
 - **Live relay (frontend + backend)** — browsers open `/api/ws/live/{kind}/{id}` on `app.`; `lib/server/live-relay.ts`
   checks the kind allow-list, validates the session with `GET /api/me` (4400/4401 otherwise, re-checked every
   `RELAY_REVALIDATE_MS`) and subscribes through `lib/server/live-hub.ts`: ONE SignalR connection per SSR process to
