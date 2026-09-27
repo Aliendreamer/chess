@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
+using Confluent.Kafka;
+using Confluent.Kafka.Admin;
 using Testcontainers.PostgreSql;
 using Testcontainers.Redpanda;
 
@@ -59,6 +61,9 @@ public sealed class StackFixture : IAsyncLifetime
         "Akka__Port",
         "Akka__AbandonAfterSeconds",
         "Akka__PresenceLeaseSeconds",
+        "Engine__MinThinkMs",
+        "Engine__MaxThinkMs",
+        "Engine__StallSeconds",
     ];
 
     /// <summary>Presence timings shortened from 60 s / 75 s so abandonment is testable in seconds.</summary>
@@ -66,9 +71,13 @@ public sealed class StackFixture : IAsyncLifetime
 
     public const int PresenceLeaseSeconds = 6;
 
+    /// <summary>The engine's stall time shortened from 60 s, so a lost request is re-asked within the test.</summary>
+    public const int EngineStallSeconds = 3;
+
     public async Task InitializeAsync()
     {
         await Task.WhenAll(_postgres.StartAsync(), _redpanda.StartAsync());
+        await CreateEngineTopicsAsync();
 
         Environment.SetEnvironmentVariable("ConnectionStrings__Postgres", PostgresConnectionString);
         Environment.SetEnvironmentVariable("ConnectionStrings__PostgresReplica", PostgresConnectionString);
@@ -77,6 +86,9 @@ public sealed class StackFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("Akka__Port", AkkaPort.ToString(CultureInfo.InvariantCulture));
         Environment.SetEnvironmentVariable("Akka__AbandonAfterSeconds", AbandonAfterSeconds.ToString(CultureInfo.InvariantCulture));
         Environment.SetEnvironmentVariable("Akka__PresenceLeaseSeconds", PresenceLeaseSeconds.ToString(CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable("Engine__MinThinkMs", "100");
+        Environment.SetEnvironmentVariable("Engine__MaxThinkMs", "200");
+        Environment.SetEnvironmentVariable("Engine__StallSeconds", EngineStallSeconds.ToString(CultureInfo.InvariantCulture));
     }
 
     public async Task DisposeAsync()
@@ -88,6 +100,20 @@ public sealed class StackFixture : IAsyncLifetime
 
         await _postgres.DisposeAsync();
         await _redpanda.DisposeAsync();
+    }
+
+    /// <summary>
+    /// The engine topics exist before anything subscribes, as <c>redpanda-init</c> makes them in the local stack; the other
+    /// topics are auto-created by their first producer, which only ever runs before their consumers read.
+    /// </summary>
+    private async Task CreateEngineTopicsAsync()
+    {
+        using IAdminClient admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = BootstrapServers }).Build();
+        await admin.CreateTopicsAsync(
+        [
+            new TopicSpecification { Name = "engine.moves.requests", NumPartitions = 3, ReplicationFactor = 1 },
+            new TopicSpecification { Name = "engine.moves.results", NumPartitions = 3, ReplicationFactor = 1 },
+        ]);
     }
 
     private static int FreeTcpPort()

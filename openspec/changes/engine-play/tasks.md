@@ -27,7 +27,7 @@ typecheck, lint, check, test, build; engine: build, unit tests, format). 🐳 ma
       `Engine` settings. Tests. Commit: `feat(backend): engine moves over kafka`.
 - [x] 3.4 `POST /api/engine-games`, `GET /api/engine-levels` (WebApi folders). Commit: `feat(backend): engine game
 endpoints`.
-- [ ] 3.5 🐳 Integration test: an engine game round trip with a fake responder, and a stall re-request.
+- [x] 3.5 🐳 Integration test: an engine game round trip with a fake responder, and a stall re-request.
 
 ## 4. Frontend
 
