@@ -1,7 +1,6 @@
 import { isRedirect } from '@tanstack/react-router'
 import { describe, expect, it } from 'vitest'
-import { loadMe, loadPingLive, sendPing } from './api-loaders'
-import type { Me } from '../auth'
+import { loadPingLive, sendPing } from './pings'
 import type { PingState } from '../pings'
 
 function fetchWith(status: number, body: string, contentType = 'application/json'): typeof fetch {
@@ -9,7 +8,6 @@ function fetchWith(status: number, body: string, contentType = 'application/json
     Promise.resolve(new Response(body, { status, headers: { 'content-type': contentType } }))
 }
 
-const me: Me = { id: 1, subject: 'sub-1', email: 'a@b.c', roles: ['User'], username: 'ann' }
 const pingState: PingState = {
   pingId: 'p1',
   count: 2,
@@ -17,18 +15,6 @@ const pingState: PingState = {
   lastAt: '2026-09-22T10:00:00+00:00',
   lastSeq: 2,
 }
-
-describe('loadMe', () => {
-  it('returns the identity on 200', async () => {
-    await expect(loadMe(fetchWith(200, JSON.stringify(me)))).resolves.toEqual(me)
-  })
-  it('returns null on 401 so the guard can redirect', async () => {
-    await expect(loadMe(fetchWith(401, ''))).resolves.toBeNull()
-  })
-  it('throws on other failures', async () => {
-    await expect(loadMe(fetchWith(500, 'boom'))).rejects.toThrow(/500/)
-  })
-})
 
 describe('loadPingLive', () => {
   it('returns the actor state on 200', async () => {

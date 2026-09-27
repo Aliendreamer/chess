@@ -59,6 +59,12 @@ export interface MoveItem {
   at: string
 }
 
+/** A command on a game, as the page sends it; `lib/server/api.ts` checks it again before it reaches the API. */
+export type GameCommand =
+  | { kind: 'move'; uci: string }
+  | { kind: 'claim'; outcome: 'win' | 'draw' }
+  | { kind: 'resign' | 'draw-offer' | 'draw-accept' | 'draw-decline' | 'abort' }
+
 export function isGameView(value: unknown): value is GameView {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>

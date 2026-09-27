@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import type {} from '@tanstack/react-start' // activates the `server` route-option augmentation for tsc
-import { proxyAuth } from '../../../lib/server/auth-proxy'
+import { proxyAuth } from '#/lib/server/auth'
 
 // PUBLIC: deliberately outside `_authenticated` — login must be reachable while anonymous.
 const handler = ({ request, params }: { request: Request; params: { _splat?: string } }) =>

@@ -1,9 +1,7 @@
 import { redirect } from '@tanstack/react-router'
-import { postCommand } from './game-loaders'
-import type { CommandOutcome } from './game-loaders'
+import { LOGIN_REDIRECT, postCommand, readJson } from './upstream'
+import type { CommandOutcome } from './upstream'
 import type { CursorPage, InviteView, MyGameItem, QueueStatus } from '../play'
-
-const LOGIN_REDIRECT = '/api/auth/login?returnTo=/'
 
 /**
  * `POST /api/matchmaking/{tc}`. A plain join always seeks a new game; a heartbeat (`?heartbeat=true`, every 25 s
@@ -37,9 +35,7 @@ export function createInvite(
 export async function loadInvite(fetchImpl: typeof fetch, id: string): Promise<InviteView | null> {
   const res = await fetchImpl(`/api/invites/${id}`)
   if (res.status === 404 || res.status === 400) return null
-  if (res.status === 401) throw redirect({ href: LOGIN_REDIRECT })
-  if (!res.ok) throw new Error(`GET /api/invites/${id} failed with ${res.status}`)
-  return (await res.json()) as InviteView
+  return readJson<InviteView>(res, `GET /api/invites/${id}`)
 }
 
 export function acceptInvite(
@@ -63,8 +59,8 @@ export async function loadMyGames(
 ): Promise<CursorPage<MyGameItem>> {
   const query = new URLSearchParams({ limit: String(page.limit) })
   if (page.cursor) query.set('cursor', page.cursor)
-  const res = await fetchImpl(`/api/me/games?${query.toString()}`)
-  if (res.status === 401) throw redirect({ href: LOGIN_REDIRECT })
-  if (!res.ok) throw new Error(`GET /api/me/games failed with ${res.status}`)
-  return (await res.json()) as CursorPage<MyGameItem>
+  return readJson<CursorPage<MyGameItem>>(
+    await fetchImpl(`/api/me/games?${query.toString()}`),
+    'GET /api/me/games',
+  )
 }

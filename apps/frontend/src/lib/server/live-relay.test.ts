@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { BAD_TOPIC, UNAUTHENTICATED, openRelay, parseLiveUrl } from './live-relay'
-import { HUB_UNAVAILABLE } from './hub-multiplexer'
+import { HUB_UNAVAILABLE } from './live-hub'
 import type { RelayDeps } from './live-relay'
-import type { HubMultiplexer } from './hub-multiplexer'
+import type { HubMultiplexer } from './live-hub'
 import { fakeSocket as socket } from '#/testing'
 
 describe('parseLiveUrl', () => {

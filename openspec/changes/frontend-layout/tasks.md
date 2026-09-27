@@ -18,7 +18,7 @@ test && pnpm build`. 🐳 marks steps that need the live stack.
 
 ## 4. Server lib
 
-- [ ] 4.1 `lib/server/upstream.ts`, `auth.ts`, `games.ts`, `play.ts`, `pings.ts`, `live-relay.ts`, `live-hub.ts`; one
+- [x] 4.1 `lib/server/upstream.ts`, `auth.ts`, `games.ts`, `play.ts`, `pings.ts`, `live-relay.ts`, `live-hub.ts`; one
       login redirect and GUID check; the Nitro route and `vite.config.ts` imports; `#/` everywhere; drop the `@/*`
       alias. Commit: `refactor(frontend): server code by feature, shared plumbing once`.
 - [ ] 4.2 🐳 Recreate the frontend container, then run Playwright (all specs) and `verify-part1.sh`.

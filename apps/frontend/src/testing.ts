@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import type { LiveFrame } from '#/lib/live'
-import type { LocalSocket } from '#/lib/server/hub-multiplexer'
+import type { LocalSocket } from '#/lib/server/live-hub'
 
 /** A live frame whose payload echoes its seq, so a test can tell frames apart by value. */
 export const frame = (topic: string, seq: number): LiveFrame => ({ topic, seq, payload: { seq } })

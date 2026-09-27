@@ -8,7 +8,7 @@ import {
   leaveQueue,
   loadInvite,
   loadMyGames,
-} from './play-loaders'
+} from './play'
 
 const INVITE = '7c9e6679742540de944be07fc1f90ae7'
 

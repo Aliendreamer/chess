@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { proxyAuth } from './auth-proxy'
+import { isRedirect } from '@tanstack/react-router'
+import { loadMe, proxyAuth } from './auth'
+import type { Me } from '../auth'
 
 const env = { API_URL: 'http://chess-backend:8080/' }
 
@@ -107,5 +109,24 @@ describe('proxyAuth', () => {
     await expect(
       proxyAuth(new Request('http://app.chess.localhost/api/auth/login'), 'login', fetch, {}),
     ).rejects.toThrow(/API_URL/)
+  })
+})
+
+function fetchWith(status: number, body: string, contentType = 'application/json'): typeof fetch {
+  return () =>
+    Promise.resolve(new Response(body, { status, headers: { 'content-type': contentType } }))
+}
+
+const me: Me = { id: 1, subject: 'sub-1', email: 'a@b.c', roles: ['User'], username: 'ann' }
+
+describe('loadMe', () => {
+  it('returns the identity on 200', async () => {
+    await expect(loadMe(fetchWith(200, JSON.stringify(me)))).resolves.toEqual(me)
+  })
+  it('returns null on 401 so the guard can redirect', async () => {
+    await expect(loadMe(fetchWith(401, ''))).resolves.toBeNull()
+  })
+  it('throws on other failures', async () => {
+    await expect(loadMe(fetchWith(500, 'boom'))).rejects.toThrow(/500/)
   })
 })

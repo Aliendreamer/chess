@@ -1,5 +1,6 @@
 import { cookiesAreSecure, forwardCookieHeader, rehomeSetCookie } from './cookies'
-import { apiUrl } from './config'
+import { apiUrl } from './upstream'
+import type { Me } from '../auth'
 
 /**
  * Server-to-server proxy for `/api/auth/<splat>`: forwards the browser's request inward with only the auth
@@ -43,4 +44,12 @@ export async function proxyAuth(
   const body =
     upstream.status === 204 || upstream.status === 304 ? null : await upstream.arrayBuffer()
   return new Response(body, { status: upstream.status, headers: out })
+}
+
+/** `GET /api/me`: 401 ⇒ null (the guard redirects); anything else non-2xx ⇒ throw. */
+export async function loadMe(fetchImpl: typeof fetch): Promise<Me | null> {
+  const res = await fetchImpl('/api/me')
+  if (res.status === 401) return null
+  if (!res.ok) throw new Error(`GET /api/me failed with ${res.status}`)
+  return (await res.json()) as Me
 }

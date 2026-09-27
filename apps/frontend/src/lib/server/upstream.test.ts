@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { apiUrl, keycloakTokenUrl, relayClient, relayRevalidateMs } from './config'
+import { apiUrl, keycloakTokenUrl, relayClient, relayRevalidateMs } from './upstream'
 
 describe('server config', () => {
   it('reads the relay settings', () => {

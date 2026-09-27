@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import type { GameSummary, GameView, MoveItem } from '#/lib/games'
-import type { GameCommand } from '#/lib/server/game-loaders'
+import type { GameCommand, GameSummary, GameView, MoveItem } from '#/lib/games'
 import type { LiveFrame } from '#/lib/live'
 import type { Me } from '#/lib/auth'
 import { getGameMoves, getGamePage, getGameSummary, postGameCommand } from '#/lib/server/api'

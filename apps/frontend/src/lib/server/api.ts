@@ -2,9 +2,10 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader } from '@tanstack/react-start/server'
 import { PRESETS } from '../games'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
-import { apiUrl } from './config'
-import { loadMe, loadPingLive, sendPing } from './api-loaders'
-import { loadGameLive, loadGameMoves, loadGameSummary, sendGameCommand } from './game-loaders'
+import { apiUrl, isGuid } from './upstream'
+import { loadMe } from './auth'
+import { loadPingLive, sendPing } from './pings'
+import { loadGameLive, loadGameMoves, loadGameSummary, sendGameCommand } from './games'
 import {
   acceptInvite,
   cancelInvite,
@@ -13,8 +14,8 @@ import {
   leaveQueue,
   loadInvite,
   loadMyGames,
-} from './play-loaders'
-import type { GameCommand } from './game-loaders'
+} from './play'
+import type { GameCommand } from '../games'
 import type { InviteView } from '../play'
 
 /** A `fetch` bound to the internal API that re-attaches the caller's session cookie under its API name. */
@@ -44,7 +45,6 @@ export const postPing = createServerFn({ method: 'POST' })
   .handler(({ data }) => sendPing(serverFetch(), data.id, data.text))
 
 // Inputs that become part of an API path are checked here, so nothing a browser sends can change the path.
-const GUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/
 const COLORS: ReadonlyArray<InviteView['color']> = ['white', 'black', 'random']
 
 function preset(tc: string): string {
@@ -54,7 +54,7 @@ function preset(tc: string): string {
 }
 
 function guid(id: string): string {
-  if (!GUID.test(id)) throw new Error('not an id')
+  if (!isGuid(id)) throw new Error('not an id')
   return id
 }
 
@@ -128,7 +128,7 @@ export const postCreateInvite = createServerFn({ method: 'POST' })
 
 export const getInvite = createServerFn({ method: 'GET' })
   .validator((id: string) => id)
-  .handler(({ data }) => (GUID.test(data) ? loadInvite(serverFetch(), data) : null))
+  .handler(({ data }) => (isGuid(data) ? loadInvite(serverFetch(), data) : null))
 
 export const postAcceptInvite = createServerFn({ method: 'POST' })
   .validator((id: string) => guid(id))

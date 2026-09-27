@@ -6,7 +6,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import tailwindcss from '@tailwindcss/vite'
 import viteReact from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
-import { devLiveRelay } from './src/lib/server/dev-live-relay'
+import { devLiveRelay } from './src/lib/server/live-relay'
 
 /**
  * @microsoft/signalr reaches its Node transports through an indirect `requireFunc(...)` that neither
@@ -26,7 +26,6 @@ function signalrNodeDeps(): Array<string> {
 export default defineConfig(({ command }) => ({
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
       '#': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
