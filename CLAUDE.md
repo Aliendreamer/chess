@@ -116,7 +116,8 @@ to each app's own lint target). Keep `--no-stash`.
   pinned to `172.30.0.0/24` and passed as `ForwardedHeaders__KnownNetworks__0`. **Every deployment must set
   this to the edge's network**, otherwise the per-client rate limiter keys on the proxy's IP.
 - **Backend layout** — two rules: no tiny files (interfaces with their implementations, options with the code that
-  reads them, small related types in one file) and code grouped by functionality (no one-file folders).
+  reads them, small related types in one file) and code grouped by functionality (no one-file folders). Exception: domain models
+  (`Data/Models`, `Data/ReadModels`) and their EF configurations (`Data/ModelConfigurations`) are one class per file.
   `WebApi/{Area}/{Name}/` holds one endpoint per folder: `{Name}Endpoint`, `{Name}Request` (+ its `Validator<>`),
   `{Name}Response`, `{Name}Summary` (`Summary<TEndpoint>`); an area's shared base/mapper sits in the area root, and
   endpoint folders use the area's namespace (folder names like `Resign` would clash with the actor commands). Every
