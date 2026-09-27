@@ -1,7 +1,8 @@
+import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import type { Me } from '#/lib/server/api-loaders'
+import type { LinkProps } from '@tanstack/react-router'
 import { LOGOUT_HREF } from '#/lib/auth/session'
-import { NavGroup, NavItem, Wordmark } from '#/components/navigation/Navigation'
 
 /** The Club layout: a 248px rail (wordmark, navigation, who you are) and the content column. */
 export function Shell({ me, children }: { me: Me; children: ReactNode }) {
@@ -38,5 +39,40 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
         <div className="mx-auto max-w-(--content-max)">{children}</div>
       </main>
     </div>
+  )
+}
+
+function Wordmark() {
+  return (
+    <div className="px-2">
+      <span className="font-display text-[30px] leading-none text-fg-primary italic">Chess</span>
+    </div>
+  )
+}
+
+function NavGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <nav aria-label={label} className="flex flex-col gap-0.5">
+      <div className="px-2 pb-1.5 text-2xs tracking-eyebrow text-fg-muted uppercase">{label}</div>
+      {children}
+    </nav>
+  )
+}
+
+interface NavItemProps {
+  to: NonNullable<LinkProps['to']>
+  label: string
+}
+
+/** A router link; the router marks the current one (`data-status="active"`), styled as selected. */
+function NavItem({ to, label }: NavItemProps) {
+  return (
+    <Link
+      to={to}
+      activeOptions={{ exact: true }}
+      className="flex w-full items-center gap-2 rounded-control p-2 text-base text-fg-body no-underline transition-colors duration-[120ms] hover:bg-surface-hover hover:text-fg-body data-[status=active]:bg-surface-selected data-[status=active]:text-fg-primary"
+    >
+      {label}
+    </Link>
   )
 }

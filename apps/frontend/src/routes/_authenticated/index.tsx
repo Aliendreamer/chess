@@ -5,11 +5,8 @@ import { getMyGames, postCreateInvite, postJoinQueue, postLeaveQueue } from '#/l
 import { PRESETS, category } from '#/lib/games'
 import { isQueueView, pairingGame } from '#/lib/play'
 import { useLiveTopic } from '#/lib/useLiveTopic'
-import { Button, buttonClass } from '#/components/core/Button'
-import { Chip } from '#/components/core/Chip'
-import { OptionTile } from '#/components/core/OptionTile'
-import { Panel, SectionHeading } from '#/components/core/Panel'
-import { RecentGames } from '#/components/play/RecentGames'
+import { Button, Chip, OptionTile, Panel, SectionHeading, buttonClass } from '#/components/ui'
+import { RecentGames } from '#/components/games'
 
 /** Home: quick pairing on a preset, an invite link for a friend, and your recent games. */
 export const Route = createFileRoute('/_authenticated/')({

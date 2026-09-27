@@ -1,6 +1,6 @@
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { PingFeed, relayUrl } from './PingFeed'
+import { PingFeed } from './pings'
 import type { PingState } from '#/lib/pings'
 
 const initial: PingState = { pingId: 'p1', count: 1, lastText: 'hi', lastAt: null, lastSeq: 1 }
@@ -42,17 +42,6 @@ afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
   FakeSocket.last = undefined
-})
-
-describe('relayUrl', () => {
-  it('stays on the app origin and upgrades the scheme with the page', () => {
-    expect(relayUrl('app.chess.localhost', 'http:', 'p1')).toBe(
-      'ws://app.chess.localhost/api/ws/live/ping/p1',
-    )
-    expect(relayUrl('chess.example', 'https:', 'p1')).toBe(
-      'wss://chess.example/api/ws/live/ping/p1',
-    )
-  })
 })
 
 describe('PingFeed', () => {

@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { getMe } from '#/lib/server/api'
-import { Shell } from '#/components/Shell'
+import { Shell } from '#/components/layout'
 
 /**
  * Pathless layout: the SSR gate. Anonymous requests never render a child — they are 302'd to the login

@@ -1,5 +1,10 @@
+import { Fragment } from 'react'
+import { Link } from '@tanstack/react-router'
 import type { Color } from '#/lib/games'
 import type { Piece } from '#/lib/moveInput'
+import type { MyGameItem } from '#/lib/play'
+import { outcomeFor } from '#/lib/play'
+import { formatClock, pairMoves, reasonText, resultText } from '#/lib/games'
 import { placement, squaresFor } from '#/lib/moveInput'
 
 const GLYPH: Record<Piece['type'], string> = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' }
@@ -153,5 +158,126 @@ export function PromotionPicker({ color, onPick, onCancel }: PromotionPickerProp
         Cancel
       </button>
     </div>
+  )
+}
+
+export function Clock({ ms, active = false }: { ms: number; active?: boolean }) {
+  return (
+    <span
+      className={`rounded-control px-3.5 py-1.5 font-mono text-clock tabular-nums ${active ? 'bg-brass-400 text-fg-on-accent' : 'bg-surface-raised text-fg-secondary'}`}
+    >
+      {formatClock(ms)}
+    </span>
+  )
+}
+
+export interface PlayerStripProps {
+  name: string
+  /** A short caption: "white · your move". */
+  detail: string
+  ms?: number
+  /** The side to move: its clock is the brass one. */
+  active?: boolean
+  testId?: string
+}
+
+export function PlayerStrip({ name, detail, ms, active = false, testId }: PlayerStripProps) {
+  return (
+    <div className="flex items-center justify-between gap-3" data-testid={testId}>
+      <div className="flex flex-col">
+        <span className="font-medium text-fg-primary">{name}</span>
+        <span className="text-xs text-fg-secondary">{detail}</span>
+      </div>
+      {ms !== undefined ? <Clock ms={ms} active={active} /> : null}
+    </div>
+  )
+}
+
+/** SAN in numbered rows; the latest move is tinted. */
+export function MoveList({ sans }: { sans: ReadonlyArray<string> }) {
+  const rows = pairMoves(sans)
+  const current = sans.length - 1
+  if (rows.length === 0) {
+    return <p className="text-sm text-fg-muted">No moves yet.</p>
+  }
+  return (
+    <ol
+      aria-label="Moves"
+      data-testid="move-list"
+      className="m-0 grid max-h-80 list-none grid-cols-[36px_1fr_1fr] overflow-y-auto rounded-card border border-line-default p-0 font-mono text-sm text-fg-primary"
+    >
+      {rows.map(([white, black], i) => (
+        <Fragment key={i}>
+          <li className="bg-surface-card px-2.5 py-[7px] text-fg-muted">{i + 1}.</li>
+          <li className={`px-2.5 py-[7px] ${current === i * 2 ? 'bg-brass-800' : ''}`}>{white}</li>
+          <li className={`px-2.5 py-[7px] ${current === i * 2 + 1 ? 'bg-brass-800' : ''}`}>
+            {black ?? ''}
+          </li>
+        </Fragment>
+      ))}
+    </ol>
+  )
+}
+
+const OUTCOME_TONE = {
+  win: 'text-status-win',
+  loss: 'text-status-loss',
+  draw: 'text-status-draw',
+} as const
+
+// Static class strings, so Tailwind sees them.
+const COLUMNS = 'grid-cols-[40px_minmax(0,1fr)_80px_minmax(0,160px)]'
+const COLUMNS_WITH_PGN = 'grid-cols-[40px_minmax(0,1fr)_80px_minmax(0,160px)_40px]'
+
+export interface RecentGamesProps {
+  games: ReadonlyArray<MyGameItem>
+  /** A PGN download link on finished games (the history page). */
+  pgn?: boolean
+}
+
+/** "My games" rows: result from my side, the opponent by name, the time control and how it ended. */
+export function RecentGames({ games, pgn = false }: RecentGamesProps) {
+  if (games.length === 0) {
+    return <p className="m-0 text-sm text-fg-muted">No games yet.</p>
+  }
+  return (
+    <ul className="m-0 flex list-none flex-col p-0" data-testid="recent-games">
+      {games.map((game) => {
+        const outcome = outcomeFor(game.result, game.color)
+        const finished = game.status !== 'playing'
+        return (
+          <li
+            key={game.gameId}
+            className={`grid ${pgn ? COLUMNS_WITH_PGN : COLUMNS} items-baseline gap-4 border-b border-line-divider py-2.5`}
+          >
+            <span
+              className={`font-mono font-medium ${outcome ? OUTCOME_TONE[outcome] : 'text-fg-muted'}`}
+            >
+              {!finished ? '…' : game.result ? resultText(game.result) : '—'}
+            </span>
+            <Link
+              to="/games/$id"
+              params={{ id: game.gameId }}
+              className="truncate text-fg-primary no-underline hover:text-fg-accent"
+            >
+              vs {game.opponent}
+            </Link>
+            <span className="font-mono text-fg-secondary">{game.timeControl}</span>
+            <span className="truncate text-sm text-fg-secondary">
+              {!finished ? 'in play' : game.reason ? reasonText(game.reason) : ''}
+            </span>
+            {pgn ? (
+              finished ? (
+                <a href={`/pgn/${game.gameId}`} download className="font-mono text-sm no-underline">
+                  PGN
+                </a>
+              ) : (
+                <span />
+              )
+            ) : null}
+          </li>
+        )
+      })}
+    </ul>
   )
 }

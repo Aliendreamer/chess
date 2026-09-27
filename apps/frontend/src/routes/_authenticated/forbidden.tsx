@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { Panel, SectionHeading } from '#/components/core/Panel'
+import { Panel, SectionHeading } from '#/components/ui'
 
 export const Route = createFileRoute('/_authenticated/forbidden')({
   component: Forbidden,

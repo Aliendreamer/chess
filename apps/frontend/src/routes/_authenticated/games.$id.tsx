@@ -19,11 +19,8 @@ import {
 import { applyFrame } from '#/lib/live'
 import { applyOptimistic, clickSquare, legalTargets, needsPromotion } from '#/lib/moveInput'
 import { useLiveTopic } from '#/lib/useLiveTopic'
-import { Board, PromotionPicker } from '#/components/chess/Board'
-import { PlayerStrip } from '#/components/chess/Clock'
-import { MoveList } from '#/components/chess/MoveList'
-import { Button } from '#/components/core/Button'
-import { Panel } from '#/components/core/Panel'
+import { Board, MoveList, PlayerStrip, PromotionPicker } from '#/components/games'
+import { Button, Panel } from '#/components/ui'
 
 /**
  * A game (players and spectators). SSR renders the loader's state; the `game:{id}` frames then drive it. Moves

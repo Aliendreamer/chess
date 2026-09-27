@@ -2,17 +2,12 @@ import { useMemo, useState } from 'react'
 import type { PingState } from '#/lib/pings'
 import type { LiveStatus } from '#/lib/useLiveTopic'
 import { isPingState } from '#/lib/pings'
-import { liveUrl, useLiveTopic } from '#/lib/useLiveTopic'
+import { useLiveTopic } from '#/lib/useLiveTopic'
 
 export interface PingFeedProps {
   id: string
   /** The loader's server-rendered state: shown until the first live frame, so there is no spinner. */
   initial: PingState
-}
-
-/** Same origin as the page, always — the relay is the only thing that knows the API host. */
-export function relayUrl(host: string, protocol: string, id: string): string {
-  return liveUrl(host, protocol, 'ping', id)
 }
 
 const STATUS_LABEL: Record<LiveStatus, string> = {

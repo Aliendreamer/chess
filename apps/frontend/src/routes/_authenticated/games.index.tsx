@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import type { MyGameItem } from '#/lib/play'
 import { getMyGames } from '#/lib/server/api'
-import { Button } from '#/components/core/Button'
-import { SectionHeading } from '#/components/core/Panel'
-import { RecentGames } from '#/components/play/RecentGames'
+import { Button, SectionHeading } from '#/components/ui'
+import { RecentGames } from '#/components/games'
 
 const PAGE = 20
 

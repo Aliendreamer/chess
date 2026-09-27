@@ -1,9 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Button, buttonClass } from './Button'
-import { Chip } from './Chip'
-import { OptionTile } from './OptionTile'
-import { Panel, SectionHeading } from './Panel'
+import { Button, Chip, OptionTile, Panel, SectionHeading, buttonClass } from './ui'
 
 afterEach(cleanup)
 

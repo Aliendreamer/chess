@@ -7,8 +7,7 @@ import { getInvite, postAcceptInvite, postCancelInvite } from '#/lib/server/api'
 import { category, topicId } from '#/lib/games'
 import { guestColor, isInviteView } from '#/lib/play'
 import { useLiveTopic } from '#/lib/useLiveTopic'
-import { Button } from '#/components/core/Button'
-import { Panel, SectionHeading } from '#/components/core/Panel'
+import { Button, Panel, SectionHeading } from '#/components/ui'
 
 /**
  * An invite link (D7). The creator shares it and waits; anyone else signed in can accept. The `invite:{id}` frame
