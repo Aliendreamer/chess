@@ -94,7 +94,7 @@ public sealed class ProjectionConflictTests(PostgresFixture pg) : IClassFixture<
         services.AddLogging();
         services.AddSingleton(TimeProvider.System);
         services.AddScoped(_ => Context(interceptor));
-        services.AddScoped<IDeadLetterStore, DeadLetterStore>();
+        services.AddScoped<IDeadLetterService, DeadLetterService>();
         services.AddScoped<CountingPingProjection>();
         await using ServiceProvider provider = services.BuildServiceProvider();
         ProjectionRunner runner = new(
@@ -145,8 +145,8 @@ public sealed class ProjectionConflictTests(PostgresFixture pg) : IClassFixture<
         }
 
         await using ProjectDbContext db = Context();
-        DeadLetterStore store = new(db, NullLogger<DeadLetterStore>.Instance, TimeProvider.System);
-        Task park = store.ParkAsync(new ParkRequest("g", "a", 1, "a", "{}", 5, "bug", T0), CancellationToken.None);
+        DeadLetterService deadLetters = new(db, NullLogger<DeadLetterService>.Instance, TimeProvider.System, NoProjections());
+        Task park = deadLetters.ParkAsync(new ParkRequest("g", "a", 1, "a", "{}", 5, "bug", T0), CancellationToken.None);
 
         await Task.Delay(TimeSpan.FromMilliseconds(750));
         Assert.False(park.IsCompleted, "the park must block while another transaction holds the (group, aggregate) lock");
@@ -169,12 +169,15 @@ public sealed class ProjectionConflictTests(PostgresFixture pg) : IClassFixture<
         }
 
         await using ProjectDbContext db = Context();
-        DeadLetterStore store = new(db, NullLogger<DeadLetterStore>.Instance, TimeProvider.System);
+        DeadLetterService deadLetters = new(db, NullLogger<DeadLetterService>.Instance, TimeProvider.System, NoProjections());
 
-        await store.ParkAsync(new ParkRequest("g", "a", 1, "a", "{}", 5, "bug", T0), CancellationToken.None)
+        await deadLetters.ParkAsync(new ParkRequest("g", "a", 1, "a", "{}", 5, "bug", T0), CancellationToken.None)
             .WaitAsync(TimeSpan.FromSeconds(5));
         await tx.RollbackAsync();
     }
+
+    private static IServiceScopeFactory NoProjections() =>
+        new ServiceCollection().BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
 
     private ProjectDbContext Context(IInterceptor? interceptor = null)
     {

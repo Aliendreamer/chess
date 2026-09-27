@@ -108,16 +108,16 @@ internal sealed class ProjectionRunner(
     private async Task<bool> ParkedBehindQuarantineAsync(string groupId, string aggregateId, long seq, string key, string value, CancellationToken ct)
     {
         await using AsyncServiceScope scope = scopes.CreateAsyncScope();
-        IDeadLetterStore store = scope.ServiceProvider.GetRequiredService<IDeadLetterStore>();
+        IDeadLetterService deadLetters = scope.ServiceProvider.GetRequiredService<IDeadLetterService>();
         // Cheap unlocked check first: the healthy path pays one indexed EXISTS and never takes the lock (design D5).
-        return await store.IsQuarantinedAsync(groupId, aggregateId, ct)
-            && await store.ParkIfQuarantinedAsync(new ParkRequest(groupId, aggregateId, seq, key, value, 0, "parked behind quarantine", clock.GetUtcNow()), ct);
+        return await deadLetters.IsQuarantinedAsync(groupId, aggregateId, ct)
+            && await deadLetters.ParkIfQuarantinedAsync(new ParkRequest(groupId, aggregateId, seq, key, value, 0, "parked behind quarantine", clock.GetUtcNow()), ct);
     }
 
     private async Task ParkAsync(ParkRequest request, CancellationToken ct)
     {
         await using AsyncServiceScope scope = scopes.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<IDeadLetterStore>().ParkAsync(request, ct);
+        await scope.ServiceProvider.GetRequiredService<IDeadLetterService>().ParkAsync(request, ct);
     }
 }
 

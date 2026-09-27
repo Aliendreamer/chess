@@ -4,9 +4,80 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Chess.Backend.Tests.Projections;
 
-public sealed class DeadLetterReplayerTests
+public sealed class DeadLetterServiceTests
 {
     private static readonly DateTimeOffset T0 = ProjectionHost.T0;
+
+    private static DeadLetterService Service(ProjectDbContext db) => ProjectionHost.DeadLetters(db, new FakeClock(T0));
+
+    private static ParkRequest Park(string group, string agg, long seq, string error = "boom") =>
+        new(group, agg, seq, $"key-{agg}", $"{{\"seq\":{seq}}}", 5, error, T0.AddSeconds(-7));
+
+    [Fact]
+    public async Task Parks_every_field_and_stamps_parked_at()
+    {
+        using ProjectDbContext db = TestDb.Create();
+
+        await Service(db).ParkAsync(Park("g", "a", 7), CancellationToken.None);
+
+        ProjectionDeadLetter row = await db.ProjectionDeadLetters.SingleAsync();
+        Assert.Equal(("g", "a", 7L, "key-a", "{\"seq\":7}", 5, "boom"), (row.GroupId, row.AggregateId, row.Seq, row.KafkaKey, row.Value, row.Attempts, row.LastError));
+        Assert.Equal(T0.AddSeconds(-7), row.FirstFailedAt);
+        Assert.Equal(T0, row.ParkedAt);
+        Assert.Equal(7, row.Id.Version); // Guid v7, time-ordered (ROADMAP D11)
+    }
+
+    [Fact]
+    public async Task Truncates_the_error_to_2000_chars()
+    {
+        using ProjectDbContext db = TestDb.Create();
+
+        await Service(db).ParkAsync(Park("g", "a", 1, new string('x', 5000)), CancellationToken.None);
+
+        Assert.Equal(DeadLetterService.MaxErrorLength, (await db.ProjectionDeadLetters.SingleAsync()).LastError.Length);
+    }
+
+    [Fact]
+    public async Task Quarantine_is_per_group_and_aggregate()
+    {
+        using ProjectDbContext db = TestDb.Create();
+        DeadLetterService service = Service(db);
+        await service.ParkAsync(Park("g1", "a", 1), CancellationToken.None);
+
+        Assert.True(await service.IsQuarantinedAsync("g1", "a", CancellationToken.None));
+        Assert.False(await service.IsQuarantinedAsync("g2", "a", CancellationToken.None));
+        Assert.False(await service.IsQuarantinedAsync("g1", "b", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Parks_behind_an_existing_quarantine_only()
+    {
+        using ProjectDbContext db = TestDb.Create();
+        DeadLetterService service = Service(db);
+
+        Assert.False(await service.ParkIfQuarantinedAsync(Park("g", "a", 1), CancellationToken.None));
+        Assert.Equal(0, await db.ProjectionDeadLetters.CountAsync());
+
+        await service.ParkAsync(Park("g", "a", 1), CancellationToken.None);
+        Assert.True(await service.ParkIfQuarantinedAsync(Park("g", "a", 2), CancellationToken.None));
+        Assert.Equal(2, await db.ProjectionDeadLetters.CountAsync());
+    }
+
+    [Fact]
+    public async Task Counts_distinct_quarantined_aggregates_per_group()
+    {
+        using ProjectDbContext db = TestDb.Create();
+        DeadLetterService service = Service(db);
+        await service.ParkAsync(Park("g1", "a", 1), CancellationToken.None);
+        await service.ParkAsync(Park("g1", "a", 2), CancellationToken.None);
+        await service.ParkAsync(Park("g1", "b", 1), CancellationToken.None);
+        await service.ParkAsync(Park("g2", "a", 1), CancellationToken.None);
+
+        IReadOnlyDictionary<string, int> counts = await service.CountsAsync(CancellationToken.None);
+
+        Assert.Equal(2, counts["g1"]);
+        Assert.Equal(1, counts["g2"]);
+    }
 
     /// <summary>A PingProjection that can be switched into "still buggy" mode, the way a bad deploy would behave.</summary>
     private sealed class Switch
@@ -41,12 +112,7 @@ public sealed class DeadLetterReplayerTests
         public ProjectionHost Host { get; }
 
         public Task<ReplayResult> ReplayAsync(string group, string aggregateId) =>
-            Host.ScopedAsync(sp => new DeadLetterReplayer(
-                    sp.GetRequiredService<ProjectDbContext>(),
-                    NullLogger<DeadLetterReplayer>.Instance,
-                    sp.GetRequiredService<IDeadLetterStore>(),
-                    sp.GetRequiredService<IServiceScopeFactory>())
-                .ReplayAsync(group, aggregateId, CancellationToken.None));
+            Host.ScopedAsync(sp => sp.GetRequiredService<IDeadLetterService>().ReplayAsync(group, aggregateId, CancellationToken.None));
 
         public Task<T> WithDbAsync<T>(Func<ProjectDbContext, Task<T>> read) => Host.WithDbAsync(read);
 

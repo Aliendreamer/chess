@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Chess.Backend.Projections;
@@ -13,7 +14,21 @@ internal sealed record ParkRequest(
     string Error,
     DateTimeOffset FirstFailedAt);
 
-internal interface IDeadLetterStore : IService
+internal enum ReplayStatus
+{
+    /// <summary>Nothing is parked for the aggregate any more; its quarantine is lifted.</summary>
+    Completed,
+
+    /// <summary>A parked record failed again; it and everything after it stay parked.</summary>
+    Failed,
+
+    /// <summary>No registered projection has this consumer group id.</summary>
+    UnknownGroup,
+}
+
+internal sealed record ReplayResult(ReplayStatus Status, int Applied, string? Error = null);
+
+internal interface IDeadLetterService : IService
 {
     /// <summary>True when the aggregate has at least one parked record for this consumer group.</summary>
     Task<bool> IsQuarantinedAsync(string groupId, string aggregateId, CancellationToken ct);
@@ -27,26 +42,37 @@ internal interface IDeadLetterStore : IService
     /// </summary>
     Task<bool> ParkIfQuarantinedAsync(ParkRequest request, CancellationToken ct);
 
-    /// <summary>The aggregate's parked record with the lowest seq, or null when none is left.</summary>
-    Task<ProjectionDeadLetter?> NextAsync(string groupId, string aggregateId, CancellationToken ct);
-
-    Task DeleteAsync(ProjectionDeadLetter row, CancellationToken ct);
+    /// <summary>
+    /// Feeds one aggregate's parked records back through the projection that owns <paramref name="groupId"/>, lowest
+    /// seq first (design D7). Each step holds the aggregate lock, applies one record in a fresh scope and deletes it
+    /// only after it applied. A crash between the two re-applies it next time, and the idempotency guard skips it.
+    /// The first failure stops the replay: order matters more than progress, so nothing after it is attempted.
+    /// </summary>
+    Task<ReplayResult> ReplayAsync(string groupId, string aggregateId, CancellationToken ct);
 
     /// <summary>Distinct quarantined aggregates per consumer group; groups with none are absent.</summary>
     Task<IReadOnlyDictionary<string, int>> CountsAsync(CancellationToken ct);
-
-    /// <summary>
-    /// Runs <paramref name="body"/> in a transaction holding <c>pg_advisory_xact_lock</c> on the
-    /// <c>(group, aggregate)</c> pair (design D5), so a park and a replay step never interleave. The lock goes with
-    /// the transaction. On a non-relational provider (unit tests) the body just runs.
-    /// </summary>
-    Task<T> WithAggregateLockAsync<T>(string groupId, string aggregateId, Func<CancellationToken, Task<T>> body, CancellationToken ct);
 }
 
-internal sealed class DeadLetterStore(ProjectDbContext context, ILogger<DeadLetterStore> logger, TimeProvider clock)
-    : BaseService(context, logger), IDeadLetterStore
+/// <summary>
+/// The <c>projection_dead_letters</c> table: parking, quarantine and replay. Every write to one
+/// <c>(group, aggregate)</c> pair runs under <c>pg_advisory_xact_lock</c> on that pair (design D5), so a park and a
+/// replay step never interleave.
+/// </summary>
+internal sealed class DeadLetterService(
+    ProjectDbContext context,
+    ILogger<DeadLetterService> logger,
+    TimeProvider clock,
+    IServiceScopeFactory scopes) : BaseService(context, logger), IDeadLetterService
 {
     public const int MaxErrorLength = 2000;
+
+    private enum Step
+    {
+        Applied,
+        Done,
+        Failed,
+    }
 
     public Task<bool> IsQuarantinedAsync(string groupId, string aggregateId, CancellationToken ct) =>
         Context.ProjectionDeadLetters.AnyAsync(d => d.GroupId == groupId && d.AggregateId == aggregateId, ct);
@@ -76,103 +102,6 @@ internal sealed class DeadLetterStore(ProjectDbContext context, ILogger<DeadLett
         }, ct);
     }
 
-    public Task<ProjectionDeadLetter?> NextAsync(string groupId, string aggregateId, CancellationToken ct) =>
-        Context.ProjectionDeadLetters
-            .Where(d => d.GroupId == groupId && d.AggregateId == aggregateId)
-            .OrderBy(d => d.Seq)
-            .ThenBy(d => d.Id)
-            .FirstOrDefaultAsync(ct);
-
-    public async Task DeleteAsync(ProjectionDeadLetter row, CancellationToken ct)
-    {
-        Context.ProjectionDeadLetters.Remove(row);
-        await Context.SaveChangesAsync(ct);
-    }
-
-    public async Task<IReadOnlyDictionary<string, int>> CountsAsync(CancellationToken ct) =>
-        await Context.ProjectionDeadLetters
-            .GroupBy(d => d.GroupId)
-            .Select(g => new { g.Key, Count = g.Select(d => d.AggregateId).Distinct().Count() })
-            .ToDictionaryAsync(g => g.Key, g => g.Count, ct);
-
-    public async Task<T> WithAggregateLockAsync<T>(string groupId, string aggregateId, Func<CancellationToken, Task<T>> body, CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-        if (!Context.Database.IsRelational())
-        {
-            return await body(ct);
-        }
-
-        // EnableRetryOnFailure forbids user transactions outside the execution strategy; a retry re-runs the whole
-        // unit, which is safe because parking re-checks under the lock and replay steps are idempotent by seq.
-        return await Context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
-        {
-            await using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction tx = await Context.Database.BeginTransactionAsync(ct);
-            string lockKey = $"{groupId}:{aggregateId}";
-            await Context.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0))", ct);
-            T result = await body(ct);
-            await tx.CommitAsync(ct);
-            return result;
-        });
-    }
-
-    private async Task InsertAsync(ParkRequest request, CancellationToken ct)
-    {
-        Context.ProjectionDeadLetters.Add(new ProjectionDeadLetter
-        {
-            Id = Guid.CreateVersion7(),
-            GroupId = request.GroupId,
-            AggregateId = request.AggregateId,
-            Seq = request.Seq,
-            KafkaKey = request.KafkaKey,
-            Value = request.Value,
-            Attempts = request.Attempts,
-            LastError = request.Error.Length > MaxErrorLength ? request.Error[..MaxErrorLength] : request.Error,
-            FirstFailedAt = request.FirstFailedAt,
-            ParkedAt = clock.GetUtcNow(),
-        });
-        await Context.SaveChangesAsync(ct);
-    }
-}
-
-internal enum ReplayStatus
-{
-    /// <summary>Nothing is parked for the aggregate any more; its quarantine is lifted.</summary>
-    Completed,
-
-    /// <summary>A parked record failed again; it and everything after it stay parked.</summary>
-    Failed,
-
-    /// <summary>No registered projection has this consumer group id.</summary>
-    UnknownGroup,
-}
-
-internal sealed record ReplayResult(ReplayStatus Status, int Applied, string? Error = null);
-
-internal interface IDeadLetterReplayer : IService
-{
-    Task<ReplayResult> ReplayAsync(string groupId, string aggregateId, CancellationToken ct);
-}
-
-/// <summary>
-/// Feeds one aggregate's parked records back through the projection that owns <c>groupId</c>, lowest seq first
-/// (design D7). Each step holds the aggregate lock, applies one record in a fresh scope and deletes it only
-/// after it applied. A crash between the two re-applies it next time, and the idempotency guard skips it. The
-/// first failure stops the replay: order matters more than progress, so nothing after it is attempted.
-/// </summary>
-internal sealed class DeadLetterReplayer(
-    ProjectDbContext context,
-    ILogger<DeadLetterReplayer> logger,
-    IDeadLetterStore store,
-    IServiceScopeFactory scopes) : BaseService(context, logger), IDeadLetterReplayer
-{
-    private enum Step
-    {
-        Applied,
-        Done,
-        Failed,
-    }
-
     public async Task<ReplayResult> ReplayAsync(string groupId, string aggregateId, CancellationToken ct)
     {
         Type? projectionType = await FindProjectionTypeAsync(groupId);
@@ -185,9 +114,9 @@ internal sealed class DeadLetterReplayer(
         while (true)
         {
             string? error = null;
-            Step step = await store.WithAggregateLockAsync(groupId, aggregateId, async c =>
+            Step step = await WithAggregateLockAsync(groupId, aggregateId, async c =>
             {
-                ProjectionDeadLetter? row = await store.NextAsync(groupId, aggregateId, c);
+                ProjectionDeadLetter? row = await NextAsync(groupId, aggregateId, c);
                 if (row is null)
                 {
                     return Step.Done;
@@ -204,7 +133,8 @@ internal sealed class DeadLetterReplayer(
                     return Step.Failed;
                 }
 
-                await store.DeleteAsync(row, c);
+                Context.ProjectionDeadLetters.Remove(row);
+                await Context.SaveChangesAsync(c);
                 return Step.Applied;
             }, ct);
 
@@ -223,6 +153,61 @@ internal sealed class DeadLetterReplayer(
         }
     }
 
+    public async Task<IReadOnlyDictionary<string, int>> CountsAsync(CancellationToken ct) =>
+        await Context.ProjectionDeadLetters
+            .GroupBy(d => d.GroupId)
+            .Select(g => new { g.Key, Count = g.Select(d => d.AggregateId).Distinct().Count() })
+            .ToDictionaryAsync(g => g.Key, g => g.Count, ct);
+
+    /// <summary>
+    /// Runs <paramref name="body"/> in a transaction holding the <c>(group, aggregate)</c> advisory lock; the lock goes
+    /// with the transaction. On a non-relational provider (unit tests) the body just runs.
+    /// </summary>
+    private async Task<T> WithAggregateLockAsync<T>(string groupId, string aggregateId, Func<CancellationToken, Task<T>> body, CancellationToken ct)
+    {
+        if (!Context.Database.IsRelational())
+        {
+            return await body(ct);
+        }
+
+        // EnableRetryOnFailure forbids user transactions outside the execution strategy; a retry re-runs the whole
+        // unit, which is safe because parking re-checks under the lock and replay steps are idempotent by seq.
+        return await Context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+        {
+            await using IDbContextTransaction tx = await Context.Database.BeginTransactionAsync(ct);
+            string lockKey = $"{groupId}:{aggregateId}";
+            await Context.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0))", ct);
+            T result = await body(ct);
+            await tx.CommitAsync(ct);
+            return result;
+        });
+    }
+
+    private Task<ProjectionDeadLetter?> NextAsync(string groupId, string aggregateId, CancellationToken ct) =>
+        Context.ProjectionDeadLetters
+            .Where(d => d.GroupId == groupId && d.AggregateId == aggregateId)
+            .OrderBy(d => d.Seq)
+            .ThenBy(d => d.Id)
+            .FirstOrDefaultAsync(ct);
+
+    private async Task InsertAsync(ParkRequest request, CancellationToken ct)
+    {
+        Context.ProjectionDeadLetters.Add(new ProjectionDeadLetter
+        {
+            Id = Guid.CreateVersion7(),
+            GroupId = request.GroupId,
+            AggregateId = request.AggregateId,
+            Seq = request.Seq,
+            KafkaKey = request.KafkaKey,
+            Value = request.Value,
+            Attempts = request.Attempts,
+            LastError = request.Error.Length > MaxErrorLength ? request.Error[..MaxErrorLength] : request.Error,
+            FirstFailedAt = request.FirstFailedAt,
+            ParkedAt = clock.GetUtcNow(),
+        });
+        await Context.SaveChangesAsync(ct);
+    }
+
     private async Task<Type?> FindProjectionTypeAsync(string groupId)
     {
         await using AsyncServiceScope scope = scopes.CreateAsyncScope();
@@ -234,11 +219,11 @@ internal sealed class DeadLetterReplayer(
 /// Quarantined aggregates per consumer group on <c>/health</c> (design D8). Never Unhealthy: one parked game means
 /// its lists are stale, not that the API is down, and every other aggregate is still flowing.
 /// </summary>
-internal sealed class DeadLetterHealthCheck(IDeadLetterStore store) : IHealthCheck
+internal sealed class DeadLetterHealthCheck(IDeadLetterService deadLetters) : IHealthCheck
 {
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        IReadOnlyDictionary<string, int> counts = await store.CountsAsync(cancellationToken);
+        IReadOnlyDictionary<string, int> counts = await deadLetters.CountsAsync(cancellationToken);
         if (counts.Count == 0)
         {
             return HealthCheckResult.Healthy("No quarantined aggregates.");

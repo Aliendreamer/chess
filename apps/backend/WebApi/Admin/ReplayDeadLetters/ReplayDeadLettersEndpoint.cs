@@ -5,7 +5,7 @@ namespace Chess.Backend.WebApi.Admin;
 
 /// <summary>Replays one aggregate's parked records through its projection, in seq order.</summary>
 [ExcludeFromCodeCoverage]
-internal sealed class ReplayDeadLettersEndpoint(IDeadLetterReplayer replayer) : Endpoint<ReplayDeadLettersRequest, ReplayDeadLettersResponse>
+internal sealed class ReplayDeadLettersEndpoint(IDeadLetterService deadLetters) : Endpoint<ReplayDeadLettersRequest, ReplayDeadLettersResponse>
 {
     public override void Configure()
     {
@@ -24,7 +24,7 @@ internal sealed class ReplayDeadLettersEndpoint(IDeadLetterReplayer replayer) : 
     {
         ArgumentNullException.ThrowIfNull(req);
         HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
-        ReplayResult result = await replayer.ReplayAsync(req.GroupId, req.AggregateId, ct);
+        ReplayResult result = await deadLetters.ReplayAsync(req.GroupId, req.AggregateId, ct);
         ReplayDeadLettersResponse response = new(req.GroupId, req.AggregateId, result.Status.ToString(), result.Applied, result.Error);
         switch (result.Status)
         {
