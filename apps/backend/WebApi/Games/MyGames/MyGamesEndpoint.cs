@@ -1,3 +1,5 @@
+using Chess.Backend.Correspondence;
+using Chess.Backend.Data.ReadModels;
 using Chess.Backend.Extensions;
 using Npgsql;
 
@@ -5,7 +7,8 @@ namespace Chess.Backend.WebApi.Games;
 
 /// <summary>The signed-in user's games as either colour, newest first. Eventually consistent: replica.</summary>
 [ExcludeFromCodeCoverage]
-internal sealed class MyGamesEndpoint(ReadDbContext read, ICurrentUser user, IOptions<ApiOptions> options) : Endpoint<MyGamesRequest, CursorPage<MyGameItem>>
+internal sealed class MyGamesEndpoint(ReadDbContext read, ICurrentUser user, IOptions<ApiOptions> options, IOptions<CorrespondenceOptions> correspondence)
+    : Endpoint<MyGamesRequest, CursorPage<MyGameItem>>
 {
     public override void Configure()
     {
@@ -27,12 +30,18 @@ internal sealed class MyGamesEndpoint(ReadDbContext read, ICurrentUser user, IOp
         try
         {
             // One seek on (UserId, CreatedAt, GameId); status and result come from the game's own row (the only place they change).
-            var rows = await read.RmGamePlayers
+            var joined = read.RmGamePlayers
                 .Where(p => p.UserId == me)
-                .Join(read.RmGames, p => p.GameId, g => g.GameId, (p, g) => new { P = p, G = g })
-                .NewestFirst(x => x.P.CreatedAt, x => x.P.GameId, after, limit)
-                .ToListAsync(ct);
-            List<MyGameItem> items = rows.ConvertAll(x => GameReads.ToMyGame(x.P, x.G));
+                .Join(read.RmGames, p => p.GameId, g => g.GameId, (p, g) => new { P = p, G = g });
+            if (req.Turn == "mine")
+            {
+                // Being played and my move: White on even plies, Black on odd ones.
+                joined = joined.Where(x => x.G.Status == RmGame.Playing
+                    && ((x.P.Color == RmGamePlayer.White && x.G.Ply % 2 == 0) || (x.P.Color == RmGamePlayer.Black && x.G.Ply % 2 == 1)));
+            }
+
+            var rows = await joined.NewestFirst(x => x.P.CreatedAt, x => x.P.GameId, after, limit).ToListAsync(ct);
+            List<MyGameItem> items = rows.ConvertAll(x => GameReads.ToMyGame(x.P, x.G, correspondence.Value.MoveDeadline));
             await Send.OkAsync(Keyset.ToPage(items, limit, i => new KeysetCursor(i.CreatedAt, i.GameId.ToString())), ct);
         }
         catch (NpgsqlException)

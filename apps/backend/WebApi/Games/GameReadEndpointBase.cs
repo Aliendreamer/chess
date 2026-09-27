@@ -1,6 +1,7 @@
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Data.ReadModels;
 using Chess.Backend.Extensions;
+using Chess.Backend.Games;
 using Microsoft.Net.Http.Headers;
 using Npgsql;
 
@@ -35,8 +36,13 @@ internal static class GameReads
     public static GameListItem ToListItem(RmGame g) => new(
         g.GameId, g.WhiteId, g.WhiteName, g.BlackId, g.BlackName, g.TimeControl, g.Status, g.Result, g.Reason, g.Ply, g.CreatedAt, g.UpdatedAt);
 
-    public static MyGameItem ToMyGame(RmGamePlayer me, RmGame g) => new(
-        g.GameId, me.Color, me.OpponentId, me.OpponentName, g.TimeControl, g.Status, g.Result, g.Reason, me.CreatedAt);
+    public static MyGameItem ToMyGame(RmGamePlayer me, RmGame g, TimeSpan moveDeadline) => new(
+        g.GameId, me.Color, me.OpponentId, me.OpponentName, g.TimeControl, g.Status, g.Result, g.Reason, me.CreatedAt,
+        YourTurn: g.Status == RmGame.Playing && ColorToMove(g.Ply) == me.Color,
+        DeadlineAt: g.Status == RmGame.Playing && g.TimeControl == TimeControl.Correspondence7.ToString() ? g.UpdatedAt + moveDeadline : null);
+
+    /// <summary>White moves on even plies (correspondence-games D5): the side to move needs no column of its own.</summary>
+    public static string ColorToMove(int ply) => ply % 2 == 0 ? RmGamePlayer.White : RmGamePlayer.Black;
 
     public static GameSummary ToSummary(RmGame g) => new(
         g.GameId, g.WhiteId, g.WhiteName, g.BlackId, g.BlackName, g.TimeControl, g.Status, g.Result, g.Reason, g.Ply, g.LastFen,

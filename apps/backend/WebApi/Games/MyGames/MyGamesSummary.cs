@@ -5,7 +5,8 @@ internal sealed class MyGamesSummary : Summary<MyGamesEndpoint>
     public MyGamesSummary()
     {
         Summary = "My games";
-        Description = "The signed-in player's games as either colour, newest first. Eventually consistent (read replica).";
+        Description = "The signed-in player's games as either colour, newest first. Eventually consistent (read replica). "
+            + "With turn=mine, only the games being played where it is your move, each with the deadline of a correspondence game.";
         ExampleRequest = new MyGamesRequest { Limit = 20 };
         Responses[200] = "A page, newest first; follow nextCursor for more.";
         Responses[401] = "Not signed in.";

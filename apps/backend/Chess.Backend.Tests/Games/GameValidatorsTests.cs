@@ -51,5 +51,12 @@ public sealed class GameValidatorsTests
     [InlineData("2000", "green", false)]
     public void An_engine_game_needs_a_level_and_a_colour(string level, string color, bool ok) =>
         Assert.Equal(ok, new StartEngineGameRequestValidator().TestValidate(new StartEngineGameRequest { Level = level, Color = color }).IsValid);
+
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("mine", true)]
+    [InlineData("theirs", false)]
+    public void My_games_filter_only_by_my_turn(string? turn, bool ok) =>
+        Assert.Equal(ok, new MyGamesRequestValidator().TestValidate(new MyGamesRequest { Turn = turn }).IsValid);
 }
 

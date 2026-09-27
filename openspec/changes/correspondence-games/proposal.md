@@ -35,7 +35,7 @@ lives in memory while someone acts on it, a missed deadline loses, and the playe
 - **"Your turn" on home:** the games, live or correspondence, where it is your move, with the deadline for
   correspondence games. The data comes from `GET /api/me/games?turn=mine`. The game page shows "Your move · 6 days
   left" instead of clocks in a correspondence game.
-- **The read model** (`rm_games`) gains the side to move and the correspondence deadline.
+- **The read model** needs no new columns: the side to move and the deadline are derived from `rm_games`.
 
 ## Owner decisions (design conversation, 2026-09-27) — confirmed, with Mailpit explained
 
@@ -67,7 +67,7 @@ lives in memory while someone acts on it, a missed deadline loses, and the playe
   - `GameActor` (no presence claims, `CheckDeadline`, passivation);
   - a deadline projection with a migration, and the `DeadlineSweeper` singleton;
   - `NotificationConsumer` with MailKit, and `Smtp` and `Correspondence` settings;
-  - `rm_games` columns with a migration, and the `/api/me/games` turn filter.
+  - the `/api/me/games` turn filter.
 - **Frontend:** the invite form's `7d` choice, the "Your turn" list, and the correspondence status line on the game page.
 - **Stack:** a `mailpit` service, and SMTP settings on the backend.
 - **Verify:**

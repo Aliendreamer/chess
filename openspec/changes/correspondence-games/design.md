@@ -55,9 +55,10 @@ actor is the judge: a row that is momentarily stale (the projection is behind) o
 
 ### D5 — Read model and API
 
-`rm_games` gains `SideToMove` (from the FEN, `white|black`) and `DeadlineAt` (correspondence, null otherwise), filled
-by `GameProjection`. `GET /api/me/games?turn=mine` filters `Status = playing` and the user's colour = `SideToMove`,
-ordered by `DeadlineAt` nulls last then newest; items gain `deadlineAt` and `yourTurn`.
+No new columns: the side to move is the parity of `rm_games.Ply` (White on even plies), and a correspondence game's
+deadline is `UpdatedAt` (its last move, or its start) plus `Correspondence:MoveDeadline`. `GET /api/me/games?turn=mine`
+filters `Status = playing` and the user's colour = the side to move, newest first as the list already is; every item
+gains `yourTurn` and `deadlineAt`.
 
 ### D6 — Stack and UI
 

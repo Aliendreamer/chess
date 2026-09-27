@@ -65,8 +65,36 @@ public sealed class GameReadModelTests
     {
         RmGamePlayer me = new() { UserId = 2, GameId = Id, Color = "black", OpponentId = 1, OpponentName = "testuser", CreatedAt = T0 };
 
-        MyGameItem item = GameReads.ToMyGame(me, Ended());
+        MyGameItem item = GameReads.ToMyGame(me, Ended(), Week);
 
         Assert.Equal(new MyGameItem(Id, "black", 1, "testuser", "5+3", "ended", "0-1", "Checkmate", T0), item);
     }
+
+    private static readonly TimeSpan Week = TimeSpan.FromDays(7);
+
+    [Theory]
+    [InlineData("white", 4, true)]
+    [InlineData("black", 4, false)]
+    [InlineData("black", 5, true)]
+    public void It_is_my_turn_on_my_colours_plies_while_playing(string color, int ply, bool mine)
+    {
+        RmGame game = Ended();
+        (game.Status, game.Ply, game.Result) = (RmGame.Playing, ply, null);
+        RmGamePlayer me = new() { UserId = 2, GameId = Id, Color = color, OpponentId = 1, OpponentName = "testuser", CreatedAt = T0 };
+
+        Assert.Equal(mine, GameReads.ToMyGame(me, game, Week).YourTurn);
+        Assert.False(GameReads.ToMyGame(me, Ended(), Week).YourTurn); // an ended game is nobody's turn
+    }
+
+    [Fact]
+    public void A_correspondence_game_being_played_has_a_deadline_a_week_after_its_last_move()
+    {
+        RmGame game = Ended();
+        (game.Status, game.TimeControl, game.Result) = (RmGame.Playing, "7d", null);
+        RmGamePlayer me = new() { UserId = 2, GameId = Id, Color = "black", OpponentId = 1, OpponentName = "testuser", CreatedAt = T0 };
+
+        Assert.Equal(game.UpdatedAt + Week, GameReads.ToMyGame(me, game, Week).DeadlineAt);
+        Assert.Null(GameReads.ToMyGame(me, Ended(), Week).DeadlineAt); // a live game has none
+    }
 }
+
