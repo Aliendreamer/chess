@@ -55,7 +55,8 @@ pnpm build && API_URL=http://127.0.0.1:8080 pnpm start   # prod SSR server on :3
 tools/localdev/verify-auth.sh                  # curl-only login→/me→logout→revocation check vs the live stack
 tools/localdev/verify-stack.sh                 # replica streaming + write→read, redpanda health/topics/round-trip, console
 tools/localdev/verify-part0.sh [--cluster]     # login→ping→live→list→hub gate; --cluster kills backend-1 and re-checks
-tools/localdev/verify-part1.sh                 # two logins → queue pairing → invite → fool's mate → ended 0-1 + PGN
+tools/localdev/verify-part1.sh [--cluster]     # two logins → queue pairing → invite → fool's mate → ended 0-1 + PGN;
+                                               # --cluster: 6 games, SIGTERM backend-1, all answer from the survivor
 tools/localdev/stack.sh up --cluster            # adds backend-2 (down/ps/logs always include it)
 tools/e2e.sh                                   # Playwright against the live stack
 ```
