@@ -54,6 +54,9 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Debug, Message = "Journal publisher lease is held elsewhere; retrying in {Delay}")]
     public static partial void PublisherLeaseBusy(ILogger logger, TimeSpan delay);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Applying {Count} pending migrations to database {Database}")]
+    public static partial void MigrationsApplying(ILogger logger, int count, string database);
+
     [LoggerMessage(Level = LogLevel.Warning, Message = "Journal publisher stopped ({Reason}); re-acquiring in {Delay}")]
     public static partial void PublisherStopped(ILogger logger, Exception exception, string reason, TimeSpan delay);
 }

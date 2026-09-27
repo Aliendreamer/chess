@@ -24,6 +24,9 @@ internal static class DatabaseExtensions
         ArgumentNullException.ThrowIfNull(app);
         using IServiceScope scope = app.Services.CreateScope();
         ProjectDbContext context = scope.ServiceProvider.GetRequiredService<ProjectDbContext>();
+        List<string> pending = [.. await context.Database.GetPendingMigrationsAsync(ct)];
+        string database = context.Database.GetDbConnection().Database;
+        Log.MigrationsApplying(app.Logger, pending.Count, database);
         await context.Database.MigrateAsync(ct);
         await SeedData.SeedAsync(context, ct);
     }

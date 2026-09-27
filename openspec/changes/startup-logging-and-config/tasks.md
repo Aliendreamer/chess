@@ -3,10 +3,10 @@ Each group ends in one commit that passes the backend gate (build with no warnin
 
 ## 1. Startup logging
 
-- [ ] 1.1 Failing tests: `StartupSummary.Describe` hides passwords, secrets and full connection strings (fixed config with
+- [x] 1.1 Failing tests: `StartupSummary.Describe` hides passwords, secrets and full connection strings (fixed config with
       known secrets); it shows the Akka address, Kafka on/off and database hosts.
-- [ ] 1.2 Bootstrap logger and `StartupSteps` in `Program.cs` (D1, D2); the summary event.
-- [ ] 1.3 🐳 The integration suite passes (several in-process hosts); a started stack shows the step lines; a stack
+- [x] 1.2 Bootstrap logger and `StartupSteps` in `Program.cs` (D1, D2); the summary event.
+- [x] 1.3 🐳 The integration suite passes (several in-process hosts); a started stack shows the step lines; a stack
       started with `RateLimit__PermitLimit=0` shows the Fatal line and exits 1. Commit:
       `feat(backend): startup logging with steps, summary and fatal reason`.
 

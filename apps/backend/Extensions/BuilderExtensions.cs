@@ -259,10 +259,14 @@ internal static class SharedConfigurationExtensions
                 reloadOnChange: true)
             .AddEnvironmentVariables();
 
-        builder.Host.UseSerilog((context, services, config) => config
-            .ReadFrom.Configuration(context.Configuration)
-            .ReadFrom.Services(services)
-            .Enrich.FromLogContext());
+        // The first host reconfigures the bootstrap logger; any further in-process host (the integration tests'
+        // factories) keeps a logger of its own, since a bootstrap logger can be frozen only once.
+        builder.Host.UseSerilog(
+            (context, services, config) => config
+                .ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext(),
+            preserveStaticLogger: !StartupLogging.ClaimBootstrapLogger());
 
         return builder;
     }
