@@ -11,7 +11,7 @@ import {
   postLeaveQueue,
   postStartEngineGame,
 } from '#/lib/server/api'
-import { PRESETS, category } from '#/lib/games'
+import { CORRESPONDENCE, PRESETS, category } from '#/lib/games'
 import { isQueueView, pairingGame } from '#/lib/play'
 import { liveStatusText, useLiveTopic } from '#/lib/live'
 import {
@@ -25,16 +25,17 @@ import {
   buttonClass,
   useCommand,
 } from '#/components/ui'
-import { RecentGames } from '#/components/games'
+import { RecentGames, YourTurnList } from '#/components/games'
 
 /** Home: quick pairing on a preset, an invite link for a friend, and your recent games. */
 export const Route = createFileRoute('/_authenticated/')({
   loader: async () => {
-    const [games, levels] = await Promise.all([
+    const [games, yourTurn, levels] = await Promise.all([
       getMyGames({ data: { limit: 8 } }),
+      getMyGames({ data: { limit: 20, turn: 'mine' } }),
       getEngineLevels(),
     ])
-    return { games, levels }
+    return { games, yourTurn, levels }
   },
   component: HomePage,
 })
@@ -43,7 +44,7 @@ const HEARTBEAT_MS = 25_000
 
 function HomePage() {
   const { me } = Route.useRouteContext()
-  const { games, levels } = Route.useLoaderData()
+  const { games, yourTurn, levels } = Route.useLoaderData()
   const navigate = useNavigate()
   const [seek, setSeek] = useState<QueueStatus | null>(null)
   const joining = useCommand()
@@ -114,6 +115,12 @@ function HomePage() {
           />
         </section>
         <section className="flex flex-col gap-3.5">
+          {yourTurn.items.length > 0 ? (
+            <>
+              <SectionHeading meta={`${yourTurn.items.length}`}>Your turn</SectionHeading>
+              <YourTurnList games={yourTurn.items} nowMs={Date.now()} />
+            </>
+          ) : null}
           <SectionHeading>Recent games</SectionHeading>
           <RecentGames games={games.items} />
         </section>
@@ -208,7 +215,7 @@ function InviteForm({ onCreated }: { onCreated: (invite: InviteView) => void }) 
   return (
     <Panel variant="filled" className="gap-4">
       <div className="flex flex-wrap gap-2" role="group" aria-label="Time control">
-        {PRESETS.map((tc) => (
+        {[...PRESETS, CORRESPONDENCE].map((tc) => (
           <Chip
             key={tc}
             shape="square"
@@ -216,7 +223,7 @@ function InviteForm({ onCreated }: { onCreated: (invite: InviteView) => void }) 
             selected={tc === timeControl}
             onClick={() => setTimeControl(tc)}
           >
-            {tc}
+            {tc === CORRESPONDENCE ? '7 days' : tc}
           </Chip>
         ))}
       </div>

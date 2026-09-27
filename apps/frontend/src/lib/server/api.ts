@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader } from '@tanstack/react-start/server'
-import { PRESETS } from '../games'
+import { CORRESPONDENCE, PRESETS } from '../games'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { apiUrl, isGuid } from './upstream'
 import { loadMe } from './auth'
@@ -58,6 +58,11 @@ function preset(tc: string): string {
   if (!(PRESETS as ReadonlyArray<string>).includes(tc))
     throw new Error(`not a preset time control: ${tc}`)
   return tc
+}
+
+/** An invite may also be a correspondence game (correspondence-games D1); the queue may not. */
+function inviteTimeControl(tc: string): string {
+  return tc === CORRESPONDENCE ? tc : preset(tc)
 }
 
 function guid(id: string): string {
@@ -129,7 +134,7 @@ export const postLeaveQueue = createServerFn({ method: 'POST' })
 export const postCreateInvite = createServerFn({ method: 'POST' })
   .validator((input: { timeControl: string; color: InviteView['color'] }) => {
     if (!COLORS.includes(input.color)) throw new Error(`not a colour: ${input.color}`)
-    return { timeControl: preset(input.timeControl), color: input.color }
+    return { timeControl: inviteTimeControl(input.timeControl), color: input.color }
   })
   .handler(({ data }) => createInvite(serverFetch(), data))
 
@@ -146,9 +151,10 @@ export const postCancelInvite = createServerFn({ method: 'POST' })
   .handler(({ data }) => cancelInvite(serverFetch(), data))
 
 export const getMyGames = createServerFn({ method: 'GET' })
-  .validator((input: { limit: number; cursor?: string }) => ({
+  .validator((input: { limit: number; cursor?: string; turn?: 'mine' }) => ({
     limit: Math.min(Math.max(Math.trunc(input.limit), 1), 50),
     cursor: input.cursor,
+    turn: input.turn === 'mine' ? ('mine' as const) : undefined,
   }))
   .handler(({ data }) => loadMyGames(serverFetch(), data))
 

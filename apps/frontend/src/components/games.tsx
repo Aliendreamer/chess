@@ -5,7 +5,7 @@ import type { Piece } from '#/lib/moveInput'
 import type { MyGameItem } from '#/lib/play'
 import { Button, Panel } from '#/components/ui'
 import { outcomeFor } from '#/lib/play'
-import { formatClock, pairMoves, reasonText, resultText } from '#/lib/games'
+import { formatClock, pairMoves, reasonText, resultText, timeLeft } from '#/lib/games'
 import { placement, squaresFor } from '#/lib/moveInput'
 
 const GLYPH: Record<Piece['type'], string> = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' }
@@ -397,5 +397,40 @@ export function GameControls({
         Resign
       </Button>
     </div>
+  )
+}
+
+/**
+ * The games waiting for my move (correspondence-games D5): the opponent, the time control and, for a correspondence
+ * game, how long is left. `nowMs` is passed in so the list is pure and the page decides when time moves.
+ */
+export function YourTurnList({
+  games,
+  nowMs,
+}: {
+  games: ReadonlyArray<MyGameItem>
+  nowMs: number
+}) {
+  return (
+    <ul className="m-0 flex list-none flex-col p-0" data-testid="your-turn">
+      {games.map((game) => (
+        <li
+          key={game.gameId}
+          className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-4 border-b border-line-divider py-2.5"
+        >
+          <Link
+            to="/games/$id"
+            params={{ id: game.gameId }}
+            className="truncate text-fg-primary no-underline hover:text-fg-accent"
+          >
+            vs {game.opponent}
+          </Link>
+          <span className="font-mono text-fg-secondary">{game.timeControl}</span>
+          <span className="text-sm text-fg-accent">
+            {game.deadlineAt ? timeLeft(game.deadlineAt, nowMs) : 'your move'}
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 }

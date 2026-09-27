@@ -50,6 +50,10 @@ export interface MyGameItem {
   result: string | null
   reason: string | null
   createdAt: string
+  /** Being played and it is my move. */
+  yourTurn?: boolean
+  /** A correspondence game's deadline for the player to move. */
+  deadlineAt?: string | null
 }
 
 export interface CursorPage<T> {

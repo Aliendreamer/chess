@@ -5,13 +5,16 @@ import type { LiveFrame } from '#/lib/live'
 import type { Me } from '#/lib/auth'
 import { getGameMoves, getGamePage, getGameSummary, postGameCommand } from '#/lib/server/api'
 import {
+  CORRESPONDENCE,
   UNTIMED,
   category,
   engineToMove,
+  hasClock,
   isGameView,
   mergeMoves,
   myColor,
   orientation,
+  timeLeft,
   topicId,
   useLocalClocks,
 } from '#/lib/games'
@@ -164,6 +167,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   const opponentId = mine === 'white' ? current.blackId : current.whiteId
   const againstEngine = current.engineSide != null
   const untimed = current.timeControl === UNTIMED
+  const clockless = !hasClock(current.timeControl)
   const top = side === 'white' ? 'black' : 'white'
   const strip = (color: 'white' | 'black') => {
     const toMove = playing && current.sideToMove.toLowerCase() === color
@@ -173,7 +177,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
         testId={`strip-${color}`}
         name={color === 'white' ? white : black}
         detail={[color, you && toMove ? 'your move' : null].filter(Boolean).join(' · ')}
-        {...(untimed ? {} : { ms: color === 'white' ? clocks.whiteMs : clocks.blackMs })}
+        {...(clockless ? {} : { ms: color === 'white' ? clocks.whiteMs : clocks.blackMs })}
         active={toMove && current.ply >= 2}
       />
     )
@@ -207,7 +211,11 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
       <div className="flex max-w-[380px] flex-col gap-5">
         <div>
           <div className="text-xs text-fg-secondary">
-            {untimed ? 'Untimed · ' : `${category(current.timeControl)} ${current.timeControl} · `}
+            {untimed
+              ? 'Untimed · '
+              : current.timeControl === CORRESPONDENCE
+                ? 'Correspondence · 7 days per move · '
+                : `${category(current.timeControl)} ${current.timeControl} · `}
             <span className="font-mono" aria-live="polite" data-testid="game-relay">
               {liveStatusText(live.status)}
             </span>
@@ -243,6 +251,12 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
             onClaim={(outcome) => void send({ kind: 'claim', outcome })}
             onWait={() => setWaiting(true)}
           />
+        ) : null}
+
+        {playing && current.deadlineAt ? (
+          <p className="m-0 text-sm text-fg-secondary" data-testid="deadline">
+            {`${mine !== null && current.sideToMove.toLowerCase() === mine ? 'Your move' : `Waiting for ${current.sideToMove === 'White' ? white : black}`} · ${timeLeft(current.deadlineAt, Date.parse(current.clockAt))}`}
+          </p>
         ) : null}
 
         {engineToMove(current) ? (

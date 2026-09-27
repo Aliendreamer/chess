@@ -55,10 +55,11 @@ export function cancelInvite(
 /** `GET /api/me/games`: newest first, keyset paged. */
 export async function loadMyGames(
   fetchImpl: typeof fetch,
-  page: { limit: number; cursor?: string | undefined },
+  page: { limit: number; cursor?: string | undefined; turn?: 'mine' | undefined },
 ): Promise<CursorPage<MyGameItem>> {
   const query = new URLSearchParams({ limit: String(page.limit) })
   if (page.cursor) query.set('cursor', page.cursor)
+  if (page.turn) query.set('turn', page.turn)
   return readJson<CursorPage<MyGameItem>>(
     await fetchImpl(`/api/me/games?${query.toString()}`),
     'GET /api/me/games',

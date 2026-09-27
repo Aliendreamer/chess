@@ -96,6 +96,15 @@ describe('invites', () => {
 })
 
 describe('loadMyGames', () => {
+  it('asks only for the games waiting for my move with turn=mine', async () => {
+    const calls: Array<Call> = []
+    await loadMyGames(fakeFetch(200, { items: [], nextCursor: null, limit: 20 }, calls), {
+      limit: 20,
+      turn: 'mine',
+    })
+    expect(calls[0]?.url).toBe('/api/me/games?limit=20&turn=mine')
+  })
+
   it('asks for a page of the given size', async () => {
     const calls: Array<Call> = []
     await loadMyGames(fakeFetch(200, { items: [], nextCursor: null, limit: 8 }, calls), {

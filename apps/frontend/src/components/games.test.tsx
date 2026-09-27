@@ -1,7 +1,23 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Board, ClaimPanel, GameControls, MoveList, PlayerStrip, PromotionPicker } from './games'
+import {
+  Board,
+  ClaimPanel,
+  GameControls,
+  MoveList,
+  PlayerStrip,
+  PromotionPicker,
+  YourTurnList,
+} from './games'
+import type { ReactNode } from 'react'
 import type { GameView } from '#/lib/games'
+
+// The router's <Link> needs a router; the lists only need an anchor to their game.
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children, params }: { children: ReactNode; params: { id: string } }) => (
+    <a href={`/games/${params.id}`}>{children}</a>
+  ),
+}))
 
 afterEach(cleanup)
 
@@ -145,5 +161,37 @@ describe('GameControls against the computer', () => {
     expect(screen.queryByRole('button', { name: 'Offer draw' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Resign' }))
     expect(onCommand).toHaveBeenCalledWith({ kind: 'resign' })
+  })
+})
+
+describe('YourTurnList', () => {
+  it('lists each game with the time left, or just "your move" without a deadline', () => {
+    const base = {
+      color: 'white' as const,
+      opponentId: 2,
+      status: 'playing',
+      result: null,
+      reason: null,
+      createdAt: '2026-09-27T09:00:00Z',
+      yourTurn: true,
+    }
+    render(
+      <YourTurnList
+        nowMs={Date.parse('2026-09-27T10:00:00Z')}
+        games={[
+          {
+            ...base,
+            gameId: 'g1',
+            opponent: 'bob',
+            timeControl: '7d',
+            deadlineAt: '2026-10-03T10:00:00Z',
+          },
+          { ...base, gameId: 'g2', opponent: 'ann', timeControl: '5+3', deadlineAt: null },
+        ]}
+      />,
+    )
+    const rows = screen.getByTestId('your-turn').querySelectorAll('li')
+    expect(rows[0]?.textContent).toBe('vs bob7d6 days left')
+    expect(rows[1]?.textContent).toBe('vs ann5+3your move')
   })
 })

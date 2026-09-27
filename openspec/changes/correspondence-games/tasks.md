@@ -20,7 +20,7 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
 ## 3. Stack and frontend
 
 - [x] 3.1 🐳 `mailpit` service and route, backend SMTP env. Commit `feat(repo): mailpit for local mail`.
-- [ ] 3.2 Invite `7 days`, "Your turn" on home, correspondence status on the game page. Tests. Commit
+- [x] 3.2 Invite `7 days`, "Your turn" on home, correspondence status on the game page. Tests. Commit
       `feat(frontend): correspondence games`.
 
 ## 4. Verify and docs
