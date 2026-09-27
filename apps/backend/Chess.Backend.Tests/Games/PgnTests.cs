@@ -76,4 +76,12 @@ public sealed class PgnTests
     [Fact]
     public void Quotes_and_backslashes_in_names_are_escaped() =>
         Assert.Contains("[White \"a\\\"b\\\\c\"]", Pgn.Build(Game(["e4"]) with { White = "a\"b\\c" }), StringComparison.Ordinal);
+
+    [Fact]
+    public void An_untimed_game_has_no_time_control_tag_value()
+    {
+        string pgn = Pgn.Build(Game(["e4"], result: "*", reason: "Aborted") with { TimeControl = "untimed" });
+
+        Assert.Contains("[TimeControl \"-\"]", pgn, StringComparison.Ordinal);
+    }
 }

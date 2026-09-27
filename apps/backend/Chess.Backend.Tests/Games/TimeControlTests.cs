@@ -38,4 +38,24 @@ public sealed class TimeControlTests
         Assert.True(TimeControl.TryParse(text, out TimeControl tc));
         Assert.Equal(category, tc.Category.ToString());
     }
+
+    [Fact]
+    public void Untimed_is_not_a_preset_but_a_game_may_carry_it()
+    {
+        Assert.Equal(("untimed", 0L, 0L, true), (TimeControl.Untimed.ToString(), TimeControl.Untimed.InitialMs, TimeControl.Untimed.IncrementMs, TimeControl.Untimed.IsUntimed));
+        Assert.False(TimeControl.TryParse("untimed", out _)); // the queue and invites never see it
+        Assert.True(TimeControl.TryParseAny("untimed", out TimeControl tc));
+        Assert.Equal(TimeControl.Untimed, tc);
+        Assert.True(TimeControl.TryParseAny("5+3", out _));
+        Assert.DoesNotContain(TimeControl.Presets, p => p.IsUntimed);
+    }
+
+    [Fact]
+    public void Only_untimed_games_passivate_while_playing()
+    {
+        TimeSpan idle = TimeSpan.FromMinutes(30);
+
+        Assert.Equal(new PassivationPolicy(idle, TimeSpan.FromMinutes(1)), PassivationPolicy.For(TimeControl.Untimed, idle));
+        Assert.Null(PassivationPolicy.For(TimeControl.Presets[0], idle).WhilePlaying);
+    }
 }

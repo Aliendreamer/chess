@@ -38,11 +38,14 @@ internal sealed class AkkaOptions : Extensions.ISettings
     /// <summary>How often the matchmaking singleton drops queue entries whose heartbeat stopped.</summary>
     public int MatchmakingSweepSeconds { get; set; } = 5;
 
-    /// <summary>Idle time after which a ping or invite entity is passivated (games never passivate while playing).</summary>
+    /// <summary>Idle time after which a ping or invite entity is passivated (timed games never passivate while playing).</summary>
     public int IdlePassivationMinutes { get; set; } = 5;
 
-    public Games.PresenceTimings Presence() =>
-        new(TimeSpan.FromSeconds(AbandonAfterSeconds), TimeSpan.FromSeconds(PresenceLeaseSeconds));
+    /// <summary>Idle time after which an untimed game under way is passivated; it recovers unchanged (engine-play D4).</summary>
+    public int UntimedIdleMinutes { get; set; } = 30;
+
+    public Games.GameTimings GameTimings() =>
+        new(TimeSpan.FromSeconds(AbandonAfterSeconds), TimeSpan.FromSeconds(PresenceLeaseSeconds), TimeSpan.FromMinutes(UntimedIdleMinutes));
 
     public string SelfAddress => $"akka.tcp://{SystemName}@{Hostname}:{Port}";
 
@@ -50,10 +53,12 @@ internal sealed class AkkaOptions : Extensions.ISettings
 
     public void Validate()
     {
-        if (AbandonAfterSeconds <= 0 || PresenceLeaseSeconds <= 0 || MatchmakingSweepSeconds <= 0 || IdlePassivationMinutes <= 0)
+        if (AbandonAfterSeconds <= 0 || PresenceLeaseSeconds <= 0 || MatchmakingSweepSeconds <= 0 || IdlePassivationMinutes <= 0
+            || UntimedIdleMinutes <= 0)
         {
             throw new InvalidOperationException(
-                "Akka:AbandonAfterSeconds, Akka:PresenceLeaseSeconds, Akka:MatchmakingSweepSeconds and Akka:IdlePassivationMinutes must be positive.");
+                "Akka:AbandonAfterSeconds, Akka:PresenceLeaseSeconds, Akka:MatchmakingSweepSeconds, Akka:IdlePassivationMinutes and "
+                + "Akka:UntimedIdleMinutes must be positive.");
         }
 
         if (string.IsNullOrWhiteSpace(Hostname))

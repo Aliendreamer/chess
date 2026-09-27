@@ -80,10 +80,10 @@ In `GameActor`, `ClocksRunning` is false for Untimed, so there is:
 - no increment;
 - no `TimedOut`.
 
-The view's `whiteMs` and `blackMs` are null. The first-move abort stays: a human who never moves aborts after 1 min, as
+The view's `whiteMs` and `blackMs` stay 0, so the API contract does not change; the UI hides clocks for `untimed`. The first-move abort stays: a human who never moves aborts after 1 min, as
 today.
 
-`PassivationPolicy` passivates an untimed game after `Akka:UntimedIdleMinutes` (default 30) without commands. Recovery
+`PassivationPolicy` passivates an untimed game under way after `Akka:UntimedIdleMinutes` (default 30) without commands; the actor's presence timings become `GameTimings`, which carries it. Recovery
 restores it exactly, because there is no clock to restore. The projection writes null clocks for untimed games.
 
 ### D5 — Engine games are exempt from presence and draws

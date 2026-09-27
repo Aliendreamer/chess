@@ -165,7 +165,7 @@ internal static class GameShardingExtensions
                 Guid.ParseExact(id, "N"),
                 DistributedPubSub.Get(system).Mediator,
                 resolver.GetService<TimeProvider>(),
-                options.Presence())),
+                options.GameTimings())),
             new GameMessageExtractor(options.ShardCount),
             ShardOptions());
     }

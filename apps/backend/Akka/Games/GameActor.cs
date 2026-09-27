@@ -29,7 +29,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private readonly Guid _gameId;
     private readonly IActorRef? _mediator;
     private readonly TimeProvider _clock;
-    private readonly PresenceTimings _timings;
+    private readonly GameTimings _timings;
     private readonly ILoggingAdapter _log = Context.GetLogger();
 
     // Presence (presence-and-abandonment D2): who reported each player present, per BFF instance, and when last.
@@ -64,11 +64,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private DateTimeOffset? _turnStartedAt;
 
     public GameActor(Guid gameId, IActorRef? mediator, TimeProvider clock)
-        : this(gameId, mediator, clock, PresenceTimings.Default)
+        : this(gameId, mediator, clock, GameTimings.Default)
     {
     }
 
-    public GameActor(Guid gameId, IActorRef? mediator, TimeProvider clock, PresenceTimings timings)
+    public GameActor(Guid gameId, IActorRef? mediator, TimeProvider clock, GameTimings timings)
     {
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(timings);
@@ -536,7 +536,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _created = true;
         _white = e.WhiteId;
         _black = e.BlackId;
-        _timeControl = TimeControl.TryParse(e.TimeControl, out TimeControl tc)
+        _timeControl = TimeControl.TryParseAny(e.TimeControl, out TimeControl tc)
             ? tc
             : throw new InvalidOperationException($"Unknown time control {e.TimeControl} in the journal.");
         _whiteMs = e.InitialMs;
@@ -570,8 +570,8 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _blackMs = e.BlackMs;
         _status = GameStatus.Playing;
         _lastMoveAt = e.At;
-        // From Black's first reply on, the side to move's clock runs from the moment of the last move.
-        _turnStartedAt = Ply >= 2 ? e.At : null;
+        // From Black's first reply on, the side to move's clock runs from the moment of the last move (never untimed).
+        _turnStartedAt = Ply >= 2 && !_timeControl.IsUntimed ? e.At : null;
     }
 
     private void Apply(DrawOffered e) => _drawOfferedBy = e.By;
@@ -612,7 +612,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _created = true;
         _white = s.WhiteId;
         _black = s.BlackId;
-        _timeControl = TimeControl.TryParse(s.TimeControl, out TimeControl tc)
+        _timeControl = TimeControl.TryParseAny(s.TimeControl, out TimeControl tc)
             ? tc
             : throw new InvalidOperationException($"Unknown time control {s.TimeControl} in a snapshot.");
         _rules = ChessRules.Replay(s.Moves);
@@ -626,7 +626,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _reason = s.Reason;
         _createdAt = s.CreatedAt;
         _lastMoveAt = s.LastMoveAt;
-        _turnStartedAt = _status == GameStatus.Playing && Ply >= 2 ? s.LastMoveAt : null;
+        _turnStartedAt = _status == GameStatus.Playing && Ply >= 2 && !_timeControl.IsUntimed ? s.LastMoveAt : null;
         foreach (long away in s.Absent ?? [])
         {
             _tracking = true;
@@ -694,7 +694,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         DateTimeOffset now = _clock.GetUtcNow();
         if (_status == GameStatus.Ended)
         {
-            if (PassivationPolicy.For(_timeControl).AfterEnd is { } after)
+            if (PassivationPolicy.For(_timeControl, _timings.UntimedIdle).AfterEnd is { } after)
             {
                 Timers.StartSingleTimer(PassivateTimer, PassivateNow.Instance, after);
             }
@@ -706,10 +706,15 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         {
             Timers.StartSingleTimer(FlagTimer, FlagCheck.Instance, TimeSpan.FromMilliseconds(RemainingMs(now)));
         }
-        else
+        else if (Ply < 2)
         {
             TimeSpan untilAbort = FirstMoveDeadline - now;
             Timers.StartSingleTimer(AbortTimer, AbortCheck.Instance, untilAbort > TimeSpan.Zero ? untilAbort : TimeSpan.Zero);
+        }
+        else if (PassivationPolicy.For(_timeControl, _timings.UntimedIdle).WhilePlaying is { } idle)
+        {
+            // Untimed and under way: nothing to time, so the game may leave memory once nobody has acted for a while.
+            Timers.StartSingleTimer(PassivateTimer, PassivateNow.Instance, idle);
         }
 
         if (NextPresenceCheck(now) is { } at)
@@ -738,7 +743,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         return !_reported.Contains(player) && !_absentSince.ContainsKey(player) && now - _incarnatedAt < _timings.Lease;
     }
 
-    /// <summary>The present player may claim once the other has been away for <see cref="PresenceTimings.AbandonAfter"/>.</summary>
+    /// <summary>The present player may claim once the other has been away for <see cref="GameTimings.AbandonAfter"/>.</summary>
     private long? ClaimableBy(DateTimeOffset now)
     {
         if (!PresenceActive || _absentSince.Count != 1)
@@ -851,10 +856,10 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
 }
 
 /// <summary>
-/// How long a player may be away before the claim opens, and how long a BFF instance's report lasts without a refresh
-/// (presence-and-abandonment D2–D3). Configurable so integration tests need not wait minutes.
+/// The actor's configurable timings: presence (presence-and-abandonment D2–D3) and how long an untimed game may sit idle
+/// before it passivates (engine-play D4). Configurable so integration tests need not wait minutes.
 /// </summary>
-internal sealed record PresenceTimings(TimeSpan AbandonAfter, TimeSpan Lease)
+internal sealed record GameTimings(TimeSpan AbandonAfter, TimeSpan Lease, TimeSpan UntimedIdle)
 {
-    public static readonly PresenceTimings Default = new(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(75));
+    public static readonly GameTimings Default = new(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(75), TimeSpan.FromMinutes(30));
 }

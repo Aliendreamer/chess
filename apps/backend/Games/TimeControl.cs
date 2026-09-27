@@ -8,6 +8,9 @@ internal enum TimeCategory
     Blitz,
     Rapid,
     Classical,
+
+    /// <summary>No clocks at all (engine-play D4): only games against the engine, never the queue or invites.</summary>
+    Untimed,
 }
 
 /// <summary>
@@ -31,6 +34,11 @@ internal readonly record struct TimeControl(int Minutes, int IncrementSeconds, T
         new(90, 30, TimeCategory.Classical),
     ];
 
+    /// <summary>No clock runs, no flag falls, no increment; written <c>untimed</c>.</summary>
+    public static TimeControl Untimed { get; } = new(0, 0, TimeCategory.Untimed);
+
+    public bool IsUntimed => Category == TimeCategory.Untimed;
+
     public long InitialMs => Minutes * 60_000L;
 
     public long IncrementMs => IncrementSeconds * 1_000L;
@@ -50,17 +58,31 @@ internal readonly record struct TimeControl(int Minutes, int IncrementSeconds, T
         return false;
     }
 
-    public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"{Minutes}+{IncrementSeconds}");
+    /// <summary>A preset or <c>untimed</c>: what a game's journal may hold. <see cref="TryParse"/> stays presets-only for the edge.</summary>
+    public static bool TryParseAny(string? text, out TimeControl timeControl)
+    {
+        if (string.Equals(text, Untimed.ToString(), StringComparison.Ordinal))
+        {
+            timeControl = Untimed;
+            return true;
+        }
+
+        return TryParse(text, out timeControl);
+    }
+
+    public override string ToString() =>
+        IsUntimed ? "untimed" : string.Create(CultureInfo.InvariantCulture, $"{Minutes}+{IncrementSeconds}");
 }
 
 /// <summary>
 /// When a game may leave memory, by game type (ROADMAP D22, design D8). Live controls never passivate while playing —
-/// their clock timers must keep running — and leave a minute after the end. Correspondence (Part 3) will add a policy
-/// that passivates while waiting and relies on a persisted deadline instead.
+/// their clock timers must keep running — and leave a minute after the end. Untimed games have no clock to keep, so
+/// they also leave after <paramref name="untimedIdle"/> without a command, and recover unchanged (engine-play D4).
 /// </summary>
 internal sealed record PassivationPolicy(TimeSpan? WhilePlaying, TimeSpan? AfterEnd)
 {
     public static PassivationPolicy Live { get; } = new(WhilePlaying: null, AfterEnd: TimeSpan.FromMinutes(1));
 
-    public static PassivationPolicy For(TimeControl timeControl) => Live;
+    public static PassivationPolicy For(TimeControl timeControl, TimeSpan untimedIdle) =>
+        timeControl.IsUntimed ? new(WhilePlaying: untimedIdle, AfterEnd: Live.AfterEnd) : Live;
 }

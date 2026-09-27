@@ -19,7 +19,7 @@ typecheck, lint, check, test, build; engine: build, unit tests, format). 🐳 ma
 
 ## 3. Backend
 
-- [ ] 3.1 `TimeControl.Untimed` and untimed games in `GameActor`, the projection and validation (no clocks, no flag,
+- [x] 3.1 `TimeControl.Untimed` and untimed games in `GameActor`, the projection and validation (no clocks, no flag,
       abort kept, idle passivation). Tests. Commit: `feat(backend): untimed games`.
 - [ ] 3.2 Engine users (migration), `GameCreated.Engine`, `CreateGame`/`IGameStarter` engine argument, presence and draw
       exemptions, `GameView.engineSide/engineLevel`. Tests. Commit: `feat(backend): games against an engine player`.
