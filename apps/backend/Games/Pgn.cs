@@ -48,9 +48,11 @@ internal static class Pgn
 
     /// <summary><c>5+3</c> (minutes + increment seconds) → <c>300+3</c> (PGN: base seconds + increment seconds).</summary>
     private static string SecondsForm(string timeControl) =>
-        TimeControl.TryParse(timeControl, out TimeControl tc)
-            ? string.Create(CultureInfo.InvariantCulture, $"{tc.Minutes * 60}+{tc.IncrementSeconds}")
-            : "-";
+        timeControl == TimeControl.Correspondence7.ToString()
+            ? "1/604800" // PGN's moves/seconds form: one move per week
+            : TimeControl.TryParse(timeControl, out TimeControl tc)
+                ? string.Create(CultureInfo.InvariantCulture, $"{tc.Minutes * 60}+{tc.IncrementSeconds}")
+                : "-";
 
     private static string Termination(string reason) => reason switch
     {

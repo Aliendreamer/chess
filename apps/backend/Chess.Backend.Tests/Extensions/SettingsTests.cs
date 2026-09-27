@@ -1,5 +1,6 @@
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Outbox;
+using Chess.Backend.Correspondence;
 using Chess.Backend.Engine;
 using Chess.Backend.Extensions;
 using Chess.Backend.Messaging;
@@ -36,6 +37,7 @@ public sealed class SettingsTests
         Assert.Equivalent(new SessionStoreOptions(), Bound<SessionStoreOptions>(SessionStoreOptions.SectionName), strict: true);
         Assert.Equivalent(new SessionCookieOptions(), Bound<SessionCookieOptions>(SessionCookieOptions.SectionName), strict: true);
         Assert.Equivalent(new EngineOptions(), Bound<EngineOptions>(EngineOptions.SectionName), strict: true);
+        Assert.Equivalent(new CorrespondenceOptions(), Bound<CorrespondenceOptions>(CorrespondenceOptions.SectionName), strict: true);
 
         // Keycloak's section holds environment values (client id, URLs); only its tuning must match.
         Assert.Equal(new KeycloakOptions().HttpTimeoutSeconds, Bound<KeycloakOptions>(KeycloakOptions.SectionName).HttpTimeoutSeconds);
@@ -83,6 +85,7 @@ public sealed class SettingsTests
         { "SessionStore:CleanupInterval", () => new SessionStoreOptions { CleanupInterval = TimeSpan.Zero }.Validate() },
         { "Engine:MinThinkMs", () => new EngineOptions { MinThinkMs = 8_000, MaxThinkMs = 5_000 }.Validate() },
         { "Engine:StallSeconds", () => new EngineOptions { StallSeconds = 5 }.Validate() },
+        { "Correspondence:MoveDeadline", () => new CorrespondenceOptions { MoveDeadline = TimeSpan.Zero }.Validate() },
     };
 
     [Theory]

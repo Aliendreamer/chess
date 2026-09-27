@@ -9,6 +9,7 @@ public sealed class MatchmakingValidatorsTests
     [InlineData("5+3", true)]
     [InlineData("90+30", true)]
     [InlineData("4+2", false)] // not a D12 preset
+    [InlineData("7d", false)] // correspondence is for invites only
     [InlineData("", false)]
     public void A_queue_is_a_preset_time_control(string tc, bool ok)
     {
@@ -23,6 +24,8 @@ public sealed class MatchmakingValidatorsTests
         v.TestValidate(new CreateInviteRequest { TimeControl = "10+5", Color = "purple" }).ShouldHaveValidationErrorFor(r => r.Color);
         v.TestValidate(new CreateInviteRequest { TimeControl = "4+2", Color = "white" }).ShouldHaveValidationErrorFor(r => r.TimeControl);
         v.TestValidate(new CreateInviteRequest { TimeControl = "10+5", Color = "random" }).ShouldNotHaveAnyValidationErrors();
+        v.TestValidate(new CreateInviteRequest { TimeControl = "7d", Color = "white" }).ShouldNotHaveAnyValidationErrors();
+        v.TestValidate(new CreateInviteRequest { TimeControl = "untimed", Color = "white" }).ShouldHaveValidationErrorFor(r => r.TimeControl);
     }
 
     [Theory]

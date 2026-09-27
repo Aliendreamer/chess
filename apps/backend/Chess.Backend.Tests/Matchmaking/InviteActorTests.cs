@@ -173,6 +173,9 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
     }
 
     [Fact]
+    public void A_correspondence_invite_is_open_like_any_other() => Created(tc: "7d");
+
+    [Fact]
     public void An_accepted_invite_survives_a_restart_with_its_game()
     {
         (Guid id, IActorRef actor) = Created();

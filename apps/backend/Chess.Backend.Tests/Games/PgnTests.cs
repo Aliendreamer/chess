@@ -84,4 +84,13 @@ public sealed class PgnTests
 
         Assert.Contains("[TimeControl \"-\"]", pgn, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void A_correspondence_game_is_one_move_per_week()
+    {
+        string pgn = Pgn.Build(Game(["e4"], result: "*", reason: "Aborted") with { TimeControl = "7d" });
+
+        Assert.Contains("[TimeControl \"1/604800\"]", pgn, StringComparison.Ordinal);
+    }
 }
+

@@ -107,9 +107,9 @@ internal sealed class InviteActor : ReceivePersistentActor
             return;
         }
 
-        if (!TimeControl.TryParse(cmd.TimeControl, out _) || !Colors.Contains(cmd.Color))
+        if (!TimeControl.TryParseInvite(cmd.TimeControl, out _) || !Colors.Contains(cmd.Color))
         {
-            Sender.Tell(Rejected(RejectionCode.Illegal, "An invite needs a preset time control and a colour (white, black or random)."));
+            Sender.Tell(Rejected(RejectionCode.Illegal, "An invite needs a preset time control or 7d, and a colour (white, black or random)."));
             return;
         }
 
@@ -211,7 +211,7 @@ internal sealed class InviteActor : ReceivePersistentActor
         _created = true;
         _creator = e.CreatorId;
         _timeControl = e.TimeControl;
-        _tc = TimeControl.TryParse(e.TimeControl, out TimeControl tc)
+        _tc = TimeControl.TryParseInvite(e.TimeControl, out TimeControl tc)
             ? tc
             : throw new InvalidOperationException($"Unknown time control {e.TimeControl} in invite {_inviteId:N}.");
         _color = e.Color;

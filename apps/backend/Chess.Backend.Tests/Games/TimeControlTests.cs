@@ -58,4 +58,18 @@ public sealed class TimeControlTests
         Assert.Equal(new PassivationPolicy(idle, TimeSpan.FromMinutes(1)), PassivationPolicy.For(TimeControl.Untimed, idle));
         Assert.Null(PassivationPolicy.For(TimeControl.Presets[0], idle).WhilePlaying);
     }
+
+    [Fact]
+    public void Seven_days_is_for_invites_not_the_queue()
+    {
+        Assert.Equal(("7d", true, false), (TimeControl.Correspondence7.ToString(), TimeControl.Correspondence7.IsCorrespondence, TimeControl.Correspondence7.HasClock));
+        Assert.False(TimeControl.TryParse("7d", out _));
+        Assert.True(TimeControl.TryParseInvite("7d", out TimeControl tc));
+        Assert.Equal(TimeControl.Correspondence7, tc);
+        Assert.True(TimeControl.TryParseInvite("5+3", out _));
+        Assert.False(TimeControl.TryParseInvite("untimed", out _));
+        Assert.True(TimeControl.TryParseAny("7d", out _));
+        Assert.NotNull(PassivationPolicy.For(TimeControl.Correspondence7, TimeSpan.FromMinutes(30)).WhilePlaying);
+    }
 }
+

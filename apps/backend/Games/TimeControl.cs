@@ -11,6 +11,9 @@ internal enum TimeCategory
 
     /// <summary>No clocks at all (engine-play D4): only games against the engine, never the queue or invites.</summary>
     Untimed,
+
+    /// <summary>A deadline per move instead of a clock (correspondence-games D1): invites only.</summary>
+    Correspondence,
 }
 
 /// <summary>
@@ -38,6 +41,14 @@ internal readonly record struct TimeControl(int Minutes, int IncrementSeconds, T
     public static TimeControl Untimed { get; } = new(0, 0, TimeCategory.Untimed);
 
     public bool IsUntimed => Category == TimeCategory.Untimed;
+
+    /// <summary>A week per move, reset after every move; written <c>7d</c>. Its length is <c>Correspondence:MoveDeadline</c>.</summary>
+    public static TimeControl Correspondence7 { get; } = new(0, 0, TimeCategory.Correspondence);
+
+    public bool IsCorrespondence => Category == TimeCategory.Correspondence;
+
+    /// <summary>A running clock with flag and increment; untimed and correspondence games have none.</summary>
+    public bool HasClock => !IsUntimed && !IsCorrespondence;
 
     public long InitialMs => Minutes * 60_000L;
 
@@ -67,22 +78,39 @@ internal readonly record struct TimeControl(int Minutes, int IncrementSeconds, T
             return true;
         }
 
+        return TryParseInvite(text, out timeControl);
+    }
+
+    /// <summary>What an invite may use: a preset or <c>7d</c>. The queue stays presets-only (<see cref="TryParse"/>).</summary>
+    public static bool TryParseInvite(string? text, out TimeControl timeControl)
+    {
+        if (string.Equals(text, Correspondence7.ToString(), StringComparison.Ordinal))
+        {
+            timeControl = Correspondence7;
+            return true;
+        }
+
         return TryParse(text, out timeControl);
     }
 
-    public override string ToString() =>
-        IsUntimed ? "untimed" : string.Create(CultureInfo.InvariantCulture, $"{Minutes}+{IncrementSeconds}");
+    public override string ToString() => Category switch
+    {
+        TimeCategory.Untimed => "untimed",
+        TimeCategory.Correspondence => "7d",
+        _ => string.Create(CultureInfo.InvariantCulture, $"{Minutes}+{IncrementSeconds}"),
+    };
 }
 
 /// <summary>
 /// When a game may leave memory, by game type (ROADMAP D22, design D8). Live controls never passivate while playing —
-/// their clock timers must keep running — and leave a minute after the end. Untimed games have no clock to keep, so
-/// they also leave after <paramref name="untimedIdle"/> without a command, and recover unchanged (engine-play D4).
+/// their clock timers must keep running — and leave a minute after the end. Games without a clock (untimed,
+/// correspondence) have nothing to keep, so they also leave after <paramref name="untimedIdle"/> without a command and
+/// recover unchanged (engine-play D4, correspondence-games D2).
 /// </summary>
 internal sealed record PassivationPolicy(TimeSpan? WhilePlaying, TimeSpan? AfterEnd)
 {
     public static PassivationPolicy Live { get; } = new(WhilePlaying: null, AfterEnd: TimeSpan.FromMinutes(1));
 
     public static PassivationPolicy For(TimeControl timeControl, TimeSpan untimedIdle) =>
-        timeControl.IsUntimed ? new(WhilePlaying: untimedIdle, AfterEnd: Live.AfterEnd) : Live;
+        timeControl.HasClock ? Live : new(WhilePlaying: untimedIdle, AfterEnd: Live.AfterEnd);
 }

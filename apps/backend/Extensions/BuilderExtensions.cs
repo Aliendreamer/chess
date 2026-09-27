@@ -4,6 +4,7 @@ using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Akka.Ping;
+using Chess.Backend.Correspondence;
 using Chess.Backend.Engine;
 using Chess.Backend.Messaging;
 using Chess.Backend.Projections;
@@ -125,6 +126,7 @@ internal static class BuilderExtension
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<GameProjection>());
         // Games against the engine (engine-play D6): one consumer asks for moves, the other applies the answers.
         EngineOptions engine = services.AddSettings<EngineOptions>(configuration, EngineOptions.SectionName);
+        services.AddSettings<CorrespondenceOptions>(configuration, CorrespondenceOptions.SectionName);
         services.AddScoped<EngineRequestConsumer>();
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<EngineRequestConsumer>());
         services.AddScoped<EngineMoveConsumer>();

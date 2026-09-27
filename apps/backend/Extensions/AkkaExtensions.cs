@@ -18,6 +18,7 @@ using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Akka.Ping;
+using Chess.Backend.Correspondence;
 using Chess.Backend.Engine;
 using Chess.Backend.Games;
 using Chess.Backend.Messaging;
@@ -166,7 +167,7 @@ internal static class GameShardingExtensions
                 Guid.ParseExact(id, "N"),
                 DistributedPubSub.Get(system).Mediator,
                 resolver.GetService<TimeProvider>(),
-                options.GameTimings(resolver.GetService<EngineOptions>().Stall),
+                options.GameTimings(resolver.GetService<EngineOptions>().Stall, resolver.GetService<CorrespondenceOptions>().MoveDeadline),
                 resolver.GetService<IEngineRequests>())),
             new GameMessageExtractor(options.ShardCount),
             ShardOptions());

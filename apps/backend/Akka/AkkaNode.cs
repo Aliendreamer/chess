@@ -44,9 +44,9 @@ internal sealed class AkkaOptions : Extensions.ISettings
     /// <summary>Idle time after which an untimed game under way is passivated; it recovers unchanged (engine-play D4).</summary>
     public int UntimedIdleMinutes { get; set; } = 30;
 
-    /// <summary>The game actor's timings; <paramref name="engineStall"/> comes from the <c>Engine</c> section.</summary>
-    public Games.GameTimings GameTimings(TimeSpan engineStall) =>
-        new(TimeSpan.FromSeconds(AbandonAfterSeconds), TimeSpan.FromSeconds(PresenceLeaseSeconds), TimeSpan.FromMinutes(UntimedIdleMinutes), engineStall);
+    /// <summary>The game actor's timings; the engine stall and the move deadline come from their own sections.</summary>
+    public Games.GameTimings GameTimings(TimeSpan engineStall, TimeSpan moveDeadline) =>
+        new(TimeSpan.FromSeconds(AbandonAfterSeconds), TimeSpan.FromSeconds(PresenceLeaseSeconds), TimeSpan.FromMinutes(UntimedIdleMinutes), engineStall, moveDeadline);
 
     public string SelfAddress => $"akka.tcp://{SystemName}@{Hostname}:{Port}";
 

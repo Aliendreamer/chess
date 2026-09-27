@@ -37,7 +37,7 @@ lives in memory while someone acts on it, a missed deadline loses, and the playe
   left" instead of clocks in a correspondence game.
 - **The read model** (`rm_games`) gains the side to move and the correspondence deadline.
 
-## Owner decisions (design conversation, 2026-09-27) — to confirm
+## Owner decisions (design conversation, 2026-09-27) — confirmed, with Mailpit explained
 
 1. **7 days per move, reset after every move** (my reading of "1 week is fine").
 2. **Presence-based abandonment off in correspondence games; the missed deadline is its correspondence form** (my

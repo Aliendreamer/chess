@@ -2,11 +2,11 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
 
 ## 1. Owner review
 
-- [ ] 1.1 The owner confirms the proposal's decisions 1–5 and the design. Nothing is built before this.
+- [x] 1.1 The owner confirms the proposal's decisions 1–5 and the design. Nothing is built before this.
 
 ## 2. Backend
 
-- [ ] 2.1 `7d` time control, invites accept it, the queue does not; `GameActor` deadline rules, `CheckDeadline`, no
+- [x] 2.1 `7d` time control, invites accept it, the queue does not; `GameActor` deadline rules, `CheckDeadline`, no
       presence claims, idle passivation; `Correspondence` settings. Tests. Commit `feat(backend): correspondence games`.
 - [ ] 2.2 `DeadlineProjection` + `game_deadlines` (migration) + `DeadlineSweeper` singleton. Tests. Commit
       `feat(backend): correspondence deadlines from the database`.
