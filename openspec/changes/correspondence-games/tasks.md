@@ -14,7 +14,7 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
       Tests. Commit `feat(backend): email notifications for correspondence games`.
 - [x] 2.4 `GET /api/me/games?turn=mine` with `yourTurn`/`deadlineAt`, derived from `rm_games` (no migration). Tests. Commit
       `feat(backend): your turn list`.
-- [ ] 2.5 🐳 Integration tests: a forfeit by deadline with a short deadline, a double check ends once, a move after
+- [x] 2.5 🐳 Integration tests: a forfeit by deadline with a short deadline, a double check ends once, a move after
       passivation, mail sent once to a fake SMTP (MailKit to a local test server or `LogMailer` recorder).
 
 ## 3. Stack and frontend

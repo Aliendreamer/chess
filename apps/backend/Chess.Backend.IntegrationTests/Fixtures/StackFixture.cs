@@ -3,6 +3,8 @@ using System.Net;
 using System.Net.Sockets;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
 using Testcontainers.PostgreSql;
 using Testcontainers.Redpanda;
 
@@ -30,6 +32,16 @@ public sealed class StackFixture : IAsyncLifetime
 
     private readonly RedpandaContainer _redpanda =
         new RedpandaBuilder("docker.redpanda.com/redpandadata/redpanda:v24.3.6").Build();
+
+    /// <summary>Catches the notification mails (correspondence-games D4): SMTP on 1025, its API on 8025.</summary>
+    private readonly IContainer _mailpit = new ContainerBuilder("axllent/mailpit:v1.31.3")
+        .WithPortBinding(1025, true)
+        .WithPortBinding(8025, true)
+        .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(r => r.ForPort(8025).ForPath("/livez")))
+        .Build();
+
+    /// <summary>Mailpit's HTTP API, e.g. <c>{MailpitApi}/api/v1/messages</c>.</summary>
+    public Uri MailpitApi => new($"http://{_mailpit.Hostname}:{_mailpit.GetMappedPublicPort(8025)}");
 
     public string PostgresConnectionString => _postgres.GetConnectionString();
 
@@ -64,6 +76,10 @@ public sealed class StackFixture : IAsyncLifetime
         "Engine__MinThinkMs",
         "Engine__MaxThinkMs",
         "Engine__StallSeconds",
+        "Correspondence__MoveDeadline",
+        "Correspondence__SweepSeconds",
+        "Smtp__Host",
+        "Smtp__Port",
     ];
 
     /// <summary>Presence timings shortened from 60 s / 75 s so abandonment is testable in seconds.</summary>
@@ -74,9 +90,12 @@ public sealed class StackFixture : IAsyncLifetime
     /// <summary>The engine's stall time shortened from 60 s, so a lost request is re-asked within the test.</summary>
     public const int EngineStallSeconds = 3;
 
+    /// <summary>A correspondence move's deadline, shortened from 7 days so a forfeit happens within the test.</summary>
+    public static readonly TimeSpan MoveDeadline = TimeSpan.FromSeconds(8);
+
     public async Task InitializeAsync()
     {
-        await Task.WhenAll(_postgres.StartAsync(), _redpanda.StartAsync());
+        await Task.WhenAll(_postgres.StartAsync(), _redpanda.StartAsync(), _mailpit.StartAsync());
         await CreateEngineTopicsAsync();
 
         Environment.SetEnvironmentVariable("ConnectionStrings__Postgres", PostgresConnectionString);
@@ -89,6 +108,10 @@ public sealed class StackFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("Engine__MinThinkMs", "100");
         Environment.SetEnvironmentVariable("Engine__MaxThinkMs", "200");
         Environment.SetEnvironmentVariable("Engine__StallSeconds", EngineStallSeconds.ToString(CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable("Correspondence__MoveDeadline", MoveDeadline.ToString("c", CultureInfo.InvariantCulture));
+        Environment.SetEnvironmentVariable("Correspondence__SweepSeconds", "1");
+        Environment.SetEnvironmentVariable("Smtp__Host", _mailpit.Hostname);
+        Environment.SetEnvironmentVariable("Smtp__Port", _mailpit.GetMappedPublicPort(1025).ToString(CultureInfo.InvariantCulture));
     }
 
     public async Task DisposeAsync()
@@ -100,6 +123,7 @@ public sealed class StackFixture : IAsyncLifetime
 
         await _postgres.DisposeAsync();
         await _redpanda.DisposeAsync();
+        await _mailpit.DisposeAsync();
     }
 
     /// <summary>
