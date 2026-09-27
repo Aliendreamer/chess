@@ -200,6 +200,8 @@ describe('correspondence games', () => {
   it('say how long is left in the largest whole unit', () => {
     const now = Date.parse('2026-09-27T10:00:00Z')
     expect(timeLeft('2026-10-04T10:00:00Z', now)).toBe('7 days left')
+    expect(timeLeft('2026-10-04T09:59:00Z', now)).toBe('7 days left') // a fresh week, a minute in
+    expect(timeLeft('2026-10-03T21:00:00Z', now)).toBe('6 days left')
     expect(timeLeft('2026-09-28T11:00:00Z', now)).toBe('1 day left')
     expect(timeLeft('2026-09-27T15:30:00Z', now)).toBe('5 hours left')
     expect(timeLeft('2026-09-27T10:12:00Z', now)).toBe('12 minutes left')

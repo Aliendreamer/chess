@@ -55,14 +55,17 @@ export function hasClock(timeControl: string): boolean {
   return timeControl !== UNTIMED && timeControl !== CORRESPONDENCE
 }
 
-/** How long until a deadline, in the largest whole unit: "6 days left", "5 hours left", "12 minutes left". */
+/**
+ * How long until a deadline: "7 days left" (days to the nearest, so a fresh week is not "6 days"), then "5 hours left"
+ * and "12 minutes left" rounded down, so the last day never promises more than there is.
+ */
 export function timeLeft(deadline: string, nowMs: number): string {
   const ms = Date.parse(deadline) - nowMs
   if (ms <= 60_000) return 'less than a minute left'
   const minutes = Math.floor(ms / 60_000)
   const hours = Math.floor(minutes / 60)
-  const days = Math.floor(hours / 24)
-  const [n, unit] = days >= 1 ? [days, 'day'] : hours >= 1 ? [hours, 'hour'] : [minutes, 'minute']
+  const days = Math.round(ms / 86_400_000)
+  const [n, unit] = hours >= 24 ? [days, 'day'] : hours >= 1 ? [hours, 'hour'] : [minutes, 'minute']
   return `${n} ${unit}${n === 1 ? '' : 's'} left`
 }
 

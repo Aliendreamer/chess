@@ -213,7 +213,7 @@ function InviteForm({ onCreated }: { onCreated: (invite: InviteView) => void }) 
   }
 
   return (
-    <Panel variant="filled" className="gap-4">
+    <Panel variant="filled" className="gap-4" testId="invite-form">
       <div className="flex flex-wrap gap-2" role="group" aria-label="Time control">
         {[...PRESETS, CORRESPONDENCE].map((tc) => (
           <Chip
