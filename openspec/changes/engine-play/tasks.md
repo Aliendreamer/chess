@@ -36,10 +36,10 @@ endpoints`.
 
 ## 5. Verify
 
-- [ ] 5.1 🐳 `tools/localdev/verify-part2.sh`: 10 moves each at 1320, 2000 and max; one full game to the end; an
+- [x] 5.1 🐳 `tools/localdev/verify-part2.sh`: 10 moves each at 1320, 2000 and max; one full game to the end; an
       `engine` restart mid-think. Playwright: start, move, see the reply. Commit: `test(repo): verify part 2 on the live
 stack`.
 
 ## 6. Docs
 
-- [ ] 6.1 CLAUDE.md, `openspec/architecture.md` (the engine), ROADMAP §6 Part 2. Commit: `docs(repo): engine play`.
+- [x] 6.1 CLAUDE.md, `openspec/architecture.md` (the engine), ROADMAP §6 Part 2. Commit: `docs(repo): engine play`.
