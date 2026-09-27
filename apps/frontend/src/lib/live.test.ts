@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, renderHook } from '@testing-library/react'
-import { applyFrame, liveUrl, parseSocketMessage, useLiveTopic } from './live'
+import { applyFrame, liveStatusText, liveUrl, parseSocketMessage, useLiveTopic } from './live'
 import type { LiveFrame } from './live'
 import { frame } from '#/testing'
 
@@ -206,5 +206,13 @@ describe('useLiveTopic', () => {
     act(() => vi.advanceTimersByTime(60_000))
 
     expect(FakeSocket.opened).toBe(before)
+  })
+})
+
+describe('liveStatusText', () => {
+  it('names every connection state', () => {
+    expect(
+      ['connecting', 'live', 'reconnecting', 'closed'].map((s) => liveStatusText(s as never)),
+    ).toEqual(['connecting…', 'live', 'reconnecting…', 'disconnected'])
   })
 })

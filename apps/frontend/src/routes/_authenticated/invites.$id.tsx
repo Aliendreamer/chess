@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { InviteView } from '#/lib/play'
-import type { LiveFrame } from '#/lib/live'
 import type { Me } from '#/lib/auth'
 import { getInvite, postAcceptInvite, postCancelInvite } from '#/lib/server/api'
 import { category, topicId } from '#/lib/games'
 import { guestColor, isInviteView } from '#/lib/play'
 import { useLiveTopic } from '#/lib/live'
-import { Button, Panel, SectionHeading } from '#/components/ui'
+import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
 
 /**
  * An invite link (D7). The creator shares it and waits; anyone else signed in can accept. The `invite:{id}` frame
@@ -44,14 +43,14 @@ const STATUS_TEXT: Record<InviteView['status'], string> = {
 function Invite({ me, loaded }: { me: Me; loaded: InviteView }) {
   const navigate = useNavigate()
   const topic = topicId(loaded.inviteId)
-  const initial = useMemo<LiveFrame<InviteView>>(
-    () => ({ topic: `invite:${topic}`, seq: loaded.seq, payload: loaded }),
-    [topic, loaded],
-  )
-  const live = useLiveTopic({ kind: 'invite', id: topic, initial, isPayload: isInviteView })
+  const live = useLiveTopic({
+    kind: 'invite',
+    id: topic,
+    initial: { seq: loaded.seq, payload: loaded },
+    isPayload: isInviteView,
+  })
   const invite = live.frame?.payload ?? loaded
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const command = useCommand()
   const [link, setLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const gone = useRef(false)
@@ -71,20 +70,11 @@ function Invite({ me, loaded }: { me: Me; loaded: InviteView }) {
   }, [topic])
 
   async function act(kind: 'accept' | 'cancel') {
-    setBusy(true)
-    setError(null)
-    try {
-      const outcome = await (kind === 'accept' ? postAcceptInvite : postCancelInvite)({
-        data: loaded.inviteId,
-      })
-      if (!outcome.ok) {
-        setError(outcome.error)
-      } else if (outcome.view.status === 'accepted' && outcome.view.gameId && !gone.current) {
-        gone.current = true
-        void navigate({ to: '/games/$id', params: { id: outcome.view.gameId } })
-      }
-    } finally {
-      setBusy(false)
+    const post = kind === 'accept' ? postAcceptInvite : postCancelInvite
+    const view = await command.run(() => post({ data: loaded.inviteId }))
+    if (view?.status === 'accepted' && view.gameId && !gone.current) {
+      gone.current = true
+      void navigate({ to: '/games/$id', params: { id: view.gameId } })
     }
   }
 
@@ -128,7 +118,7 @@ function Invite({ me, loaded }: { me: Me; loaded: InviteView }) {
               <Button onClick={() => void copy()}>{copied ? 'Copied' : 'Copy link'}</Button>
             </div>
             <div>
-              <Button disabled={busy} onClick={() => void act('cancel')}>
+              <Button disabled={command.busy} onClick={() => void act('cancel')}>
                 Cancel invite
               </Button>
             </div>
@@ -137,18 +127,19 @@ function Invite({ me, loaded }: { me: Me; loaded: InviteView }) {
 
         {!isCreator && invite.status === 'open' ? (
           <div>
-            <Button variant="primary" size="lg" disabled={busy} onClick={() => void act('accept')}>
+            <Button
+              variant="primary"
+              size="lg"
+              disabled={command.busy}
+              onClick={() => void act('accept')}
+            >
               Accept and play
             </Button>
           </div>
         ) : null}
       </Panel>
 
-      {error ? (
-        <p role="status" className="m-0 text-sm text-status-loss">
-          {error}
-        </p>
-      ) : null}
+      {command.error ? <ErrorText>{command.error}</ErrorText> : null}
     </div>
   )
 }

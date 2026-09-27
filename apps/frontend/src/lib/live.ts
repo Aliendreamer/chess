@@ -54,6 +54,18 @@ export function applyFrame<TPayload>(
 
 export type LiveStatus = 'connecting' | 'live' | 'reconnecting' | 'closed'
 
+const STATUS_TEXT: Record<LiveStatus, string> = {
+  connecting: 'connecting…',
+  live: 'live',
+  reconnecting: 'reconnecting…',
+  closed: 'disconnected',
+}
+
+/** How a page names its live connection. */
+export function liveStatusText(status: LiveStatus): string {
+  return STATUS_TEXT[status]
+}
+
 /** Delays before each reconnect attempt; the last one repeats (presence-and-abandonment D7). */
 export const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 15000] as const
 
@@ -74,8 +86,8 @@ export interface LiveTopicOptions<T> {
   kind: string
   /** The id as the topic spells it (for guids: 32 hex, no dashes). */
   id: string
-  /** What the page shows when subscribing (the loader's state): a frame applies only if its seq is newer. */
-  initial: LiveFrame<T> | undefined
+  /** What the page shows when subscribing (the loader's state and its seq): a frame applies only if newer. */
+  initial: { seq: number; payload: T } | undefined
   isPayload: (value: unknown) => value is T
   /** Called once per applied frame, in order — for pages that keep a history, not just the latest. */
   onFrame?: (frame: LiveFrame<T>) => void
@@ -99,17 +111,18 @@ export function useLiveTopic<T>({
   isPayload,
   onFrame,
 }: LiveTopicOptions<T>): LiveTopic<T> {
-  const [frame, setFrame] = useState<LiveFrame<T> | undefined>(initial)
+  const start: LiveFrame<T> | undefined = initial && { topic: `${kind}:${id}`, ...initial }
+  const [frame, setFrame] = useState<LiveFrame<T> | undefined>(start)
   const [status, setStatus] = useState<LiveStatus>('connecting')
   const [error, setError] = useState<string | null>(null)
-  const shown = useRef<LiveFrame<T> | undefined>(initial)
+  const shown = useRef<LiveFrame<T> | undefined>(start)
   const callbacks = useRef({ isPayload, onFrame })
   callbacks.current = { isPayload, onFrame }
 
   // `initial` is the baseline when (re)subscribing only: a page that re-runs its loader shows that state itself,
   // and moving the baseline here would make the socket's own push for the same change look stale.
-  const baseline = useRef(initial)
-  baseline.current = initial
+  const baseline = useRef(start)
+  baseline.current = start
   useEffect(() => {
     shown.current = baseline.current
     setFrame(baseline.current)

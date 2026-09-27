@@ -1,5 +1,6 @@
 import { redirect } from '@tanstack/react-router'
 import { loginHref } from '../auth'
+import type { CommandOutcome } from '../games'
 
 /**
  * How the BFF reaches the API: server-side environment (never import from client components), the login redirect,
@@ -57,9 +58,6 @@ const GUID = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$
 export function isGuid(id: string): boolean {
   return GUID.test(id)
 }
-
-/** What a command answers (D8): refusals (403/404/409/422) are shown in the page, not thrown. */
-export type CommandOutcome<T> = { ok: true; view: T } | { ok: false; status: number; error: string }
 
 /** The message of an API problem-details body (FastEndpoints puts `ThrowError`'s text in `errors[0].reason`). */
 export function problemMessage(body: unknown, status: number): string {

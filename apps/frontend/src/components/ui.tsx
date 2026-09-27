@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import type { CommandOutcome } from '#/lib/games'
 
 export type ButtonVariant = 'primary' | 'outline' | 'secondary'
 export type ButtonSize = 'sm' | 'md' | 'lg'
@@ -213,4 +215,39 @@ export function SectionHeading({ size = 'sm', meta, className, children }: Secti
       {meta ? <span className="font-mono text-2xs text-fg-muted">{meta}</span> : null}
     </div>
   )
+}
+
+/** A refusal or failure, announced to assistive tech. */
+export function ErrorText({ testId, children }: { testId?: string; children: ReactNode }) {
+  return (
+    <p role="status" className="m-0 text-sm text-status-loss" data-testid={testId}>
+      {children}
+    </p>
+  )
+}
+
+export interface Command {
+  busy: boolean
+  error: string | null
+  /** Runs one command: busy while it runs; a refusal becomes `error` and yields null. 5xx and 401 still throw. */
+  run: <T>(call: () => Promise<CommandOutcome<T>>) => Promise<T | null>
+}
+
+/** The busy/error state every command button shares. */
+export function useCommand(): Command {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  async function run<T>(call: () => Promise<CommandOutcome<T>>): Promise<T | null> {
+    setBusy(true)
+    setError(null)
+    try {
+      const outcome = await call()
+      if (outcome.ok) return outcome.view
+      setError(outcome.error)
+      return null
+    } finally {
+      setBusy(false)
+    }
+  }
+  return { busy, error, run }
 }

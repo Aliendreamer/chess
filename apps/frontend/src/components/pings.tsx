@@ -1,8 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import type { PingState } from '#/lib/pings'
-import type { LiveStatus } from '#/lib/live'
 import { isPingState } from '#/lib/pings'
-import { useLiveTopic } from '#/lib/live'
+import { liveStatusText, useLiveTopic } from '#/lib/live'
 
 export interface PingFeedProps {
   id: string
@@ -10,25 +9,14 @@ export interface PingFeedProps {
   initial: PingState
 }
 
-const STATUS_LABEL: Record<LiveStatus, string> = {
-  connecting: 'connecting…',
-  live: 'live',
-  reconnecting: 'reconnecting…',
-  closed: 'disconnected',
-}
-
 /** The ping's live feed: the relay socket (`useLiveTopic`) plus the list of states it has pushed. */
 export function PingFeed({ id, initial }: PingFeedProps) {
   const [frames, setFrames] = useState<Array<PingState>>([])
-  // The server-rendered state counts as shown, so a snapshot that merely repeats it isn't listed again.
-  const shown = useMemo(
-    () => ({ topic: `ping:${id}`, seq: initial.lastSeq, payload: initial }),
-    [id, initial],
-  )
   const { status, error } = useLiveTopic({
     kind: 'ping',
     id,
-    initial: shown,
+    // The server-rendered state counts as shown, so a snapshot that merely repeats it isn't listed again.
+    initial: { seq: initial.lastSeq, payload: initial },
     isPayload: isPingState,
     onFrame: (frame) => setFrames((prev) => [...prev, frame.payload]),
   })
@@ -43,9 +31,9 @@ export function PingFeed({ id, initial }: PingFeedProps) {
           className="font-mono text-2xs text-fg-muted"
           data-testid="ping-status"
           aria-live="polite"
-          aria-label={`relay ${STATUS_LABEL[status]}`}
+          aria-label={`relay ${liveStatusText(status)}`}
         >
-          {STATUS_LABEL[status]}
+          {liveStatusText(status)}
         </span>
       </header>
 

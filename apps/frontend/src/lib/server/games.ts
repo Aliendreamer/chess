@@ -1,8 +1,7 @@
 import { loginHref } from '../auth'
 import { apiUrl, isGuid, postCommand, readJson } from './upstream'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
-import type { CommandOutcome } from './upstream'
-import type { GameCommand, GameSummary, GameView, MoveItem } from '../games'
+import type { CommandOutcome, GameCommand, GameSummary, GameView, MoveItem } from '../games'
 
 const COMMAND_PATH: Record<GameCommand['kind'], string> = {
   move: 'moves',

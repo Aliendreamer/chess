@@ -4,8 +4,17 @@ import type { InviteView, QueueStatus } from '#/lib/play'
 import { getMyGames, postCreateInvite, postJoinQueue, postLeaveQueue } from '#/lib/server/api'
 import { PRESETS, category } from '#/lib/games'
 import { isQueueView, pairingGame } from '#/lib/play'
-import { useLiveTopic } from '#/lib/live'
-import { Button, Chip, OptionTile, Panel, SectionHeading, buttonClass } from '#/components/ui'
+import { liveStatusText, useLiveTopic } from '#/lib/live'
+import {
+  Button,
+  Chip,
+  ErrorText,
+  OptionTile,
+  Panel,
+  SectionHeading,
+  buttonClass,
+  useCommand,
+} from '#/components/ui'
 import { RecentGames } from '#/components/games'
 
 /** Home: quick pairing on a preset, an invite link for a friend, and your recent games. */
@@ -21,27 +30,17 @@ function HomePage() {
   const games = Route.useLoaderData()
   const navigate = useNavigate()
   const [seek, setSeek] = useState<QueueStatus | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [joining, setJoining] = useState(false)
+  const joining = useCommand()
   const current = games.items.find((g) => g.status === 'playing')
 
   const goToGame = (gameId: string) => void navigate({ to: '/games/$id', params: { id: gameId } })
 
   async function join(timeControl: string) {
-    setJoining(true)
-    setError(null)
-    try {
-      const outcome = await postJoinQueue({ data: { timeControl, heartbeat: false } })
-      if (!outcome.ok) {
-        setError(outcome.error)
-      } else if (outcome.view.status === 'matched' && outcome.view.gameId) {
-        goToGame(outcome.view.gameId)
-      } else {
-        setSeek(outcome.view)
-      }
-    } finally {
-      setJoining(false)
-    }
+    const status = await joining.run(() =>
+      postJoinQueue({ data: { timeControl, heartbeat: false } }),
+    )
+    if (status?.status === 'matched' && status.gameId) goToGame(status.gameId)
+    else if (status) setSeek(status)
   }
 
   return (
@@ -76,16 +75,12 @@ function HomePage() {
               caption={category(tc)}
               label={`Play ${tc} (${category(tc)})`}
               selected={seek?.timeControl === tc}
-              disabled={joining}
+              disabled={joining.busy}
               onClick={() => void join(tc)}
             />
           ))}
         </div>
-        {error ? (
-          <p role="status" className="m-0 text-sm text-status-loss">
-            {error}
-          </p>
-        ) : null}
+        {joining.error ? <ErrorText>{joining.error}</ErrorText> : null}
       </section>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-6">
@@ -167,7 +162,7 @@ function Seek({ seek, meId, onMatched, onCancel }: SeekProps) {
   }, [tc]) // heartbeat and matched only read refs and stable props
 
   return (
-    <Panel variant="accent" title="Your seek" meta={live.status === 'live' ? 'live' : live.status}>
+    <Panel variant="accent" title="Your seek" meta={liveStatusText(live.status)}>
       <div className="flex items-center justify-between gap-4" data-testid="seek">
         <div className="flex flex-col">
           <span className="font-display text-display-lg leading-none">{tc}</span>
@@ -188,19 +183,11 @@ const COLOURS: ReadonlyArray<{ value: InviteView['color']; glyph: string; label:
 function InviteForm({ onCreated }: { onCreated: (invite: InviteView) => void }) {
   const [timeControl, setTimeControl] = useState<string>('10+5')
   const [color, setColor] = useState<InviteView['color']>('random')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const creating = useCommand()
 
   async function create() {
-    setBusy(true)
-    setError(null)
-    try {
-      const outcome = await postCreateInvite({ data: { timeControl, color } })
-      if (outcome.ok) onCreated(outcome.view)
-      else setError(outcome.error)
-    } finally {
-      setBusy(false)
-    }
+    const invite = await creating.run(() => postCreateInvite({ data: { timeControl, color } }))
+    if (invite) onCreated(invite)
   }
 
   return (
@@ -236,15 +223,11 @@ function InviteForm({ onCreated }: { onCreated: (invite: InviteView) => void }) 
       </div>
       <div className="flex items-center justify-between gap-4">
         <span className="text-sm text-fg-secondary">The link is open for 24 hours.</span>
-        <Button variant="primary" disabled={busy} onClick={() => void create()}>
+        <Button variant="primary" disabled={creating.busy} onClick={() => void create()}>
           Create invite link
         </Button>
       </div>
-      {error ? (
-        <p role="status" className="m-0 text-sm text-status-loss">
-          {error}
-        </p>
-      ) : null}
+      {creating.error ? <ErrorText>{creating.error}</ErrorText> : null}
     </Panel>
   )
 }

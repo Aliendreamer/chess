@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Board, MoveList, PlayerStrip, PromotionPicker } from './games'
+import { Board, ClaimPanel, GameControls, MoveList, PlayerStrip, PromotionPicker } from './games'
+import type { GameView } from '#/lib/games'
 
 afterEach(cleanup)
 
@@ -59,5 +60,69 @@ describe('MoveList and PlayerStrip', () => {
   it('shows the clock text for the player', () => {
     render(<PlayerStrip name="ann" detail="white" ms={183000} active />)
     expect(screen.getByText('3:03')).toBeDefined()
+  })
+})
+
+describe('ClaimPanel', () => {
+  it('claims a win or a draw, or keeps waiting', () => {
+    const onClaim = vi.fn()
+    const onWait = vi.fn()
+    render(<ClaimPanel disabled={false} onClaim={onClaim} onWait={onWait} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Claim win' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Call it a draw' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Keep waiting' }))
+    expect(onClaim.mock.calls).toEqual([['win'], ['draw']])
+    expect(onWait).toHaveBeenCalledOnce()
+  })
+})
+
+describe('GameControls', () => {
+  const view = (ply: number, drawOfferedBy: number | null = null) =>
+    ({ ply, drawOfferedBy }) as GameView
+
+  it('offers abort before both sides have moved', () => {
+    const onCommand = vi.fn()
+    render(
+      <GameControls
+        view={view(1)}
+        meId={1}
+        opponentId={2}
+        disabled={false}
+        onCommand={onCommand}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Abort' }))
+    expect(onCommand).toHaveBeenCalledWith({ kind: 'abort' })
+  })
+
+  it("answers the opponent's draw offer", () => {
+    const onCommand = vi.fn()
+    render(
+      <GameControls
+        view={view(4, 2)}
+        meId={1}
+        opponentId={2}
+        disabled={false}
+        onCommand={onCommand}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Accept draw' }))
+    expect(onCommand).toHaveBeenCalledWith({ kind: 'draw-accept' })
+  })
+
+  it('shows my own offer as pending, and resigns', () => {
+    const onCommand = vi.fn()
+    render(
+      <GameControls
+        view={view(4, 1)}
+        meId={1}
+        opponentId={2}
+        disabled={false}
+        onCommand={onCommand}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Draw offered' }).hasAttribute('disabled')).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Resign' }))
+    expect(onCommand).toHaveBeenCalledWith({ kind: 'resign' })
   })
 })

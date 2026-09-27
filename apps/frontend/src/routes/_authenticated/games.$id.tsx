@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import type { GameCommand, GameSummary, GameView, MoveItem } from '#/lib/games'
 import type { LiveFrame } from '#/lib/live'
@@ -7,18 +7,24 @@ import { getGameMoves, getGamePage, getGameSummary, postGameCommand } from '#/li
 import {
   category,
   isGameView,
-  liveClocks,
   mergeMoves,
   myColor,
   orientation,
-  reasonText,
-  resultText,
   topicId,
+  useLocalClocks,
 } from '#/lib/games'
-import { applyFrame, useLiveTopic } from '#/lib/live'
+import { applyFrame, liveStatusText, useLiveTopic } from '#/lib/live'
 import { applyOptimistic, clickSquare, legalTargets, needsPromotion } from '#/lib/moveInput'
-import { Board, MoveList, PlayerStrip, PromotionPicker } from '#/components/games'
-import { Button, Panel } from '#/components/ui'
+import {
+  Board,
+  ClaimPanel,
+  GameControls,
+  GameResultPanel,
+  MoveList,
+  PlayerStrip,
+  PromotionPicker,
+} from '#/components/games'
+import { ErrorText, useCommand } from '#/components/ui'
 
 /**
  * A game (players and spectators). SSR renders the loader's state; the `game:{id}` frames then drive it. Moves
@@ -48,23 +54,23 @@ type Pending = { fen: string; uci: string }
 
 function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps) {
   const topic = topicId(id)
-  const initial = useMemo<LiveFrame<GameView>>(
-    () => ({ topic: `game:${topic}`, seq: loaded.seq, payload: loaded }),
-    [topic, loaded],
-  )
-  const live = useLiveTopic({ kind: 'game', id: topic, initial, isPayload: isGameView })
+  const live = useLiveTopic({
+    kind: 'game',
+    id: topic,
+    initial: { seq: loaded.seq, payload: loaded },
+    isPayload: isGameView,
+  })
   // A command's own answer may arrive before its frame; the newer of the two is the view.
   const [answered, setAnswered] = useState<LiveFrame<GameView> | undefined>(undefined)
-  const current = (
-    answered && live.frame ? applyFrame(live.frame, answered) : (live.frame ?? answered ?? initial)
-  ).payload
+  const current =
+    (answered && live.frame ? applyFrame(live.frame, answered) : (live.frame ?? answered))
+      ?.payload ?? loaded
 
   const [sans, setSans] = useState(() => moves.map((m) => m.san))
   const [pending, setPending] = useState<Pending | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [promotion, setPromotion] = useState<{ from: string; to: string } | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const command = useCommand()
   // "Keep waiting" hides the offer until it goes away (they came back); if they leave again, it shows again.
   const [waiting, setWaiting] = useState(false)
 
@@ -116,26 +122,20 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   const side = orientation(current, me.id)
   const playing = current.status !== 'Ended'
   const myTurn =
-    mine !== null && playing && current.sideToMove.toLowerCase() === mine && !pending && !busy
+    mine !== null &&
+    playing &&
+    current.sideToMove.toLowerCase() === mine &&
+    !pending &&
+    !command.busy
   const fen = pending?.fen ?? current.fen
   const lastUci = pending?.uci ?? current.lastUci
   const lastMove = lastUci ? { from: lastUci.slice(0, 2), to: lastUci.slice(2, 4) } : null
   const targets = selected ? legalTargets(fen, selected) : []
 
-  async function send(command: GameCommand) {
-    setBusy(true)
-    setError(null)
-    try {
-      const outcome = await postGameCommand({ data: { id, command } })
-      if (outcome.ok) {
-        setAnswered({ topic: `game:${topic}`, seq: outcome.view.seq, payload: outcome.view })
-      } else {
-        setPending(null) // the board snaps back to the last server view
-        setError(outcome.error)
-      }
-    } finally {
-      setBusy(false)
-    }
+  async function send(action: GameCommand) {
+    const view = await command.run(() => postGameCommand({ data: { id, command: action } }))
+    if (view) setAnswered({ topic: `game:${topic}`, seq: view.seq, payload: view })
+    else setPending(null) // refused: the board snaps back to the last server view
   }
 
   function move(from: string, to: string, promote?: 'q' | 'r' | 'b' | 'n') {
@@ -205,11 +205,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
           <div className="text-xs text-fg-secondary">
             {`${category(current.timeControl)} ${current.timeControl} · `}
             <span className="font-mono" aria-live="polite" data-testid="game-relay">
-              {live.status === 'live'
-                ? 'live'
-                : live.status === 'connecting'
-                  ? 'connecting…'
-                  : 'offline'}
+              {liveStatusText(live.status)}
             </span>
           </div>
           <h1 className="m-0 mt-0.5 font-display text-display-md font-normal">
@@ -218,17 +214,11 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
         </div>
 
         {current.status === 'Ended' && current.result ? (
-          <Panel variant="accent" title="Result">
-            <p className="m-0 font-display text-display-sm" data-testid="game-result">
-              {resultText(current.result)}
-            </p>
-            <a href={`/pgn/${topic}`} download className="text-sm" data-testid="game-pgn">
-              Download PGN
-            </a>
-            {current.reason ? (
-              <p className="m-0 text-sm text-fg-secondary">{reasonText(current.reason)}</p>
-            ) : null}
-          </Panel>
+          <GameResultPanel
+            result={current.result}
+            reason={current.reason}
+            pgnHref={`/pgn/${topic}`}
+          />
         ) : null}
 
         {live.status === 'reconnecting' ? (
@@ -240,119 +230,32 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
           </p>
         ) : null}
         {live.status === 'closed' && live.error ? (
-          <p role="status" className="m-0 text-sm text-status-loss" data-testid="game-live-error">
-            {live.error}
-          </p>
+          <ErrorText testId="game-live-error">{live.error}</ErrorText>
         ) : null}
 
         {offered && !waiting ? (
-          <Panel variant="accent" title="Your opponent left" className="gap-3" testId="claim-panel">
-            <p className="m-0 text-sm text-fg-body">
-              They have been away for a minute. You can end the game now, or keep waiting for them.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="primary"
-                disabled={busy}
-                onClick={() => void send({ kind: 'claim', outcome: 'win' })}
-              >
-                Claim win
-              </Button>
-              <Button disabled={busy} onClick={() => void send({ kind: 'claim', outcome: 'draw' })}>
-                Call it a draw
-              </Button>
-              <Button disabled={busy} onClick={() => setWaiting(true)}>
-                Keep waiting
-              </Button>
-            </div>
-          </Panel>
+          <ClaimPanel
+            disabled={command.busy}
+            onClaim={(outcome) => void send({ kind: 'claim', outcome })}
+            onWait={() => setWaiting(true)}
+          />
         ) : null}
 
         <MoveList sans={sans} />
 
-        {error ? (
-          <p role="status" className="m-0 text-sm text-status-loss" data-testid="game-error">
-            {error}
-          </p>
-        ) : null}
+        {command.error ? <ErrorText testId="game-error">{command.error}</ErrorText> : null}
 
         {mine && playing ? (
-          <Controls
+          <GameControls
             view={current}
             meId={me.id}
             opponentId={opponentId}
-            disabled={busy}
-            onCommand={(command) => void send(command)}
+            disabled={command.busy}
+            onCommand={(action) => void send(action)}
           />
         ) : null}
         {!mine ? <p className="m-0 text-sm text-fg-muted">You are watching this game.</p> : null}
       </div>
     </div>
   )
-}
-
-interface ControlsProps {
-  view: GameView
-  meId: number
-  opponentId: number
-  disabled: boolean
-  onCommand: (command: GameCommand) => void
-}
-
-/** What a player may ask for right now; the server still decides whether it is allowed. */
-function Controls({ view, meId, opponentId, disabled, onCommand }: ControlsProps) {
-  if (view.ply < 2) {
-    return (
-      <Button block disabled={disabled} onClick={() => onCommand({ kind: 'abort' })}>
-        Abort
-      </Button>
-    )
-  }
-  if (view.drawOfferedBy === opponentId) {
-    return (
-      <div className="flex flex-col gap-2">
-        <p className="m-0 text-sm text-fg-body">Your opponent offers a draw.</p>
-        <div className="flex gap-2">
-          <Button
-            block
-            variant="outline"
-            disabled={disabled}
-            onClick={() => onCommand({ kind: 'draw-accept' })}
-          >
-            Accept draw
-          </Button>
-          <Button block disabled={disabled} onClick={() => onCommand({ kind: 'draw-decline' })}>
-            Decline
-          </Button>
-        </div>
-      </div>
-    )
-  }
-  return (
-    <div className="flex gap-2">
-      <Button
-        block
-        disabled={disabled || view.drawOfferedBy === meId}
-        onClick={() => onCommand({ kind: 'draw-offer' })}
-      >
-        {view.drawOfferedBy === meId ? 'Draw offered' : 'Offer draw'}
-      </Button>
-      <Button block disabled={disabled} onClick={() => onCommand({ kind: 'resign' })}>
-        Resign
-      </Button>
-    </div>
-  )
-}
-
-/** The clocks, counted down locally since the view arrived (D5); re-based on every new view. */
-function useLocalClocks(view: GameView): { whiteMs: number; blackMs: number } {
-  const [elapsed, setElapsed] = useState(0)
-  useEffect(() => {
-    setElapsed(0)
-    if (view.status !== 'Playing' || view.ply < 2) return
-    const arrived = performance.now()
-    const timer = setInterval(() => setElapsed(performance.now() - arrived), 100)
-    return () => clearInterval(timer)
-  }, [view.seq, view.status, view.ply])
-  return liveClocks(view, elapsed)
 }

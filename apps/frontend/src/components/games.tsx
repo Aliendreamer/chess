@@ -1,8 +1,9 @@
 import { Fragment } from 'react'
 import { Link } from '@tanstack/react-router'
-import type { Color } from '#/lib/games'
+import type { Color, GameCommand, GameView } from '#/lib/games'
 import type { Piece } from '#/lib/moveInput'
 import type { MyGameItem } from '#/lib/play'
+import { Button, Panel } from '#/components/ui'
 import { outcomeFor } from '#/lib/play'
 import { formatClock, pairMoves, reasonText, resultText } from '#/lib/games'
 import { placement, squaresFor } from '#/lib/moveInput'
@@ -279,5 +280,111 @@ export function RecentGames({ games, pgn = false }: RecentGamesProps) {
         )
       })}
     </ul>
+  )
+}
+
+/** How a finished game ended, with its PGN. */
+export function GameResultPanel({
+  result,
+  reason,
+  pgnHref,
+}: {
+  result: string
+  reason: string | null
+  pgnHref: string
+}) {
+  return (
+    <Panel variant="accent" title="Result">
+      <p className="m-0 font-display text-display-sm" data-testid="game-result">
+        {resultText(result)}
+      </p>
+      <a href={pgnHref} download className="text-sm" data-testid="game-pgn">
+        Download PGN
+      </a>
+      {reason ? <p className="m-0 text-sm text-fg-secondary">{reasonText(reason)}</p> : null}
+    </Panel>
+  )
+}
+
+/** The abandonment offer (presence-and-abandonment): claim the win, call it a draw, or keep waiting. */
+export function ClaimPanel({
+  disabled,
+  onClaim,
+  onWait,
+}: {
+  disabled: boolean
+  onClaim: (outcome: 'win' | 'draw') => void
+  onWait: () => void
+}) {
+  return (
+    <Panel variant="accent" title="Your opponent left" className="gap-3" testId="claim-panel">
+      <p className="m-0 text-sm text-fg-body">
+        They have been away for a minute. You can end the game now, or keep waiting for them.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="primary" disabled={disabled} onClick={() => onClaim('win')}>
+          Claim win
+        </Button>
+        <Button disabled={disabled} onClick={() => onClaim('draw')}>
+          Call it a draw
+        </Button>
+        <Button disabled={disabled} onClick={onWait}>
+          Keep waiting
+        </Button>
+      </div>
+    </Panel>
+  )
+}
+
+export interface GameControlsProps {
+  view: GameView
+  meId: number
+  opponentId: number
+  disabled: boolean
+  onCommand: (command: GameCommand) => void
+}
+
+/** What a player may ask for right now; the server still decides whether it is allowed. */
+export function GameControls({ view, meId, opponentId, disabled, onCommand }: GameControlsProps) {
+  if (view.ply < 2) {
+    return (
+      <Button block disabled={disabled} onClick={() => onCommand({ kind: 'abort' })}>
+        Abort
+      </Button>
+    )
+  }
+  if (view.drawOfferedBy === opponentId) {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="m-0 text-sm text-fg-body">Your opponent offers a draw.</p>
+        <div className="flex gap-2">
+          <Button
+            block
+            variant="outline"
+            disabled={disabled}
+            onClick={() => onCommand({ kind: 'draw-accept' })}
+          >
+            Accept draw
+          </Button>
+          <Button block disabled={disabled} onClick={() => onCommand({ kind: 'draw-decline' })}>
+            Decline
+          </Button>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="flex gap-2">
+      <Button
+        block
+        disabled={disabled || view.drawOfferedBy === meId}
+        onClick={() => onCommand({ kind: 'draw-offer' })}
+      >
+        {view.drawOfferedBy === meId ? 'Draw offered' : 'Offer draw'}
+      </Button>
+      <Button block disabled={disabled} onClick={() => onCommand({ kind: 'resign' })}>
+        Resign
+      </Button>
+    </div>
   )
 }

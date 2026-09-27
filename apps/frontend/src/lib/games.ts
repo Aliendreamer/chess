@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 /**
  * The game's wire shapes and the pure rules the game page shows them with. Client-safe (no `lib/server` import):
  * the page and its components use these, and none of it decides legality or outcomes — the server does (D3).
@@ -58,6 +59,9 @@ export interface MoveItem {
   blackMs: number
   at: string
 }
+
+/** What a command answers (D8): refusals (403/404/409/422) are shown in the page, not thrown. */
+export type CommandOutcome<T> = { ok: true; view: T } | { ok: false; status: number; error: string }
 
 /** A command on a game, as the page sends it; `lib/server/api.ts` checks it again before it reaches the API. */
 export type GameCommand =
@@ -189,4 +193,17 @@ export function category(timeControl: string): string {
   if (base < 10) return 'Blitz'
   if (base < 30) return 'Rapid'
   return 'Classical'
+}
+
+/** The clocks, counted down locally since the view arrived (D5); re-based on every new view. */
+export function useLocalClocks(view: GameView): { whiteMs: number; blackMs: number } {
+  const [elapsed, setElapsed] = useState(0)
+  useEffect(() => {
+    setElapsed(0)
+    if (view.status !== 'Playing' || view.ply < 2) return
+    const arrived = performance.now()
+    const timer = setInterval(() => setElapsed(performance.now() - arrived), 100)
+    return () => clearInterval(timer)
+  }, [view.seq, view.status, view.ply])
+  return liveClocks(view, elapsed)
 }
