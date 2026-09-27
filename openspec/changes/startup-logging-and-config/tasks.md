@@ -21,5 +21,5 @@ Each group ends in one commit that passes the backend gate (build with no warnin
 
 ## 3. Docs
 
-- [ ] 3.1 CLAUDE.md (startup logging, the configuration rule and where the settings live). Commit:
+- [x] 3.1 CLAUDE.md (startup logging, the configuration rule and where the settings live). Commit:
       `docs(repo): startup logging and configuration`.

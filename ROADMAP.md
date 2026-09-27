@@ -187,3 +187,5 @@ Goal: the architecture exists end to end with a trivial domain, so every later p
 - ~~Time controls to support first (Part 1)~~ — settled as D12.
 - ~~Whether Cluster.Sharding is in scope for Part 1~~ — settled by Part 0: every entity is sharded.
 - Notification channel for Part 3 (email vs in-app only).
+- A desktop app for the UI: how to package or build one (for example wrapping the web UI, or a native client over
+  the same BFF). Parked on purpose; to be thought through later, not now.

@@ -65,6 +65,16 @@ socket all need IPC the Claude Code sandbox blocks. Inside it: build with
 `-m:1 -nr:false -p:EnableSourceControlManagerQueries=false`; `build_test.sh` reports 0% coverage (tests still
 run); `dotnet format`, `stack.sh` and `verify-auth.sh` must be run by a human (`! <cmd>`).
 
+Startup logging: `Program.cs` creates a Serilog bootstrap logger before anything else and runs each startup step
+through `StartupSteps` (`Extensions/StartupLogging.cs`): every step is logged with its duration, one `StartupSummary`
+event shows the node's settings (never secrets: connection strings shrink to host:port/db, Redis to on/off), and any
+failure is a Fatal `Startup failed at {Step}` with exit code 1 — read `docker logs chess-backend-1` first when a node
+won't start. Configuration: every operational value (timeouts, cache lifetimes, health limits, retry delays, page
+sizes, sweep/passivation intervals) lives in an `ISettings` options class registered with `services.AddSettings<T>()`
+(bind + validate at startup, registered as `T` and `IOptions<T>`) and listed in `Config/appsettings.json` with its
+default; `SettingsTests` fails if the file and the class defaults drift. Game rules (D8/D15/D16/D17 timings) stay in
+code on purpose. Array options must not default to a non-empty array (the binder appends): see `AkkaOptions.Roles`.
+
 `Observability__Console=true` switches on OpenTelemetry console tracing (ASP.NET, HttpClient, Npgsql,
 and the `chess.actors` source); it is off by default, including in Development.
 
