@@ -1,6 +1,7 @@
 using Chess.Backend.Data.ReadModels;
 using Chess.Backend.Projections;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Chess.Backend.Tests.Projections;
 
@@ -77,6 +78,31 @@ public sealed class DeadLetterServiceTests
 
         Assert.Equal(2, counts["g1"]);
         Assert.Equal(1, counts["g2"]);
+    }
+
+    [Fact]
+    public async Task Nothing_parked_is_healthy()
+    {
+        using ProjectDbContext db = TestDb.Create();
+        DeadLetterService check = ProjectionHost.DeadLetters(db, new FakeClock(T0));
+
+        HealthCheckResult result = await check.CheckHealthAsync(new HealthCheckContext());
+
+        Assert.Equal(HealthStatus.Healthy, result.Status);
+    }
+
+    [Fact]
+    public async Task A_quarantined_aggregate_degrades_and_reports_its_group()
+    {
+        using ProjectDbContext db = TestDb.Create();
+        DeadLetterService service = ProjectionHost.DeadLetters(db, new FakeClock(T0));
+        await service.ParkAsync(new ParkRequest("chess.rm-pings", "p1", 7, "p1", "{}", 5, "bug", T0), CancellationToken.None);
+        await service.ParkAsync(new ParkRequest("chess.rm-pings", "p1", 8, "p1", "{}", 0, "behind", T0), CancellationToken.None);
+
+        HealthCheckResult result = await service.CheckHealthAsync(new HealthCheckContext());
+
+        Assert.Equal(HealthStatus.Degraded, result.Status);
+        Assert.Equal(1, result.Data["chess.rm-pings"]);
     }
 
     /// <summary>A PingProjection that can be switched into "still buggy" mode, the way a bad deploy would behave.</summary>

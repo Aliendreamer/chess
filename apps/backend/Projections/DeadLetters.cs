@@ -57,13 +57,14 @@ internal interface IDeadLetterService : IService
 /// <summary>
 /// The <c>projection_dead_letters</c> table: parking, quarantine and replay. Every write to one
 /// <c>(group, aggregate)</c> pair runs under <c>pg_advisory_xact_lock</c> on that pair (design D5), so a park and a
-/// replay step never interleave.
+/// replay step never interleave. Also the <c>/health</c> check (design D8): quarantined aggregates per consumer group,
+/// never Unhealthy, because one parked game means its lists are stale, not that the API is down.
 /// </summary>
 internal sealed class DeadLetterService(
     ProjectDbContext context,
     ILogger<DeadLetterService> logger,
     TimeProvider clock,
-    IServiceScopeFactory scopes) : BaseService(context, logger), IDeadLetterService
+    IServiceScopeFactory scopes) : BaseService(context, logger), IDeadLetterService, IHealthCheck
 {
     public const int MaxErrorLength = 2000;
 
@@ -159,6 +160,18 @@ internal sealed class DeadLetterService(
             .Select(g => new { g.Key, Count = g.Select(d => d.AggregateId).Distinct().Count() })
             .ToDictionaryAsync(g => g.Key, g => g.Count, ct);
 
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
+    {
+        IReadOnlyDictionary<string, int> counts = await CountsAsync(cancellationToken);
+        if (counts.Count == 0)
+        {
+            return HealthCheckResult.Healthy("No quarantined aggregates.");
+        }
+
+        Dictionary<string, object> data = counts.ToDictionary(c => c.Key, c => (object)c.Value, StringComparer.Ordinal);
+        return HealthCheckResult.Degraded($"{counts.Values.Sum()} quarantined aggregate(s); replay after fixing.", data: data);
+    }
+
     /// <summary>
     /// Runs <paramref name="body"/> in a transaction holding the <c>(group, aggregate)</c> advisory lock; the lock goes
     /// with the transaction. On a non-relational provider (unit tests) the body just runs.
@@ -212,24 +225,5 @@ internal sealed class DeadLetterService(
     {
         await using AsyncServiceScope scope = scopes.CreateAsyncScope();
         return scope.ServiceProvider.GetServices<IProjection>().FirstOrDefault(p => p.GroupId == groupId)?.GetType();
-    }
-}
-
-/// <summary>
-/// Quarantined aggregates per consumer group on <c>/health</c> (design D8). Never Unhealthy: one parked game means
-/// its lists are stale, not that the API is down, and every other aggregate is still flowing.
-/// </summary>
-internal sealed class DeadLetterHealthCheck(IDeadLetterService deadLetters) : IHealthCheck
-{
-    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
-    {
-        IReadOnlyDictionary<string, int> counts = await deadLetters.CountsAsync(cancellationToken);
-        if (counts.Count == 0)
-        {
-            return HealthCheckResult.Healthy("No quarantined aggregates.");
-        }
-
-        Dictionary<string, object> data = counts.ToDictionary(c => c.Key, c => (object)c.Value, StringComparer.Ordinal);
-        return HealthCheckResult.Degraded($"{counts.Values.Sum()} quarantined aggregate(s); replay after fixing.", data: data);
     }
 }

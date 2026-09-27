@@ -38,11 +38,6 @@ internal sealed record PublisherLag(string StreamId, long LastOrdering, long Jou
     public long Lag => Math.Max(0, JournalHead - LastOrdering);
 }
 
-internal interface IPublisherLagReader
-{
-    Task<IReadOnlyList<PublisherLag>> ReadAsync(CancellationToken ct);
-}
-
 internal sealed class PublisherLagOptions : Extensions.ISettings
 {
     public const string SectionName = "Outbox";
@@ -60,33 +55,39 @@ internal sealed class PublisherLagOptions : Extensions.ISettings
 }
 
 /// <summary>
-/// Publisher lag on <c>/health</c> (design D8). Deliberately never Unhealthy: a Kafka outage stalls the publisher
-/// on every node at once, and failing health would pull the whole API out of rotation for something the journal
-/// is already absorbing. "Behind and not moving" is the signal, so a busy-but-advancing publisher stays Healthy.
+/// Publisher lag on <c>/health</c> (design D8), read from the PRIMARY (the replica can lag either the offsets or the
+/// journal). Deliberately never Unhealthy: a Kafka outage stalls the publisher on every node at once, and failing
+/// health would pull the whole API out of rotation for something the journal is already absorbing. "Behind and not
+/// moving" is the signal, so a busy-but-advancing publisher stays Healthy.
 /// </summary>
-internal sealed class PublisherLagHealthCheck(IPublisherLagReader reader, TimeProvider clock, PublisherLagOptions options) : IHealthCheck
+internal sealed class PublisherLagHealthCheck(string connectionString, TimeProvider clock, PublisherLagOptions options) : IHealthCheck
 {
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         IReadOnlyList<PublisherLag> lags;
         try
         {
-            lags = await reader.ReadAsync(cancellationToken);
+            lags = await ReadAsync(cancellationToken);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
             return HealthCheckResult.Degraded("could not read publisher lag", e);
         }
 
+        return Evaluate(lags, clock.GetUtcNow(), options.DegradedAfter);
+    }
+
+    internal static HealthCheckResult Evaluate(IReadOnlyList<PublisherLag> lags, DateTimeOffset now, TimeSpan degradedAfter)
+    {
+        ArgumentNullException.ThrowIfNull(lags);
         Dictionary<string, object> data = [];
         List<string> stuck = [];
-        DateTimeOffset now = clock.GetUtcNow();
         foreach (PublisherLag l in lags)
         {
             data[$"{l.StreamId}.lastOrdering"] = l.LastOrdering;
             data[$"{l.StreamId}.journalHead"] = l.JournalHead;
             data[$"{l.StreamId}.lag"] = l.Lag;
-            if (l.Lag > 0 && now - l.UpdatedAt > options.DegradedAfter)
+            if (l.Lag > 0 && now - l.UpdatedAt > degradedAfter)
             {
                 stuck.Add($"{l.StreamId} ({l.Lag} behind since {l.UpdatedAt:O})");
             }
@@ -96,13 +97,9 @@ internal sealed class PublisherLagHealthCheck(IPublisherLagReader reader, TimePr
             ? HealthCheckResult.Healthy("publisher caught up or advancing", data)
             : HealthCheckResult.Degraded($"publisher not advancing: {string.Join(", ", stuck)}", data: data);
     }
-}
 
-/// <summary>Reads offsets and the per-tag journal head from the PRIMARY (the replica can lag either one).</summary>
-[ExcludeFromCodeCoverage(Justification = "Raw SQL against a live server; the evaluation logic lives in PublisherLagHealthCheck.")]
-internal sealed class PostgresPublisherLagReader(string connectionString) : IPublisherLagReader
-{
-    public async Task<IReadOnlyList<PublisherLag>> ReadAsync(CancellationToken ct)
+    [ExcludeFromCodeCoverage(Justification = "Raw SQL against a live server; the verdict is Evaluate, which is unit-tested.")]
+    private async Task<IReadOnlyList<PublisherLag>> ReadAsync(CancellationToken ct)
     {
         await using NpgsqlConnection c = new(connectionString);
         await c.OpenAsync(ct);

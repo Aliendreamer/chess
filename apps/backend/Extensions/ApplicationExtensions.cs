@@ -104,7 +104,7 @@ internal static class FastEndpointSetup
         health.AddCheck<ClusterHealthCheck>("akka-cluster");
         // Always on: the table lives on the primary whether or not Kafka is configured, and Degraded (never
         // Unhealthy) keeps a quarantined game from pulling the API out of rotation.
-        health.AddCheck<DeadLetterHealthCheck>("projection-dead-letters", failureStatus: HealthStatus.Degraded);
+        health.AddCheck<DeadLetterService>("projection-dead-letters", failureStatus: HealthStatus.Degraded);
 
         KafkaOptions kafka = builder.Configuration.GetSection(KafkaOptions.SectionName).Get<KafkaOptions>() ?? new KafkaOptions();
         health.AddKafkaHealthCheck(builder.Services, kafka, builder.Configuration);
@@ -127,10 +127,11 @@ internal static class FastEndpointSetup
             services.AddSingleton<KafkaHealthCheck>();
             health.AddCheck<KafkaHealthCheck>("kafka");
             // Registered with the Kafka check because it only means something while the journal publisher runs.
-            services.AddSingleton<IPublisherLagReader>(sp => new PostgresPublisherLagReader(
-                sp.GetRequiredService<IConfiguration>().GetConnectionString("Postgres") ?? string.Empty));
             services.AddSettings<PublisherLagOptions>(configuration, PublisherLagOptions.SectionName);
-            services.AddSingleton<PublisherLagHealthCheck>();
+            services.AddSingleton(sp => new PublisherLagHealthCheck(
+                sp.GetRequiredService<IConfiguration>().GetConnectionString("Postgres") ?? string.Empty,
+                sp.GetRequiredService<TimeProvider>(),
+                sp.GetRequiredService<PublisherLagOptions>()));
             health.AddCheck<PublisherLagHealthCheck>("journal-publisher", failureStatus: HealthStatus.Degraded);
         }
 

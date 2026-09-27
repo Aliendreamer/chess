@@ -7,24 +7,14 @@ public sealed class PublisherLagHealthCheckTests
 {
     private static readonly DateTimeOffset Now = new(2026, 9, 23, 12, 0, 0, TimeSpan.Zero);
 
-    private sealed class FakeReader(Func<IReadOnlyList<PublisherLag>> read) : IPublisherLagReader
-    {
-        public Task<IReadOnlyList<PublisherLag>> ReadAsync(CancellationToken ct) => Task.FromResult(read());
-    }
-
-    private static PublisherLagHealthCheck Check(params PublisherLag[] lags) =>
-        new(new FakeReader(() => lags), new FakeClock(Now), new PublisherLagOptions { DegradedAfter = TimeSpan.FromSeconds(30) });
-
-    private static Task<HealthCheckResult> Run(PublisherLagHealthCheck check) =>
-        check.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
-
     [Theory]
     [InlineData(41, 41, 600, HealthStatus.Healthy)] // caught up, however long ago it last moved
     [InlineData(40, 45, 5, HealthStatus.Healthy)] // behind but recently advanced
     [InlineData(40, 45, 31, HealthStatus.Degraded)] // behind and stuck past the threshold: degraded, never unhealthy
-    public async Task Status_depends_on_lag_and_time_since_the_last_advance(long lastOrdering, long journalHead, int secondsSinceAdvance, HealthStatus expected)
+    public void Status_depends_on_lag_and_time_since_the_last_advance(long lastOrdering, long journalHead, int secondsSinceAdvance, HealthStatus expected)
     {
-        HealthCheckResult r = await Run(Check(new PublisherLag("game.events", lastOrdering, journalHead, Now.AddSeconds(-secondsSinceAdvance))));
+        HealthCheckResult r = PublisherLagHealthCheck.Evaluate(
+            [new PublisherLag("game.events", lastOrdering, journalHead, Now.AddSeconds(-secondsSinceAdvance))], Now, TimeSpan.FromSeconds(30));
 
         Assert.Equal(expected, r.Status);
         Assert.Equal(journalHead - lastOrdering, r.Data["game.events.lag"]);
@@ -37,17 +27,15 @@ public sealed class PublisherLagHealthCheckTests
     }
 
     [Fact]
-    public async Task Reader_failure_is_degraded_not_unhealthy()
+    public async Task Read_failure_is_degraded_not_unhealthy()
     {
-        PublisherLagHealthCheck check = new(
-            new FakeReader(() => throw new InvalidOperationException("db down")),
-            new FakeClock(Now),
-            new PublisherLagOptions());
+        // An unparseable connection string fails before any connection is attempted.
+        PublisherLagHealthCheck check = new("not a connection string ;;=", new FakeClock(Now), new PublisherLagOptions());
 
-        HealthCheckResult r = await Run(check);
+        HealthCheckResult r = await check.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
         Assert.Equal(HealthStatus.Degraded, r.Status);
-        Assert.IsType<InvalidOperationException>(r.Exception);
+        Assert.NotNull(r.Exception);
     }
 
     [Fact]
