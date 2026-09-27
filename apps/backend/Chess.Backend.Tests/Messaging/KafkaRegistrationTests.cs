@@ -2,7 +2,6 @@ using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Extensions;
 using Chess.Backend.Messaging;
 using Chess.Backend.Projections;
-using Chess.Backend.Tests.Support;
 using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,4 +1,3 @@
-using Chess.Backend.WebApi.Authentication;
 using Chess.Backend.WebApi.Me;
 
 namespace Chess.Backend.Tests.Me;

@@ -2,7 +2,7 @@ using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Event;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Games;
-using Chess.Backend.Live;
+using Chess.Backend.Messaging;
 
 namespace Chess.Backend.Akka.Matchmaking;
 

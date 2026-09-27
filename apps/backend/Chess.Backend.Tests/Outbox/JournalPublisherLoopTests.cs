@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using Akka;
 using Akka.Actor;
 using Akka.Persistence.Query;
 using Akka.Streams;

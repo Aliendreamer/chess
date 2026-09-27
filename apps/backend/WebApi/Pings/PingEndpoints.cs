@@ -1,5 +1,4 @@
 using Chess.Backend.Akka.Ping;
-using Chess.Backend.WebApi.Authentication;
 using FluentValidation;
 
 namespace Chess.Backend.WebApi.Pings;

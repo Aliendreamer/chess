@@ -48,8 +48,8 @@ public sealed class PingActorTests : TestKit
         actor.Tell(new Ping("p1", "hello", 42));
         PingState state = ExpectMsg<PingState>();
         Publish published = mediator.ExpectMsg<Publish>();
-        Assert.Equal(Chess.Backend.Live.LiveTopics.PubSub, published.Topic);
-        Chess.Backend.Live.LiveFrame frame = Assert.IsType<Chess.Backend.Live.LiveFrame>(published.Message);
+        Assert.Equal(Chess.Backend.Messaging.LiveTopics.PubSub, published.Topic);
+        Chess.Backend.Messaging.LiveFrame frame = Assert.IsType<Chess.Backend.Messaging.LiveFrame>(published.Message);
         Assert.Equal(("ping:p1", 1L), (frame.Topic, frame.Seq));
         Assert.Equal(state, frame.Payload);
     }

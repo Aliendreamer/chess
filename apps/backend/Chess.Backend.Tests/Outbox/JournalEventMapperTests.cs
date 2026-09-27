@@ -1,5 +1,4 @@
 using Chess.Backend.Akka.Outbox;
-using Chess.Backend.Akka.Ping;
 using Chess.Backend.Events;
 
 namespace Chess.Backend.Tests.Outbox;

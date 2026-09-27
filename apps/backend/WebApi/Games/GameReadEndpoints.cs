@@ -1,5 +1,4 @@
 using Chess.Backend.Data.ReadModels;
-using Chess.Backend.WebApi.Authentication;
 using Npgsql;
 
 namespace Chess.Backend.WebApi.Games;

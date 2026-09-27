@@ -1,16 +1,5 @@
-using Akka;
-using Akka.Cluster.Hosting;
-using Akka.DependencyInjection;
-using Akka.Persistence.Query;
-using Akka.Persistence.Sql.Query;
-using Akka.Streams;
-using Akka.Streams.Dsl;
-using Akka.Streams.Kafka.Dsl;
-using Akka.Streams.Kafka.Messages;
-using Akka.Streams.Kafka.Settings;
-using Chess.Backend.Messaging;
-using Confluent.Kafka;
-using Offset = Akka.Persistence.Query.Offset;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Npgsql;
 
 namespace Chess.Backend.Akka.Outbox;
 
@@ -43,41 +32,84 @@ internal sealed class JournalPublisher : ReceiveActor
     protected override void PostStop() => _stop?.Cancel();
 }
 
-internal static class JournalPublisherRegistration
+/// <summary>Where one publisher stream stands against the journal: its saved offset vs the newest tagged event.</summary>
+internal sealed record PublisherLag(string StreamId, long LastOrdering, long JournalHead, DateTimeOffset UpdatedAt)
 {
-    /// <summary>Registers the publisher singleton on the `backend` role. Only called when Kafka is enabled.</summary>
-    public static AkkaConfigurationBuilder WithJournalPublisher(this AkkaConfigurationBuilder akka)
-    {
-        ArgumentNullException.ThrowIfNull(akka);
-        return akka.WithSingleton<JournalPublisher>(
-            JournalPublisher.SingletonName,
-            (_, _, resolver) => Props.Create(() => new JournalPublisher(system => CreateLoop(system, resolver))),
-            new ClusterSingletonOptions { Role = AkkaOptions.BackendRole },
-            createProxyToo: false);
-    }
+    public long Lag => Math.Max(0, JournalHead - LastOrdering);
+}
 
-    [ExcludeFromCodeCoverage(Justification = "Composition of the real SQL read journal and Kafka producer; exercised by the integration suite.")]
-    private static JournalPublisherLoop CreateLoop(ActorSystem system, IDependencyResolver resolver)
+internal interface IPublisherLagReader
+{
+    Task<IReadOnlyList<PublisherLag>> ReadAsync(CancellationToken ct);
+}
+
+internal sealed class PublisherLagOptions
+{
+    public const string SectionName = "Outbox";
+
+    /// <summary>Unpublished events AND no progress for this long ⇒ Degraded.</summary>
+    public TimeSpan DegradedAfter { get; set; } = TimeSpan.FromSeconds(30);
+}
+
+/// <summary>
+/// Publisher lag on <c>/health</c> (design D8). Deliberately never Unhealthy: a Kafka outage stalls the publisher
+/// on every node at once, and failing health would pull the whole API out of rotation for something the journal
+/// is already absorbing. "Behind and not moving" is the signal, so a busy-but-advancing publisher stays Healthy.
+/// </summary>
+internal sealed class PublisherLagHealthCheck(IPublisherLagReader reader, TimeProvider clock, PublisherLagOptions options) : IHealthCheck
+{
+    public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        KafkaOptions kafka = resolver.GetService<KafkaOptions>();
-        SqlReadJournal journal = PersistenceQuery.Get(system).ReadJournalFor<SqlReadJournal>(SqlReadJournal.Identifier);
-        ProducerSettings<string, string> settings = ProducerSettings<string, string>
-            .Create(system, Serializers.Utf8, Serializers.Utf8)
-            .WithBootstrapServers(kafka.BootstrapServers)
-            .WithProperty("enable.idempotence", "true")
-            .WithProperty("acks", "all");
-        // FlexiFlow emits results in input order, so the pass-through ordering stays monotonic per stream.
-        Flow<(OutboxRecord Record, long Ordering), long, NotUsed> producer = Flow.Create<(OutboxRecord Record, long Ordering)>()
-            .Select(x => ProducerMessage.Single(new ProducerRecord<string, string>(x.Record.Topic, x.Record.Key, x.Record.Json), x.Ordering))
-            .Via(KafkaProducer.FlexiFlow<string, string, long>(settings))
-            .Select(r => r.PassThrough);
-        return new JournalPublisherLoop(
-            system.Materializer(),
-            resolver.GetService<IPublisherLeaseProvider>(),
-            resolver.GetService<JournalEventMappers>(),
-            (tag, after) => journal.EventsByTag(tag, Offset.Sequence(after)),
-            producer,
-            resolver.GetService<JournalPublisherOptions>(),
-            resolver.GetService<ILogger<JournalPublisherLoop>>());
+        IReadOnlyList<PublisherLag> lags;
+        try
+        {
+            lags = await reader.ReadAsync(cancellationToken);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return HealthCheckResult.Degraded("could not read publisher lag", e);
+        }
+
+        Dictionary<string, object> data = [];
+        List<string> stuck = [];
+        DateTimeOffset now = clock.GetUtcNow();
+        foreach (PublisherLag l in lags)
+        {
+            data[$"{l.StreamId}.lastOrdering"] = l.LastOrdering;
+            data[$"{l.StreamId}.journalHead"] = l.JournalHead;
+            data[$"{l.StreamId}.lag"] = l.Lag;
+            if (l.Lag > 0 && now - l.UpdatedAt > options.DegradedAfter)
+            {
+                stuck.Add($"{l.StreamId} ({l.Lag} behind since {l.UpdatedAt:O})");
+            }
+        }
+
+        return stuck.Count == 0
+            ? HealthCheckResult.Healthy("publisher caught up or advancing", data)
+            : HealthCheckResult.Degraded($"publisher not advancing: {string.Join(", ", stuck)}", data: data);
+    }
+}
+
+/// <summary>Reads offsets and the per-tag journal head from the PRIMARY (the replica can lag either one).</summary>
+[ExcludeFromCodeCoverage(Justification = "Raw SQL against a live server; the evaluation logic lives in PublisherLagHealthCheck.")]
+internal sealed class PostgresPublisherLagReader(string connectionString) : IPublisherLagReader
+{
+    public async Task<IReadOnlyList<PublisherLag>> ReadAsync(CancellationToken ct)
+    {
+        await using NpgsqlConnection c = new(connectionString);
+        await c.OpenAsync(ct);
+        // akka.tags only exists once Akka has auto-initialised the journal; until then every head is 0.
+        await using NpgsqlCommand probe = new("SELECT to_regclass('akka.tags') IS NOT NULL", c);
+        bool tagsExist = await probe.ExecuteScalarAsync(ct) is true;
+        string head = tagsExist ? "(SELECT COALESCE(max(t.ordering_id), 0) FROM akka.tags t WHERE t.tag = o.\"StreamId\")" : "0::bigint";
+        await using NpgsqlCommand cmd = new($"""SELECT o."StreamId", o."LastOrdering", {head}, o."UpdatedAt" FROM outbox_offsets o""", c);
+        await using NpgsqlDataReader r = await cmd.ExecuteReaderAsync(ct);
+        List<PublisherLag> lags = [];
+        while (await r.ReadAsync(ct))
+        {
+            lags.Add(new PublisherLag(r.GetString(0), r.GetInt64(1), r.GetInt64(2), r.GetFieldValue<DateTimeOffset>(3)));
+        }
+
+        return lags;
     }
 }

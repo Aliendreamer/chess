@@ -1,4 +1,3 @@
-using Chess.Backend.WebApi.Authentication;
 using FastEndpoints;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;

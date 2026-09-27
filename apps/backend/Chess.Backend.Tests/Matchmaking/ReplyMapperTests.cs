@@ -1,5 +1,4 @@
 using Chess.Backend.Akka.Games;
-using Chess.Backend.Akka.Invites;
 using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.WebApi.Matchmaking;
 

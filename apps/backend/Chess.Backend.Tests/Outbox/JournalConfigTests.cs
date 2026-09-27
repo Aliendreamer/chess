@@ -1,6 +1,6 @@
 using Akka.Actor;
 using Akka.Hosting;
-using Chess.Backend.Akka;
+using Chess.Backend.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 

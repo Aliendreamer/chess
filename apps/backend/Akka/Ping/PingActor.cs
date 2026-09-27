@@ -3,7 +3,7 @@ using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Event;
 using Akka.Persistence;
 using Chess.Backend.Events;
-using Chess.Backend.Live;
+using Chess.Backend.Messaging;
 
 namespace Chess.Backend.Akka.Ping;
 

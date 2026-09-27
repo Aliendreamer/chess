@@ -1,4 +1,3 @@
-using Chess.Backend.WebApi.Authentication;
 using Microsoft.Net.Http.Headers;
 
 namespace Chess.Backend.WebApi.Me;

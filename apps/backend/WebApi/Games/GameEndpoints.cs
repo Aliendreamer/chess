@@ -1,5 +1,4 @@
 using Chess.Backend.Akka.Games;
-using Chess.Backend.WebApi.Authentication;
 
 namespace Chess.Backend.WebApi.Games;
 

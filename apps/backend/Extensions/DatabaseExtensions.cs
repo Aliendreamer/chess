@@ -1,5 +1,8 @@
+using Npgsql;
+
 namespace Chess.Backend.Extensions;
 
+/// <summary>Both databases: the primary for writes (ProjectDbContext) and the replica for reads (ReadDbContext).</summary>
 internal static class DatabaseExtensions
 {
     public static WebApplicationBuilder AddDatabaseContext(this WebApplicationBuilder builder)
@@ -23,5 +26,22 @@ internal static class DatabaseExtensions
         ProjectDbContext context = scope.ServiceProvider.GetRequiredService<ProjectDbContext>();
         await context.Database.MigrateAsync(ct);
         await SeedData.SeedAsync(context, ct);
+    }
+
+    // The read side: ReadDbContext on the replica, no tracking, with its health check.
+    public const string ReplicaDataSourceKey = "replica";
+
+    public static WebApplicationBuilder AddReadDatabaseContext(this WebApplicationBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        string replica = builder.Configuration.GetConnectionString("PostgresReplica")
+            ?? throw new InvalidOperationException("ConnectionStrings:PostgresReplica is not configured.");
+        NpgsqlDataSource source = new NpgsqlDataSourceBuilder(replica).Build();
+        builder.Services.AddKeyedSingleton(ReplicaDataSourceKey, source);
+        builder.Services.AddDbContext<ReadDbContext>(o => o
+            .UseNpgsql(source, npgsql => npgsql.EnableRetryOnFailure())
+            .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+        builder.Services.AddHealthChecks().AddCheck<ReplicaHealthCheck>("postgres-replica");
+        return builder;
     }
 }

@@ -3,7 +3,7 @@ using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.TestKit;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Games;
-using Chess.Backend.Live;
+using Chess.Backend.Messaging;
 
 namespace Chess.Backend.Tests.Games;
 

@@ -1,4 +1,3 @@
-using Chess.Backend.Data.Auth;
 using Chess.Backend.WebApi.Auth.Groups;
 
 namespace Chess.Backend.WebApi.Auth.Login;

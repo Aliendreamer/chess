@@ -1,5 +1,3 @@
-using Chess.Backend.WebApi.Authentication;
-
 namespace Chess.Backend.WebApi.Me;
 
 internal static class MeResponseFactory

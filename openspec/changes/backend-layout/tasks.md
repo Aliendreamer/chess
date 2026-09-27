@@ -3,15 +3,15 @@ Each group ends in one commit that passes the backend gate (build with no warnin
 
 ## 1. Owner review
 
-- [ ] 1.1 The owner confirms the target tree in the proposal, or corrects it. Nothing moves before this.
+- [x] 1.1 The owner confirms the target tree in the proposal, or corrects it. Nothing moves before this.
 
 ## 2. Step 1 and step 2: merge tiny files and group by functionality
 
-- [ ] 2.1 `Authentication/` (Session, Oidc, CurrentUser), then `Messaging/` (Kafka + live relay), then `Extensions/`
+- [x] 2.1 `Authentication/` (Session, Oidc, CurrentUser), then `Messaging/` (Kafka + live relay), then `Extensions/`
       (4 files).
-- [ ] 2.2 `Akka/` (AkkaNode, Games, Matchmaking, Ping, Outbox), `Games/`, `Events/`, `Data/`, `Projections/` and
+- [x] 2.2 `Akka/` (AkkaNode, Games, Matchmaking, Ping, Outbox), `Games/`, `Events/`, `Data/`, `Projections/` and
       `Utils/` exactly as the proposal lists them.
-- [ ] 2.3 Tests mirror; build with no warnings, unit tests, format. Commit: `refactor(backend): merge tiny files and
+- [x] 2.3 Tests mirror; build with no warnings, unit tests, format. Commit: `refactor(backend): merge tiny files and
 group code by functionality`.
 
 ## 3. Endpoints, one folder each

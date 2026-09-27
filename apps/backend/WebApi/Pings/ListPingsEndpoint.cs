@@ -1,4 +1,3 @@
-using Chess.Backend.Data.ReadModels;
 using Npgsql;
 
 namespace Chess.Backend.WebApi.Pings;

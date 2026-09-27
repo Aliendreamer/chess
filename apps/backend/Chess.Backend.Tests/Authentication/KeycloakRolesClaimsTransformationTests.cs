@@ -1,5 +1,3 @@
-using Chess.Backend.WebApi.Authentication;
-
 namespace Chess.Backend.Tests.Authentication;
 
 public sealed class KeycloakRolesClaimsTransformationTests
