@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <RootNamespace>Chess.Engine</RootNamespace>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <AnalysisMode>All</AnalysisMode>
+    <NoWarn>$(NoWarn);CA1812;CA1848;CA1707;CA1861</NoWarn>
+    <UserSecretsId>chess-engine</UserSecretsId>
+    <DefaultItemExcludes>$(DefaultItemExcludes);.claude/**;.serena/**;TestResults/**;stockfish/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Chess.Engine.Tests/**/*.cs" />
+    <Content Remove="Chess.Engine.Tests/**" />
+    <None Remove="Chess.Engine.Tests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Confluent.Kafka" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Settings.Configuration" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Formatting.Compact" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Chess.Engine.Tests" />
+  </ItemGroup>
+
+</Project>

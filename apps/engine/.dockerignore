@@ -1,0 +1,7 @@
+**/bin/
+**/obj/
+**/TestResults/
+Chess.Engine.Tests/
+.claude/
+.serena/
+*.md

@@ -9,7 +9,16 @@ export default {
     "scope-enum": [
       2,
       "always",
-      ["frontend", "backend", "repo", "deps", "proxy", "ci", "release"],
+      [
+        "frontend",
+        "backend",
+        "engine",
+        "repo",
+        "deps",
+        "proxy",
+        "ci",
+        "release",
+      ],
     ],
   },
 };

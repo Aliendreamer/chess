@@ -58,6 +58,13 @@
           "conventionalCommits": true,
           "versionActions": "./tools/nx-release/dotnet-version-actions.cjs"
         }
+      },
+      "engine": {
+        "projects": ["engine"],
+        "version": {
+          "conventionalCommits": true,
+          "versionActions": "./tools/nx-release/dotnet-version-actions.cjs"
+        }
       }
     }
   },
