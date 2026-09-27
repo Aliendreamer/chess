@@ -55,7 +55,7 @@ internal static class AkkaHostingExtensions
                 .WithRemoting(hostname: options.Hostname, port: options.Port)
                 .WithClustering(new ClusterOptions
                 {
-                    Roles = options.Roles,
+                    Roles = [.. options.EffectiveRoles],
                     SeedNodes = [.. options.EffectiveSeedNodes()],
                     SplitBrainResolver = new KeepMajorityOption(),
                 })
@@ -114,7 +114,7 @@ internal static class PingShardingExtensions
             new ShardOptions
             {
                 Role = AkkaOptions.BackendRole,
-                PassivateIdleEntityAfter = TimeSpan.FromMinutes(5),
+                PassivateIdleEntityAfter = TimeSpan.FromMinutes(options.IdlePassivationMinutes),
                 RememberEntities = false,
             });
     }
@@ -123,7 +123,7 @@ internal static class PingShardingExtensions
 internal static class MatchmakingRegistration
 {
     /// <summary>The matchmaking singleton on the backend role, with a proxy so every node's endpoints reach it.</summary>
-    public static AkkaConfigurationBuilder WithMatchmaking(this AkkaConfigurationBuilder akka)
+    public static AkkaConfigurationBuilder WithMatchmaking(this AkkaConfigurationBuilder akka, AkkaOptions options)
     {
         ArgumentNullException.ThrowIfNull(akka);
         return akka.WithSingleton<MatchmakingActor>(
@@ -189,7 +189,12 @@ internal static class InviteShardingExtensions
                 resolver.GetService<TimeProvider>(),
                 Random.Shared)),
             new InviteMessageExtractor(options.ShardCount),
-            new ShardOptions { Role = AkkaOptions.BackendRole, RememberEntities = false });
+            new ShardOptions
+            {
+                Role = AkkaOptions.BackendRole,
+                PassivateIdleEntityAfter = TimeSpan.FromMinutes(options.IdlePassivationMinutes),
+                RememberEntities = false,
+            });
     }
 }
 

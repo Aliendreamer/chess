@@ -3,7 +3,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Chess.Backend.Messaging;
 
-internal sealed class KafkaOptions
+internal sealed class KafkaOptions : Extensions.ISettings
 {
     public const string SectionName = "Kafka";
 
@@ -12,7 +12,21 @@ internal sealed class KafkaOptions
 
     public string GroupPrefix { get; set; } = "chess";
 
+    /// <summary>How long the health check waits for broker metadata.</summary>
+    public int HealthTimeoutSeconds { get; set; } = 3;
+
+    /// <summary>How long a consumer waits before retrying after a failure.</summary>
+    public int ConsumerRetrySeconds { get; set; } = 5;
+
     public bool Enabled => !string.IsNullOrWhiteSpace(BootstrapServers);
+
+    public void Validate()
+    {
+        if (HealthTimeoutSeconds <= 0 || ConsumerRetrySeconds <= 0)
+        {
+            throw new InvalidOperationException("Kafka:HealthTimeoutSeconds and Kafka:ConsumerRetrySeconds must be positive.");
+        }
+    }
 }
 
 /// <summary>Healthy when the broker returns metadata with at least one broker known.</summary>
@@ -20,10 +34,12 @@ internal sealed class KafkaOptions
 internal sealed class KafkaHealthCheck : IHealthCheck, IDisposable
 {
     private readonly IAdminClient _admin;
+    private readonly TimeSpan _timeout;
 
     public KafkaHealthCheck(KafkaOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
+        _timeout = TimeSpan.FromSeconds(options.HealthTimeoutSeconds);
         _admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = options.BootstrapServers }).Build();
     }
 
@@ -31,7 +47,7 @@ internal sealed class KafkaHealthCheck : IHealthCheck, IDisposable
     {
         try
         {
-            Metadata metadata = _admin.GetMetadata(TimeSpan.FromSeconds(3));
+            Metadata metadata = _admin.GetMetadata(_timeout);
             HealthCheckResult result = metadata.Brokers.Count > 0
                 ? HealthCheckResult.Healthy($"{metadata.Brokers.Count} broker(s) reachable")
                 : HealthCheckResult.Unhealthy("No brokers returned");

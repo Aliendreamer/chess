@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Akka.Cluster.Sharding;
+using Chess.Backend.Extensions;
 using Chess.Backend.Messaging;
 
 namespace Chess.Backend.Akka.Ping;
@@ -56,11 +57,9 @@ internal sealed class PingMessageExtractor(int shardCount) : HashCodeMessageExtr
 }
 
 /// <summary>The <c>ping</c> live kind: a subscriber's snapshot is the entity's current state, asked from its shard.</summary>
-internal sealed class PingLiveSource(IRequiredActor<PingActor> region) : ILiveTopicSource
+internal sealed class PingLiveSource(IRequiredActor<PingActor> region, IOptions<ApiOptions> api) : ILiveTopicSource
 {
     public const string KindName = "ping";
-
-    private static readonly TimeSpan AskTimeout = TimeSpan.FromSeconds(5);
 
     public string Kind => KindName;
 
@@ -79,7 +78,7 @@ internal sealed class PingLiveSource(IRequiredActor<PingActor> region) : ILiveTo
 
     public async Task<LiveFrame?> SnapshotAsync(string id, CancellationToken ct)
     {
-        PingState state = await region.ActorRef.Ask<PingState>(new GetPingState(PingIds.Validate(id)), AskTimeout, ct);
+        PingState state = await region.ActorRef.Ask<PingState>(new GetPingState(PingIds.Validate(id)), api.Value.AskTimeout, ct);
         return ToFrame(state);
     }
 

@@ -15,7 +15,7 @@ public sealed class ReplicaHealthCheckTests
     public void Evaluates_standby_state_and_replay_lag(
         bool inRecovery, bool receiverRunning, bool caughtUp, int secondsSinceReplay, HealthStatus expected, double? lagSeconds, string? description)
     {
-        HealthCheckResult r = ReplicaHealthCheck.Evaluate(new ReplicaStatus(inRecovery, receiverRunning, caughtUp, secondsSinceReplay));
+        HealthCheckResult r = ReplicaHealthCheck.Evaluate(new ReplicaStatus(inRecovery, receiverRunning, caughtUp, secondsSinceReplay), 10);
 
         Assert.Equal(expected, r.Status);
         if (lagSeconds is not null)

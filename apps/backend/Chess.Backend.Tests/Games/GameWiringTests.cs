@@ -82,7 +82,7 @@ public sealed class GameLiveSourceTests : TestKit
         Guid id = Guid.CreateVersion7();
         GameView ended = new(id, 1, 2, "5+3", GameStatus.Ended, "fen", 4, "White", "d8h4", "Qh4#", 1, 2, DateTimeOffset.UnixEpoch, null, "0-1", "Checkmate", 6);
 
-        LiveFrame frame = (await new GameLiveSource(new FixedRegion<GameActor>(region.Ref), new EndedGames(ended)).SnapshotAsync(id.ToString("N"), CancellationToken.None))!;
+        LiveFrame frame = (await new GameLiveSource(new FixedRegion<GameActor>(region.Ref), new EndedGames(ended), Options.Create(new ApiOptions())).SnapshotAsync(id.ToString("N"), CancellationToken.None))!;
 
         Assert.Equal(($"game:{id:N}", 6L), (frame.Topic, frame.Seq));
         Assert.Same(ended, frame.Payload);
@@ -95,7 +95,7 @@ public sealed class GameLiveSourceTests : TestKit
         TestProbe region = CreateTestProbe();
         Guid id = Guid.CreateVersion7();
 
-        Task<LiveFrame?> snapshot = new GameLiveSource(new FixedRegion<GameActor>(region.Ref), new EndedGames(null, fails: true)).SnapshotAsync(id.ToString("N"), CancellationToken.None);
+        Task<LiveFrame?> snapshot = new GameLiveSource(new FixedRegion<GameActor>(region.Ref), new EndedGames(null, fails: true), Options.Create(new ApiOptions())).SnapshotAsync(id.ToString("N"), CancellationToken.None);
         region.ExpectMsg<GetGameView>();
         region.Reply(new GameRejected(id, RejectionCode.NotFound, "No such game."));
 
@@ -109,7 +109,7 @@ public sealed class GameLiveSourceTests : TestKit
     [InlineData("not-a-guid", false)]
     [InlineData("", false)]
     public void Accepts_only_n_form_guids(string id, bool valid) =>
-        Assert.Equal(valid, new GameLiveSource(new FixedRegion<GameActor>(CreateTestProbe().Ref), NoEndedGames).IsValidId(id));
+        Assert.Equal(valid, new GameLiveSource(new FixedRegion<GameActor>(CreateTestProbe().Ref), NoEndedGames, Options.Create(new ApiOptions())).IsValidId(id));
 
     [Fact]
     public async Task The_snapshot_is_the_games_view_as_a_frame_with_its_seq()
@@ -118,7 +118,7 @@ public sealed class GameLiveSourceTests : TestKit
         Guid id = Guid.CreateVersion7();
         GameView view = new(id, 1, 2, "5+3", GameStatus.Playing, "fen", 3, "Black", "g1f3", "Nf3", 1, 2, DateTimeOffset.UnixEpoch, null, null, null, 9);
 
-        Task<LiveFrame?> snapshot = new GameLiveSource(new FixedRegion<GameActor>(region.Ref), NoEndedGames).SnapshotAsync(id.ToString("N"), CancellationToken.None);
+        Task<LiveFrame?> snapshot = new GameLiveSource(new FixedRegion<GameActor>(region.Ref), NoEndedGames, Options.Create(new ApiOptions())).SnapshotAsync(id.ToString("N"), CancellationToken.None);
         Assert.Equal(id, region.ExpectMsg<GetGameView>().GameId);
         region.Reply(view);
 
@@ -133,7 +133,7 @@ public sealed class GameLiveSourceTests : TestKit
         TestProbe region = CreateTestProbe();
         Guid id = Guid.CreateVersion7();
 
-        Task<LiveFrame?> snapshot = new GameLiveSource(new FixedRegion<GameActor>(region.Ref), NoEndedGames).SnapshotAsync(id.ToString("N"), CancellationToken.None);
+        Task<LiveFrame?> snapshot = new GameLiveSource(new FixedRegion<GameActor>(region.Ref), NoEndedGames, Options.Create(new ApiOptions())).SnapshotAsync(id.ToString("N"), CancellationToken.None);
         region.ExpectMsg<GetGameView>();
         region.Reply(new GameRejected(id, RejectionCode.NotFound, "No such game."));
 

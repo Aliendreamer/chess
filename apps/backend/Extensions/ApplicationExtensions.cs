@@ -82,7 +82,7 @@ internal static class FastEndpointSetup
     {
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.AddFastEndpoints();
-        builder.Services.AddOptions<ApiOptions>().Bind(builder.Configuration.GetSection(ApiOptions.SectionName));
+        builder.Services.AddSettings<ApiOptions>(builder.Configuration, ApiOptions.SectionName);
         builder.Services.SwaggerDocument(o =>
         {
             o.DocumentSettings = s =>
@@ -107,7 +107,7 @@ internal static class FastEndpointSetup
         health.AddCheck<DeadLetterHealthCheck>("projection-dead-letters", failureStatus: HealthStatus.Degraded);
 
         KafkaOptions kafka = builder.Configuration.GetSection(KafkaOptions.SectionName).Get<KafkaOptions>() ?? new KafkaOptions();
-        health.AddKafkaHealthCheck(builder.Services, kafka);
+        health.AddKafkaHealthCheck(builder.Services, kafka, builder.Configuration);
 
         return builder;
     }
@@ -116,7 +116,7 @@ internal static class FastEndpointSetup
     /// Registers the <c>"kafka"</c> and <c>"journal-publisher"</c> health checks only when Kafka is enabled. Extracted so the branch is
     /// unit-testable against the real registration instead of a copy of it.
     /// </summary>
-    internal static IHealthChecksBuilder AddKafkaHealthCheck(this IHealthChecksBuilder health, IServiceCollection services, KafkaOptions kafka)
+    internal static IHealthChecksBuilder AddKafkaHealthCheck(this IHealthChecksBuilder health, IServiceCollection services, KafkaOptions kafka, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(health);
         ArgumentNullException.ThrowIfNull(services);
@@ -129,7 +129,7 @@ internal static class FastEndpointSetup
             // Registered with the Kafka check because it only means something while the journal publisher runs.
             services.AddSingleton<IPublisherLagReader>(sp => new PostgresPublisherLagReader(
                 sp.GetRequiredService<IConfiguration>().GetConnectionString("Postgres") ?? string.Empty));
-            services.AddSingleton(sp => sp.GetRequiredService<IConfiguration>().GetSection(PublisherLagOptions.SectionName).Get<PublisherLagOptions>() ?? new PublisherLagOptions());
+            services.AddSettings<PublisherLagOptions>(configuration, PublisherLagOptions.SectionName);
             services.AddSingleton<PublisherLagHealthCheck>();
             health.AddCheck<PublisherLagHealthCheck>("journal-publisher", failureStatus: HealthStatus.Degraded);
         }
@@ -142,7 +142,7 @@ internal static class FastEndpointSetup
 /// Endpoint timeouts and limits (section <c>Api</c>), read by the endpoints instead of constants in each file. The
 /// defaults are the values the endpoints have always used.
 /// </summary>
-internal sealed class ApiOptions
+internal sealed class ApiOptions : ISettings
 {
     public const string SectionName = "Api";
 
@@ -152,8 +152,24 @@ internal sealed class ApiOptions
     /// <summary>Accepting an invite starts a game, so its answer may take longer.</summary>
     public int InviteAskTimeoutSeconds { get; set; } = 10;
 
+    /// <summary>The page a list endpoint returns when the request names no <c>limit</c>.</summary>
+    public int DefaultPageSize { get; set; } = 50;
+
     /// <summary>The largest page a list endpoint returns; a larger <c>limit</c> is clamped to it.</summary>
     public int MaxPageSize { get; set; } = 200;
+
+    public void Validate()
+    {
+        if (AskTimeoutSeconds <= 0 || InviteAskTimeoutSeconds <= 0)
+        {
+            throw new InvalidOperationException("Api:AskTimeoutSeconds and Api:InviteAskTimeoutSeconds must be positive.");
+        }
+
+        if (DefaultPageSize <= 0 || MaxPageSize < DefaultPageSize)
+        {
+            throw new InvalidOperationException("Api:MaxPageSize must be at least Api:DefaultPageSize, and both positive.");
+        }
+    }
 
     public TimeSpan AskTimeout => TimeSpan.FromSeconds(AskTimeoutSeconds);
 

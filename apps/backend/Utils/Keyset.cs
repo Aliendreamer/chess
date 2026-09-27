@@ -54,11 +54,9 @@ internal readonly record struct KeysetCursor(DateTimeOffset At, string Id)
 /// </summary>
 internal static class Keyset
 {
-    public const int DefaultLimit = 50;
-    public const int MaxLimit = 500;
-
-    public static int ClampLimit(int requested, int max = MaxLimit) =>
-        Math.Clamp(requested <= 0 ? Math.Min(DefaultLimit, max) : requested, 1, max);
+    /// <summary>The page size to use: the requested one within <c>1..max</c>, or the default when none (or nonsense) was asked for.</summary>
+    public static int ClampLimit(int? requested, int defaultSize, int max) =>
+        Math.Clamp(requested is null or <= 0 ? Math.Min(defaultSize, max) : requested.Value, 1, max);
 
     /// <summary>
     /// Orders by <c>(at DESC, id DESC)</c>, seeks past <paramref name="after"/>, and takes one extra row so

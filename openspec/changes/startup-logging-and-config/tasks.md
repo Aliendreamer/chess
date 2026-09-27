@@ -12,11 +12,11 @@ Each group ends in one commit that passes the backend gate (build with no warnin
 
 ## 2. Configuration
 
-- [ ] 2.1 Failing tests: every options class validates (positive values); binding the real `appsettings.json` equals the
+- [x] 2.1 Failing tests: every options class validates (positive values); binding the real `appsettings.json` equals the
       class defaults.
-- [ ] 2.2 Move each value in the proposal's table into its options class and read it from there; remove
+- [x] 2.2 Move each value in the proposal's table into its options class and read it from there; remove
       `Keyset.MaxLimit`; bind all options one way (D4); add the sections to `appsettings.json`.
-- [ ] 2.3 🐳 Unit and integration suites; live stack restart and `verify-part1.sh`. Commit:
+- [x] 2.3 🐳 Unit and integration suites; live stack restart and `verify-part1.sh`. Commit:
       `feat(backend): every operational value from validated configuration`.
 
 ## 3. Docs

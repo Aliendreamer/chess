@@ -4,7 +4,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Chess.Backend.Akka;
 
-internal sealed class AkkaOptions
+internal sealed class AkkaOptions : Extensions.ISettings
 {
     public const string SectionName = "Akka";
     public const string SystemName = "chess";
@@ -18,7 +18,13 @@ internal sealed class AkkaOptions
     /// <summary>Static seed nodes; empty means "seed with myself" (single-node cluster).</summary>
     public string[] SeedNodes { get; set; } = [];
 
-    public string[] Roles { get; set; } = [BackendRole];
+    /// <summary>
+    /// This node's roles; empty means <see cref="BackendRole"/>. Not defaulted in the property: the configuration
+    /// binder appends a configured array onto a non-empty default, which ran every node as <c>backend</c> twice.
+    /// </summary>
+    public string[] Roles { get; set; } = [];
+
+    public IReadOnlyList<string> EffectiveRoles => Roles.Length == 0 ? [BackendRole] : [.. Roles.Distinct(StringComparer.Ordinal)];
 
     /// <summary>Number of shards per sharded entity type; changing it after data exists is a migration.</summary>
     public int ShardCount { get; set; } = 50;
@@ -29,6 +35,12 @@ internal sealed class AkkaOptions
     /// <summary>How long a BFF instance's presence report lasts without a refresh (the BFF refreshes every 30 s).</summary>
     public int PresenceLeaseSeconds { get; set; } = 75;
 
+    /// <summary>How often the matchmaking singleton drops queue entries whose heartbeat stopped.</summary>
+    public int MatchmakingSweepSeconds { get; set; } = 5;
+
+    /// <summary>Idle time after which a ping or invite entity is passivated (games never passivate while playing).</summary>
+    public int IdlePassivationMinutes { get; set; } = 5;
+
     public Games.PresenceTimings Presence() =>
         new(TimeSpan.FromSeconds(AbandonAfterSeconds), TimeSpan.FromSeconds(PresenceLeaseSeconds));
 
@@ -38,6 +50,12 @@ internal sealed class AkkaOptions
 
     public void Validate()
     {
+        if (AbandonAfterSeconds <= 0 || PresenceLeaseSeconds <= 0 || MatchmakingSweepSeconds <= 0 || IdlePassivationMinutes <= 0)
+        {
+            throw new InvalidOperationException(
+                "Akka:AbandonAfterSeconds, Akka:PresenceLeaseSeconds, Akka:MatchmakingSweepSeconds and Akka:IdlePassivationMinutes must be positive.");
+        }
+
         if (string.IsNullOrWhiteSpace(Hostname))
         {
             throw new InvalidOperationException("Akka:Hostname must be set.");

@@ -1,3 +1,4 @@
+using Chess.Backend.Extensions;
 using ZiggyCreatures.Caching.Fusion;
 
 namespace Chess.Backend.Tests.Authentication;
@@ -5,7 +6,7 @@ namespace Chess.Backend.Tests.Authentication;
 public sealed class UserProvisioningServiceTests
 {
     private static UserProvisioningService Build(ProjectDbContext db, IFusionCache? cache = null) =>
-        new(db, cache ?? new FusionCache(new FusionCacheOptions()), NullLogger<UserProvisioningService>.Instance);
+        new(db, cache ?? new FusionCache(new FusionCacheOptions()), Options.Create(new CacheOptions()), NullLogger<UserProvisioningService>.Instance);
 
     [Fact]
     public async Task First_sight_creates_the_user_and_later_calls_reuse_it()

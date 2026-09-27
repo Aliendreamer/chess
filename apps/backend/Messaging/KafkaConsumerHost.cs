@@ -23,7 +23,7 @@ internal sealed class KafkaConsumerHost(
     ILogger<KafkaConsumerHost> logger,
     TimeSpan? retryDelay = null) : BackgroundService
 {
-    private readonly TimeSpan _retryDelay = retryDelay ?? TimeSpan.FromSeconds(5);
+    private readonly TimeSpan _retryDelay = retryDelay ?? TimeSpan.FromSeconds(options.ConsumerRetrySeconds);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

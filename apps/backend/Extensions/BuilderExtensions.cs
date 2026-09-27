@@ -28,14 +28,16 @@ internal static class BuilderExtension
         ConfigurationManager configuration = builder.Configuration;
         bool isDevelopment = builder.Environment.IsDevelopment();
 
-        services.Configure<KeycloakOptions>(configuration.GetSection(KeycloakOptions.SectionName));
-        services.Configure<SessionCookieOptions>(configuration.GetSection(SessionCookieOptions.SectionName));
-        services.Configure<SessionStoreOptions>(configuration.GetSection(SessionStoreOptions.SectionName));
+        KeycloakOptions keycloak = services.AddSettings<KeycloakOptions>(configuration, KeycloakOptions.SectionName);
+        services.AddSettings<SessionCookieOptions>(configuration, SessionCookieOptions.SectionName);
+        services.AddSettings<SessionStoreOptions>(configuration, SessionStoreOptions.SectionName);
+        CacheOptions cache = services.AddSettings<CacheOptions>(configuration, CacheOptions.SectionName);
+        services.AddSettings<DatabaseOptions>(configuration, DatabaseOptions.SectionName);
 
         services.AddSingleton(TimeProvider.System);
         string? redis = configuration.GetConnectionString("Redis");
-        services.AddCaching(redis);
-        services.AddHttpClient(Constants.KeycloakHttpClient, client => client.Timeout = TimeSpan.FromSeconds(15));
+        services.AddCaching(redis, cache);
+        services.AddHttpClient(Constants.KeycloakHttpClient, client => client.Timeout = TimeSpan.FromSeconds(keycloak.HttpTimeoutSeconds));
         services.AddSingleton<IKeycloakOidcClient, KeycloakOidcClient>();
         services.AddSingleton<SessionCookies>();
         services.AddScoped<CurrentUser>();
@@ -58,7 +60,7 @@ internal static class BuilderExtension
         {
             akka.WithPingSharding(sp.GetRequiredService<AkkaOptions>());
             akka.WithGameSharding(sp.GetRequiredService<AkkaOptions>());
-            akka.WithMatchmaking();
+            akka.WithMatchmaking(sp.GetRequiredService<AkkaOptions>());
             akka.WithInviteSharding(sp.GetRequiredService<AkkaOptions>());
             if (sp.GetRequiredService<KafkaOptions>().Enabled)
             {
@@ -66,7 +68,7 @@ internal static class BuilderExtension
             }
         });
 
-        AddJwtBearer(services, configuration.GetSection(KeycloakOptions.SectionName).Get<KeycloakOptions>() ?? new(), isDevelopment);
+        AddJwtBearer(services, keycloak, isDevelopment);
         services.AddAuthorization(o => o.AddPolicy(Constants.Policies.SignedIn, p => p.RequireAuthenticatedUser()));
         AddCors(services, configuration);
         services.AddRateLimiting(redis, configuration.GetSection(RateLimitOptions.SectionName).Get<RateLimitOptions>());
@@ -78,10 +80,11 @@ internal static class BuilderExtension
     /// and the backplane, so every instance sees the same <c>user-id:*</c> / discovery entries and evictions.
     /// Without Redis (unit tests, a bare dev run) the cache is L1-only and nothing else changes.
     /// </summary>
-    internal static IServiceCollection AddCaching(this IServiceCollection services, string? redisConnectionString)
+    internal static IServiceCollection AddCaching(this IServiceCollection services, string? redisConnectionString, CacheOptions? options = null)
     {
+        TimeSpan duration = TimeSpan.FromMinutes((options ?? new CacheOptions()).DefaultMinutes);
         IFusionCacheBuilder cache = services.AddFusionCache()
-            .WithDefaultEntryOptions(o => o.Duration = TimeSpan.FromMinutes(10));
+            .WithDefaultEntryOptions(o => o.Duration = duration);
         if (string.IsNullOrEmpty(redisConnectionString))
         {
             return services;
@@ -109,8 +112,9 @@ internal static class BuilderExtension
     /// </summary>
     internal static IServiceCollection AddMessaging(this IServiceCollection services, IConfiguration configuration)
     {
-        KafkaOptions kafka = configuration.GetSection(KafkaOptions.SectionName).Get<KafkaOptions>() ?? new KafkaOptions();
-        services.AddSingleton(kafka);
+        KafkaOptions kafka = services.AddSettings<KafkaOptions>(configuration, KafkaOptions.SectionName);
+        services.AddSettings<ProjectionDeadLetterOptions>(configuration, ProjectionDeadLetterOptions.SectionName);
+        services.AddSettings<JournalPublisherOptions>(configuration, JournalPublisherOptions.SectionName);
         // Registered twice on purpose: KafkaConsumerHost discovers projections through IProjection but
         // then re-resolves each one by its CONCRETE type in a fresh scope per batch, which an
         // interface-only registration cannot serve.
@@ -121,7 +125,6 @@ internal static class BuilderExtension
         if (kafka.Enabled)
         {
             services.AddHostedService<KafkaConsumerHost>();
-            services.AddSingleton(configuration.GetSection(ProjectionDeadLetterOptions.SectionName).Get<ProjectionDeadLetterOptions>() ?? new ProjectionDeadLetterOptions());
             services.AddSingleton<ProjectionRunner>();
             services.AddSingleton<IJournalEventMapper, PingedJournalMapper>();
             foreach (IJournalEventMapper mapper in GameJournalMappers.All())
@@ -129,7 +132,6 @@ internal static class BuilderExtension
                 services.AddSingleton(mapper);
             }
             services.AddSingleton<JournalEventMappers>();
-            services.AddSingleton(new JournalPublisherOptions());
             services.AddSingleton<IPublisherLeaseProvider>(_ => new PostgresPublisherLeaseProvider(
                 configuration.GetConnectionString("Postgres") is { Length: > 0 } primary
                     ? primary
@@ -303,7 +305,7 @@ internal static class ObservabilityExtensions
 }
 
 /// <summary>The global per-client rate limit (section <c>RateLimit</c>); the defaults are the limit the API has always had.</summary>
-internal sealed class RateLimitOptions
+internal sealed class RateLimitOptions : ISettings
 {
     public const string SectionName = "RateLimit";
 
@@ -318,5 +320,56 @@ internal sealed class RateLimitOptions
         {
             throw new InvalidOperationException("RateLimit:PermitLimit and RateLimit:WindowSeconds must be positive.");
         }
+    }
+}
+
+/// <summary>Cache lifetimes (section <c>Cache</c>); the defaults are the lifetimes the code has always used.</summary>
+internal sealed class CacheOptions : ISettings
+{
+    public const string SectionName = "Cache";
+
+    /// <summary>FusionCache's default entry lifetime.</summary>
+    public int DefaultMinutes { get; set; } = 10;
+
+    /// <summary>How long a Keycloak <c>sub</c> → <c>users.id</c> mapping is kept.</summary>
+    public int UserIdMinutes { get; set; } = 10;
+
+    /// <summary>How long Keycloak's OIDC discovery document is kept.</summary>
+    public int OidcDiscoveryMinutes { get; set; } = 60;
+
+    public void Validate()
+    {
+        if (DefaultMinutes <= 0 || UserIdMinutes <= 0 || OidcDiscoveryMinutes <= 0)
+        {
+            throw new InvalidOperationException("Cache:DefaultMinutes, Cache:UserIdMinutes and Cache:OidcDiscoveryMinutes must be positive.");
+        }
+    }
+}
+
+/// <summary>
+/// An options class bound from one configuration section. <see cref="Validate"/> throws with the setting's name, so a
+/// bad value stops startup with a clear Fatal line (startup-logging-and-config).
+/// </summary>
+internal interface ISettings
+{
+    void Validate();
+}
+
+internal static class SettingsExtensions
+{
+    /// <summary>
+    /// Binds <paramref name="section"/>, validates it at once, and registers the result as both <typeparamref name="T"/>
+    /// and <c>IOptions&lt;T&gt;</c>. The one way options are registered (startup-logging-and-config D4).
+    /// </summary>
+    public static T AddSettings<T>(this IServiceCollection services, IConfiguration configuration, string section)
+        where T : class, ISettings, new()
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+        T settings = configuration.GetSection(section).Get<T>() ?? new T();
+        settings.Validate();
+        services.AddSingleton(settings);
+        services.AddSingleton<IOptions<T>>(Options.Create(settings));
+        return settings;
     }
 }

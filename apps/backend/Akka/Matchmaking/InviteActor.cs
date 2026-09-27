@@ -4,6 +4,7 @@ using Akka.Event;
 using Akka.Persistence;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Events;
+using Chess.Backend.Extensions;
 using Chess.Backend.Games;
 using Chess.Backend.Messaging;
 
@@ -242,18 +243,16 @@ internal sealed class InviteActor : ReceivePersistentActor
 }
 
 /// <summary>The <c>invite</c> live kind: the snapshot is the invite's current view.</summary>
-internal sealed partial class InviteLiveSource(IRequiredActor<InviteActor> region) : ILiveTopicSource
+internal sealed partial class InviteLiveSource(IRequiredActor<InviteActor> region, IOptions<ApiOptions> api) : ILiveTopicSource
 {
     public const string KindName = "invite";
-
-    private static readonly TimeSpan AskTimeout = TimeSpan.FromSeconds(5);
 
     public string Kind => KindName;
 
     public bool IsValidId(string id) => IdPattern().IsMatch(id);
 
     public async Task<LiveFrame?> SnapshotAsync(string id, CancellationToken ct) =>
-        await region.ActorRef.Ask(new GetInvite(Guid.ParseExact(id, "N")), AskTimeout, ct) is InviteView view ? ToFrame(view) : null;
+        await region.ActorRef.Ask(new GetInvite(Guid.ParseExact(id, "N")), api.Value.AskTimeout, ct) is InviteView view ? ToFrame(view) : null;
 
     public static LiveFrame ToFrame(InviteView view)
     {

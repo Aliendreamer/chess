@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Chess.Backend.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Net.Http.Headers;
 
@@ -81,7 +82,7 @@ internal sealed class SessionCookies(
     }
 }
 
-internal sealed class SessionCookieOptions
+internal sealed class SessionCookieOptions : ISettings
 {
     public const string SectionName = "SessionCookies";
 
@@ -91,9 +92,17 @@ internal sealed class SessionCookieOptions
     public string SessionName { get; set; } = Constants.Cookies.DefaultSessionName;
 
     public string PkceName { get; set; } = Constants.Cookies.DefaultPkceName;
+
+    public void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(SessionName) || string.IsNullOrWhiteSpace(PkceName))
+        {
+            throw new InvalidOperationException("SessionCookies:SessionName and SessionCookies:PkceName must be set.");
+        }
+    }
 }
 
-internal sealed class SessionStoreOptions
+internal sealed class SessionStoreOptions : ISettings
 {
     public const string SectionName = "SessionStore";
 
@@ -108,6 +117,15 @@ internal sealed class SessionStoreOptions
 
     /// <summary>Refresh the access token this long before it actually expires.</summary>
     public TimeSpan AccessTokenLeeway { get; set; } = TimeSpan.FromSeconds(30);
+
+    public void Validate()
+    {
+        if (CleanupInterval <= TimeSpan.Zero || PkceLifetime <= TimeSpan.Zero || PurgeGrace < TimeSpan.Zero || AccessTokenLeeway < TimeSpan.Zero)
+        {
+            throw new InvalidOperationException(
+                "SessionStore:CleanupInterval and SessionStore:PkceLifetime must be positive; PurgeGrace and AccessTokenLeeway not negative.");
+        }
+    }
 }
 
 /// <summary>

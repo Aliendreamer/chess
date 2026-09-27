@@ -9,14 +9,15 @@ public sealed class KeysetTests
     private static readonly DateTimeOffset T0 = new(2026, 9, 23, 12, 0, 0, TimeSpan.Zero);
 
     [Theory]
-    [InlineData(0, 500, 50)]
-    [InlineData(-3, 500, 50)]
-    [InlineData(10, 500, 10)]
-    [InlineData(10_000, 500, 500)]
-    [InlineData(999, 200, 200)]
-    [InlineData(0, 20, 20)]
-    public void ClampLimit_defaults_and_bounds(int requested, int max, int expected) =>
-        Assert.Equal(expected, Keyset.ClampLimit(requested, max));
+    [InlineData(null, 50, 500, 50)]
+    [InlineData(0, 50, 500, 50)]
+    [InlineData(-3, 50, 500, 50)]
+    [InlineData(10, 50, 500, 10)]
+    [InlineData(10_000, 50, 500, 500)]
+    [InlineData(999, 50, 200, 200)]
+    [InlineData(null, 50, 20, 20)]
+    public void ClampLimit_defaults_and_bounds(int? requested, int defaultSize, int max, int expected) =>
+        Assert.Equal(expected, Keyset.ClampLimit(requested, defaultSize, max));
 
     [Fact]
     public void Cursor_round_trips_exactly()
@@ -26,10 +27,6 @@ public sealed class KeysetTests
         Assert.Equal(cursor, back);
         Assert.Equal(TimeSpan.Zero, back.At.Offset);
     }
-
-    [Fact]
-    public void Defaults_are_fifty_per_page_and_at_most_five_hundred() =>
-        Assert.Equal((50, 500), (Keyset.DefaultLimit, Keyset.MaxLimit));
 
     [Fact]
     public void Cursor_encodes_utc_ticks_bar_id_as_base64url()

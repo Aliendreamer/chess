@@ -4,7 +4,7 @@ using Npgsql;
 
 namespace Chess.Backend.Projections;
 
-internal sealed class ProjectionDeadLetterOptions
+internal sealed class ProjectionDeadLetterOptions : Extensions.ISettings
 {
     public const string SectionName = "Projections:DeadLetter";
 
@@ -18,6 +18,15 @@ internal sealed class ProjectionDeadLetterOptions
 
     /// <summary>Lost watermark races re-run in place this many times before one more counts as a failure.</summary>
     public int MaxConflictRetries { get; set; } = 3;
+
+    public void Validate()
+    {
+        if (MaxAttempts <= 0 || BaseDelay <= TimeSpan.Zero || MaxDelay < BaseDelay || MaxConflictRetries < 0)
+        {
+            throw new InvalidOperationException(
+                "Projections:DeadLetter:MaxAttempts and BaseDelay must be positive, MaxDelay at least BaseDelay, MaxConflictRetries not negative.");
+        }
+    }
 }
 
 /// <summary>

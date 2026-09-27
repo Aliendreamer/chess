@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Chess.Backend.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using ZiggyCreatures.Caching.Fusion;
 
@@ -170,9 +171,10 @@ internal interface IUserProvisioningService : IService
 internal sealed class UserProvisioningService(
     ProjectDbContext context,
     IFusionCache cache,
+    IOptions<CacheOptions> cacheOptions,
     ILogger<UserProvisioningService> logger) : BaseService(context, logger), IUserProvisioningService
 {
-    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
+    private readonly TimeSpan _cacheTtl = TimeSpan.FromMinutes(cacheOptions.Value.UserIdMinutes);
 
     public async Task<long> EnsureUserAsync(string subject, string? email, string? fullName, string? username, CancellationToken ct)
     {
@@ -181,7 +183,7 @@ internal sealed class UserProvisioningService(
             Constants.Cache.UserIdBySubject + subject,
             async (FusionCacheFactoryExecutionContext<long> _, CancellationToken token) =>
                 await UpsertAsync(subject, email, fullName, username, token),
-            options => options.SetDuration(CacheTtl),
+            options => options.SetDuration(_cacheTtl),
             ct);
     }
 

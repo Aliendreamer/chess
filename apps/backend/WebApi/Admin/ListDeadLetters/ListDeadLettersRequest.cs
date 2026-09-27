@@ -4,9 +4,9 @@ namespace Chess.Backend.WebApi.Admin;
 
 internal sealed class ListDeadLettersRequest
 {
-    /// <summary>Page size; larger values are clamped to the configured maximum.</summary>
+    /// <summary>Page size: <c>Api:DefaultPageSize</c> when absent, clamped to <c>Api:MaxPageSize</c>.</summary>
     [QueryParam]
-    public int Limit { get; init; } = Keyset.DefaultLimit;
+    public int? Limit { get; init; }
 
     /// <summary>The previous page's <c>nextCursor</c>.</summary>
     [QueryParam]
@@ -21,7 +21,7 @@ internal sealed class ListDeadLettersRequestValidator : Validator<ListDeadLetter
 {
     public ListDeadLettersRequestValidator()
     {
-        RuleFor(r => r.Limit).GreaterThan(0);
+        RuleFor(r => r.Limit).GreaterThan(0).When(r => r.Limit is not null);
         RuleFor(r => r.Cursor).Must(c => c is null || KeysetCursor.TryDecodeGuid(c, out _, out _)).WithMessage("Invalid cursor.");
     }
 }

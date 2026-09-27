@@ -10,7 +10,7 @@ public sealed class AkkaOptionsTests
         AkkaOptions o = new();
         Assert.Equal("localhost", o.Hostname);
         Assert.Equal(8091, o.Port);
-        Assert.Equal(["backend"], o.Roles);
+        Assert.Equal(["backend"], o.EffectiveRoles);
         Assert.Equal(50, o.ShardCount);
         Assert.Equal(["akka.tcp://chess@localhost:8091"], o.EffectiveSeedNodes());
         Assert.Equal((TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(75)), (o.Presence().AbandonAfter, o.Presence().Lease));

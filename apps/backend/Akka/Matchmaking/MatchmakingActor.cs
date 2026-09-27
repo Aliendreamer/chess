@@ -1,6 +1,7 @@
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Event;
 using Chess.Backend.Akka.Games;
+using Chess.Backend.Extensions;
 using Chess.Backend.Games;
 using Chess.Backend.Messaging;
 
@@ -47,7 +48,10 @@ internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
 
     public static readonly TimeSpan EntryTtl = TimeSpan.FromSeconds(60);
 
-    private static readonly TimeSpan SweepEvery = TimeSpan.FromSeconds(5);
+    /// <summary>The default sweep interval (<c>Akka:MatchmakingSweepSeconds</c>).</summary>
+    public static readonly TimeSpan DefaultSweepEvery = TimeSpan.FromSeconds(5);
+
+    private readonly TimeSpan _sweepEvery;
 
     private readonly IGameStarter _starter;
     private readonly IActorRef? _mediator;
@@ -62,7 +66,13 @@ internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
     private readonly Dictionary<string, Pairing> _lastPairing = new(StringComparer.Ordinal);
 
     public MatchmakingActor(IGameStarter starter, IActorRef? mediator, TimeProvider clock, Random random)
+        : this(starter, mediator, clock, random, DefaultSweepEvery)
     {
+    }
+
+    public MatchmakingActor(IGameStarter starter, IActorRef? mediator, TimeProvider clock, Random random, TimeSpan sweepEvery)
+    {
+        _sweepEvery = sweepEvery;
         ArgumentNullException.ThrowIfNull(starter);
         ArgumentNullException.ThrowIfNull(clock);
         ArgumentNullException.ThrowIfNull(random);
@@ -81,7 +91,7 @@ internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
 
     public ITimerScheduler Timers { get; set; } = null!;
 
-    protected override void PreStart() => Timers.StartPeriodicTimer("sweep", Sweep.Instance, SweepEvery);
+    protected override void PreStart() => Timers.StartPeriodicTimer("sweep", Sweep.Instance, _sweepEvery);
 
     private void HandleJoin(JoinQueue join)
     {
@@ -241,18 +251,16 @@ internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
 }
 
 /// <summary>The <c>queue</c> live kind: the snapshot is the queue's current state, asked from the singleton.</summary>
-internal sealed class QueueLiveSource(IRequiredActor<MatchmakingActor> matchmaker) : ILiveTopicSource
+internal sealed class QueueLiveSource(IRequiredActor<MatchmakingActor> matchmaker, IOptions<ApiOptions> api) : ILiveTopicSource
 {
     public const string KindName = "queue";
-
-    private static readonly TimeSpan AskTimeout = TimeSpan.FromSeconds(5);
 
     public string Kind => KindName;
 
     public bool IsValidId(string id) => TimeControl.TryParse(id, out _);
 
     public async Task<LiveFrame?> SnapshotAsync(string id, CancellationToken ct) =>
-        await matchmaker.ActorRef.Ask(new GetQueue(id), AskTimeout, ct) is QueueView view
+        await matchmaker.ActorRef.Ask(new GetQueue(id), api.Value.AskTimeout, ct) is QueueView view
             ? new LiveFrame(LiveTopics.Format(KindName, id), view.Seq, view)
             : null;
 }

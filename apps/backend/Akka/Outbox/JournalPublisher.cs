@@ -43,12 +43,20 @@ internal interface IPublisherLagReader
     Task<IReadOnlyList<PublisherLag>> ReadAsync(CancellationToken ct);
 }
 
-internal sealed class PublisherLagOptions
+internal sealed class PublisherLagOptions : Extensions.ISettings
 {
     public const string SectionName = "Outbox";
 
     /// <summary>Unpublished events AND no progress for this long ⇒ Degraded.</summary>
     public TimeSpan DegradedAfter { get; set; } = TimeSpan.FromSeconds(30);
+
+    public void Validate()
+    {
+        if (DegradedAfter <= TimeSpan.Zero)
+        {
+            throw new InvalidOperationException("Outbox:DegradedAfter must be positive.");
+        }
+    }
 }
 
 /// <summary>

@@ -50,9 +50,10 @@ internal sealed record ReplicaStatus(bool InRecovery, bool ReceiverRunning, bool
 /// received counts as zero lag. The receiver check is what keeps a disconnected replica, which also looks caught up,
 /// from passing.
 /// </summary>
-internal sealed class ReplicaHealthCheck([FromKeyedServices(DatabaseExtensions.ReplicaDataSourceKey)] NpgsqlDataSource replica) : IHealthCheck
+internal sealed class ReplicaHealthCheck(
+    [FromKeyedServices(DatabaseExtensions.ReplicaDataSourceKey)] NpgsqlDataSource replica,
+    IOptions<DatabaseOptions> options) : IHealthCheck
 {
-    private static readonly TimeSpan MaxLag = TimeSpan.FromSeconds(10);
 
     // pg_stat_wal_receiver.pid is visible without pg_read_all_stats (the other columns are not), and the row only
     // exists while the receiver runs — so "pid is not null" means "connected to the primary".
@@ -68,10 +69,10 @@ internal sealed class ReplicaHealthCheck([FromKeyedServices(DatabaseExtensions.R
         await using NpgsqlCommand cmd = replica.CreateCommand(Query);
         await using NpgsqlDataReader r = await cmd.ExecuteReaderAsync(cancellationToken);
         await r.ReadAsync(cancellationToken);
-        return Evaluate(new ReplicaStatus(r.GetBoolean(0), r.GetBoolean(1), r.GetBoolean(2), r.GetDouble(3)));
+        return Evaluate(new ReplicaStatus(r.GetBoolean(0), r.GetBoolean(1), r.GetBoolean(2), r.GetDouble(3)), options.Value.ReplicaMaxLagSeconds);
     }
 
-    internal static HealthCheckResult Evaluate(ReplicaStatus status)
+    internal static HealthCheckResult Evaluate(ReplicaStatus status, int maxLagSeconds)
     {
         ArgumentNullException.ThrowIfNull(status);
         double lagSeconds = status.CaughtUp ? 0 : status.SecondsSinceReplay;
@@ -91,8 +92,25 @@ internal sealed class ReplicaHealthCheck([FromKeyedServices(DatabaseExtensions.R
             return HealthCheckResult.Degraded("wal receiver not running: replica is disconnected from the primary", data: data);
         }
 
-        return lagSeconds <= MaxLag.TotalSeconds
+        return lagSeconds <= maxLagSeconds
             ? HealthCheckResult.Healthy($"lag {lagSeconds:F1}s", data)
-            : HealthCheckResult.Degraded($"lag {lagSeconds:F1}s > {MaxLag.TotalSeconds}s", data: data);
+            : HealthCheckResult.Degraded($"lag {lagSeconds:F1}s > {maxLagSeconds}s", data: data);
+    }
+}
+
+/// <summary>Database tuning (section <c>Database</c>); the default is the limit the health check has always used.</summary>
+internal sealed class DatabaseOptions : ISettings
+{
+    public const string SectionName = "Database";
+
+    /// <summary>Replication lag above which the replica health check reports Degraded.</summary>
+    public int ReplicaMaxLagSeconds { get; set; } = 10;
+
+    public void Validate()
+    {
+        if (ReplicaMaxLagSeconds <= 0)
+        {
+            throw new InvalidOperationException("Database:ReplicaMaxLagSeconds must be positive.");
+        }
     }
 }

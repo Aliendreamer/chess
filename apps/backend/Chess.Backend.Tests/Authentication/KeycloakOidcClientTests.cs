@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Chess.Backend.Extensions;
 using Microsoft.AspNetCore.WebUtilities;
 using ZiggyCreatures.Caching.Fusion;
 
@@ -49,7 +50,7 @@ public sealed class KeycloakOidcClientTests
             CallbackUri = "http://app.chess.localhost/api/auth/callback",
             PostLogoutRedirectUri = "http://app.chess.localhost",
         };
-        KeycloakOidcClient client = new(factory.Object, Options.Create(options), new FusionCache(new FusionCacheOptions()), NullLogger<KeycloakOidcClient>.Instance);
+        KeycloakOidcClient client = new(factory.Object, Options.Create(options), new FusionCache(new FusionCacheOptions()), Options.Create(new CacheOptions()), NullLogger<KeycloakOidcClient>.Instance);
         return (client, handler);
     }
 

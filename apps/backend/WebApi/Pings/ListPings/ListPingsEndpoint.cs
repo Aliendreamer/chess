@@ -22,7 +22,7 @@ internal sealed class ListPingsEndpoint(ReadDbContext read, IOptions<ApiOptions>
     {
         ArgumentNullException.ThrowIfNull(req);
         KeysetCursor? after = req.Cursor is not null && KeysetCursor.TryDecode(req.Cursor, out KeysetCursor decoded) ? decoded : null;
-        int limit = Keyset.ClampLimit(req.Limit, options.Value.MaxPageSize);
+        int limit = Keyset.ClampLimit(req.Limit, options.Value.DefaultPageSize, options.Value.MaxPageSize);
         try
         {
             List<PingListItem> rows = await read.RmPings

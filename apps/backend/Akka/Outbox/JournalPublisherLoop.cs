@@ -11,8 +11,10 @@ namespace Chess.Backend.Akka.Outbox;
 /// <summary>A live tail of one tag, starting strictly after <c>afterOrdering</c>.</summary>
 internal delegate Source<AkkaEnvelope, NotUsed> JournalTail(string tag, long afterOrdering);
 
-internal sealed class JournalPublisherOptions
+internal sealed class JournalPublisherOptions : Extensions.ISettings
 {
+    public const string SectionName = "Outbox";
+
     /// <summary>One stream (tag = Kafka topic) per entry, each with its own outbox_offsets row.</summary>
     public IReadOnlyList<string> Streams { get; init; } = [PingTopics.Kafka];
 
@@ -25,6 +27,14 @@ internal sealed class JournalPublisherOptions
 
     /// <summary>How often an idle holder checks it still has the lease.</summary>
     public TimeSpan LivenessInterval { get; init; } = TimeSpan.FromSeconds(5);
+
+    public void Validate()
+    {
+        if (BatchSize <= 0 || BatchWindow <= TimeSpan.Zero || RetryDelay <= TimeSpan.Zero || LivenessInterval <= TimeSpan.Zero)
+        {
+            throw new InvalidOperationException("Outbox:BatchSize, Outbox:BatchWindow, Outbox:RetryDelay and Outbox:LivenessInterval must be positive.");
+        }
+    }
 }
 
 /// <summary>

@@ -1,6 +1,7 @@
 using Akka.TestKit;
 using Akka.TestKit.Xunit2;
 using Chess.Backend.Akka.Ping;
+using Chess.Backend.Extensions;
 using Chess.Backend.Messaging;
 
 namespace Chess.Backend.Tests.Messaging;
@@ -11,7 +12,7 @@ public sealed class PingLiveSourceTests : TestKit
     public async Task The_snapshot_is_the_actors_state_as_a_live_frame_with_its_seq()
     {
         TestProbe region = CreateTestProbe();
-        PingLiveSource source = new(new FixedRegion<PingActor>(region.Ref));
+        PingLiveSource source = new(new FixedRegion<PingActor>(region.Ref), Options.Create(new ApiOptions()));
         PingState state = new("abc", 3, "hi", DateTimeOffset.UnixEpoch, 3);
 
         Task<LiveFrame?> snapshot = source.SnapshotAsync("abc", CancellationToken.None);
@@ -26,7 +27,7 @@ public sealed class PingLiveSourceTests : TestKit
     [Fact]
     public void Validates_ids_with_the_ping_rules()
     {
-        PingLiveSource source = new(new FixedRegion<PingActor>(CreateTestProbe().Ref));
+        PingLiveSource source = new(new FixedRegion<PingActor>(CreateTestProbe().Ref), Options.Create(new ApiOptions()));
 
         Assert.Equal("ping", source.Kind);
         Assert.True(source.IsValidId("abc-1"));

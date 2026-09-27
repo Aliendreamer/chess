@@ -100,6 +100,6 @@ internal abstract class GameReadEndpointBase<TResponse>(ReadDbContext read) : En
             .Produces(StatusCodes.Status503ServiceUnavailable));
     }
 
-    /// <summary>A list's page size: the request's, clamped to <see cref="ApiOptions.MaxPageSize"/>.</summary>
-    internal static int PageSize(int requested, ApiOptions options) => Keyset.ClampLimit(requested, options.MaxPageSize);
+    /// <summary>A list's page size: the request's, or <see cref="ApiOptions.DefaultPageSize"/>, clamped to <see cref="ApiOptions.MaxPageSize"/>.</summary>
+    internal static int PageSize(int? requested, ApiOptions options) => Keyset.ClampLimit(requested, options.DefaultPageSize, options.MaxPageSize);
 }

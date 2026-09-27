@@ -2,13 +2,14 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Chess.Backend.Extensions;
 using Chess.Backend.WebApi.Auth;
 using Microsoft.AspNetCore.WebUtilities;
 using ZiggyCreatures.Caching.Fusion;
 
 namespace Chess.Backend.Authentication;
 
-internal sealed class KeycloakOptions
+internal sealed class KeycloakOptions : ISettings
 {
     public const string SectionName = "Keycloak";
 
@@ -29,6 +30,17 @@ internal sealed class KeycloakOptions
 
     /// <summary>Absolute app origin; the callback redirects to <c>{AppBaseUrl}{returnTo}</c>.</summary>
     public string AppBaseUrl { get; set; } = string.Empty;
+
+    /// <summary>Timeout of the HTTP client that talks to Keycloak.</summary>
+    public int HttpTimeoutSeconds { get; set; } = 15;
+
+    public void Validate()
+    {
+        if (HttpTimeoutSeconds <= 0)
+        {
+            throw new InvalidOperationException("Keycloak:HttpTimeoutSeconds must be positive.");
+        }
+    }
 }
 
 internal interface IKeycloakOidcClient
@@ -63,10 +75,11 @@ internal sealed class KeycloakOidcClient(
     IHttpClientFactory httpClientFactory,
     IOptions<KeycloakOptions> options,
     IFusionCache cache,
+    IOptions<CacheOptions> cacheOptions,
     ILogger<KeycloakOidcClient> logger) : IKeycloakOidcClient
 {
     private const string DiscoveryPath = "/.well-known/openid-configuration";
-    private static readonly TimeSpan DiscoveryTtl = TimeSpan.FromHours(1);
+    private readonly TimeSpan _discoveryTtl = TimeSpan.FromMinutes(cacheOptions.Value.OidcDiscoveryMinutes);
 
     private readonly KeycloakOptions _options = options.Value;
 
@@ -168,7 +181,7 @@ internal sealed class KeycloakOidcClient(
                 OidcDiscoveryDocument? doc = await CreateClient().GetFromJsonAsync<OidcDiscoveryDocument>(url, token);
                 return doc ?? throw new InvalidOperationException("Empty OIDC discovery document.");
             },
-            options => options.SetDuration(DiscoveryTtl),
+            options => options.SetDuration(_discoveryTtl),
             ct).AsTask();
 
     private async Task<TokenResponse> PostTokenAsync(Dictionary<string, string> form, CancellationToken ct)

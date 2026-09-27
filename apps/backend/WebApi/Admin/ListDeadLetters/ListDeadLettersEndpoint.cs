@@ -28,7 +28,7 @@ internal sealed class ListDeadLettersEndpoint(ProjectDbContext db, IOptions<ApiO
         (DateTimeOffset At, Guid Id)? after = req.Cursor is not null && KeysetCursor.TryDecodeGuid(req.Cursor, out KeysetCursor decoded, out Guid afterId)
             ? (decoded.At, afterId)
             : null;
-        int limit = Keyset.ClampLimit(req.Limit, options.Value.MaxPageSize);
+        int limit = Keyset.ClampLimit(req.Limit, options.Value.DefaultPageSize, options.Value.MaxPageSize);
         IQueryable<ProjectionDeadLetter> query = db.ProjectionDeadLetters.AsNoTracking();
         if (!string.IsNullOrEmpty(req.GroupId))
         {

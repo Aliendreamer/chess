@@ -99,7 +99,7 @@ public sealed class KafkaRegistrationTests
 
         // Drives the real production registration (FastEndpointSetup.AddKafkaHealthCheck), not a copy of
         // it, so this test fails if that branch is ever removed or inverted.
-        health.AddKafkaHealthCheck(services, kafka);
+        health.AddKafkaHealthCheck(services, kafka, new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
 
         bool registered = services.Any(d => d.ServiceType == typeof(KafkaHealthCheck) && d.Lifetime == ServiceLifetime.Singleton);
         Assert.Equal(expected, registered);

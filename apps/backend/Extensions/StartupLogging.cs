@@ -111,7 +111,7 @@ internal static class StartupSummary
         {
             ["Akka"] = $"{akka.Hostname}:{akka.Port}",
             ["AkkaSeeds"] = akka.SeedNodes.Length == 0 ? "(self)" : string.Join(", ", akka.SeedNodes),
-            ["AkkaRoles"] = string.Join(", ", akka.Roles),
+            ["AkkaRoles"] = string.Join(", ", akka.EffectiveRoles),
             ["Kafka"] = string.IsNullOrWhiteSpace(kafka) ? "off" : kafka,
             ["Redis"] = string.IsNullOrWhiteSpace(configuration.GetConnectionString("Redis")) ? "off" : "on",
             ["Postgres"] = Database(configuration.GetConnectionString("Postgres")),

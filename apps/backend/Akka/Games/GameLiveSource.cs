@@ -1,5 +1,6 @@
 using Akka.Cluster.Sharding;
 using Chess.Backend.Data.ReadModels;
+using Chess.Backend.Extensions;
 using Chess.Backend.Games;
 using Chess.Backend.Messaging;
 using Chess.Backend.WebApi.Games;
@@ -23,11 +24,9 @@ internal interface IEndedGameReader
 /// <c>rm_games</c> on the replica so it isn't woken (game-history); a live one, or one whose ending the replica hasn't
 /// caught up with, from its actor — which also wakes a dormant game and re-arms its clocks.
 /// </summary>
-internal sealed partial class GameLiveSource(IRequiredActor<GameActor> region, IEndedGameReader endedGames) : ILiveTopicSource
+internal sealed partial class GameLiveSource(IRequiredActor<GameActor> region, IEndedGameReader endedGames, IOptions<ApiOptions> api) : ILiveTopicSource
 {
     public const string KindName = "game";
-
-    private static readonly TimeSpan AskTimeout = TimeSpan.FromSeconds(5);
 
     public string Kind => KindName;
 
@@ -51,7 +50,7 @@ internal sealed partial class GameLiveSource(IRequiredActor<GameActor> region, I
             return ToFrame(ended);
         }
 
-        object reply = await region.ActorRef.Ask(new GetGameView(gameId), AskTimeout, ct);
+        object reply = await region.ActorRef.Ask(new GetGameView(gameId), api.Value.AskTimeout, ct);
         return reply is GameView view ? ToFrame(view) : null;
     }
 
@@ -71,14 +70,12 @@ internal interface IGameStarter
     Task<GameView> StartAsync(long whiteId, long blackId, TimeControl timeControl, CancellationToken ct);
 }
 
-internal sealed class GameStarter(IRequiredActor<GameActor> region) : IGameStarter
+internal sealed class GameStarter(IRequiredActor<GameActor> region, IOptions<ApiOptions> api) : IGameStarter
 {
-    private static readonly TimeSpan AskTimeout = TimeSpan.FromSeconds(5);
-
     public async Task<GameView> StartAsync(long whiteId, long blackId, TimeControl timeControl, CancellationToken ct)
     {
         Guid id = Guid.CreateVersion7();
-        object reply = await region.ActorRef.Ask(new CreateGame(id, whiteId, blackId, timeControl), AskTimeout, ct);
+        object reply = await region.ActorRef.Ask(new CreateGame(id, whiteId, blackId, timeControl), api.Value.AskTimeout, ct);
         return reply as GameView
             ?? throw new InvalidOperationException($"Game {id:N} was not created: {(reply as GameRejected)?.Reason ?? reply.GetType().Name}");
     }
