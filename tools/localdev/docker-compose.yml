@@ -54,6 +54,10 @@ x-backend-env: &backend-env
   ConnectionStrings__Redis: "redis:6379"
   Kafka__BootstrapServers: "redpanda:9092"
   Akka__Port: "8091"
+  # Correspondence mail (correspondence-games D4) goes to Mailpit, which keeps it: nothing leaves the machine.
+  Smtp__Host: mailpit
+  Smtp__Port: "1025"
+  Smtp__From: chess@chess.localhost
 
 services:
   proxy:
@@ -252,6 +256,15 @@ services:
       - "6379:6379"
     volumes:
       - redisdata:/data
+
+  # Local mail catcher (correspondence-games D6): SMTP on 1025 for the backend, the inbox at mail.chess.localhost.
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.mailpit.rule=Host(`mail.chess.localhost`)
+      - traefik.http.routers.mailpit.entrypoints=web
+      - traefik.http.services.mailpit.loadbalancer.server.port=8025
 
   redisinsight:
     image: redis/redisinsight:2.70

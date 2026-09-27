@@ -22,6 +22,10 @@ http:
       rule: Host(`keycloak.chess.localhost`)
       entryPoints: [web]
       service: keycloak
+    mailpit:
+      rule: Host(`mail.chess.localhost`)
+      entryPoints: [web]
+      service: mailpit
     redisinsight:
       rule: Host(`redisinsight.chess.localhost`)
       entryPoints: [web]
@@ -47,6 +51,10 @@ http:
       loadBalancer:
         servers:
           - url: http://keycloak:8080
+    mailpit:
+      loadBalancer:
+        servers:
+          - url: http://mailpit:8025
     redisinsight:
       loadBalancer:
         servers:
