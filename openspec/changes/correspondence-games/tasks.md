@@ -10,7 +10,7 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
       presence claims, idle passivation; `Correspondence` settings. Tests. Commit `feat(backend): correspondence games`.
 - [x] 2.2 `DeadlineProjection` + `game_deadlines` (migration) + `DeadlineSweeper` singleton. Tests. Commit
       `feat(backend): correspondence deadlines from the database`.
-- [ ] 2.3 `IMailer` (MailKit / log), `NotificationConsumer` + `notification_positions` (migration), `Smtp` settings.
+- [x] 2.3 `IMailer` (MailKit / log), `NotificationConsumer` + `notification_positions` (migration), `Smtp` settings.
       Tests. Commit `feat(backend): email notifications for correspondence games`.
 - [ ] 2.4 `rm_games.SideToMove/DeadlineAt` (migration), `GET /api/me/games?turn=mine`. Tests. Commit
       `feat(backend): your turn list`.

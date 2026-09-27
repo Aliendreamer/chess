@@ -42,6 +42,12 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Warning, Message = "Game {GameId:N}: asking the engine again at ply {Ply} failed: {Reason}")]
     public static partial void EngineNudgeFailed(ILogger logger, Guid gameId, int ply, string reason);
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "No SMTP configured; not sending \"{Subject}\" to {To}")]
+    public static partial void MailNotSent(ILogger logger, string to, string subject);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "User {UserId} has no email; not sending \"{Subject}\"")]
+    public static partial void MailSkipped(ILogger logger, long userId, string subject);
+
     [LoggerMessage(Level = LogLevel.Debug, Message = "Game {GameId:N}: dropped the engine's answer for ply {Ply}: {Reason}")]
     public static partial void EngineMoveDropped(ILogger logger, Guid gameId, int ply, string reason);
 

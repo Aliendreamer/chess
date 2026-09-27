@@ -132,6 +132,19 @@ internal static class BuilderExtension
         services.AddScoped<DeadlineProjection>();
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<DeadlineProjection>());
         services.AddSingleton<IDueDeadlines, DueDeadlines>();
+        // Mail for correspondence games (correspondence-games D4): SMTP when Smtp:Host is set, otherwise only logged.
+        SmtpOptions smtp = services.AddSettings<SmtpOptions>(configuration, SmtpOptions.SectionName);
+        if (smtp.Enabled)
+        {
+            services.AddSingleton<IMailer>(new SmtpMailer(smtp));
+        }
+        else
+        {
+            services.AddSingleton<IMailer, LogMailer>();
+        }
+
+        services.AddScoped<NotificationConsumer>();
+        services.AddScoped<IProjection>(sp => sp.GetRequiredService<NotificationConsumer>());
         services.AddScoped<EngineRequestConsumer>();
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<EngineRequestConsumer>());
         services.AddScoped<EngineMoveConsumer>();

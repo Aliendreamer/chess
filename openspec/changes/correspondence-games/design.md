@@ -43,13 +43,14 @@ actor is the judge: a row that is momentarily stale (the projection is behind) o
 `NotificationConsumer` on `game.events` (group `chess.notifications`) with its own watermark row per game
 (`notification_positions`), handling every game event and acting on correspondence ones:
 
-- `game.created` (correspondence) → remembers the game in its row (players, names) so later events are self-sufficient;
+- `game.created` (correspondence) → remembers the game in its row (players, names) so later events are self-sufficient, and mails White that the game
+  started and it is their move;
 - `game.move-made` → email to the player to move: subject "Your move against {opponent}", body with the move and
   `{AppBaseUrl}/games/{id}`;
 - `game.ended` → email to both with the result and reason.
   The email is sent before the watermark is saved. A replayed event is skipped by the watermark, so it never sends again;
   only a crash between sending and saving can send one duplicate. That window is accepted (see Risks).
-  `IMailer` with `SmtpMailer` (MailKit; `Smtp:Host`, `Port`, `User`, `Password`, `From`, `UseTls`) and `LogMailer` when
+  `IMailer` with `SmtpMailer` (MailKit 4.18.1 — 4.12 and its MimeKit have known SMTP-injection advisories, fixed in 4.16 / 4.15.1; `Smtp:Host`, `Port`, `User`, `Password`, `From`, `UseTls`) and `LogMailer` when
   `Smtp:Host` is empty. Addresses come from `users.Email`; a user without one is skipped and logged.
 
 ### D5 — Read model and API

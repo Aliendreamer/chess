@@ -81,6 +81,7 @@ public sealed class KafkaRegistrationTests
         // What the running app gets from its actor system and API settings; the engine answers go through the games region.
         services.AddSingleton<IRequiredActor<GameActor>>(new FixedRegion<GameActor>(ActorRefs.Nobody));
         services.AddSingleton(Options.Create(new ApiOptions()));
+        services.AddSingleton(Options.Create(new Chess.Backend.Authentication.KeycloakOptions()));
         services.AddSingleton(TimeProvider.System);
 
         using ServiceProvider provider = services.BuildServiceProvider();

@@ -55,6 +55,7 @@
     <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
     <PackageReference Include="AspNetCore.HealthChecks.Redis" />
     <PackageReference Include="Bogus" />
+    <PackageReference Include="MailKit" />
     <PackageReference Include="Akka" />
     <PackageReference Include="Akka.Hosting" />
     <PackageReference Include="Akka.Cluster.Hosting" />

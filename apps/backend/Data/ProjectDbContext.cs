@@ -28,6 +28,8 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<GameDeadline> GameDeadlines => Set<GameDeadline>();
 
+    public DbSet<NotificationGame> NotificationGames => Set<NotificationGame>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();

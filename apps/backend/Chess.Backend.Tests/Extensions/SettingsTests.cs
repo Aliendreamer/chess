@@ -38,6 +38,7 @@ public sealed class SettingsTests
         Assert.Equivalent(new SessionCookieOptions(), Bound<SessionCookieOptions>(SessionCookieOptions.SectionName), strict: true);
         Assert.Equivalent(new EngineOptions(), Bound<EngineOptions>(EngineOptions.SectionName), strict: true);
         Assert.Equivalent(new CorrespondenceOptions(), Bound<CorrespondenceOptions>(CorrespondenceOptions.SectionName), strict: true);
+        Assert.Equivalent(new SmtpOptions(), Bound<SmtpOptions>(SmtpOptions.SectionName), strict: true);
 
         // Keycloak's section holds environment values (client id, URLs); only its tuning must match.
         Assert.Equal(new KeycloakOptions().HttpTimeoutSeconds, Bound<KeycloakOptions>(KeycloakOptions.SectionName).HttpTimeoutSeconds);
@@ -86,6 +87,7 @@ public sealed class SettingsTests
         { "Engine:MinThinkMs", () => new EngineOptions { MinThinkMs = 8_000, MaxThinkMs = 5_000 }.Validate() },
         { "Engine:StallSeconds", () => new EngineOptions { StallSeconds = 5 }.Validate() },
         { "Correspondence:MoveDeadline", () => new CorrespondenceOptions { MoveDeadline = TimeSpan.Zero }.Validate() },
+        { "Smtp:Port", () => new SmtpOptions { Host = "mail", Port = 0 }.Validate() },
     };
 
     [Theory]
