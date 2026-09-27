@@ -10,10 +10,10 @@ Each group ends in one commit. 🐳 marks steps that need the live stack (starte
 
 ## 2. Playwright: resign and draw
 
-- [ ] 2.1 🐳 `play.spec.ts`: an invite-and-accept helper; a spec that resigns after 1.e4 e5; a spec that offers and
+- [x] 2.1 🐳 `play.spec.ts`: an invite-and-accept helper; a spec that resigns after 1.e4 e5; a spec that offers and
       accepts a draw. All specs pass. Commit: `test(frontend): e2e resignation and agreed draw`.
 
 ## 3. Experiment note and docs
 
 - [ ] 3.1 `openspec/part1-notes.md`, and the `--cluster` line in CLAUDE.md. Commit: `docs(repo): part 1 experiment
-  note`.
+note`.
