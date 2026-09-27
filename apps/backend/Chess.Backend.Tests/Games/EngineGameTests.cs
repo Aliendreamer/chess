@@ -180,4 +180,17 @@ public sealed class EngineLevelTests
         Assert.Equal("engine:max", EngineLevel.Find("max")!.Sub);
         Assert.Null(EngineLevel.Find("1800"));
     }
+
+    [Theory]
+    [InlineData("white", false, 7L, -2L, "black")]
+    [InlineData("black", true, -2L, 7L, "white")]
+    [InlineData("random", true, 7L, -2L, "black")]
+    [InlineData("random", false, -2L, 7L, "white")]
+    public void The_human_takes_their_colour_and_the_engine_the_other(string color, bool coin, long whiteId, long blackId, string engineSide)
+    {
+        (long white, long black, EnginePlayer engine) = EngineLevel.Find("1600")!.Seat(7, color, () => coin);
+
+        Assert.Equal((whiteId, blackId, new EnginePlayer(engineSide, "1600")), (white, black, engine));
+    }
 }
+

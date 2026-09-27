@@ -42,4 +42,14 @@ public sealed class GameValidatorsTests
         v.TestValidate(new ListGamesRequest { Status = "playing" }).ShouldNotHaveAnyValidationErrors();
         new MyGamesRequestValidator().TestValidate(new MyGamesRequest { Cursor = "not a cursor" }).ShouldHaveValidationErrorFor(r => r.Cursor);
     }
+
+    [Theory]
+    [InlineData("1320", "white", true)]
+    [InlineData("max", "random", true)]
+    [InlineData("1800", "white", false)] // not a level: 400, no game
+    [InlineData("MAX", "white", false)]
+    [InlineData("2000", "green", false)]
+    public void An_engine_game_needs_a_level_and_a_colour(string level, string color, bool ok) =>
+        Assert.Equal(ok, new StartEngineGameRequestValidator().TestValidate(new StartEngineGameRequest { Level = level, Color = color }).IsValid);
 }
+

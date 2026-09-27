@@ -54,6 +54,19 @@ Cookie: mp_sid={{sid2}}
 DELETE {{host}}/api/matchmaking/{{tc}}
 Cookie: mp_sid={{sid}}
 
+### ---------- the computer (engine-play) ----------
+
+### The levels you can play at
+GET {{host}}/api/engine-levels
+Cookie: mp_sid={{sid}}
+
+### An untimed game against Stockfish 1600 as White; the engine answers each move in ~5–10 s
+POST {{host}}/api/engine-games
+Cookie: mp_sid={{sid}}
+Content-Type: application/json
+
+{ "level": "1600", "color": "white" }
+
 ### ---------- invites ----------
 
 ### Create (color: white | black | random) → 201

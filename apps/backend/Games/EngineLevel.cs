@@ -1,3 +1,5 @@
+using Chess.Backend.Events;
+
 namespace Chess.Backend.Games;
 
 /// <summary>
@@ -19,4 +21,22 @@ internal sealed record EngineLevel(string Level, long UserId, string Name)
     public string Sub => $"engine:{Level}";
 
     public static EngineLevel? Find(string? level) => All.FirstOrDefault(l => string.Equals(l.Level, level, StringComparison.Ordinal));
+
+    /// <summary>
+    /// The players of a game between <paramref name="humanId"/> and this level: <paramref name="color"/> is the human's
+    /// (<c>white</c>, <c>black</c>, or <c>random</c>, which <paramref name="coin"/> decides: true is White).
+    /// </summary>
+    public (long WhiteId, long BlackId, EnginePlayer Engine) Seat(long humanId, string color, Func<bool> coin)
+    {
+        ArgumentNullException.ThrowIfNull(coin);
+        bool humanWhite = color switch
+        {
+            "white" => true,
+            "black" => false,
+            _ => coin(),
+        };
+        return humanWhite
+            ? (humanId, UserId, new EnginePlayer("black", Level))
+            : (UserId, humanId, new EnginePlayer("white", Level));
+    }
 }

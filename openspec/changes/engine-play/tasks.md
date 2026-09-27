@@ -25,7 +25,7 @@ typecheck, lint, check, test, build; engine: build, unit tests, format). 🐳 ma
       exemptions, `GameView.engineSide/engineLevel`. Tests. Commit: `feat(backend): games against an engine player`.
 - [x] 3.3 `EngineRequestConsumer` (+ `engine_games` table), `EngineMoveConsumer`, `IEngineNudger` and the stall timer, the
       `Engine` settings. Tests. Commit: `feat(backend): engine moves over kafka`.
-- [ ] 3.4 `POST /api/engine-games`, `GET /api/engine-levels` (WebApi folders). Commit: `feat(backend): engine game
+- [x] 3.4 `POST /api/engine-games`, `GET /api/engine-levels` (WebApi folders). Commit: `feat(backend): engine game
 endpoints`.
 - [ ] 3.5 🐳 Integration test: an engine game round trip with a fake responder, and a stall re-request.
 
