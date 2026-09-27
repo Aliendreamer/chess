@@ -5,6 +5,9 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
   retries: 0,
+  // Every spec drives two browsers against one `vite dev` container as the same two users: more than two at a time
+  // starves page loads and hydration, and the unlucky spec times out.
+  workers: 2,
   reporter: [['list']],
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://app.chess.localhost',

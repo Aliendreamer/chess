@@ -25,6 +25,6 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
 
 ## 4. Verify and docs
 
-- [ ] 4.1 🐳 `verify-part3.sh` (invite at 7d, moves, the mail in Mailpit's API, deadline row, passivation and wake-up)
+- [x] 4.1 🐳 `verify-part3.sh` (invite at 7d, moves, the mail in Mailpit's API, deadline row, passivation and wake-up)
       and a Playwright spec. Commit `test(repo): verify part 3 on the live stack`.
 - [ ] 4.2 CLAUDE.md, architecture, ROADMAP; archive. Commit `docs(repo): correspondence games`.

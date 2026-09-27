@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Browser, Page } from '@playwright/test'
 
 /** Where `auth.setup.ts` keeps a user's signed-in browser state (gitignored). */
 export const sessionFile = (user: string) => `e2e/.auth/${user}.json`
@@ -19,4 +19,19 @@ export async function loginThroughKeycloak(page: Page, user = USER, pass = PASS,
   await page.getByRole('textbox', { name: 'Password', exact: true }).fill(pass)
   await page.getByRole('button', { name: /sign in|log in/i }).click()
   await expect(page).toHaveURL(/app\.chess\.localhost/)
+}
+
+/** A separate browser for each player, signed in from the session `auth.setup.ts` saved. */
+export async function signedIn(browser: Browser, user: string): Promise<Page> {
+  const page = await (await browser.newContext({ storageState: sessionFile(user) })).newPage()
+  await page.goto('/')
+  return page
+}
+
+/** A click on the board once the page is interactive and it is this side's turn. */
+export async function move(page: Page, from: string, to: string) {
+  const origin = page.locator(`[data-square="${from}"]`)
+  await expect(origin).toBeEnabled({ timeout: 15_000 })
+  await origin.click()
+  await page.locator(`[data-square="${to}"]`).click()
 }

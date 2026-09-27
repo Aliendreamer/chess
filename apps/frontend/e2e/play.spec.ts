@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { PLAYER, USER, sessionFile } from './support'
+import { PLAYER, USER, move, sessionFile, signedIn } from './support'
 import type { Browser, Page } from '@playwright/test'
 
 /**
@@ -7,21 +7,6 @@ import type { Browser, Page } from '@playwright/test'
  * accepts, and the game is played by clicking squares — to a checkmate, a resignation and an agreed draw. Both
  * boards show the ending with a PGN to download.
  */
-
-/** A separate browser for each player, signed in from the session `auth.setup.ts` saved. */
-async function signedIn(browser: Browser, user: string): Promise<Page> {
-  const page = await (await browser.newContext({ storageState: sessionFile(user) })).newPage()
-  await page.goto('/')
-  return page
-}
-
-/** A click on the board once the page is interactive and it is this side's turn. */
-async function move(page: Page, from: string, to: string) {
-  const origin = page.locator(`[data-square="${from}"]`)
-  await expect(origin).toBeEnabled({ timeout: 15_000 })
-  await origin.click()
-  await page.locator(`[data-square="${to}"]`).click()
-}
 
 /**
  * testuser invites as White on 3+2 and player accepts from the link: both pages end up on the same game. The creator
@@ -40,7 +25,7 @@ async function inviteGame(browser: Browser): Promise<{ white: Page; black: Page 
       { timeout: 1_000 },
     )
   }).toPass({ timeout: 15_000 })
-  await white.getByRole('button', { name: 'White', exact: true }).click()
+  await white.getByTestId('invite-form').getByRole('button', { name: 'White', exact: true }).click()
   await white.getByRole('button', { name: 'Create invite link' }).click()
   await expect(white).toHaveURL(/\/invites\//)
   await expect(white.getByTestId('invite-link')).toContainText('http')
