@@ -93,6 +93,13 @@ time (D14). A flag-fall timer MUST be re-armed with that remaining time.
 - **WHEN** White has 10 000 ms at the last event, the node dies 3 s later, and the game recovers 2 s after that
 - **THEN** White has 10 000 ms again and the flag timer is set for 10 000 ms from recovery
 
+#### Scenario: A cluster node leaves mid-game
+
+- **WHEN** a two-node cluster is running a game with its clocks running, and one node's app is stopped with SIGTERM
+- **THEN** the game answers from the surviving node with the same seq and position, and the waiting side's clock
+  unchanged
+- **AND** the next move is accepted and the game can be finished and projected as usual
+
 ### Requirement: Games end by the rules, by resignation or by agreement
 
 After every accepted move the game SHALL check the rules library and end automatically on checkmate,
