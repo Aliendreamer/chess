@@ -1,12 +1,4 @@
-using Chess.Backend.WebApi.Auth.Groups;
-
-namespace Chess.Backend.WebApi.Auth.Login;
-
-internal sealed class LoginRequest
-{
-    [QueryParam]
-    public string? ReturnTo { get; init; }
-}
+namespace Chess.Backend.WebApi.Auth;
 
 /// <summary>Starts the PKCE authorization-code flow and bounces the browser to Keycloak.</summary>
 [ExcludeFromCodeCoverage]

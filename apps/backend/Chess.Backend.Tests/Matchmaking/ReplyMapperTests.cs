@@ -12,13 +12,13 @@ public sealed class ReplyMapperTests
     [Fact]
     public void Waiting_is_200_with_status_waiting() =>
         Assert.Equal(
-            (200, new QueueStatus("waiting", "5+3", 1, 1, null, null, null, 4)),
+            (200, new JoinQueueResponse("waiting", "5+3", 1, 1, null, null, null, 4)),
             MatchmakingHttp.Map(new Waiting("5+3", 1, 1, 4)));
 
     [Fact]
     public void Matched_is_200_with_the_game() =>
         Assert.Equal(
-            (200, new QueueStatus("matched", "5+3", null, null, Game, 1, 2, null)),
+            (200, new JoinQueueResponse("matched", "5+3", null, null, Game, 1, 2, null)),
             MatchmakingHttp.Map(new Matched("5+3", Game, 1, 2)));
 
     [Fact]

@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Chess.Backend.WebApi.Auth.Callback;
+using Chess.Backend.WebApi.Auth;
 using Microsoft.AspNetCore.WebUtilities;
 using ZiggyCreatures.Caching.Fusion;
 

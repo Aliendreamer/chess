@@ -1,18 +1,4 @@
-using Chess.Backend.WebApi.Auth.Groups;
-
-namespace Chess.Backend.WebApi.Auth.Callback;
-
-internal sealed class CallbackRequest
-{
-    [QueryParam]
-    public string? Code { get; init; }
-
-    [QueryParam]
-    public string? State { get; init; }
-
-    [QueryParam]
-    public string? Error { get; init; }
-}
+namespace Chess.Backend.WebApi.Auth;
 
 /// <summary>
 /// Completes the flow: verifies state↔PKCE cookie, exchanges the code, creates the server session, sets the

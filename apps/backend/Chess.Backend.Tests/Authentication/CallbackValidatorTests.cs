@@ -1,4 +1,4 @@
-using Chess.Backend.WebApi.Auth.Callback;
+using Chess.Backend.WebApi.Auth;
 
 namespace Chess.Backend.Tests.Authentication;
 

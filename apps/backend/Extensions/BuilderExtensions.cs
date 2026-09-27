@@ -67,9 +67,9 @@ internal static class BuilderExtension
         });
 
         AddJwtBearer(services, configuration.GetSection(KeycloakOptions.SectionName).Get<KeycloakOptions>() ?? new(), isDevelopment);
-        services.AddAuthorization();
+        services.AddAuthorization(o => o.AddPolicy(Constants.Policies.SignedIn, p => p.RequireAuthenticatedUser()));
         AddCors(services, configuration);
-        services.AddRateLimiting(redis);
+        services.AddRateLimiting(redis, configuration.GetSection(RateLimitOptions.SectionName).Get<RateLimitOptions>());
         return builder;
     }
 
@@ -182,15 +182,17 @@ internal static class BuilderExtension
             .AllowCredentials()));
     }
 
-    private const int RateLimitPermits = 300;
-    private static readonly TimeSpan RateLimitWindow = TimeSpan.FromMinutes(1);
-
     /// <summary>
-    /// 300 requests/minute per client IP. With Redis the counters are shared across instances (one limit per
-    /// client, however many replicas run); without it each instance counts on its own.
+    /// <see cref="RateLimitOptions.PermitLimit"/> requests per <see cref="RateLimitOptions.WindowSeconds"/> per client IP
+    /// (section <c>RateLimit</c>). With Redis the counters are shared across instances (one limit per client, however
+    /// many replicas run); without it each instance counts on its own.
     /// </summary>
-    internal static IServiceCollection AddRateLimiting(this IServiceCollection services, string? redisConnectionString)
+    internal static IServiceCollection AddRateLimiting(this IServiceCollection services, string? redisConnectionString, RateLimitOptions? limits = null)
     {
+        RateLimitOptions options = limits ?? new RateLimitOptions();
+        options.Validate();
+        int permits = options.PermitLimit;
+        TimeSpan window = TimeSpan.FromSeconds(options.WindowSeconds);
         bool distributed = !string.IsNullOrEmpty(redisConnectionString);
         services.AddRateLimiter(options =>
         {
@@ -202,16 +204,16 @@ internal static class BuilderExtension
                         _ => new RedisFixedWindowRateLimiterOptions
                         {
                             ConnectionMultiplexerFactory = () => http.RequestServices.GetRequiredService<IConnectionMultiplexer>(),
-                            PermitLimit = RateLimitPermits,
-                            Window = RateLimitWindow,
+                            PermitLimit = permits,
+                            Window = window,
                         }))
                 : PartitionedRateLimiter.Create<HttpContext, string>(http =>
                     RateLimitPartition.GetFixedWindowLimiter(
                         ClientKey(http),
                         _ => new FixedWindowRateLimiterOptions
                         {
-                            PermitLimit = RateLimitPermits,
-                            Window = RateLimitWindow,
+                            PermitLimit = permits,
+                            Window = window,
                             QueueLimit = 0,
                         }));
         });
@@ -293,5 +295,24 @@ internal static class ObservabilityExtensions
                 .AddConsoleExporter());
 
         return services;
+    }
+}
+
+/// <summary>The global per-client rate limit (section <c>RateLimit</c>); the defaults are the limit the API has always had.</summary>
+internal sealed class RateLimitOptions
+{
+    public const string SectionName = "RateLimit";
+
+    /// <summary>Requests a client (by IP) may make per window.</summary>
+    public int PermitLimit { get; set; } = 300;
+
+    public int WindowSeconds { get; set; } = 60;
+
+    public void Validate()
+    {
+        if (PermitLimit <= 0 || WindowSeconds <= 0)
+        {
+            throw new InvalidOperationException("RateLimit:PermitLimit and RateLimit:WindowSeconds must be positive.");
+        }
     }
 }

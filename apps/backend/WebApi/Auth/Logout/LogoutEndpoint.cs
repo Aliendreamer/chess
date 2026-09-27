@@ -1,6 +1,4 @@
-using Chess.Backend.WebApi.Auth.Groups;
-
-namespace Chess.Backend.WebApi.Auth.Logout;
+namespace Chess.Backend.WebApi.Auth;
 
 /// <summary>Revokes the server session (the old cookie is dead from here on), then ends the IdP session.</summary>
 [ExcludeFromCodeCoverage]

@@ -3,6 +3,7 @@ using Chess.Backend.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using ZiggyCreatures.Caching.Fusion;
@@ -90,4 +91,34 @@ public sealed class CachingAndRateLimitingTests
         using System.Threading.RateLimiting.RateLimitLease rejected = await options.GlobalLimiter!.AcquireAsync(http);
         Assert.False(rejected.IsAcquired);
     }
+
+    [Fact]
+    public async Task The_limit_comes_from_the_RateLimit_section()
+    {
+        IConfiguration config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["RateLimit:PermitLimit"] = "3", ["RateLimit:WindowSeconds"] = "60" })
+            .Build();
+        ServiceCollection services = Base();
+        services.AddRateLimiting(null, config.GetSection(RateLimitOptions.SectionName).Get<RateLimitOptions>());
+        using ServiceProvider provider = services.BuildServiceProvider();
+        RateLimiterOptions options = provider.GetRequiredService<IOptions<RateLimiterOptions>>().Value;
+        DefaultHttpContext http = new() { RequestServices = provider };
+        http.Connection.RemoteIpAddress = IPAddress.Loopback;
+
+        for (int i = 0; i < 3; i++)
+        {
+            using System.Threading.RateLimiting.RateLimitLease ok = await options.GlobalLimiter!.AcquireAsync(http);
+            Assert.True(ok.IsAcquired);
+        }
+
+        using System.Threading.RateLimiting.RateLimitLease rejected = await options.GlobalLimiter!.AcquireAsync(http);
+        Assert.False(rejected.IsAcquired);
+    }
+
+    [Theory]
+    [InlineData(0, 60)]
+    [InlineData(300, 0)]
+    public void A_non_positive_limit_or_window_is_refused_at_startup(int permits, int windowSeconds) =>
+        Assert.Throws<InvalidOperationException>(() =>
+            Base().AddRateLimiting(null, new RateLimitOptions { PermitLimit = permits, WindowSeconds = windowSeconds }));
 }

@@ -16,10 +16,10 @@ group code by functionality`.
 
 ## 3. Endpoints, one folder each
 
-- [ ] 3.1 `WebApi/Games` split per the proposal, with `Summary<>` classes.
-- [ ] 3.2 `WebApi/Matchmaking`, `WebApi/Pings`, `WebApi/Admin`, `WebApi/Me`, `WebApi/Auth` (the group to the area root;
+- [x] 3.1 `WebApi/Games` split per the proposal, with `Summary<>` classes.
+- [x] 3.2 `WebApi/Matchmaking`, `WebApi/Pings`, `WebApi/Admin`, `WebApi/Me`, `WebApi/Auth` (the group to the area root;
       summaries for login, callback and logout).
-- [ ] 3.3 Build, unit tests, format; the OpenAPI document lists the same routes and summaries as before (diff
+- [x] 3.3 Build, unit tests, format; the OpenAPI document lists the same routes and summaries as before (diff
       `/swagger/v1/swagger.json`). Commit: `refactor(backend): one folder per endpoint with request, response and summary`.
 
 ## 4. Proof and docs 🐳

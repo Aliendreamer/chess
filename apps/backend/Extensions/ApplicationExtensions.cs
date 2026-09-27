@@ -82,6 +82,7 @@ internal static class FastEndpointSetup
     {
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.AddFastEndpoints();
+        builder.Services.AddOptions<ApiOptions>().Bind(builder.Configuration.GetSection(ApiOptions.SectionName));
         builder.Services.SwaggerDocument(o =>
         {
             o.DocumentSettings = s =>
@@ -135,4 +136,26 @@ internal static class FastEndpointSetup
 
         return health;
     }
+}
+
+/// <summary>
+/// Endpoint timeouts and limits (section <c>Api</c>), read by the endpoints instead of constants in each file. The
+/// defaults are the values the endpoints have always used.
+/// </summary>
+internal sealed class ApiOptions
+{
+    public const string SectionName = "Api";
+
+    /// <summary>How long an endpoint waits for an actor's answer before a 504.</summary>
+    public int AskTimeoutSeconds { get; set; } = 5;
+
+    /// <summary>Accepting an invite starts a game, so its answer may take longer.</summary>
+    public int InviteAskTimeoutSeconds { get; set; } = 10;
+
+    /// <summary>The largest page a list endpoint returns; a larger <c>limit</c> is clamped to it.</summary>
+    public int MaxPageSize { get; set; } = 200;
+
+    public TimeSpan AskTimeout => TimeSpan.FromSeconds(AskTimeoutSeconds);
+
+    public TimeSpan InviteAskTimeout => TimeSpan.FromSeconds(InviteAskTimeoutSeconds);
 }

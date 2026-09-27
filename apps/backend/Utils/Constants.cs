@@ -38,6 +38,12 @@ internal static class Constants
         public const string Relay = "Relay";
     }
 
+    public static class Policies
+    {
+        /// <summary>Any signed-in user (no particular role): declared on every endpoint that is not anonymous or admin.</summary>
+        public const string SignedIn = "SignedIn";
+    }
+
     public static class Claims
     {
         public const string Subject = "sub";
