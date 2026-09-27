@@ -24,5 +24,5 @@ group code by functionality`.
 
 ## 4. Proof and docs 🐳
 
-- [ ] 4.1 🐳 Integration suite; restart the live backends; `verify-part1.sh`; the Playwright suite.
-- [ ] 4.2 CLAUDE.md (backend layout rule) and `openspec/architecture.md` paths. Commit: `docs(repo): backend layout`.
+- [x] 4.1 🐳 Integration suite; restart the live backends; `verify-part1.sh`; the Playwright suite.
+- [x] 4.2 CLAUDE.md (backend layout rule) and `openspec/architecture.md` paths. Commit: `docs(repo): backend layout`.
