@@ -301,6 +301,25 @@ GameActor ──journal──▶ game.events ──▶ EngineRequestConsumer ─
 - **Strength and time:** `UCI_LimitStrength` + `UCI_Elo` (1320–3190), or full strength for max. Stockfish thinks for
   the whole `go movetime` at every level; the think time is drawn from 5–10 s per move.
 
+### Correspondence games (correspondence-games)
+
+```text
+GameActor ──journal──▶ game.events ──┬─▶ DeadlineProjection ──▶ game_deadlines ◀── DeadlineSweeper (singleton, 1/min)
+    ▲                                 │                                                   │
+    │                                 └─▶ NotificationConsumer ──▶ SMTP (Mailpit locally)  │
+    └──────────────────────────────── CheckDeadline(game) ◀──────────────────────────────┘
+```
+
+- A `7d` game gives the player to move a week from the previous move. The actor keeps no timer for it: it derives
+  the deadline, and passivates when idle.
+- Deadlines live in the database so they survive restarts, passivation and failover. The sweeper only asks; the game
+  decides from its own clock, so a stale row or a repeated check is harmless, and a move that arrives after the
+  deadline ends the game too.
+- Mail goes to the player to move (and to both at the end) with a link to the game; each consumer keeps its watermark
+  on its own row per game, so a replay mails nothing.
+- "Your turn" on home comes from `GET /api/me/games?turn=mine`; the side to move is the parity of the ply, and the
+  deadline is the last move plus a week, so the read model needed no new columns.
+
 ### The screens (`apps/frontend`, part1-ui)
 
 The UI is the owner's Club design (`Design/`, untracked) in TypeScript: tokens as CSS variables in Tailwind's

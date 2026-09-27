@@ -160,10 +160,14 @@ Goal: the architecture exists end to end with a trivial domain, so every later p
 
 ### Part 3 — Correspondence / async games
 
-- Same actors, but passivated when idle (Akka passivation) and re-hydrated on the next move; no
-  running clocks — per-move deadlines enforced by a scheduler actor publishing `deadline.expired`.
-- Notifications consumer (email/webhook stub) on `game.events` for "your move".
-- Verify: passivation observed (actor count drops), move after passivation works, deadline forfeit.
+- Built as `correspondence-games` (2026-09-27): `7d`, a week per move reset every move, from invites. Same actors,
+  passivated when idle and recovered on the next command; no running clocks. Instead of a `deadline.expired` topic,
+  deadlines are a projected table (`game_deadlines`) read by a `DeadlineSweeper` singleton that asks each game past
+  due to check itself — the game stays the judge.
+- Notifications consumer on `game.events` mails "your move" and results through SMTP (MailKit; Mailpit locally, a
+  production provider by configuration later).
+- Verify: `tools/localdev/verify-part3.sh` on the stack; forfeits and passivation in the integration and unit tests
+  (deadlines shortened to seconds).
 
 ### Part 4 — Study & analysis
 

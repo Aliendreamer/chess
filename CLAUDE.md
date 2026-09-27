@@ -64,6 +64,7 @@ tools/localdev/verify-part0.sh [--cluster]     # login→ping→live→list→hu
 tools/localdev/verify-part1.sh [--cluster]     # two logins → queue pairing → invite → fool's mate → ended 0-1 + PGN;
                                                # --cluster: 6 games, SIGTERM backend-1, all answer from the survivor
 tools/localdev/verify-part2.sh [--quick]       # vs Stockfish: 10 moves at 1320/2000/max, engine restart mid-think, a full game
+tools/localdev/verify-part3.sh                 # correspondence: 7d invite, deadline, your-turn list, mails in Mailpit
 tools/localdev/stack.sh up --cluster            # adds backend-2 (down/ps/logs always include it)
 tools/e2e.sh                                   # Playwright against the live stack
 ```
@@ -87,7 +88,7 @@ code on purpose. Array options must not default to a non-empty array (the binder
 and the `chess.actors` source); it is off by default, including in Development.
 
 Local URLs (Traefik on :80, dashboard on 127.0.0.1:8090): `app.chess.localhost`, `api.chess.localhost`,
-`keycloak.chess.localhost` (admin/admin), `redisinsight.chess.localhost`, `console.chess.localhost`
+`keycloak.chess.localhost` (admin/admin), `redisinsight.chess.localhost`, `mail.chess.localhost` (Mailpit), `console.chess.localhost`
 (Redpanda). Postgres primary `127.0.0.1:5432`, replica `127.0.0.1:5433` (`chess`/`chess`/`chess`);
 Redpanda Kafka API `127.0.0.1:19092`.
 
@@ -221,6 +222,17 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   duplicate answers are refused. A game whose engine is silent for `Engine:StallSeconds` asks again through
   `IEngineRequests` — the one actor-side producer, owned by that service. Endpoints: `POST /api/engine-games`,
   `GET /api/engine-levels`.
+
+- **Correspondence games (correspondence-games)** — `7d` (`TimeControl.Correspondence7`, invites only, never the
+  queue): the player to move has `Correspondence:MoveDeadline` (7 days) from the previous move, reset every move; no
+  clock, presence ignored, the game passivates when idle. The deadline is derived in the actor, never stored there;
+  `DeadlineProjection` keeps `game_deadlines` from `game.events` and the `DeadlineSweeper` cluster singleton sends
+  `CheckDeadline` every `Correspondence:SweepSeconds` to games past due — the actor judges (an abort before both first
+  moves, else a loss on time; a late move ends it too). `NotificationConsumer` (row per game in `notification_games`)
+  mails the player to move and both at the end through `IMailer`: MailKit when `Smtp:Host` is set (Mailpit in the
+  stack), otherwise only logged. `GET /api/me/games?turn=mine` (+ `yourTurn`, `deadlineAt`, derived from `rm_games`:
+  White moves on even plies) feeds "Your turn" on home. Playwright runs 2 workers: every spec drives two browsers
+  against one dev server.
 
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/
   `.slnx`/`Directory.*.props`/runsettings so JS edits don't bust the backend cache and vice versa.
