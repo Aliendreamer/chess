@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build one Chess app image (and, by default, push it to Docker Hub).
 #
-#   tools/deploy/build.sh <proxy|frontend|backend> [push|local|validate]
+#   tools/deploy/build.sh <proxy|frontend|backend|engine> [push|local|validate]
 #
 #   push      (default) build, log in to the registry, push, and print the deployable tag
 #   local     build the image locally only (no creds, no push) -> <image>:local
@@ -20,7 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 usage() {
-  echo "Usage: $0 <proxy|frontend|backend> [push|local|validate]" >&2
+  echo "Usage: $0 <proxy|frontend|backend|engine> [push|local|validate]" >&2
   exit 1
 }
 
@@ -48,6 +48,12 @@ case "$APP" in
     IMAGE_NAME="aliendreamer/chess-backend"
     CONTEXT="$REPO_ROOT/apps/backend"
     DOCKERFILE="$REPO_ROOT/apps/backend/Dockerfile"
+    ;;
+  engine)
+    # Needs the Stockfish archive in apps/engine/stockfish/ (git-ignored); the image carries its GPL notice.
+    IMAGE_NAME="aliendreamer/chess-engine"
+    CONTEXT="$REPO_ROOT/apps/engine"
+    DOCKERFILE="$REPO_ROOT/apps/engine/Dockerfile"
     ;;
   *)
     usage

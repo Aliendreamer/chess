@@ -209,11 +209,27 @@ services:
       - |
         set -euo pipefail
         existing="$$(rpk topic list -X brokers=redpanda:9092 | awk 'NR>1 {print $$1}')"
-        for t in game.events matchmaking.events analysis.requests analysis.results; do
+        for t in game.events matchmaking.events analysis.requests analysis.results engine.moves.requests engine.moves.results; do
           if grep -qx "$$t" <<<"$$existing"; then echo "topic $$t exists"; continue; fi
           rpk topic create "$$t" -X brokers=redpanda:9092 --partitions 3 --replicas 1
         done
     restart: "no"
+
+  # Stockfish behind Kafka (engine-play D1): reads engine.moves.requests, answers on engine.moves.results. Its own
+  # container so a search never competes with the game actors' clocks for CPU. Needs the Stockfish archive in
+  # apps/engine/stockfish/ (git-ignored).
+  engine:
+    build:
+      context: ../../apps/engine
+      dockerfile: Dockerfile
+    environment:
+      Kafka__BootstrapServers: "redpanda:9092"
+      Engine__Processes: "1"
+    cpus: 2
+    depends_on:
+      redpanda-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
 
   redpanda-console:
     image: redpandadata/console:v3.12.0

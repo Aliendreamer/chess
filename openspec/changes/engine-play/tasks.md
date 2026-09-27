@@ -14,7 +14,7 @@ typecheck, lint, check, test, build; engine: build, unit tests, format). 🐳 ma
       unit tests against a fake process.
 - [x] 2.3 Kafka loop: consume `engine.moves.requests`, answer on `engine.moves.results`, commit after produce, retry once,
       SIGTERM stops cleanly. Tests. Commit: `feat(engine): stockfish worker over kafka`.
-- [ ] 2.4 🐳 `engine.dev.Dockerfile`, compose service `engine` (CPU limit), topics in `redpanda-init`, `build.sh engine`.
+- [x] 2.4 🐳 One `apps/engine/Dockerfile` for prod and the stack (no dev image: nothing to hot-reload), compose service `engine` (CPU limit), topics in `redpanda-init`, `build.sh engine`.
       The worker answers a hand-made request on the live stack. Commit: `feat(repo): engine container and topics`.
 
 ## 3. Backend
