@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   Button,
   Chip,
+  ColourPicker,
   ErrorText,
   OptionTile,
   Panel,
@@ -144,5 +145,15 @@ describe('ErrorText', () => {
   it('is announced as a status', () => {
     render(<ErrorText testId="e">Not your turn.</ErrorText>)
     expect(screen.getByRole('status').textContent).toBe('Not your turn.')
+  })
+})
+
+describe('ColourPicker', () => {
+  it('shows the choice as pressed and reports a new one', () => {
+    const onChange = vi.fn()
+    render(<ColourPicker value="random" onChange={onChange} />)
+    expect(screen.getByRole('button', { name: /Random/ }).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: /Black/ }))
+    expect(onChange).toHaveBeenCalledWith('black')
   })
 })

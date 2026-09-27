@@ -126,3 +126,24 @@ describe('GameControls', () => {
     expect(onCommand).toHaveBeenCalledWith({ kind: 'resign' })
   })
 })
+
+describe('GameControls against the computer', () => {
+  const view = (ply: number) => ({ ply, drawOfferedBy: null }) as GameView
+
+  it('offers resign but no draw', () => {
+    const onCommand = vi.fn()
+    render(
+      <GameControls
+        view={view(4)}
+        meId={1}
+        opponentId={-2}
+        disabled={false}
+        onCommand={onCommand}
+        drawAllowed={false}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: 'Offer draw' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Resign' }))
+    expect(onCommand).toHaveBeenCalledWith({ kind: 'resign' })
+  })
+})

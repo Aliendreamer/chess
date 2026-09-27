@@ -1,13 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { InviteView, QueueStatus } from '#/lib/play'
-import { getMyGames, postCreateInvite, postJoinQueue, postLeaveQueue } from '#/lib/server/api'
+import type { EngineLevel } from '#/lib/games'
+import type { ColourChoice } from '#/components/ui'
+import {
+  getEngineLevels,
+  getMyGames,
+  postCreateInvite,
+  postJoinQueue,
+  postLeaveQueue,
+  postStartEngineGame,
+} from '#/lib/server/api'
 import { PRESETS, category } from '#/lib/games'
 import { isQueueView, pairingGame } from '#/lib/play'
 import { liveStatusText, useLiveTopic } from '#/lib/live'
 import {
   Button,
   Chip,
+  ColourPicker,
   ErrorText,
   OptionTile,
   Panel,
@@ -19,7 +29,13 @@ import { RecentGames } from '#/components/games'
 
 /** Home: quick pairing on a preset, an invite link for a friend, and your recent games. */
 export const Route = createFileRoute('/_authenticated/')({
-  loader: () => getMyGames({ data: { limit: 8 } }),
+  loader: async () => {
+    const [games, levels] = await Promise.all([
+      getMyGames({ data: { limit: 8 } }),
+      getEngineLevels(),
+    ])
+    return { games, levels }
+  },
   component: HomePage,
 })
 
@@ -27,7 +43,7 @@ const HEARTBEAT_MS = 25_000
 
 function HomePage() {
   const { me } = Route.useRouteContext()
-  const games = Route.useLoaderData()
+  const { games, levels } = Route.useLoaderData()
   const navigate = useNavigate()
   const [seek, setSeek] = useState<QueueStatus | null>(null)
   const joining = useCommand()
@@ -81,6 +97,11 @@ function HomePage() {
           ))}
         </div>
         {joining.error ? <ErrorText>{joining.error}</ErrorText> : null}
+      </section>
+
+      <section className="flex flex-col gap-3.5">
+        <SectionHeading>Play the computer</SectionHeading>
+        <EngineForm levels={levels} onStarted={goToGame} />
       </section>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-6">
@@ -174,15 +195,9 @@ function Seek({ seek, meId, onMatched, onCancel }: SeekProps) {
   )
 }
 
-const COLOURS: ReadonlyArray<{ value: InviteView['color']; glyph: string; label: string }> = [
-  { value: 'white', glyph: '♔', label: 'White' },
-  { value: 'random', glyph: '⚄', label: 'Random' },
-  { value: 'black', glyph: '♚', label: 'Black' },
-]
-
 function InviteForm({ onCreated }: { onCreated: (invite: InviteView) => void }) {
   const [timeControl, setTimeControl] = useState<string>('10+5')
-  const [color, setColor] = useState<InviteView['color']>('random')
+  const [color, setColor] = useState<ColourChoice>('random')
   const creating = useCommand()
 
   async function create() {
@@ -205,22 +220,7 @@ function InviteForm({ onCreated }: { onCreated: (invite: InviteView) => void }) 
           </Chip>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-2.5" role="group" aria-label="Your colour">
-        {COLOURS.map((c) => (
-          <button
-            key={c.value}
-            type="button"
-            aria-pressed={color === c.value}
-            onClick={() => setColor(c.value)}
-            className={`flex cursor-pointer items-center gap-3 rounded-card border px-4 py-3 text-fg-primary ${color === c.value ? 'border-line-accent bg-surface-accent-tint' : 'border-line-default bg-surface-raised hover:border-line-accent'}`}
-          >
-            <span aria-hidden className="text-[28px] leading-none">
-              {`${c.glyph}︎`}
-            </span>
-            {c.label}
-          </button>
-        ))}
-      </div>
+      <ColourPicker value={color} onChange={setColor} />
       <div className="flex items-center justify-between gap-4">
         <span className="text-sm text-fg-secondary">The link is open for 24 hours.</span>
         <Button variant="primary" disabled={creating.busy} onClick={() => void create()}>
@@ -228,6 +228,56 @@ function InviteForm({ onCreated }: { onCreated: (invite: InviteView) => void }) 
         </Button>
       </div>
       {creating.error ? <ErrorText>{creating.error}</ErrorText> : null}
+    </Panel>
+  )
+}
+
+/** A level and your colour, then an untimed game against Stockfish (engine-play D7). */
+function EngineForm({
+  levels,
+  onStarted,
+}: {
+  levels: ReadonlyArray<EngineLevel>
+  onStarted: (gameId: string) => void
+}) {
+  const [level, setLevel] = useState(levels[1]?.level ?? levels[0]?.level ?? 'max')
+  const [color, setColor] = useState<ColourChoice>('white')
+  const starting = useCommand()
+
+  async function start() {
+    const game = await starting.run(() => postStartEngineGame({ data: { level, color } }))
+    if (game) onStarted(game.gameId)
+  }
+
+  return (
+    <Panel variant="filled" className="gap-4" testId="engine-form">
+      <div
+        className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] gap-2.5"
+        role="group"
+        aria-label="Level"
+      >
+        {levels.map((l) => (
+          <OptionTile
+            key={l.level}
+            figure={l.level === 'max' ? 'Max' : l.level}
+            caption={l.level === 'max' ? 'full strength' : 'Elo'}
+            label={`Level ${l.level}`}
+            align="center"
+            selected={l.level === level}
+            onClick={() => setLevel(l.level)}
+          />
+        ))}
+      </div>
+      <ColourPicker value={color} onChange={setColor} />
+      <div className="flex items-center justify-between gap-4">
+        <span className="text-sm text-fg-secondary">
+          Untimed. The computer answers each move in 5–10 seconds.
+        </span>
+        <Button variant="primary" disabled={starting.busy} onClick={() => void start()}>
+          Play the computer
+        </Button>
+      </div>
+      {starting.error ? <ErrorText>{starting.error}</ErrorText> : null}
     </Panel>
   )
 }

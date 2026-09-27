@@ -29,6 +29,29 @@ export interface GameView {
   absentId?: number | null
   /** Who may end the game by abandonment right now. */
   claimableBy?: number | null
+  /** In a game against the computer: its side and level (engine-play D3); absent between people. */
+  engineSide?: Color | null
+  engineLevel?: string | null
+}
+
+/** A level the computer plays at, as `GET /api/engine-levels` lists it. */
+export interface EngineLevel {
+  level: string
+  name: string
+}
+
+/** Games against the computer have no clocks (engine-play D4). */
+export const UNTIMED = 'untimed'
+
+/** The computer's turn in a game against it: the page shows it thinking and takes no clicks. */
+export function engineToMove(
+  view: Pick<GameView, 'engineSide' | 'status' | 'sideToMove'>,
+): boolean {
+  return (
+    view.engineSide != null &&
+    view.status !== 'Ended' &&
+    view.sideToMove.toLowerCase() === view.engineSide
+  )
 }
 
 /** Mirrors `GET /api/games/{id}` (the replica): names are snapshotted per game (D23). */
@@ -186,8 +209,9 @@ export const PRESETS = [
   '90+30',
 ] as const
 
-/** Bullet under 3 minutes, blitz under 10, rapid under 30, classical beyond (by the base time). */
+/** Bullet under 3 minutes, blitz under 10, rapid under 30, classical beyond (by the base time); or untimed. */
 export function category(timeControl: string): string {
+  if (timeControl === UNTIMED) return 'Untimed'
   const base = Number(timeControl.split('+')[0])
   if (base < 3) return 'Bullet'
   if (base < 10) return 'Blitz'

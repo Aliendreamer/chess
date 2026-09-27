@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  UNTIMED,
   category,
+  engineToMove,
   formatClock,
   isGameView,
   liveClocks,
@@ -164,5 +166,22 @@ describe('category', () => {
     ['90+30', 'Classical'],
   ])('%s is %s', (tc, name) => {
     expect(category(tc)).toBe(name)
+  })
+})
+
+describe('games against the computer', () => {
+  it('names the untimed control', () => {
+    expect(category(UNTIMED)).toBe('Untimed')
+    expect(category('5+3')).toBe('Blitz')
+  })
+
+  it("is the computer's turn only in its game, on its side, while playing", () => {
+    expect(engineToMove({ engineSide: 'black', status: 'Playing', sideToMove: 'Black' })).toBe(true)
+    expect(engineToMove({ engineSide: 'black', status: 'Playing', sideToMove: 'White' })).toBe(
+      false,
+    )
+    expect(engineToMove({ engineSide: 'white', status: 'Created', sideToMove: 'White' })).toBe(true)
+    expect(engineToMove({ engineSide: 'white', status: 'Ended', sideToMove: 'White' })).toBe(false)
+    expect(engineToMove({ engineSide: null, status: 'Playing', sideToMove: 'White' })).toBe(false)
   })
 })

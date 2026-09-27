@@ -1,7 +1,14 @@
 import { loginHref } from '../auth'
 import { apiUrl, isGuid, postCommand, readJson } from './upstream'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
-import type { CommandOutcome, GameCommand, GameSummary, GameView, MoveItem } from '../games'
+import type {
+  CommandOutcome,
+  EngineLevel,
+  GameCommand,
+  GameSummary,
+  GameView,
+  MoveItem,
+} from '../games'
 
 const COMMAND_PATH: Record<GameCommand['kind'], string> = {
   move: 'moves',
@@ -33,6 +40,23 @@ export async function loadGameMoves(fetchImpl: typeof fetch, id: string): Promis
   const res = await fetchImpl(`/api/games/${id}/moves`)
   if (res.status === 404) return []
   return readJson<Array<MoveItem>>(res, `GET /api/games/${id}/moves`)
+}
+
+/** `POST /api/engine-games`: an untimed game against the computer (engine-play D7). Refusals are outcomes. */
+export function startEngineGame(
+  fetchImpl: typeof fetch,
+  input: { level: string; color: 'white' | 'black' | 'random' },
+): Promise<CommandOutcome<GameView>> {
+  return postCommand<GameView>(fetchImpl, '/api/engine-games', input)
+}
+
+/** `GET /api/engine-levels`: the computer's levels, weakest first. */
+export async function loadEngineLevels(fetchImpl: typeof fetch): Promise<Array<EngineLevel>> {
+  const body = await readJson<{ levels: Array<EngineLevel> }>(
+    await fetchImpl('/api/engine-levels'),
+    'GET /api/engine-levels',
+  )
+  return body.levels
 }
 
 export function sendGameCommand(

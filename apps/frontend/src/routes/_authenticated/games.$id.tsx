@@ -5,7 +5,9 @@ import type { LiveFrame } from '#/lib/live'
 import type { Me } from '#/lib/auth'
 import { getGameMoves, getGamePage, getGameSummary, postGameCommand } from '#/lib/server/api'
 import {
+  UNTIMED,
   category,
+  engineToMove,
   isGameView,
   mergeMoves,
   myColor,
@@ -160,6 +162,8 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   const white = summary?.white ?? `Player ${current.whiteId}`
   const black = summary?.black ?? `Player ${current.blackId}`
   const opponentId = mine === 'white' ? current.blackId : current.whiteId
+  const againstEngine = current.engineSide != null
+  const untimed = current.timeControl === UNTIMED
   const top = side === 'white' ? 'black' : 'white'
   const strip = (color: 'white' | 'black') => {
     const toMove = playing && current.sideToMove.toLowerCase() === color
@@ -169,7 +173,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
         testId={`strip-${color}`}
         name={color === 'white' ? white : black}
         detail={[color, you && toMove ? 'your move' : null].filter(Boolean).join(' · ')}
-        ms={color === 'white' ? clocks.whiteMs : clocks.blackMs}
+        {...(untimed ? {} : { ms: color === 'white' ? clocks.whiteMs : clocks.blackMs })}
         active={toMove && current.ply >= 2}
       />
     )
@@ -203,7 +207,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
       <div className="flex max-w-[380px] flex-col gap-5">
         <div>
           <div className="text-xs text-fg-secondary">
-            {`${category(current.timeControl)} ${current.timeControl} · `}
+            {untimed ? 'Untimed · ' : `${category(current.timeControl)} ${current.timeControl} · `}
             <span className="font-mono" aria-live="polite" data-testid="game-relay">
               {liveStatusText(live.status)}
             </span>
@@ -241,6 +245,16 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
           />
         ) : null}
 
+        {engineToMove(current) ? (
+          <p
+            className="m-0 text-sm text-fg-secondary"
+            aria-live="polite"
+            data-testid="engine-thinking"
+          >
+            {`${current.engineSide === 'white' ? white : black} is thinking…`}
+          </p>
+        ) : null}
+
         <MoveList sans={sans} />
 
         {command.error ? <ErrorText testId="game-error">{command.error}</ErrorText> : null}
@@ -252,6 +266,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
             opponentId={opponentId}
             disabled={command.busy}
             onCommand={(action) => void send(action)}
+            drawAllowed={!againstEngine}
           />
         ) : null}
         {!mine ? <p className="m-0 text-sm text-fg-muted">You are watching this game.</p> : null}

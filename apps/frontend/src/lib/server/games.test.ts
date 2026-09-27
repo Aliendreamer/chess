@@ -1,7 +1,15 @@
 import { isRedirect } from '@tanstack/react-router'
 import { describe, expect, it } from 'vitest'
 import { problemMessage } from './upstream'
-import { downloadPgn, loadGameLive, loadGameMoves, loadGameSummary, sendGameCommand } from './games'
+import {
+  downloadPgn,
+  loadEngineLevels,
+  loadGameLive,
+  loadGameMoves,
+  loadGameSummary,
+  sendGameCommand,
+  startEngineGame,
+} from './games'
 
 const ID = '0199f1c2a3b47c5d8e9f0a1b2c3d4e5f'
 
@@ -206,5 +214,42 @@ describe('downloadPgn', () => {
     )
     expect(called).toBe(false)
     expect(res.status).toBe(400)
+  })
+})
+
+describe('games against the computer', () => {
+  it('starts one with the level and colour in the body', async () => {
+    const calls: Array<Call> = []
+    const outcome = await startEngineGame(fakeFetch(201, { gameId: ID, seq: 1 }, calls), {
+      level: '1600',
+      color: 'white',
+    })
+
+    expect(outcome.ok).toBe(true)
+    expect(calls).toEqual([
+      { url: '/api/engine-games', method: 'POST', body: '{"level":"1600","color":"white"}' },
+    ])
+  })
+
+  it('shows a refusal instead of throwing', async () => {
+    const outcome = await startEngineGame(
+      fakeFetch(400, problem('Level must be 1320, 1600, 2000, 2400 or max.')),
+      {
+        level: '1800',
+        color: 'white',
+      },
+    )
+
+    expect(outcome).toEqual({
+      ok: false,
+      status: 400,
+      error: 'Level must be 1320, 1600, 2000, 2400 or max.',
+    })
+  })
+
+  it('lists the levels', async () => {
+    const levels = [{ level: '1320', name: 'Stockfish 1320' }]
+
+    expect(await loadEngineLevels(fakeFetch(200, { levels }))).toEqual(levels)
   })
 })

@@ -5,7 +5,14 @@ import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { apiUrl, isGuid } from './upstream'
 import { loadMe } from './auth'
 import { loadPingLive, sendPing } from './pings'
-import { loadGameLive, loadGameMoves, loadGameSummary, sendGameCommand } from './games'
+import {
+  loadEngineLevels,
+  loadGameLive,
+  loadGameMoves,
+  loadGameSummary,
+  sendGameCommand,
+  startEngineGame,
+} from './games'
 import {
   acceptInvite,
   cancelInvite,
@@ -148,3 +155,19 @@ export const getMyGames = createServerFn({ method: 'GET' })
 export const getGameSummary = createServerFn({ method: 'GET' })
   .validator((id: string) => guid(id))
   .handler(({ data }) => loadGameSummary(serverFetch(), data))
+
+/** The computer's levels for the home page's "Play the computer". */
+export const getEngineLevels = createServerFn({ method: 'GET' }).handler(() =>
+  loadEngineLevels(serverFetch()),
+)
+
+// The level travels in the body, not the path, but is still checked for shape; the API checks it is a real level.
+const ENGINE_LEVEL = /^(\d{4}|max)$/
+
+export const postStartEngineGame = createServerFn({ method: 'POST' })
+  .validator((input: { level: string; color: InviteView['color'] }) => {
+    if (!ENGINE_LEVEL.test(input.level)) throw new Error(`not an engine level: ${input.level}`)
+    if (!COLORS.includes(input.color)) throw new Error(`not a colour: ${input.color}`)
+    return { level: input.level, color: input.color }
+  })
+  .handler(({ data }) => startEngineGame(serverFetch(), data))

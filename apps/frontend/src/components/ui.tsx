@@ -251,3 +251,40 @@ export function useCommand(): Command {
   }
   return { busy, error, run }
 }
+
+/** A colour choice: yours in an invite or a game against the computer. */
+export type ColourChoice = 'white' | 'black' | 'random'
+
+const COLOURS: ReadonlyArray<{ value: ColourChoice; glyph: string; label: string }> = [
+  { value: 'white', glyph: '♔', label: 'White' },
+  { value: 'random', glyph: '⚄', label: 'Random' },
+  { value: 'black', glyph: '♚', label: 'Black' },
+]
+
+/** White, Random or Black; `aria-pressed` carries the choice. */
+export function ColourPicker({
+  value,
+  onChange,
+}: {
+  value: ColourChoice
+  onChange: (colour: ColourChoice) => void
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-2.5" role="group" aria-label="Your colour">
+      {COLOURS.map((c) => (
+        <button
+          key={c.value}
+          type="button"
+          aria-pressed={value === c.value}
+          onClick={() => onChange(c.value)}
+          className={`flex cursor-pointer items-center gap-3 rounded-card border px-4 py-3 text-fg-primary ${value === c.value ? 'border-line-accent bg-surface-accent-tint' : 'border-line-default bg-surface-raised hover:border-line-accent'}`}
+        >
+          <span aria-hidden className="text-[28px] leading-none">
+            {`${c.glyph}︎`}
+          </span>
+          {c.label}
+        </button>
+      ))}
+    </div>
+  )
+}

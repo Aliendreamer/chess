@@ -342,10 +342,19 @@ export interface GameControlsProps {
   opponentId: number
   disabled: boolean
   onCommand: (command: GameCommand) => void
+  /** False against the computer, which takes no draw offers (engine-play D5): only resign is offered. */
+  drawAllowed?: boolean
 }
 
 /** What a player may ask for right now; the server still decides whether it is allowed. */
-export function GameControls({ view, meId, opponentId, disabled, onCommand }: GameControlsProps) {
+export function GameControls({
+  view,
+  meId,
+  opponentId,
+  disabled,
+  onCommand,
+  drawAllowed = true,
+}: GameControlsProps) {
   if (view.ply < 2) {
     return (
       <Button block disabled={disabled} onClick={() => onCommand({ kind: 'abort' })}>
@@ -375,13 +384,15 @@ export function GameControls({ view, meId, opponentId, disabled, onCommand }: Ga
   }
   return (
     <div className="flex gap-2">
-      <Button
-        block
-        disabled={disabled || view.drawOfferedBy === meId}
-        onClick={() => onCommand({ kind: 'draw-offer' })}
-      >
-        {view.drawOfferedBy === meId ? 'Draw offered' : 'Offer draw'}
-      </Button>
+      {drawAllowed ? (
+        <Button
+          block
+          disabled={disabled || view.drawOfferedBy === meId}
+          onClick={() => onCommand({ kind: 'draw-offer' })}
+        >
+          {view.drawOfferedBy === meId ? 'Draw offered' : 'Offer draw'}
+        </Button>
+      ) : null}
       <Button block disabled={disabled} onClick={() => onCommand({ kind: 'resign' })}>
         Resign
       </Button>

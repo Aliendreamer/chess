@@ -31,7 +31,7 @@ endpoints`.
 
 ## 4. Frontend
 
-- [ ] 4.1 "Play the computer" on home; the game page hides clocks, draw and claim in engine games and shows "Stockfish is
+- [x] 4.1 "Play the computer" on home; the game page hides clocks, draw and claim in engine games and shows "Stockfish is
       thinking…". Tests. Commit: `feat(frontend): play the computer`.
 
 ## 5. Verify
