@@ -15,6 +15,9 @@ namespace Chess.Backend.Akka.Ping;
 /// </summary>
 internal sealed class PingActor : ReceivePersistentActor
 {
+    protected override bool AroundReceive(Receive receive, object message) =>
+        ActorTracing.Receive("ping", message, m => base.AroundReceive(receive, m), entity: new("ping.id", _pingId));
+
     public const int SnapshotEvery = 20;
     public const string PersistenceIdPrefix = "ping-";
     private const int MaxTextLength = 200;
@@ -68,7 +71,7 @@ internal sealed class PingActor : ReceivePersistentActor
 
         Pinged evt = new(cmd.Text.Trim(), cmd.UserId, DateTimeOffset.UtcNow);
         IActorRef replyTo = Sender;
-        Persist(evt, persisted =>
+        Persist(ActorTracing.Stamp(evt), persisted =>
         {
             Apply(persisted);
             long seq = LastSequenceNr;

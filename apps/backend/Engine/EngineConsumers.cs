@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Akka.Actor;
 using Akka.Hosting;
+using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Events;
 using Chess.Backend.Extensions;
@@ -115,7 +116,7 @@ internal sealed class EngineMoveConsumer(IRequiredActor<GameActor> games, IOptio
             return;
         }
 
-        object reply = await games.ActorRef.Ask(new MakeMove(gameId, level.UserId, result.Uci, result.Ply), api.Value.AskTimeout, ct);
+        object reply = await games.ActorRef.Ask(ActorTracing.Wrap(new MakeMove(gameId, level.UserId, result.Uci, result.Ply)), api.Value.AskTimeout, ct);
         if (reply is GameRejected rejected)
         {
             Utils.Log.EngineMoveDropped(logger, gameId, result.Ply, rejected.Reason);

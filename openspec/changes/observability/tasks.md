@@ -38,7 +38,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
       read back through the journal's actual serializer after `Trace` is added. It fails to compile until the member
       exists, then must pass unchanged. Add `string? Trace = null` to every domain event. Commit
       `feat(backend): events carry their trace context`.
-- [ ] 4.2 Failing tests first. `ActorTracing.Wrap` returns the message unwrapped with no current activity and wrapped
+- [x] 4.2 Failing tests first. `ActorTracing.Wrap` returns the message unwrapped with no current activity and wrapped
       with one. The shard extractors take the entity id from inside the envelope. Under an `ActivityListener`,
       `ActorInstrumentation.Handle` makes a span `game MakeMove` whose parent is the envelope's context, tagged
       `game.id`, and the persisted event's `Trace` equals that span. Then wire every actor (games, invites,

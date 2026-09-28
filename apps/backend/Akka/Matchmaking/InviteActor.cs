@@ -48,6 +48,9 @@ internal sealed record InviteView(
 /// </summary>
 internal sealed class InviteActor : ReceivePersistentActor
 {
+    protected override bool AroundReceive(Receive receive, object message) =>
+        ActorTracing.Receive("invite", message, m => base.AroundReceive(receive, m), entity: new("invite.id", _inviteId.ToString("N")));
+
     public const string PersistenceIdPrefix = "invite-";
 
     public static readonly TimeSpan Lifetime = TimeSpan.FromHours(24);
@@ -114,7 +117,7 @@ internal sealed class InviteActor : ReceivePersistentActor
         }
 
         IActorRef replyTo = Sender;
-        Persist(new InviteCreated(cmd.CreatorId, cmd.TimeControl, cmd.Color, _clock.GetUtcNow()), e =>
+        Persist(ActorTracing.Stamp(new InviteCreated(cmd.CreatorId, cmd.TimeControl, cmd.Color, _clock.GetUtcNow())), e =>
         {
             Apply(e);
             Published(replyTo);
@@ -153,15 +156,15 @@ internal sealed class InviteActor : ReceivePersistentActor
         IActorRef replyTo = Sender;
         _starter.StartAsync(white, black, _tc, CancellationToken.None).PipeTo(
             Self,
-            success: view => new Started(cmd.UserId, view.GameId, replyTo),
-            failure: ex => new StartFailed(replyTo, ex));
+            success: view => ActorTracing.Wrap(new Started(cmd.UserId, view.GameId, replyTo)),
+            failure: ex => ActorTracing.Wrap(new StartFailed(replyTo, ex)));
         BecomeStacked(Starting);
     }
 
     /// <summary>While the game is being started: everything else waits, so no second accept can slip in.</summary>
     private void Starting()
     {
-        Command<Started>(s => Persist(new InviteAccepted(s.ById, s.GameId, _clock.GetUtcNow()), e =>
+        Command<Started>(s => Persist(ActorTracing.Stamp(new InviteAccepted(s.ById, s.GameId, _clock.GetUtcNow())), e =>
         {
             Apply(e);
             Published(s.ReplyTo);
@@ -199,7 +202,7 @@ internal sealed class InviteActor : ReceivePersistentActor
         }
 
         IActorRef replyTo = Sender;
-        Persist(new InviteCancelled(_clock.GetUtcNow()), e =>
+        Persist(ActorTracing.Stamp(new InviteCancelled(_clock.GetUtcNow())), e =>
         {
             Apply(e);
             Published(replyTo);
@@ -252,7 +255,7 @@ internal sealed partial class InviteLiveSource(IRequiredActor<InviteActor> regio
     public bool IsValidId(string id) => IdPattern().IsMatch(id);
 
     public async Task<LiveFrame?> SnapshotAsync(string id, CancellationToken ct) =>
-        await region.ActorRef.Ask(new GetInvite(Guid.ParseExact(id, "N")), api.Value.AskTimeout, ct) is InviteView view ? ToFrame(view) : null;
+        await region.ActorRef.Ask(ActorTracing.Wrap(new GetInvite(Guid.ParseExact(id, "N"))), api.Value.AskTimeout, ct) is InviteView view ? ToFrame(view) : null;
 
     public static LiveFrame ToFrame(InviteView view)
     {
@@ -266,5 +269,5 @@ internal sealed partial class InviteLiveSource(IRequiredActor<InviteActor> regio
 
 internal sealed class InviteMessageExtractor(int shardCount) : HashCodeMessageExtractor(shardCount)
 {
-    public override string? EntityId(object message) => message is IInviteCommand c ? c.InviteId.ToString("N") : null;
+    public override string? EntityId(object message) => ActorTracing.Unwrap(message) is IInviteCommand c ? c.InviteId.ToString("N") : null;
 }

@@ -1,3 +1,4 @@
+using Chess.Backend.Akka;
 using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Extensions;
 using Microsoft.Net.Http.Headers;
@@ -28,7 +29,7 @@ internal sealed class JoinQueueEndpoint(IRequiredActor<MatchmakingActor> matchma
         object reply;
         try
         {
-            reply = await matchmaker.ActorRef.Ask(new JoinQueue(user.Id ?? 0, req.TimeControl, req.Heartbeat), options.Value.AskTimeout, ct);
+            reply = await matchmaker.ActorRef.Ask(ActorTracing.Wrap(new JoinQueue(user.Id ?? 0, req.TimeControl, req.Heartbeat)), options.Value.AskTimeout, ct);
         }
         catch (AskTimeoutException)
         {

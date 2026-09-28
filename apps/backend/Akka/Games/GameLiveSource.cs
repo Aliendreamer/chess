@@ -11,7 +11,7 @@ namespace Chess.Backend.Akka.Games;
 /// <summary>Entity id = game id in <c>N</c> form; shard id is a stable hash of it over <see cref="AkkaOptions.ShardCount"/>.</summary>
 internal sealed class GameMessageExtractor(int shardCount) : HashCodeMessageExtractor(shardCount)
 {
-    public override string? EntityId(object message) => message is IGameCommand c ? c.GameId.ToString("N") : null;
+    public override string? EntityId(object message) => ActorTracing.Unwrap(message) is IGameCommand c ? c.GameId.ToString("N") : null;
 }
 
 /// <summary>Reads an ended game's view from the read side, or null when the replica doesn't have its ending (yet).</summary>
@@ -51,7 +51,7 @@ internal sealed partial class GameLiveSource(IRequiredActor<GameActor> region, I
             return ToFrame(ended);
         }
 
-        object reply = await region.ActorRef.Ask(new GetGameView(gameId), api.Value.AskTimeout, ct);
+        object reply = await region.ActorRef.Ask(ActorTracing.Wrap(new GetGameView(gameId)), api.Value.AskTimeout, ct);
         return reply is GameView view ? ToFrame(view) : null;
     }
 
@@ -77,7 +77,7 @@ internal sealed class GameStarter(IRequiredActor<GameActor> region, IOptions<Api
     public async Task<GameView> StartAsync(long whiteId, long blackId, TimeControl timeControl, CancellationToken ct, EnginePlayer? engine = null)
     {
         Guid id = Guid.CreateVersion7();
-        object reply = await region.ActorRef.Ask(new CreateGame(id, whiteId, blackId, timeControl, engine), api.Value.AskTimeout, ct);
+        object reply = await region.ActorRef.Ask(ActorTracing.Wrap(new CreateGame(id, whiteId, blackId, timeControl, engine)), api.Value.AskTimeout, ct);
         return reply as GameView
             ?? throw new InvalidOperationException($"Game {id:N} was not created: {(reply as GameRejected)?.Reason ?? reply.GetType().Name}");
     }

@@ -1,3 +1,4 @@
+using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Extensions;
 using Chess.Backend.Games;
@@ -29,7 +30,7 @@ internal sealed class StartEngineGameEndpoint(IRequiredActor<GameActor> region, 
         object reply;
         try
         {
-            reply = await region.ActorRef.Ask(new CreateGame(Guid.CreateVersion7(), whiteId, blackId, TimeControl.Untimed, engine), api.Value.AskTimeout, ct);
+            reply = await region.ActorRef.Ask(ActorTracing.Wrap(new CreateGame(Guid.CreateVersion7(), whiteId, blackId, TimeControl.Untimed, engine)), api.Value.AskTimeout, ct);
         }
         catch (AskTimeoutException)
         {

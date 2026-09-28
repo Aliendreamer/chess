@@ -1,3 +1,4 @@
+using Chess.Backend.Akka;
 using Chess.Backend.Akka.Ping;
 using Chess.Backend.Extensions;
 using Microsoft.Net.Http.Headers;
@@ -28,7 +29,7 @@ internal sealed class PostPingEndpoint(IRequiredActor<PingActor> region, ICurren
         object reply;
         try
         {
-            reply = await region.ActorRef.Ask(new Ping(req.Id, req.Text, user.Id ?? 0), options.Value.AskTimeout, ct);
+            reply = await region.ActorRef.Ask(ActorTracing.Wrap(new Ping(req.Id, req.Text, user.Id ?? 0)), options.Value.AskTimeout, ct);
         }
         catch (AskTimeoutException)
         {

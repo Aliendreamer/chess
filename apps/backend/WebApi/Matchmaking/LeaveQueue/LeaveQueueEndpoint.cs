@@ -1,3 +1,4 @@
+using Chess.Backend.Akka;
 using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Extensions;
 
@@ -21,7 +22,7 @@ internal sealed class LeaveQueueEndpoint(IRequiredActor<MatchmakingActor> matchm
     public override async Task HandleAsync(LeaveQueueRequest req, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(req);
-        await matchmaker.ActorRef.Ask(new LeaveQueue(user.Id ?? 0, req.TimeControl), options.Value.AskTimeout, ct);
+        await matchmaker.ActorRef.Ask(ActorTracing.Wrap(new LeaveQueue(user.Id ?? 0, req.TimeControl)), options.Value.AskTimeout, ct);
         await Send.NoContentAsync(ct);
     }
 }

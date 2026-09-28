@@ -1,5 +1,6 @@
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Event;
+using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -128,7 +129,7 @@ internal sealed class LiveHub(LiveTopicResolver topics, IRequiredActor<GameActor
             return;
         }
 
-        games.ActorRef.Tell(new ReportPresence(gameId, userId, instance, present));
+        games.ActorRef.Tell(ActorTracing.Wrap(new ReportPresence(gameId, userId, instance, present)));
     }
 }
 
@@ -140,6 +141,9 @@ internal sealed class LiveHub(LiveTopicResolver topics, IRequiredActor<GameActor
 /// </summary>
 internal sealed class HubFanOutActor : ReceiveActor
 {
+    protected override bool AroundReceive(Receive receive, object message) =>
+        ActorTracing.Receive("hub-fanout", message, m => base.AroundReceive(receive, m));
+
     private readonly ILoggingAdapter _log = Context.GetLogger();
 
     public HubFanOutActor(IHubContext<LiveHub> hub, IActorRef mediator)

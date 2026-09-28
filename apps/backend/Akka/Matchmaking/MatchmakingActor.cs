@@ -44,6 +44,9 @@ internal sealed record QueueView(string TimeControl, int WaitingCount, Pairing? 
 /// </summary>
 internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
 {
+    protected override bool AroundReceive(Receive receive, object message) =>
+        ActorTracing.Receive("matchmaking", message, m => base.AroundReceive(receive, m));
+
     public const string SingletonName = "matchmaking";
 
     public static readonly TimeSpan EntryTtl = TimeSpan.FromSeconds(60);
@@ -136,8 +139,8 @@ internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
             IActorRef replyTo = Sender;
             _starter.StartAsync(white, black, tc, CancellationToken.None).PipeTo(
                 Self,
-                success: view => new GameStarted(join.TimeControl, view.GameId, white, black, replyTo),
-                failure: ex => new StartFailed(opponent, replyTo, ex));
+                success: view => ActorTracing.Wrap(new GameStarted(join.TimeControl, view.GameId, white, black, replyTo)),
+                failure: ex => ActorTracing.Wrap(new StartFailed(opponent, replyTo, ex)));
             return;
         }
 
@@ -260,7 +263,7 @@ internal sealed class QueueLiveSource(IRequiredActor<MatchmakingActor> matchmake
     public bool IsValidId(string id) => TimeControl.TryParse(id, out _);
 
     public async Task<LiveFrame?> SnapshotAsync(string id, CancellationToken ct) =>
-        await matchmaker.ActorRef.Ask(new GetQueue(id), api.Value.AskTimeout, ct) is QueueView view
+        await matchmaker.ActorRef.Ask(ActorTracing.Wrap(new GetQueue(id)), api.Value.AskTimeout, ct) is QueueView view
             ? new LiveFrame(LiveTopics.Format(KindName, id), view.Seq, view)
             : null;
 }

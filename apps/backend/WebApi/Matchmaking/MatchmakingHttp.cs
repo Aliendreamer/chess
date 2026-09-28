@@ -1,3 +1,4 @@
+using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Extensions;
@@ -86,7 +87,7 @@ internal abstract class InviteEndpointBase<TRequest>(IRequiredActor<InviteActor>
         object reply;
         try
         {
-            reply = await region.ActorRef.Ask(command, Resolve<IOptions<ApiOptions>>().Value.InviteAskTimeout, ct);
+            reply = await region.ActorRef.Ask(ActorTracing.Wrap(command), Resolve<IOptions<ApiOptions>>().Value.InviteAskTimeout, ct);
         }
         catch (AskTimeoutException)
         {

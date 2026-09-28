@@ -1,3 +1,4 @@
+using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Extensions;
 using FluentValidation;
@@ -83,7 +84,7 @@ internal abstract class GameEndpointBase<TRequest>(IRequiredActor<GameActor> reg
         object reply;
         try
         {
-            reply = await region.ActorRef.Ask(command(id), Resolve<IOptions<ApiOptions>>().Value.AskTimeout, ct);
+            reply = await region.ActorRef.Ask(ActorTracing.Wrap(command(id)), Resolve<IOptions<ApiOptions>>().Value.AskTimeout, ct);
         }
         catch (AskTimeoutException)
         {

@@ -394,7 +394,7 @@ internal static class ObservabilityExtensions
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddNpgsql()
-                .AddSource(ActorTracing.SourceName)
+                .AddSource(ActorTracing.SourceName, "Microsoft.AspNetCore.SignalR.Server")
                 .AddOtlpExporter(o => o.Endpoint = endpoint))
             // .NET publishes these meters itself; subscribing by name is all it takes.
             .WithMetrics(metrics => metrics

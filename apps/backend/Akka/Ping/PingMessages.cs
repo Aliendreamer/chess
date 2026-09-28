@@ -53,7 +53,7 @@ internal static partial class PingIds
 /// <summary>Entity id = ping id; shard id is a stable hash of the entity id over <see cref="AkkaOptions.ShardCount"/>.</summary>
 internal sealed class PingMessageExtractor(int shardCount) : HashCodeMessageExtractor(shardCount)
 {
-    public override string? EntityId(object message) => message is IPingCommand c ? c.PingId : null;
+    public override string? EntityId(object message) => ActorTracing.Unwrap(message) is IPingCommand c ? c.PingId : null;
 }
 
 /// <summary>The <c>ping</c> live kind: a subscriber's snapshot is the entity's current state, asked from its shard.</summary>
@@ -78,7 +78,7 @@ internal sealed class PingLiveSource(IRequiredActor<PingActor> region, IOptions<
 
     public async Task<LiveFrame?> SnapshotAsync(string id, CancellationToken ct)
     {
-        PingState state = await region.ActorRef.Ask<PingState>(new GetPingState(PingIds.Validate(id)), api.Value.AskTimeout, ct);
+        PingState state = await region.ActorRef.Ask<PingState>(ActorTracing.Wrap(new GetPingState(PingIds.Validate(id))), api.Value.AskTimeout, ct);
         return ToFrame(state);
     }
 

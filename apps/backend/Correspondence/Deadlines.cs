@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
+using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Events;
 using Chess.Backend.Extensions;
@@ -118,6 +119,10 @@ internal sealed class DueDeadlines(IServiceScopeFactory scopes) : IDueDeadlines
 /// </summary>
 internal sealed class DeadlineSweeper : ReceiveActor, IWithTimers
 {
+    /// <summary>Each sweep is a trace of its own: the games it asks to check themselves continue it.</summary>
+    protected override bool AroundReceive(Receive receive, object message) =>
+        ActorTracing.Receive("deadline-sweeper", message, m => base.AroundReceive(receive, m), m => m is Sweep);
+
     public const string SingletonName = "deadline-sweeper";
 
     /// <summary>At most this many checks per sweep; the rest wait for the next one.</summary>
@@ -135,12 +140,12 @@ internal sealed class DeadlineSweeper : ReceiveActor, IWithTimers
         _due = due;
         _clock = clock;
         _every = every;
-        Receive<Sweep>(_ => _due.DueAsync(_clock.GetUtcNow(), MaxPerSweep, CancellationToken.None).PipeTo(Self));
+        Receive<Sweep>(_ => _due.DueAsync(_clock.GetUtcNow(), MaxPerSweep, CancellationToken.None).PipeTo(Self, success: ids => ActorTracing.Wrap(ids)));
         Receive<IReadOnlyList<Guid>>(ids =>
         {
             foreach (Guid id in ids)
             {
-                _games.Tell(new CheckDeadline(id));
+                _games.Tell(ActorTracing.Wrap(new CheckDeadline(id)));
             }
         });
         Receive<Status.Failure>(f => _log.Warning(f.Cause, "deadline sweep failed; trying again next time"));

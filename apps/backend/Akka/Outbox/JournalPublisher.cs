@@ -10,6 +10,9 @@ namespace Chess.Backend.Akka.Outbox;
 /// </summary>
 internal sealed class JournalPublisher : ReceiveActor
 {
+    protected override bool AroundReceive(Receive receive, object message) =>
+        ActorTracing.Receive("journal-publisher", message, m => base.AroundReceive(receive, m));
+
     public const string SingletonName = "journal-publisher";
 
     private readonly Func<ActorSystem, JournalPublisherLoop> _createLoop;

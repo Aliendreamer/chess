@@ -16,6 +16,14 @@ namespace Chess.Backend.Akka.Games;
 /// </summary>
 internal sealed class GameActor : ReceivePersistentActor, IWithTimers
 {
+    /// <summary>Every message in a span of its sender's trace; the game's own timers start traces of their own.</summary>
+    protected override bool AroundReceive(Receive receive, object message) => ActorTracing.Receive(
+        "game",
+        message,
+        m => base.AroundReceive(receive, m),
+        m => m is FlagCheck or AbortCheck or EngineStall or PresenceCheck,
+        new("game.id", _gameId.ToString("N")));
+
     public const string PersistenceIdPrefix = "game-";
     public const int SnapshotEvery = 20;
 
@@ -465,7 +473,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        PersistAll(events, e =>
+        PersistAll(ActorTracing.StampAll(events), e =>
         {
             ApplyLive(e);
             Publish();
@@ -488,7 +496,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        PersistAll([TimedOut(now)], e =>
+        PersistAll(ActorTracing.StampAll<object>([TimedOut(now)]), e =>
         {
             ApplyLive(e);
             Publish();
@@ -511,7 +519,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        PersistAll([Ended(GameResult.None, EndReason.Aborted, now)], e =>
+        PersistAll(ActorTracing.StampAll<object>([Ended(GameResult.None, EndReason.Aborted, now)]), e =>
         {
             ApplyLive(e);
             Publish();
@@ -529,7 +537,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        PersistAll([MissedDeadline(now)], e =>
+        PersistAll(ActorTracing.StampAll<object>([MissedDeadline(now)]), e =>
         {
             ApplyLive(e);
             Publish();
@@ -561,7 +569,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private void PersistAndReply(IReadOnlyList<object> events)
     {
         IActorRef replyTo = Sender;
-        PersistAll(events, e =>
+        PersistAll(ActorTracing.StampAll(events), e =>
         {
             ApplyLive(e);
             Publish();
