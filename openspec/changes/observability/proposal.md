@@ -61,13 +61,16 @@ Cross-cutting, after Part 4 (ROADMAP §7 "Observability").
    trace context (2026-09-28).
 3. **The actor and cluster view is built in Grafana**, not as an admin page in the app (2026-09-28).
 4. **Continuous profiling with Pyroscope** is included (2026-09-28).
-5. **To confirm:**
-   - The front end's part of a trace starts in the browser: page loads, and calls to server functions. Browser spans
-     go through the BFF (`/otel/v1/traces` on `app.`), never straight to the collector, so the browser still talks
-     only to `app.` (ROADMAP §1.5).
-   - Every trace is kept locally (no sampling).
-   - Retention: metrics 15 days, traces and logs 3 days, profiles 3 days.
-   - Grafana: anonymous read-only access locally, and `admin/admin` for editing.
+5. **The front end's part of a trace starts in the browser:** page loads, and calls to server functions. Browser spans
+   go through the BFF (`/otel/v1/traces` on `app.`), never straight to the collector, so the browser still talks only
+   to `app.` (ROADMAP §1.5) (2026-09-28).
+6. **Every log in the stack goes to Loki** (2026-09-28).
+7. **Sampling is a setting:** every trace is kept locally (`Observability:SampleRatio` 1.0, parent-based). A
+   collector tail-sampling policy (every error, every trace over 1 s, 10 % of the rest) is ready but off, for
+   production (2026-09-28).
+8. **Retention:** metrics 7 days; traces, logs and profiles 3 days (2026-09-28).
+9. **Grafana needs a login:** no anonymous access. Test accounts `admin` / `Admin123!` (edits) and `viewer` /
+   `Viewer123!` (read-only), set by compose (2026-09-28).
 
 ## Out of scope
 

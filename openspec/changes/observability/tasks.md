@@ -2,16 +2,18 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
 
 ## 1. Owner review
 
-- [ ] 1.1 The owner confirms the proposal (decision 5: browser spans through the BFF, no sampling, retention,
-      anonymous Grafana) and the design.
+- [x] 1.1 The owner confirms the proposal (decisions 5–9: browser spans through the BFF, every log in Loki, sampling
+      as a setting, retention, Grafana logins) and the design.
 
 ## 2. The stack
 
 - [ ] 2.1 Add the services to `tools/localdev/docker-compose.yml`, pinned, with memory limits and `chess_*` volumes:
-      `otel-collector`, `prometheus` (remote-write receiver, 15 d), `tempo` (metrics-generator → Prometheus, 72 h),
+      `otel-collector`, `prometheus` (remote-write receiver, 7 d), `tempo` (metrics-generator → Prometheus, 72 h),
       `loki` (OTLP, 72 h), `pyroscope` (72 h), `grafana`, `postgres-exporter` ×2, `redis-exporter` and `cadvisor`.
       Add their configuration files, the Traefik route `grafana.chess.localhost`, and the provisioned datasources
-      with the trace ↔ logs ↔ profiles links. `stack.sh` prints the Grafana URL. Confirm Redpanda's consumer-lag
+      with the trace ↔ logs ↔ profiles links. Grafana has anonymous access off, the `admin` account from compose, and a
+      `grafana-init` step that creates `viewer`. The collector carries the tail-sampling policy, off.
+      `stack.sh` prints the Grafana URL and logins. Confirm Redpanda's consumer-lag
       metric and record it in the design.
 - [ ] 2.2 Container logs to Loki (design D9): a compose logging anchor on every service (`json-file`, `tag` = the
       service name), and the collector's `filelog` receiver on `/var/lib/docker/containers` (read-only), with
@@ -25,7 +27,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
 - [ ] 3.1 Failing tests first. `ObservabilityTests`: tracer, meter and logger providers are registered only when
       `Observability:Enabled` (today it keys on `Console`, so the new cases fail). `SettingsTests`: the new
       `Observability` section (fails until `ObservabilityOptions` exists). Then build `ObservabilityOptions`, the
-      OTLP exporters for traces, metrics and logs, the resource (`service.name`, the node as `service.instance.id`),
+      OTLP exporters for traces, metrics and logs, the parent-based `SampleRatio` sampler, the resource (`service.name`, the node as `service.instance.id`),
       the built-in meters (ASP.NET Core, Kestrel, SignalR, HttpClient, Npgsql, `System.Runtime`) and Serilog's OTLP
       sink. Remove `Observability:Console`. Compose sets `Observability__Enabled=true`. 🐳 Proof: backend spans,
       metrics and logs visible in Grafana Explore after `stack.sh up`. Commit

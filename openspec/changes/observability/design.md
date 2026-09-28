@@ -56,6 +56,8 @@ Grafana ─▶ Prometheus · Tempo · Loki · Pyroscope (provisioned)
 - **Backend and engine:** `ObservabilityOptions : ISettings` (section `Observability`):
   - `Enabled` (false);
   - `OtlpEndpoint` (`http://otel-collector:4317`);
+  - `SampleRatio` (1.0): a parent-based ratio sampler, so a trace is decided once where it starts and every hop
+    follows;
   - `Environment` (`local`).
 - **BFF:** `OTEL_ENABLED` and the standard `OTEL_EXPORTER_OTLP_ENDPOINT`.
 - `appsettings.json` keeps export off, so unit tests, integration tests and a bare `dotnet run` export nothing; compose
@@ -215,14 +217,21 @@ Two paths, so that nothing is collected twice:
   - datasources: Prometheus (default), Tempo (traces → logs, traces → profiles, service map from Prometheus), Loki
     (the `trace_id` field → Tempo), Pyroscope;
   - dashboards (JSON), one per area in the proposal.
-- Anonymous Viewer locally, `admin/admin` for editing.
+- No anonymous access. Test accounts: `admin` / `Admin123!` (`GF_SECURITY_ADMIN_*` in compose) and `viewer` /
+  `Viewer123!`, created through Grafana's API by a `grafana-init` step (the `keycloak-init` pattern). Signing in
+  through the Keycloak realm is possible later with generic OAuth.
 - Dashboards are code: an edit made in the UI is exported back to the repo, and the provisioning refuses to let the
   UI overwrite the file.
 
 ### D12 — Retention and sampling
 
-- No sampling locally: every trace is kept.
-- Retention: Prometheus 15 days, Tempo 72 h, Loki 72 h, Pyroscope 72 h, on named volumes (`chess_*`).
+- **Locally every trace is kept** (`SampleRatio` 1.0). Traffic is a few people clicking, so storage is megabytes,
+  and the trace being hunted must never be the one dropped.
+- **For production**, two knobs, both configuration only:
+  - the apps' parent-based `SampleRatio` (head sampling, cheap);
+  - a `tail_sampling` processor in the collector, written but not in the local pipeline. It keeps every trace with
+    an error, every trace over 1 s, and 10 % of the rest, deciding once the trace is complete.
+- **Retention:** Prometheus 7 days, Tempo 72 h, Loki 72 h, Pyroscope 72 h, on named volumes (`chess_*`).
   `stack.sh down -v` clears them.
 
 ## Risks / Trade-offs

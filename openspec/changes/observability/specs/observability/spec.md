@@ -4,8 +4,13 @@
 
 `stack.sh up` SHALL start an OpenTelemetry Collector, Prometheus, Tempo, Loki, Pyroscope and Grafana, plus metric
 exporters for Postgres (primary and replica), Redis and the containers. Grafana MUST be reachable at
-`grafana.chess.localhost` with its datasources and dashboards provisioned from the repo, anonymous users MUST be able
-to view, and editing MUST need the admin login.
+`grafana.chess.localhost` with its datasources and dashboards provisioned from the repo. Anonymous access MUST be off:
+the `viewer` account MUST be able to view only, and editing MUST need the `admin` account.
+
+#### Scenario: Signing in
+
+- **WHEN** someone opens Grafana without signing in
+- **THEN** they get the login page; `viewer` sees the dashboards and cannot save, `admin` can edit
 
 #### Scenario: A fresh stack
 
