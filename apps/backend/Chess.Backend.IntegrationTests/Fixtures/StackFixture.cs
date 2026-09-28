@@ -127,7 +127,7 @@ public sealed class StackFixture : IAsyncLifetime
     }
 
     /// <summary>
-    /// The engine topics exist before anything subscribes, as <c>redpanda-init</c> makes them in the local stack; the other
+    /// The engine and analysis topics exist before anything subscribes, as <c>redpanda-init</c> makes them in the local stack; the other
     /// topics are auto-created by their first producer, which only ever runs before their consumers read.
     /// </summary>
     private async Task CreateEngineTopicsAsync()
@@ -137,6 +137,8 @@ public sealed class StackFixture : IAsyncLifetime
         [
             new TopicSpecification { Name = "engine.moves.requests", NumPartitions = 3, ReplicationFactor = 1 },
             new TopicSpecification { Name = "engine.moves.results", NumPartitions = 3, ReplicationFactor = 1 },
+            new TopicSpecification { Name = "analysis.requests", NumPartitions = 3, ReplicationFactor = 1 },
+            new TopicSpecification { Name = "analysis.results", NumPartitions = 3, ReplicationFactor = 1 },
         ]);
     }
 
