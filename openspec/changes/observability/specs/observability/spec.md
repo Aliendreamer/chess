@@ -97,11 +97,29 @@ container. The Engine worker dashboard SHALL show jobs by kind and outcome, thin
 - **WHEN** an operator opens Runtime & containers
 - **THEN** each backend node, the engine worker and the BFF show their heap and their container's memory over time
 
+### Requirement: Every log in the stack reaches Loki
+
+Logs SHALL reach Loki from every container of the local stack, each labelled with its service. The backend, engine
+worker and BFF logs MUST arrive structured over OTLP, carrying the trace and span ids of the work they were written
+in, and MUST NOT arrive a second time from container output. Every other container's output MUST be collected from
+Docker's log files. A Logs dashboard MUST show log volume and errors per service and a tail filtered by service, level
+and text.
+
+#### Scenario: Infrastructure logs
+
+- **WHEN** Keycloak logs an error during a login
+- **THEN** it appears in Loki under `service_name` `keycloak`, stack trace in one entry, and on the Logs dashboard's
+  errors panel
+
+#### Scenario: No duplicates
+
+- **WHEN** the backend writes one log line while tracing is on
+- **THEN** Loki holds that line once, with its trace id
+
 ### Requirement: Logs and profiles are linked to traces
 
-Backend and engine logs SHALL reach Loki carrying the trace and span ids of the work they were written in; Grafana
-MUST link a span to its logs and a log line to its trace. Pyroscope SHALL receive CPU and allocation profiles from
-both backend nodes, the engine worker and the BFF, and Grafana MUST open the profile samples of a backend span.
+Grafana SHALL link a span to its logs and a log line to its trace. Pyroscope SHALL receive CPU and allocation profiles
+from both backend nodes, the engine worker and the BFF, and Grafana MUST open the profile samples of a backend span.
 
 #### Scenario: From a slow span to its logs and profile
 

@@ -33,7 +33,11 @@ Cross-cutting, after Part 4 (ROADMAP §7 "Observability").
   - → each consumer (projections, deadlines, notifications, the engine request) → the engine worker and its answer →
     the live frame pushed back through the relay.
   - Tempo's **service graph** draws the whole system from these traces, with rates and errors on each edge.
-- **Logs in Loki**, each carrying its trace id: from a span, jump to its logs; from a log line, open its trace.
+- **Every log in the stack in Loki**, searchable in Grafana (owner request 2026-09-28):
+  - our apps (both backend nodes, the engine worker, the BFF) send structured logs carrying their trace id, so a
+    span opens its logs and a log line opens its trace;
+  - every other container (Postgres, Redpanda, Keycloak, Traefik, Redis, Mailpit) is collected from its output;
+  - a **Logs** dashboard: volume and errors per service, and a live tail filtered by service, level and text.
 - **Continuous profiling in Pyroscope** (CPU and allocations) for both backend nodes, the engine worker and the BFF,
   shown in Grafana as flame graphs.
 - **Each app's telemetry is a switch:** `Observability:Enabled` (backend, engine) and `OTEL_ENABLED` (BFF). The
@@ -94,7 +98,8 @@ Cross-cutting, after Part 4 (ROADMAP §7 "Observability").
   - new services: `otel-collector`, `prometheus`, `tempo`, `loki`, `pyroscope`, `grafana`, `postgres-exporter`
     (primary and replica), `redis-exporter` and `cadvisor`;
   - their configuration, Grafana provisioning and dashboards (JSON in the repo);
-  - a Traefik route for Grafana.
+  - a Traefik route for Grafana;
+  - a compose logging anchor on every service, and the collector reading Docker's container logs for Loki.
 - **Backend:**
   - an OTLP export for traces, metrics and logs (Serilog to OTLP);
   - a trace envelope for actor commands, and an optional `Trace` on every domain event (old journal rows read as
@@ -106,6 +111,7 @@ Cross-cutting, after Part 4 (ROADMAP §7 "Observability").
 - **Frontend (BFF):**
   - the OpenTelemetry Node SDK (server functions, `fetch` to the API with `traceparent`, relay metrics) and the
     Pyroscope Node agent;
+  - `lib/server/log.ts` in place of `console.*`, sending structured logs with the trace;
   - a browser tracer that reports through a BFF route.
 - **ROADMAP decisions:** settles §7 "Observability" (the collector, Grafana, the profile that was optional) and
   extends D8: Kafka records get headers.

@@ -25,7 +25,7 @@
 - Dashboards as code, the stack always on locally, each app's export a switch.
 
 **Non-Goals:** alerting, a production deployment of the stack, per-game metric labels, tracing Keycloak or
-Traefik, shipping BFF logs (it logs little; its spans carry the errors).
+Traefik (their logs do reach Loki, D9).
 
 ## Decisions
 
@@ -173,13 +173,30 @@ The rule for labels: types, groups, topics, regions and shard numbers only. Neve
 - The existing health checks (`/health` publisher lag, dead letters) stay as they are. The gauges read the same
   sources.
 
-### D9 — Logs
+### D9 — Logs: every log in the stack goes to Loki
 
-- Serilog adds an OTLP sink when `Enabled` (`Serilog.Sinks.OpenTelemetry`), next to the console sink.
-- Trace and span ids come from `Activity.Current`, so a log written while handling a message is linked to that
-  message's span.
-- The engine worker does the same.
-- Loki receives OTLP natively. Grafana links Loki's `trace_id` to Tempo, and Tempo spans to Loki.
+Two paths, so that nothing is collected twice:
+
+- **Our apps, over OTLP (structured, linked to traces):**
+  - The backend and the engine worker: Serilog adds an OTLP sink when `Enabled` (`Serilog.Sinks.OpenTelemetry`),
+    next to the console sink. Trace and span ids come from `Activity.Current`, so a log written while handling a
+    message is linked to that message's span. Structured properties (game id, topic, group) become log attributes.
+  - The BFF: a small `lib/server/log.ts` replaces its `console.*` calls. It writes to the console and, when
+    `OTEL_ENABLED`, emits through the OpenTelemetry Logs API with the active span's context.
+- **Everything else, from container output:**
+  - The collector's `filelog` receiver reads Docker's `json-file` logs from `/var/lib/docker/containers`, mounted
+    read-only (Docker runs natively in WSL here, so the files are on the host).
+  - A compose logging anchor sets the driver's `tag` to the service name, which becomes Loki's `service_name`.
+  - Covered: Postgres (primary and replica), Redpanda, Keycloak, Traefik, Redis, Mailpit, and the stack's own
+    services.
+  - The containers of our apps are excluded here, because their logs already arrive over OTLP.
+  - Multi-line entries (a Java stack trace in Keycloak) are joined by the receiver's recombine operator.
+- **In Grafana:**
+  - Loki's `trace_id` links to Tempo, and Tempo spans link to Loki.
+  - A **Logs** dashboard: every service's volume by level, errors across the stack, and a live tail filtered by
+    service, level and text.
+- **Alternative:** Promtail or Alloy with Docker service discovery. That is one more agent, while the collector is
+  already there.
 
 ### D10 — Profiling
 
