@@ -32,6 +32,8 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<Study> Studies => Set<Study>();
 
+    public DbSet<PositionEvaluation> PositionEvaluations => Set<PositionEvaluation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();

@@ -4,6 +4,7 @@ using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Akka.Ping;
+using Chess.Backend.Analysis;
 using Chess.Backend.Correspondence;
 using Chess.Backend.Engine;
 using Chess.Backend.Messaging;
@@ -145,6 +146,18 @@ internal static class BuilderExtension
 
         services.AddScoped<NotificationConsumer>();
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<NotificationConsumer>());
+        // Shared position analysis (engine-analysis): requests to the engine worker, results into the cache.
+        services.AddSettings<AnalysisOptions>(configuration, AnalysisOptions.SectionName);
+        services.AddScoped<AnalysisResultConsumer>();
+        services.AddScoped<IProjection>(sp => sp.GetRequiredService<AnalysisResultConsumer>());
+        if (kafka.Enabled)
+        {
+            services.AddSingleton<IAnalysisRequests>(_ => new KafkaAnalysisRequests(kafka.BootstrapServers));
+        }
+        else
+        {
+            services.AddSingleton<IAnalysisRequests>(NoAnalysisRequests.Instance);
+        }
         services.AddScoped<EngineRequestConsumer>();
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<EngineRequestConsumer>());
         services.AddScoped<EngineMoveConsumer>();

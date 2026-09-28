@@ -11,7 +11,7 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
 
 ## 3. Backend
 
-- [ ] 3.1 `PositionKey`, `position_evaluations` + migration, `Analysis` settings, `AnalysisService` (lookup, request,
+- [x] 3.1 `PositionKey`, `position_evaluations` + migration, `Analysis` settings, `AnalysisService` (lookup, request,
       dedupe, retry), `AnalysisResultConsumer`, `POST /api/analysis`. Tests. Commit
       `feat(backend): shared position analysis`.
 - [ ] 3.2 🐳 Integration: request → fake engine answer → stored → second request served from cache, no new request.
