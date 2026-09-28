@@ -142,6 +142,7 @@ public sealed class SettingsTests
     public void The_defaults_are_valid_except_the_broker_which_must_be_set()
     {
         new EngineOptions().Validate();
+        Assert.Throws<InvalidOperationException>(() => new EngineOptions { AnalysisProcesses = 17 }.Validate());
         new KafkaOptions { BootstrapServers = "redpanda:9092" }.Validate();
         Assert.Throws<InvalidOperationException>(() => new KafkaOptions().Validate());
     }

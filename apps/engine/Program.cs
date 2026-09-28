@@ -18,7 +18,7 @@ kafka.Validate();
 builder.Services.AddSingleton(engine);
 builder.Services.AddSingleton(kafka);
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddHostedService<MoveWorker>();
+builder.Services.AddHostedService<EngineWorker>();
 // A search in flight gets its move time plus slack to finish before the host gives up on it.
 builder.Services.Configure<HostOptions>(o => o.ShutdownTimeout = TimeSpan.FromSeconds(engine.SlackSeconds + 10));
 

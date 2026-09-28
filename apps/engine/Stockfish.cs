@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace Chess.Engine;
@@ -139,6 +140,53 @@ internal sealed class UciEngine(IUciChannel channel, int hashMb, TimeSpan slack)
         return parts.Length > 1 && parts[1] != "(none)" ? parts[1] : null;
     }
 
+    /// <summary>
+    /// Full-strength analysis (engine-analysis D3): <paramref name="lines"/> best lines after thinking
+    /// <paramref name="thinkMs"/>, with the depth reached. Scores are turned to White's side.
+    /// </summary>
+    public async Task<(int Depth, IReadOnlyList<AnalysisLine> Lines)> AnalyseAsync(string fen, int thinkMs, int lines, CancellationToken ct)
+    {
+        await channel.WriteLineAsync("ucinewgame", ct).ConfigureAwait(false);
+        foreach (string option in EngineLevel.Max.Options())
+        {
+            await channel.WriteLineAsync(option, ct).ConfigureAwait(false);
+        }
+
+        await channel.WriteLineAsync($"setoption name MultiPV value {lines.ToString(CultureInfo.InvariantCulture)}", ct).ConfigureAwait(false);
+        await ReadyAsync(ct).ConfigureAwait(false);
+        await channel.WriteLineAsync($"position fen {fen}", ct).ConfigureAwait(false);
+        await channel.WriteLineAsync($"go movetime {thinkMs.ToString(CultureInfo.InvariantCulture)}", ct).ConfigureAwait(false);
+
+        bool whiteToMove = fen.Split(' ') is not [_, "b", ..];
+        SortedDictionary<int, AnalysisLine> best = [];
+        int depth = 0;
+        using CancellationTokenSource deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(TimeSpan.FromMilliseconds(thinkMs) + slack);
+        try
+        {
+            while (true)
+            {
+                string line = await channel.ReadLineAsync(deadline.Token).ConfigureAwait(false)
+                    ?? throw new EndOfStreamException("The engine exited while analysing.");
+                if (line.StartsWith("bestmove", StringComparison.Ordinal))
+                {
+                    await channel.WriteLineAsync("setoption name MultiPV value 1", ct).ConfigureAwait(false);
+                    return (depth, [.. best.Values]);
+                }
+
+                if (AnalysisLine.TryParse(line, whiteToMove, out int k, out int d, out AnalysisLine? parsed))
+                {
+                    best[k] = parsed;
+                    depth = Math.Max(depth, d);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new TimeoutException($"The engine did not finish analysing within {thinkMs} ms and its slack.");
+        }
+    }
+
     public ValueTask DisposeAsync() => channel.DisposeAsync();
 
     private async Task ReadyAsync(CancellationToken ct)
@@ -170,3 +218,63 @@ internal sealed class UciEngine(IUciChannel channel, int hashMb, TimeSpan slack)
         }
     }
 }
+
+/// <summary>
+/// One of the engine's best lines: a score from White's side — centipawns, or mate in N (negative when Black mates) —
+/// and its moves in UCI.
+/// </summary>
+internal sealed record AnalysisLine(int? Cp, int? Mate, IReadOnlyList<string> Pv)
+{
+    /// <summary>
+    /// An <c>info … multipv k score cp|mate x … pv …</c> line, or false for anything else (and for bound scores, which
+    /// are only partial). The side to move's score is turned to White's.
+    /// </summary>
+    public static bool TryParse(string info, bool whiteToMove, out int multiPv, out int depth, [NotNullWhen(true)] out AnalysisLine? line)
+    {
+        ArgumentNullException.ThrowIfNull(info);
+        (multiPv, depth, line) = (1, 0, null);
+        string[] t = info.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (t.Length == 0 || t[0] != "info" || info.Contains("bound", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        int? cp = null;
+        int? mate = null;
+        List<string> pv = [];
+        for (int i = 1; i < t.Length; i++)
+        {
+            switch (t[i])
+            {
+                case "depth" when i + 1 < t.Length:
+                    depth = int.Parse(t[++i], CultureInfo.InvariantCulture);
+                    break;
+                case "multipv" when i + 1 < t.Length:
+                    multiPv = int.Parse(t[++i], CultureInfo.InvariantCulture);
+                    break;
+                case "score" when i + 2 < t.Length && t[i + 1] == "cp":
+                    cp = int.Parse(t[i + 2], CultureInfo.InvariantCulture);
+                    i += 2;
+                    break;
+                case "score" when i + 2 < t.Length && t[i + 1] == "mate":
+                    mate = int.Parse(t[i + 2], CultureInfo.InvariantCulture);
+                    i += 2;
+                    break;
+                case "pv":
+                    pv.AddRange(t.Skip(i + 1));
+                    i = t.Length;
+                    break;
+            }
+        }
+
+        if ((cp is null && mate is null) || pv.Count == 0)
+        {
+            return false;
+        }
+
+        int sign = whiteToMove ? 1 : -1;
+        line = new AnalysisLine(cp * sign, mate * sign, pv);
+        return true;
+    }
+}
+
