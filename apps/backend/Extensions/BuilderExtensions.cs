@@ -396,13 +396,21 @@ internal static class ObservabilityExtensions
         Uri endpoint = new(options.OtlpEndpoint);
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddAttributes(ResourceAttributes(options, node)))
-            .WithTracing(tracing => tracing
-                .SetSampler(new ParentBasedSampler(new TraceIdRatioBasedSampler(options.SampleRatio)))
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation()
-                .AddNpgsql()
-                .AddSource(ActorTracing.SourceName, PipelineTracing.SourceName, "Microsoft.AspNetCore.SignalR.Server")
-                .AddOtlpExporter(o => o.Endpoint = endpoint))
+            .WithTracing(tracing =>
+            {
+                tracing
+                    .SetSampler(new ParentBasedSampler(new TraceIdRatioBasedSampler(options.SampleRatio)))
+                    .AddAspNetCoreInstrumentation()
+                    .AddHttpClientInstrumentation()
+                    .AddNpgsql()
+                    .AddSource(ActorTracing.SourceName, PipelineTracing.SourceName, "Microsoft.AspNetCore.SignalR.Server")
+                    .AddOtlpExporter(o => o.Endpoint = endpoint);
+                if (ProfilerLoaded)
+                {
+                    // Span profiles (observability D10): profile samples carry the span, so Grafana opens one span's flame graph.
+                    tracing.AddProcessor(new Pyroscope.OpenTelemetry.PyroscopeSpanProcessor());
+                }
+            })
             // .NET publishes these meters itself; subscribing by name is all it takes.
             .WithMetrics(metrics => metrics
                 .AddMeter(
@@ -423,6 +431,10 @@ internal static class ObservabilityExtensions
 
         return services;
     }
+
+    /// <summary>Pyroscope's native profiler is in this process (the stack's launch profile loads it); span profiles need it.</summary>
+    public static bool ProfilerLoaded => System.Environment.GetEnvironmentVariable("PYROSCOPE_PROFILING_ENABLED") == "1"
+        && System.Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING") == "1";
 
     /// <summary>Who is speaking: the app, this node (the Akka hostname in the cluster), and the environment.</summary>
     public static IReadOnlyDictionary<string, object> ResourceAttributes(ObservabilityOptions options, string node)

@@ -66,10 +66,10 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
 - [x] 6.1 Failing tests first, in the worker. A request with a `traceparent` header is handled in a span of that
       trace, and its result carries the trace on. `chess.engine.jobs` counts by kind and outcome. Then add the OTLP
       export behind the same switch, and Serilog to OTLP. Commit `feat(engine): telemetry and trace continuation`.
-- [ ] 6.2 Add the Pyroscope .NET profiler to the backend images (dev and prod, Alpine: the musl build) and the engine
-      image (Debian: the glibc build), plus `Pyroscope.OpenTelemetry` for span profiles. Compose sets the profiler's
-      environment. 🐳 Proof: `chess-backend` (both nodes) and `chess-engine` appear in Pyroscope with CPU and alloc
-      profiles, and a span links to its profile. Commit `feat(repo): continuous profiling`.
+- [x] 6.2 Add the Pyroscope .NET profiler to the backend images (dev and prod, Alpine: the musl build), plus
+      `Pyroscope.OpenTelemetry` for span profiles; the engine is not profiled (owner decision). Compose sets the
+      profiler's environment. 🐳 Proof: `chess-backend` (both nodes) appears in Pyroscope with CPU and alloc profiles,
+      and a span links to its profile. Commit `feat(backend): continuous profiling`.
 
 ## 7. Frontend: the BFF and the browser
 

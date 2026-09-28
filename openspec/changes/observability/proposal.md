@@ -38,8 +38,8 @@ Cross-cutting, after Part 4 (ROADMAP §7 "Observability").
     span opens its logs and a log line opens its trace;
   - every other container (Postgres, Redpanda, Keycloak, Traefik, Redis, Mailpit) is collected from its output;
   - a **Logs** dashboard: volume and errors per service, and a live tail filtered by service, level and text.
-- **Continuous profiling in Pyroscope** (CPU and allocations) for both backend nodes, the engine worker and the BFF,
-  shown in Grafana as flame graphs.
+- **Continuous profiling in Pyroscope** (CPU and allocations) for both backend nodes and the BFF, shown in Grafana as
+  flame graphs. Not the engine worker: it only drives Stockfish (owner decision 2026-09-28).
 - **Each app's telemetry is a switch:** `Observability:Enabled` (backend, engine) and `OTEL_ENABLED` (BFF). The
   stack always runs; an app with the switch off exports nothing and behaves the same. The stack turns it on.
   `Observability:Console` is replaced.

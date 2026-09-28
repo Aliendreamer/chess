@@ -210,9 +210,13 @@ Two paths, so that nothing is collected twice:
 
 ### D10 — Profiling
 
-- **.NET:** the Pyroscope .NET profiler (native library plus `CORECLR_*` environment variables) is in the backend
-  and engine images. It is turned on by compose (`PYROSCOPE_SERVER_ADDRESS`), with CPU, allocation, lock and
-  exception profiling. The profiler loads before the app, so it is an environment switch, not `appsettings`.
+- **.NET, the backend only:** the Pyroscope .NET profiler (the musl build of its native library plus `CORECLR_*`
+  environment variables) is in the backend images. In the dev image a `stack` launch profile loads it into the app
+  process alone (`dotnet watch` and the build servers stay unprofiled); the production image carries it off. CPU,
+  allocation, lock and exception profiling. The profiler loads before the app, so it is an environment switch, not
+  `appsettings`.
+- **Not the engine worker** (owner decision 2026-09-28): it only drives the Stockfish binary, which a .NET profiler
+  cannot see into. In a trial the profiler also took the worker down about 40 s into its first search.
 - **Span profiles:** `Pyroscope.OpenTelemetry` tags samples with the span id, so Grafana opens the profile of one
   slow span.
 - **Node:** `@pyroscope/nodejs` in the BFF's instrumentation file when the address is set.

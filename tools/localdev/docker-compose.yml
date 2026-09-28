@@ -62,6 +62,9 @@ x-backend-env: &backend-env
   # Traces, metrics and logs over OTLP to the collector (observability D2); the node name comes from Akka__Hostname.
   Observability__Enabled: "true"
   Observability__OtlpEndpoint: http://otel-collector:4317
+  # Pyroscope (observability D10); the dev image's `stack` launch profile loads the profiler into the app.
+  PYROSCOPE_SERVER_ADDRESS: http://pyroscope:4040
+  PYROSCOPE_APPLICATION_NAME: chess-backend
 
 # Every service logs through json-file with its container name as the tag (chess-keycloak-1); the collector reads
 # these files and turns the tag into the service name in Loki (observability D9). Size-capped so logs never fill the disk.
@@ -371,6 +374,7 @@ services:
     environment:
       <<: *backend-env
       Akka__Hostname: backend
+      PYROSCOPE_LABELS: service_instance_id:backend
       Akka__SeedNodes__0: akka.tcp://chess@backend:8091
       # backend-2 as a second seed: a RESTARTED backend-1 asks it first and rejoins the running cluster.
       # With itself as the only seed it self-joined into a second cluster (split brain: two shard
@@ -415,6 +419,7 @@ services:
     environment:
       <<: *backend-env
       Akka__Hostname: backend-2
+      PYROSCOPE_LABELS: service_instance_id:backend-2
       Akka__SeedNodes__0: akka.tcp://chess@backend:8091
       Akka__SeedNodes__1: akka.tcp://chess@backend-2:8091
     volumes:

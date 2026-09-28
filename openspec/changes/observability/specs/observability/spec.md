@@ -124,7 +124,8 @@ and text.
 ### Requirement: Logs and profiles are linked to traces
 
 Grafana SHALL link a span to its logs and a log line to its trace. Pyroscope SHALL receive CPU and allocation profiles
-from both backend nodes, the engine worker and the BFF, and Grafana MUST open the profile samples of a backend span.
+from both backend nodes and the BFF (not the engine worker, which only drives Stockfish), and Grafana MUST open the
+profile samples of a backend span.
 
 #### Scenario: From a slow span to its logs and profile
 
