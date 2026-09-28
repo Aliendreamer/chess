@@ -58,6 +58,24 @@ internal sealed partial class ChessRules
     /// <summary>A position with no history — tests and material checks only; a real game starts from <see cref="NewGame"/>.</summary>
     public static ChessRules FromFen(string fen) => new(Gera.ChessBoard.LoadFromFen(fen, Gera.AutoEndgameRules.All));
 
+    /// <summary>
+    /// A position for a study (studies D2): no automatic endings, because a line that repeats or runs past fifty moves
+    /// is still a line to study; checkmate and stalemate still end it. Null when <paramref name="fen"/> is no position.
+    /// </summary>
+    public static ChessRules? ForStudy(string fen)
+    {
+        try
+        {
+            return Gera.ChessBoard.TryLoadFromFen(fen, out Gera.ChessBoard? board, Gera.AutoEndgameRules.None) && board is not null
+                ? new ChessRules(board)
+                : null;
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or IndexOutOfRangeException or FormatException)
+        {
+            return null; // the library throws on some malformed FENs instead of answering false
+        }
+    }
+
     public MoveOutcome TryApply(string uci)
     {
         Match m = UciPattern().Match(uci ?? string.Empty);

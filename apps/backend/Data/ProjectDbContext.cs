@@ -30,6 +30,8 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<NotificationGame> NotificationGames => Set<NotificationGame>();
 
+    public DbSet<Study> Studies => Set<Study>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();

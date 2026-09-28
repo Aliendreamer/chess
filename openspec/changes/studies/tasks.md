@@ -2,11 +2,11 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
 
 ## 1. Owner review
 
-- [ ] 1.1 The owner confirms the proposal and design. Nothing is built before this.
+- [x] 1.1 The owner confirms the proposal and design. Nothing is built before this.
 
 ## 2. Backend
 
-- [ ] 2.1 `Study` entity + migration; `Studies/StudyTree.cs` (validate + complete a tree with `ChessRules`, limits) and
+- [x] 2.1 `Study` entity + migration; `Studies/StudyTree.cs` (validate + complete a tree with `ChessRules`, limits) and
       `StudyPgn` (export). Tests. Commit `feat(backend): studies with validated move trees`.
 - [ ] 2.2 Endpoints (`WebApi/Studies/…`: create/import, mine, get, update with version, share, delete, pgn) and
       `POST /api/games/{id}/study`. Tests. Commit `feat(backend): study endpoints`.
