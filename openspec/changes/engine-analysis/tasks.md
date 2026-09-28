@@ -23,6 +23,6 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
 
 ## 5. Verify and docs
 
-- [ ] 5.1 🐳 `verify-part4b.sh` and a Playwright spec; the whole e2e suite. Commit `test(repo): verify engine analysis`.
+- [x] 5.1 🐳 `verify-part4b.sh` and a Playwright spec; the whole e2e suite. Commit `test(repo): verify engine analysis`.
 - [ ] 5.2 CLAUDE.md, architecture, ROADMAP, the Part 4 note; archive. Commit `docs(repo): engine analysis and the part 4
 note`.
