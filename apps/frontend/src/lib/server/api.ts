@@ -14,6 +14,15 @@ import {
   startEngineGame,
 } from './games'
 import {
+  createStudies,
+  deleteStudy,
+  loadMyStudies,
+  loadStudy,
+  saveStudy,
+  shareStudy,
+  studyFromGame,
+} from './studies'
+import {
   acceptInvite,
   cancelInvite,
   createInvite,
@@ -24,6 +33,7 @@ import {
 } from './play'
 import type { GameCommand } from '../games'
 import type { InviteView } from '../play'
+import type { StudyInput, StudyMoveInput } from '../studies'
 
 /** A `fetch` bound to the internal API that re-attaches the caller's session cookie under its API name. */
 function serverFetch(): typeof fetch {
@@ -177,3 +187,50 @@ export const postStartEngineGame = createServerFn({ method: 'POST' })
     return { level: input.level, color: input.color }
   })
   .handler(({ data }) => startEngineGame(serverFetch(), data))
+
+// ---- studies (studies D6) ----------------------------------------------------------------------------------
+
+export const getMyStudies = createServerFn({ method: 'GET' })
+  .validator((input: { limit: number; cursor?: string }) => ({
+    limit: Math.min(Math.max(Math.trunc(input.limit), 1), 50),
+    cursor: input.cursor,
+  }))
+  .handler(({ data }) => loadMyStudies(serverFetch(), data))
+
+export const getStudy = createServerFn({ method: 'GET' })
+  .validator((id: string) => id)
+  .handler(({ data }) => (isGuid(data) ? loadStudy(serverFetch(), data) : null))
+
+export const postCreateStudies = createServerFn({ method: 'POST' })
+  .validator((studies: Array<StudyInput>) => {
+    if (!Array.isArray(studies) || studies.length === 0 || studies.length > 20)
+      throw new Error('1 to 20 studies')
+    return studies
+  })
+  .handler(({ data }) => createStudies(serverFetch(), data))
+
+export const putStudy = createServerFn({ method: 'POST' })
+  .validator(
+    (input: { id: string; title: string; tree: Array<StudyMoveInput>; version: number }) => ({
+      id: guid(input.id),
+      title: String(input.title),
+      tree: input.tree,
+      version: Math.trunc(input.version),
+    }),
+  )
+  .handler(({ data }) => saveStudy(serverFetch(), data))
+
+export const postShareStudy = createServerFn({ method: 'POST' })
+  .validator((input: { id: string; shared: boolean }) => ({
+    id: guid(input.id),
+    shared: input.shared === true,
+  }))
+  .handler(({ data }) => shareStudy(serverFetch(), data.id, data.shared))
+
+export const postDeleteStudy = createServerFn({ method: 'POST' })
+  .validator((id: string) => guid(id))
+  .handler(({ data }) => deleteStudy(serverFetch(), data))
+
+export const postStudyFromGame = createServerFn({ method: 'POST' })
+  .validator((gameId: string) => guid(gameId))
+  .handler(({ data }) => studyFromGame(serverFetch(), data))

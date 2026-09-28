@@ -148,6 +148,9 @@ importers:
       '@microsoft/signalr':
         specifier: 10.0.11
         version: 10.0.11
+      '@mliebelt/pgn-parser':
+        specifier: 1.4.19
+        version: 1.4.19
       '@tailwindcss/vite':
         specifier: 4.3.0
         version: 4.3.0(vite@8.0.16(@types/node@25.9.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
@@ -1238,6 +1241,13 @@ packages:
 
   '@microsoft/signalr@10.0.11':
     resolution: {integrity: sha512-FulOJ2EEtKvLQcswe/U7v8pzyXyk7Jua5xgWJPPwyQU/2Z9ORvKcVjyO75VvLsem+CJ1ORRexJ+7Bz1FCei2aw==}
+
+  '@mliebelt/pgn-parser@1.4.19':
+    resolution: {integrity: sha512-UWujpNxBjX8ONd1Wn1Pw9mexvWhzvpFWpekmlW2peMd0J+NzqK5FmRGBQLGA6meqPRW+VNvXfJhf+zHvxfS7ZA==}
+    hasBin: true
+
+  '@mliebelt/pgn-types@1.0.4':
+    resolution: {integrity: sha512-l1VUSp8pmdsr6HNTaZIQdmd70XqmtCp5jd0fOi4KpR/mq+NBbE1A178a6+rRy001A0/Li1rUxpssDzcYBR87GQ==}
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     resolution: {integrity: sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ==}
@@ -6658,6 +6668,12 @@ snapshots:
       - bufferutil
       - encoding
       - utf-8-validate
+
+  '@mliebelt/pgn-parser@1.4.19':
+    dependencies:
+      '@mliebelt/pgn-types': 1.0.4
+
+  '@mliebelt/pgn-types@1.0.4': {}
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true

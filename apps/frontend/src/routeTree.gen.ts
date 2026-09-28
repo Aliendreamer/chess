@@ -13,6 +13,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as PgnIdRouteImport } from './routes/pgn/$id'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
+import { Route as PgnStudyIdRouteImport } from './routes/pgn/study.$id'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthenticatedPingsIdRouteImport } from './routes/_authenticated/pings.$id'
 import { Route as AuthenticatedInvitesIdRouteImport } from './routes/_authenticated/invites.$id'
@@ -36,6 +37,11 @@ const AuthenticatedGamesIndexRoute = AuthenticatedGamesIndexRouteImport.update({
   id: '/games/',
   path: '/games/',
   getParentRoute: () => AuthenticatedRoute,
+} as any)
+const PgnStudyIdRoute = PgnStudyIdRouteImport.update({
+  id: '/pgn/study/$id',
+  path: '/pgn/study/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/invites/$id': typeof AuthenticatedInvitesIdRoute
   '/pings/$id': typeof AuthenticatedPingsIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/pgn/study/$id': typeof PgnStudyIdRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/invites/$id': typeof AuthenticatedInvitesIdRoute
   '/pings/$id': typeof AuthenticatedPingsIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/pgn/study/$id': typeof PgnStudyIdRoute
   '/games': typeof AuthenticatedGamesIndexRoute
 }
 export interface FileRoutesById {
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/_authenticated/invites/$id': typeof AuthenticatedInvitesIdRoute
   '/_authenticated/pings/$id': typeof AuthenticatedPingsIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/pgn/study/$id': typeof PgnStudyIdRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
 }
 export interface FileRouteTypes {
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/invites/$id'
     | '/pings/$id'
     | '/api/auth/$'
+    | '/pgn/study/$id'
     | '/games/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/invites/$id'
     | '/pings/$id'
     | '/api/auth/$'
+    | '/pgn/study/$id'
     | '/games'
   id:
     | '__root__'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/_authenticated/invites/$id'
     | '/_authenticated/pings/$id'
     | '/api/auth/$'
+    | '/pgn/study/$id'
     | '/_authenticated/games/'
   fileRoutesById: FileRoutesById
 }
@@ -122,6 +134,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   PgnIdRoute: typeof PgnIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  PgnStudyIdRoute: typeof PgnStudyIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -153,6 +166,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/games/'
       preLoaderRoute: typeof AuthenticatedGamesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/pgn/study/$id': {
+      id: '/pgn/study/$id'
+      path: '/pgn/study/$id'
+      fullPath: '/pgn/study/$id'
+      preLoaderRoute: typeof PgnStudyIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -209,6 +229,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   PgnIdRoute: PgnIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  PgnStudyIdRoute: PgnStudyIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

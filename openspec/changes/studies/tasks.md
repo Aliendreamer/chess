@@ -14,7 +14,7 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
 
 ## 3. Frontend
 
-- [ ] 3.1 `lib/studies.ts` (tree ops, PGN → tree with pgn-parser + chess.js), server functions. Tests. Commit
+- [x] 3.1 `lib/studies.ts` (tree ops, PGN → tree with pgn-parser + chess.js), server functions. Tests. Commit
       `feat(frontend): study model and pgn import`.
 - [ ] 3.2 `/studies`, `/studies/$id` (board, move tree, navigation, variations, save, share, download), nav item,
       "Analyse" on finished games. Tests. Commit `feat(frontend): studies`.

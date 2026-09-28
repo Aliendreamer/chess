@@ -1,5 +1,6 @@
 import { redirect } from '@tanstack/react-router'
 import { loginHref } from '../auth'
+import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import type { CommandOutcome } from '../games'
 
 /**
@@ -79,23 +80,36 @@ export async function readJson<T>(res: Response, what: string): Promise<T> {
 }
 
 /** A POST whose 4xx refusal is an outcome; 401 redirects to login, 5xx throws. */
-export async function postCommand<T>(
+export function postCommand<T>(
   fetchImpl: typeof fetch,
+  path: string,
+  body?: unknown,
+): Promise<CommandOutcome<T>> {
+  return sendCommand<T>(fetchImpl, 'POST', path, body)
+}
+
+/**
+ * A command (POST, PUT, DELETE) whose 4xx refusal is an outcome; 401 redirects to login, 5xx throws. A 204 answers
+ * with a null view.
+ */
+export async function sendCommand<T>(
+  fetchImpl: typeof fetch,
+  method: 'POST' | 'PUT' | 'DELETE',
   path: string,
   body?: unknown,
 ): Promise<CommandOutcome<T>> {
   const res = await fetchImpl(
     path,
     body === undefined
-      ? { method: 'POST' }
+      ? { method }
       : {
-          method: 'POST',
+          method,
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify(body),
         },
   )
   if (res.status === 401) throw redirect({ href: LOGIN_REDIRECT })
-  if (res.status >= 500) throw new Error(`POST ${path} failed with ${res.status}`)
+  if (res.status >= 500) throw new Error(`${method} ${path} failed with ${res.status}`)
   if (!res.ok) {
     let problem: unknown = null
     try {
@@ -105,5 +119,37 @@ export async function postCommand<T>(
     }
     return { ok: false, status: res.status, error: problemMessage(problem, res.status) }
   }
-  return { ok: true, view: (await res.json()) as T }
+  return { ok: true, view: (res.status === 204 ? null : await res.json()) as T }
+}
+
+/**
+ * `GET /pgn/…` on the app origin: the BFF fetches `apiPath` server-to-server with the caller's session and hands it over
+ * as a `.pgn` file; a lost session goes to login and back to `backTo`. Games and studies both download through it.
+ */
+export async function pgnDownload(
+  request: Request,
+  apiPath: string,
+  backTo: string,
+  fileName: string,
+  fetchImpl: typeof fetch = fetch,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<Response> {
+  const cookie = forwardCookieHeader(request.headers.get('cookie'), cookiesAreSecure(env))
+  const headers = new Headers({ accept: 'text/plain' })
+  if (cookie) headers.set('cookie', cookie)
+
+  const upstream = await fetchImpl(`${apiUrl(env)}${apiPath}`, { headers })
+  if (upstream.status === 401) {
+    return new Response(null, { status: 302, headers: { location: loginHref(backTo) } })
+  }
+  if (!upstream.ok) return new Response(null, { status: upstream.status })
+
+  return new Response(await upstream.text(), {
+    status: 200,
+    headers: {
+      'content-type': 'application/x-chess-pgn; charset=utf-8',
+      'content-disposition': `attachment; filename="${fileName}"`,
+      'cache-control': 'private, no-store',
+    },
+  })
 }
