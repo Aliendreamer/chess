@@ -17,6 +17,9 @@ export const THINKS: ReadonlyArray<{ value: Think; label: string }> = [
   { value: 'deep', label: 'Deep' },
 ]
 
+/** "Analyse line" asks for this many positions from the current one: the API's `Analysis:MaxPositions`. */
+export const LINE_POSITIONS = 10
+
 /** How often the board asks again for positions the engine is still working on. */
 export const POLL_MS = 1500
 

@@ -157,7 +157,7 @@ export function AnalysisPanel({
   analysis: Analysis
   fen: string
   evaluation: Evaluation | null
-  /** The positions from here to the end of the line. */
+  /** The next positions of the line from here, this one first. */
   line: ReadonlyArray<string>
   onPlayLine?: ((moves: Array<StudyMove>) => void) | undefined
 }) {
@@ -187,7 +187,12 @@ export function AnalysisPanel({
         <Button size="sm" disabled={busy} onClick={() => analyse([fen])}>
           Evaluate
         </Button>
-        <Button size="sm" disabled={busy || line.length < 2} onClick={() => analyse(line)}>
+        <Button
+          size="sm"
+          disabled={busy || line.length < 2}
+          title={`Evaluates this position and the next ${line.length - 1} of the line`}
+          onClick={() => analyse(line)}
+        >
           Analyse line
         </Button>
       </div>

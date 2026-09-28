@@ -245,14 +245,15 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   `/studies/$id`, `/pgn/study/$id`. A controlled input must adopt text typed before hydration (see the import form).
 
 - **Engine analysis (engine-analysis)** — `POST /api/analysis {positions, think}` (quick/normal/deep =
-  `Analysis:QuickMs`/`NormalMs`/`DeepMs`, at most `Analysis:MaxPositions`) answers each position from the shared cache
+  `Analysis:QuickMs`/`NormalMs`/`DeepMs`, at most `Analysis:MaxPositions` = 10; "Analyse line" = the next 10) answers each position from the shared cache
   `position_evaluations` (PK `(PositionKey, ThinkMs)`; `Analysis/PositionAnalysis.cs`) — a longer think answers a
   shorter request — and produces the rest to `analysis.requests` (`KafkaAnalysisRequests` owns its producer), unless a
   request for that key and think is younger than `Analysis:RetryAfterSeconds`. `PositionKey.Of` = the FEN's first four
   fields, en passant kept only when a pawn can take (chess.js and Gera write it differently; `lib/analysis.ts#positionKey`
   mirrors it). The worker's analysis loop (`Engine:AnalysisProcesses`, own consumer group, full strength, MultiPV
   `Analysis:Lines`, scores turned to White's side) answers on `analysis.results`; `AnalysisResultConsumer` stores it,
-  keeping the deeper of two answers. The study board (`AnalysisPanel`, `useAnalysis`) asks, then polls every 1.5 s for
+  keeping the deeper of two answers. Scale with `Engine:AnalysisProcesses` or worker replicas (one group: total
+  consumers ≤ the topic's 3 partitions). The study board (`AnalysisPanel`, `useAnalysis`) asks, then polls every 1.5 s for
   the pending positions; scores follow moves in the tree, and a line clicked is played into the study.
 
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/

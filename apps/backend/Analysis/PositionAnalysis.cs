@@ -21,8 +21,8 @@ internal sealed class AnalysisOptions : ISettings
     /// <summary>The engine's best lines per position (MultiPV).</summary>
     public int Lines { get; set; } = 3;
 
-    /// <summary>At most this many positions per request (a line of a long game).</summary>
-    public int MaxPositions { get; set; } = 300;
+    /// <summary>At most this many positions per request: "Analyse line" asks for the next ten.</summary>
+    public int MaxPositions { get; set; } = 10;
 
     /// <summary>A request unanswered for this long counts as lost and is sent again when someone asks.</summary>
     public int RetryAfterSeconds { get; set; } = 120;

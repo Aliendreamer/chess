@@ -5,7 +5,7 @@ namespace Chess.Backend.WebApi.Analysis;
 
 internal sealed class AnalysePositionsRequest
 {
-    /// <summary>The positions, as FENs: one to evaluate, or every position of a line (up to <c>Analysis:MaxPositions</c>).</summary>
+    /// <summary>The positions, as FENs: one to evaluate, or the next positions of a line (up to <c>Analysis:MaxPositions</c>).</summary>
     public IReadOnlyList<string> Positions { get; init; } = [];
 
     /// <summary><c>quick</c>, <c>normal</c> or <c>deep</c>.</summary>

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Engine analysis on the study board: a position or a whole line evaluated at a chosen think time, with the engine's
+Engine analysis on the study board: a position or the next positions of a line evaluated at a chosen think time, with the engine's
 best lines, cached per position and shared by everyone.
 
 ## Requirements
@@ -20,7 +20,7 @@ pawns, or mate in N) and its moves.
 
 ### Requirement: A line can be analysed move by move
 
-A player SHALL be able to ask for every position of a main line (up to 300) at once; each position's evaluation MUST
+A player SHALL be able to ask for the next positions of a main line (up to 10, the current one first) at once; each position's evaluation MUST
 appear as soon as it is known, and the board MUST show how many are done.
 
 #### Scenario: Analysing a short game

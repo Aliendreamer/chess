@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader } from '@tanstack/react-start/server'
 import { CORRESPONDENCE, PRESETS } from '../games'
+import { LINE_POSITIONS } from '../analysis'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { apiUrl, isGuid } from './upstream'
 import { loadMe } from './auth'
@@ -237,18 +238,15 @@ export const postStudyFromGame = createServerFn({ method: 'POST' })
   .validator((gameId: string) => guid(gameId))
   .handler(({ data }) => studyFromGame(serverFetch(), data))
 
-/** At most as many positions as the API takes (`Analysis:MaxPositions`). */
-const MAX_POSITIONS = 300
-
 export const postAnalysis = createServerFn({ method: 'POST' })
   .validator((input: { positions: Array<string>; think: Think }) => {
     if (!['quick', 'normal', 'deep'].includes(input.think)) throw new Error('Not a think time.')
     if (
       !Array.isArray(input.positions) ||
       input.positions.length === 0 ||
-      input.positions.length > MAX_POSITIONS
+      input.positions.length > LINE_POSITIONS
     )
-      throw new Error(`Between 1 and ${MAX_POSITIONS} positions.`)
+      throw new Error(`Between 1 and ${LINE_POSITIONS} positions.`)
     return { positions: input.positions.map(String), think: input.think }
   })
   .handler(({ data }) => analysePositions(serverFetch(), data))

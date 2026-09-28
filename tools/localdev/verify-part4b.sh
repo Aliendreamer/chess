@@ -2,7 +2,7 @@
 # Prove engine analysis on the live stack (Part 4, engine-analysis): testuser asks for a position nobody has asked for
 # (a random rook ending), the engine worker evaluates it with three lines, the answer is stored, and then player — another
 # user — gets it straight from the shared cache, also at a shorter think time; a deeper think is a new request; nonsense
-# is a 400.
+# (a bad FEN or think, more than 10 positions) is a 400.
 #
 #   tools/localdev/verify-part4b.sh
 set -euo pipefail
@@ -79,6 +79,9 @@ echo "ok (asked the engine)"
 step "nonsense is a 400"
 [[ "$(code "$SID_T" POST -d '{"positions":["not a fen"],"think":"normal"}' "http://$API_HOST/api/analysis")" == "400" ]] || fail "a bad FEN was accepted"
 [[ "$(code "$SID_T" POST -d "{\"positions\":[\"$FEN\"],\"think\":\"forever\"}" "http://$API_HOST/api/analysis")" == "400" ]] || fail "a bad think was accepted"
+eleven="\"$FEN\""; for _ in $(seq 1 10); do eleven+=",\"$FEN\""; done
+[[ "$(code "$SID_T" POST -d "{\"positions\":[$eleven],\"think\":\"quick\"}" "http://$API_HOST/api/analysis")" == "400" ]] \
+  || fail "more than 10 positions were accepted"
 [[ "$(curl -sS --resolve "$API_HOST:80:$EDGE_IP" -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' \
   -d "{\"positions\":[\"$FEN\"],\"think\":\"quick\"}" "http://$API_HOST/api/analysis")" == "401" ]] || fail "anonymous analysis was allowed"
 echo "ok"

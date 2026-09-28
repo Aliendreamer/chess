@@ -4,7 +4,7 @@ Closed on 2026-09-28. Two changes, both under `changes/archive/`:
 
 - **`studies`:** PGN import by paste or file (variations kept), a board with saved variations, sharing by link, a
   study from a finished game, and PGN export.
-- **`engine-analysis`:** evaluate a position or a whole line on the study board at Quick, Normal or Deep (1, 3 or
+- **`engine-analysis`:** evaluate a position or the next 10 positions of a line on the study board at Quick, Normal or Deep (1, 3 or
   10 s). The engine gives three best lines and a score for each move. Evaluations are cached per position and shared
   by everyone.
 
@@ -49,8 +49,10 @@ Closed on 2026-09-28. Two changes, both under `changes/archive/`:
 
 ## Open, for later
 
-- **One big Deep line holds the analysis queue** (300 positions × 10 s = 50 minutes on one process). The position cap
-  and `Engine:AnalysisProcesses` bound it; per-user fairness or cancelling a request is a later change if it matters.
+- **Scaling analysis.** A request holds at most 10 positions (lowered from 300 by the owner, 2026-09-28: a Deep line is
+  then at most 100 s of engine time). More throughput comes from more analysis consumers: `Engine:AnalysisProcesses`
+  per worker, or more worker replicas. They share one consumer group, so `analysis.requests` needs at least as many
+  partitions as consumers in total (3 today, set in `redpanda-init`).
 - The openings explorer from imported games.
 - Evaluations are never evicted; the table grows with every new position analysed.
 - Downloading Stockfish at image build time instead of keeping the binary in the repo (from Part 2).
