@@ -123,6 +123,7 @@ internal sealed class EngineSession(Func<CancellationToken, Task<UciEngine>> sta
                 }
 
                 Log.EngineRestarting(logger, e, job);
+                EngineTelemetry.Restarted(job);
             }
         }
     }
@@ -198,6 +199,7 @@ internal sealed class MoveHandler(
         if (request is null || string.IsNullOrWhiteSpace(request.GameId) || string.IsNullOrWhiteSpace(request.Fen))
         {
             Log.RequestUnreadable(logger);
+            EngineTelemetry.DroppedRequest("move", "unreadable");
             return null;
         }
 
@@ -205,12 +207,14 @@ internal sealed class MoveHandler(
         if (!EngineLevel.TryParse(request.Level, out EngineLevel level) || request.ThinkMs <= 0 || request.ThinkMs > options.MaxThinkMs)
         {
             Log.RequestRefused(logger, job, request.Level, request.ThinkMs);
+            EngineTelemetry.DroppedRequest("move", "refused");
             return null;
         }
 
         if (Requests.Stale(request.RequestedAt, clock, options, out long ageSeconds))
         {
             Log.RequestStale(logger, job, ageSeconds);
+            EngineTelemetry.DroppedRequest("move", "stale");
             return null;
         }
 
@@ -252,6 +256,7 @@ internal sealed class AnalysisHandler(
         if (request is null || string.IsNullOrWhiteSpace(request.Key) || string.IsNullOrWhiteSpace(request.Fen))
         {
             Log.RequestUnreadable(logger);
+            EngineTelemetry.DroppedRequest("analysis", "unreadable");
             return null;
         }
 
@@ -259,12 +264,14 @@ internal sealed class AnalysisHandler(
         if (request.ThinkMs <= 0 || request.ThinkMs > options.MaxThinkMs || request.MultiPv is < 1 or > MaxLines)
         {
             Log.RequestRefused(logger, job, $"{request.MultiPv} lines", request.ThinkMs);
+            EngineTelemetry.DroppedRequest("analysis", "refused");
             return null;
         }
 
         if (Requests.Stale(request.RequestedAt, clock, options, out long ageSeconds))
         {
             Log.RequestStale(logger, job, ageSeconds);
+            EngineTelemetry.DroppedRequest("analysis", "stale");
             return null;
         }
 
@@ -299,7 +306,7 @@ internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, Tim
         Log.WorkerStarted(logger, engine.Processes, EngineTopics.Requests);
         Log.WorkerStarted(logger, engine.AnalysisProcesses, EngineTopics.AnalysisRequests);
         IEnumerable<Task> moves = Enumerable.Range(0, engine.Processes).Select(n => Loop(
-            $"chess-engine-move-{n}", EngineTopics.Requests, kafka.GroupId, producer, () =>
+            "move", $"chess-engine-move-{n}", EngineTopics.Requests, kafka.GroupId, producer, () =>
             {
                 MoveHandler handler = new(StartEngineAsync, engine, clock, logger);
                 return (async (json, ct) => await handler.HandleAsync(json, ct).ConfigureAwait(false) is { } r
@@ -307,7 +314,7 @@ internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, Tim
                     : null, handler, EngineTopics.Results);
             }, stoppingToken));
         IEnumerable<Task> analysis = Enumerable.Range(0, engine.AnalysisProcesses).Select(n => Loop(
-            $"chess-engine-analysis-{n}", EngineTopics.AnalysisRequests, kafka.AnalysisGroupId, producer, () =>
+            "analysis", $"chess-engine-analysis-{n}", EngineTopics.AnalysisRequests, kafka.AnalysisGroupId, producer, () =>
             {
                 AnalysisHandler handler = new(StartEngineAsync, engine, clock, logger);
                 return (async (json, ct) => await handler.HandleAsync(json, ct).ConfigureAwait(false) is { } r
@@ -319,6 +326,7 @@ internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, Tim
     }
 
     private Task Loop(
+        string kind,
         string clientId,
         string topic,
         string groupId,
@@ -344,7 +352,7 @@ internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, Tim
                     {
                         while (!ct.IsCancellationRequested)
                         {
-                            await StepAsync(consumer, producer, handle, resultTopic, ct).ConfigureAwait(false);
+                            await StepAsync(kind, consumer, producer, handle, resultTopic, ct).ConfigureAwait(false);
                         }
                     }
                     catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -362,6 +370,7 @@ internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, Tim
             TaskScheduler.Default).Unwrap();
 
     private async Task StepAsync(
+        string kind,
         IConsumer<string, string> consumer,
         IProducer<string, string> producer,
         Func<string, CancellationToken, Task<Message<string, string>?>> handle,
@@ -372,7 +381,7 @@ internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, Tim
         try
         {
             record = consumer.Consume(ct);
-            if (await handle(record.Message.Value, ct).ConfigureAwait(false) is { } result)
+            if (await EngineTelemetry.ProcessAsync(kind, record.Message, handle, ct).ConfigureAwait(false) is { } result)
             {
                 await producer.ProduceAsync(resultTopic, result, ct).ConfigureAwait(false);
             }

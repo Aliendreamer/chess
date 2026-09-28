@@ -248,9 +248,13 @@ services:
     build:
       context: ../../apps/engine
       dockerfile: Dockerfile
+    # A stable name for telemetry (service.instance.id) instead of the container id.
+    hostname: engine
     environment:
       Kafka__BootstrapServers: "redpanda:9092"
       Engine__Processes: "1"
+      Observability__Enabled: "true"
+      Observability__OtlpEndpoint: http://otel-collector:4317
     cpus: 2
     depends_on:
       redpanda-init:

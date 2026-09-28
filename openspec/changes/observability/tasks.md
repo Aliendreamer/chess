@@ -63,7 +63,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
 
 ## 6. Engine worker and profiling
 
-- [ ] 6.1 Failing tests first, in the worker. A request with a `traceparent` header is handled in a span of that
+- [x] 6.1 Failing tests first, in the worker. A request with a `traceparent` header is handled in a span of that
       trace, and its result carries the trace on. `chess.engine.jobs` counts by kind and outcome. Then add the OTLP
       export behind the same switch, and Serilog to OTLP. Commit `feat(engine): telemetry and trace continuation`.
 - [ ] 6.2 Add the Pyroscope .NET profiler to the backend images (dev and prod, Alpine: the musl build) and the engine
