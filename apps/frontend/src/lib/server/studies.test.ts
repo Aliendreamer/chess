@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { createStudies, deleteStudy, downloadStudyPgn, loadStudy, saveStudy } from './studies'
+import {
+  analysePositions,
+  createStudies,
+  deleteStudy,
+  downloadStudyPgn,
+  loadStudy,
+  saveStudy,
+} from './studies'
 
 const ID = '7c9e6679742540de944be07fc1f90ae7'
 
@@ -90,5 +97,37 @@ describe('studies over the API', () => {
     expect(file.headers.get('content-disposition')).toBe(`attachment; filename="study-${ID}.pgn"`)
     expect(await file.text()).toContain('1. e4 *')
     expect((await downloadStudyPgn(request, 'nope', fakeFetch(200, ''), env)).status).toBe(400)
+  })
+})
+
+describe('analysis over the API', () => {
+  it('sends the positions and the think time and answers the view', async () => {
+    const calls: Array<Call> = []
+    const view = { think: 'quick', thinkMs: 1000, positions: [] }
+    const outcome = await analysePositions(fakeFetch(200, view, calls), {
+      positions: ['8/8/8/4k3/8/8/4P3/4K3 w - - 0 40'],
+      think: 'quick',
+    })
+
+    expect(outcome).toEqual({ ok: true, view })
+    expect(calls).toEqual([
+      {
+        url: '/api/analysis',
+        method: 'POST',
+        body: '{"positions":["8/8/8/4k3/8/8/4P3/4K3 w - - 0 40"],"think":"quick"}',
+      },
+    ])
+  })
+
+  it('shows a refusal', async () => {
+    const outcome = await analysePositions(
+      fakeFetch(400, { errors: { think: ['Think must be quick, normal or deep.'] } }),
+      {
+        positions: ['x'],
+        think: 'deep',
+      },
+    )
+
+    expect(outcome.ok).toBe(false)
   })
 })

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import type { StudyMove, StudyView, TreePath } from '#/lib/studies'
-import { getStudy, postShareStudy, putStudy } from '#/lib/server/api'
+import { getStudy, postAnalysis, postShareStudy, putStudy } from '#/lib/server/api'
 import {
   addMove,
   childrenAt,
@@ -14,9 +14,10 @@ import {
   remove,
   toInput,
 } from '#/lib/studies'
+import { scoreText, useAnalysis } from '#/lib/analysis'
 import { clickSquare, legalTargets, needsPromotion } from '#/lib/moveInput'
 import { Board, PromotionPicker } from '#/components/games'
-import { MoveTree } from '#/components/studies'
+import { AnalysisPanel, MoveTree } from '#/components/studies'
 import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
 
 /**
@@ -54,6 +55,7 @@ function Study({ loaded }: { loaded: StudyView }) {
   const [link, setLink] = useState<string | null>(null)
   const saving = useCommand()
   const sharing = useCommand()
+  const analysis = useAnalysis((input) => postAnalysis({ data: input }))
   const editable = saved.mine
   const dirty =
     title !== saved.title || JSON.stringify(toInput(tree)) !== JSON.stringify(toInput(saved.tree))
@@ -89,6 +91,14 @@ function Study({ loaded }: { loaded: StudyView }) {
     setPath(next.path)
   }
 
+  /** Plays an engine line from the current position into the tree: existing moves are followed, the rest added. */
+  function playLine(moves: ReadonlyArray<StudyMove>) {
+    let next = { tree, path }
+    for (const move of moves) next = addMove(next.tree, next.path, move)
+    setTree(next.tree)
+    setPath(next.path)
+  }
+
   function onSquareClick(square: string) {
     const result = clickSquare(fen, side, selected, square)
     setSelected(result.selected)
@@ -117,6 +127,13 @@ function Study({ loaded }: { loaded: StudyView }) {
 
   const lastMove = current ? { from: current.uci.slice(0, 2), to: current.uci.slice(2, 4) } : null
   const hasVariations = childrenAt(tree, path.slice(0, -1)).length > 1
+  const line = [fen]
+  for (let next = nextPath(tree, path); next; next = nextPath(tree, next))
+    line.push(fenAt(saved.startFen, tree, next))
+  const scoreOf = (at: string) => {
+    const best = analysis.evaluationOf(at)?.lines[0]
+    return best ? scoreText(best) : null
+  }
 
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-8">
@@ -179,7 +196,21 @@ function Study({ loaded }: { loaded: StudyView }) {
           </span>
         </header>
 
-        <MoveTree tree={tree} startFen={saved.startFen} current={path} onSelect={setPath} />
+        <MoveTree
+          tree={tree}
+          startFen={saved.startFen}
+          current={path}
+          onSelect={setPath}
+          scoreOf={scoreOf}
+        />
+
+        <AnalysisPanel
+          analysis={analysis}
+          fen={fen}
+          evaluation={analysis.evaluationOf(fen)}
+          line={line}
+          onPlayLine={editable ? playLine : undefined}
+        />
 
         {editable ? (
           <div className="flex flex-wrap gap-2">

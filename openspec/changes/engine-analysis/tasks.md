@@ -18,7 +18,7 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
 
 ## 4. Frontend
 
-- [ ] 4.1 `lib/analysis.ts` (score text, lines to SAN, polling hook), the study board panel, scores in the move tree.
+- [x] 4.1 `lib/analysis.ts` (score text, lines to SAN, polling hook), the study board panel, scores in the move tree.
       Tests. Commit `feat(frontend): engine analysis on the study board`.
 
 ## 5. Verify and docs

@@ -14,6 +14,7 @@ import {
   startEngineGame,
 } from './games'
 import {
+  analysePositions,
   createStudies,
   deleteStudy,
   loadMyStudies,
@@ -34,6 +35,7 @@ import {
 import type { GameCommand } from '../games'
 import type { InviteView } from '../play'
 import type { StudyInput, StudyMoveInput } from '../studies'
+import type { Think } from '../analysis'
 
 /** A `fetch` bound to the internal API that re-attaches the caller's session cookie under its API name. */
 function serverFetch(): typeof fetch {
@@ -234,3 +236,19 @@ export const postDeleteStudy = createServerFn({ method: 'POST' })
 export const postStudyFromGame = createServerFn({ method: 'POST' })
   .validator((gameId: string) => guid(gameId))
   .handler(({ data }) => studyFromGame(serverFetch(), data))
+
+/** At most as many positions as the API takes (`Analysis:MaxPositions`). */
+const MAX_POSITIONS = 300
+
+export const postAnalysis = createServerFn({ method: 'POST' })
+  .validator((input: { positions: Array<string>; think: Think }) => {
+    if (!['quick', 'normal', 'deep'].includes(input.think)) throw new Error('Not a think time.')
+    if (
+      !Array.isArray(input.positions) ||
+      input.positions.length === 0 ||
+      input.positions.length > MAX_POSITIONS
+    )
+      throw new Error(`Between 1 and ${MAX_POSITIONS} positions.`)
+    return { positions: input.positions.map(String), think: input.think }
+  })
+  .handler(({ data }) => analysePositions(serverFetch(), data))

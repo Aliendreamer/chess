@@ -1,6 +1,7 @@
 import { isGuid, pgnDownload, readJson, sendCommand } from './upstream'
 import type { CommandOutcome } from '../games'
 import type { CursorPage } from '../play'
+import type { AnalysisView, Think } from '../analysis'
 import type { ImportResult, StudyInput, StudyListItem, StudyMoveInput, StudyView } from '../studies'
 
 /** `POST /api/studies`: one study or an import of up to 20; the server replays every line (studies D2). */
@@ -79,4 +80,12 @@ export function downloadStudyPgn(
     fetchImpl,
     env,
   )
+}
+
+/** `POST /api/analysis`: each position with its evaluation when known; the engine is asked for the rest (engine-analysis D2). */
+export function analysePositions(
+  fetchImpl: typeof fetch,
+  input: { positions: ReadonlyArray<string>; think: Think },
+): Promise<CommandOutcome<AnalysisView>> {
+  return sendCommand<AnalysisView>(fetchImpl, 'POST', '/api/analysis', input)
 }
