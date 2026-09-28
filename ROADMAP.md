@@ -171,9 +171,12 @@ Goal: the architecture exists end to end with a trivial domain, so every later p
 
 ### Part 4 — Study & analysis
 
-- PGN import → `rm_studies`; analysis board (no actor needed: pure client + engine requests over
-  Kafka); engine evaluation lines stored as read models; openings explorer from imported games.
-- Verify: import a PGN, step through, request evaluation, see it persist and survive a restart.
+- Two changes (owner decision 2026-09-28). **`studies` — built 2026-09-28**: PGN import (paste or file, variations
+  kept), a board with saved variations, sharing by link, a study from a finished game, PGN export; plain rows, no actor.
+  Verify: `tools/localdev/verify-part4a.sh`.
+- **`engine-analysis` — next**: evaluate a position or a whole game at a chosen think time, over `analysis.*` with its
+  own engine process; evaluations cached per position and shown live.
+- Later: the openings explorer from imported games.
 
 ## 7. Cross-cutting
 

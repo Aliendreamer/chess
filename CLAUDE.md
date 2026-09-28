@@ -65,6 +65,7 @@ tools/localdev/verify-part1.sh [--cluster]     # two logins → queue pairing �
                                                # --cluster: 6 games, SIGTERM backend-1, all answer from the survivor
 tools/localdev/verify-part2.sh [--quick]       # vs Stockfish: 10 moves at 1320/2000/max, engine restart mid-think, a full game
 tools/localdev/verify-part3.sh                 # correspondence: 7d invite, deadline, your-turn list, mails in Mailpit
+tools/localdev/verify-part4a.sh                # studies: import, variation saved, 409 on stale save, share, PGN, from a game
 tools/localdev/stack.sh up --cluster            # adds backend-2 (down/ps/logs always include it)
 tools/e2e.sh                                   # Playwright against the live stack
 ```
@@ -233,6 +234,14 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   stack), otherwise only logged. `GET /api/me/games?turn=mine` (+ `yourTurn`, `deadlineAt`, derived from `rm_games`:
   White moves on even plies) feeds "Your turn" on home. Playwright runs 2 workers: every spec drives two browsers
   against one dev server.
+
+- **Studies (studies)** — plain rows on the primary (`studies`, tree as jsonb; no actor, no events), owned, shareable
+  by link (random v4 id; a private study is 404 for others), `Version` as the concurrency token (a stale save is 409).
+  `Studies/StudyTree` replays every line with `ChessRules.ForStudy` (any FEN, no automatic endings) and stores the
+  server's SAN/FEN — the browser sends UCI only; `StudyPgn` exports with variations; `StudyService` holds the logic
+  behind `WebApi/Studies/*` and `POST /api/games/{id}/study`. Frontend: `lib/studies.ts` (tree ops, PGN import with
+  `@mliebelt/pgn-parser` — chess.js drops variations — per game, so a broken game is reported), `/studies`,
+  `/studies/$id`, `/pgn/study/$id`. A controlled input must adopt text typed before hydration (see the import form).
 
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/
   `.slnx`/`Directory.*.props`/runsettings so JS edits don't bust the backend cache and vice versa.

@@ -320,6 +320,15 @@ GameActor ──journal──▶ game.events ──┬─▶ DeadlineProjection 
 - "Your turn" on home comes from `GET /api/me/games?turn=mine`; the side to move is the parity of the ply, and the
   deadline is the last move plus a week, so the read model needed no new columns.
 
+### Studies (studies)
+
+- A study is one row — title, start position, a move tree as JSON, owner, shared flag, version — read and written on
+  the primary: it is the owner's own data, so reads are read-your-write, and nothing else reacts to it.
+- The server is the referee: the browser sends a tree of UCI moves, the server replays every line from the start
+  position and keeps its own SAN and FEN, refusing the first illegal move by its path.
+- Import parses PGN in the browser (variations kept), one game at a time; export writes PGN with variations on the
+  server. A finished game becomes a study from its projected moves.
+
 ### The screens (`apps/frontend`, part1-ui)
 
 The UI is the owner's Club design (`Design/`, untracked) in TypeScript: tokens as CSS variables in Tailwind's

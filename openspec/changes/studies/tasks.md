@@ -22,4 +22,4 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
 ## 4. Verify and docs
 
 - [x] 4.1 🐳 `verify-part4a.sh` and a Playwright spec; the whole e2e suite. Commit `test(repo): verify studies`.
-- [ ] 4.2 CLAUDE.md, architecture, ROADMAP; archive. Commit `docs(repo): studies`.
+- [x] 4.2 CLAUDE.md, architecture, ROADMAP; archive. Commit `docs(repo): studies`.
