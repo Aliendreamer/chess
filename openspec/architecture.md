@@ -341,8 +341,8 @@ study board ──POST /api/analysis──▶ AnalysisService ──▶ position
 - An evaluation belongs to a position, not to a study or a user: the key is the FEN without the move counters (and
   without an en-passant square no pawn can use), so the same position reached in any game or study, by anyone, is
   evaluated once per think time and reused. A longer think answers a shorter request.
-- The API never waits on the engine. It answers what the cache has, asks for the rest, and the board asks again for
-  what is still missing. A request lost on the way is asked again once it is older than `Analysis:RetryAfterSeconds`;
+- One position per request: the player steps to the move they care about and evaluates it. The API never waits on
+  the engine. It answers from the cache or asks the engine, and the board asks again until the evaluation is there. A request lost on the way is asked again once it is older than `Analysis:RetryAfterSeconds`;
   a repeated answer only replaces a stored one that went less deep.
 - The worker analyses on its own processes and consumer group, at full strength with three lines, so analysis never
   delays an engine game's move.

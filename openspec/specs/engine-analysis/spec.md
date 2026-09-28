@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Engine analysis on the study board: a position or the next positions of a line evaluated at a chosen think time, with the engine's
+Engine analysis on the study board: the position on the board evaluated at a chosen think time, with the engine's
 best lines, cached per position and shared by everyone.
 
 ## Requirements
@@ -18,15 +18,16 @@ pawns, or mate in N) and its moves.
 - **WHEN** a player asks for a Normal evaluation of the start position
 - **THEN** within about 3 s the board shows a score, a depth and three lines
 
-### Requirement: A line can be analysed move by move
+### Requirement: One position at a time, scored in the move tree
 
-A player SHALL be able to ask for the next positions of a main line (up to 10, the current one first) at once; each position's evaluation MUST
-appear as soon as it is known, and the board MUST show how many are done.
+A request SHALL be for one position: the player steps to the move they care about (move 10, move 15) and evaluates it.
+The board MUST show that the engine is thinking until the evaluation arrives, and every position evaluated during the
+visit MUST show its score beside its move in the tree.
 
-#### Scenario: Analysing a short game
+#### Scenario: Evaluating two positions of a game
 
-- **WHEN** a player analyses the 10 positions of a line at Quick
-- **THEN** the scores fill in move by move and "10 of 10 analysed" is shown at the end
+- **WHEN** a player evaluates the position after move 10, then the one after move 15
+- **THEN** both moves show their scores in the tree, and no other position was sent to the engine
 
 ### Requirement: Evaluations are computed once per position and reused
 
@@ -44,9 +45,9 @@ not yet answered MUST NOT be requested again unless the request is older than th
 Analysis SHALL use its own topics and its own engine processes, so a long analysis MUST NOT delay the engine's moves in
 a game against the computer.
 
-#### Scenario: A game while a line is analysed
+#### Scenario: A game while positions are analysed
 
-- **WHEN** a Deep analysis of 100 positions is running and a player moves in a game against the computer
+- **WHEN** Deep analyses are running and a player moves in a game against the computer
 - **THEN** the engine's reply arrives within its usual 5–10 s
 
 ### Requirement: Analysis survives an engine restart
@@ -56,5 +57,5 @@ and a position still unanswered after the retry time MUST be requested again whe
 
 #### Scenario: The engine container restarts mid-analysis
 
-- **WHEN** the engine container restarts while a line is analysed
-- **THEN** every position of the line is still evaluated in the end
+- **WHEN** the engine container restarts while a position is analysed
+- **THEN** the position is still evaluated in the end

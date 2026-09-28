@@ -143,26 +143,22 @@ export function StudyList({ studies }: { studies: ReadonlyArray<StudyListItem> }
 }
 
 /**
- * The engine on the study board (engine-analysis D5): the think time, Evaluate (this position) and Analyse line (from
- * here to the end of the line), then this position's score, depth and best lines in SAN. Clicking a line plays it into
- * the tree as a variation when the study is editable.
+ * The engine on the study board (engine-analysis D5): the think time and Evaluate for the position on the board, then
+ * its score, depth and best lines in SAN. Clicking a line plays it into the tree as a variation when the study is
+ * editable.
  */
 export function AnalysisPanel({
   analysis,
   fen,
   evaluation,
-  line,
   onPlayLine,
 }: {
   analysis: Analysis
   fen: string
   evaluation: Evaluation | null
-  /** The next positions of the line from here, this one first. */
-  line: ReadonlyArray<string>
   onPlayLine?: ((moves: Array<StudyMove>) => void) | undefined
 }) {
-  const { think, setThink, analyse, progress, busy, error } = analysis
-  const waiting = busy || progress !== null
+  const { think, setThink, analyse, thinking, error } = analysis
   return (
     <Panel
       title="Engine"
@@ -184,27 +180,10 @@ export function AnalysisPanel({
             </Button>
           ))}
         </div>
-        <Button size="sm" disabled={busy} onClick={() => analyse([fen])}>
+        <Button size="sm" onClick={() => analyse(fen)}>
           Evaluate
         </Button>
-        <Button
-          size="sm"
-          disabled={busy || line.length < 2}
-          title={`Evaluates this position and the next ${line.length - 1} of the line`}
-          onClick={() => analyse(line)}
-        >
-          Analyse line
-        </Button>
       </div>
-      {progress ? (
-        <p
-          className="m-0 text-sm text-fg-secondary"
-          data-testid="analysis-progress"
-          aria-live="polite"
-        >
-          {progress.done} of {progress.total} analysed…
-        </p>
-      ) : null}
       {evaluation ? (
         <ol className="m-0 flex list-none flex-col gap-1.5 p-0" data-testid="analysis-lines">
           {evaluation.lines.map((best, i) => {
@@ -235,8 +214,10 @@ export function AnalysisPanel({
             )
           })}
         </ol>
-      ) : waiting ? null : (
-        <p className="m-0 text-sm text-fg-muted">Not evaluated yet.</p>
+      ) : (
+        <p className="m-0 text-sm text-fg-muted" data-testid="analysis-status" aria-live="polite">
+          {thinking ? 'The engine is thinking…' : 'Not evaluated yet.'}
+        </p>
       )}
       {error ? <ErrorText testId="analysis-error">{error}</ErrorText> : null}
     </Panel>

@@ -2,7 +2,7 @@
 # Prove engine analysis on the live stack (Part 4, engine-analysis): testuser asks for a position nobody has asked for
 # (a random rook ending), the engine worker evaluates it with three lines, the answer is stored, and then player — another
 # user — gets it straight from the shared cache, also at a shorter think time; a deeper think is a new request; nonsense
-# (a bad FEN or think, more than 10 positions) is a 400.
+# (a bad FEN or think) is a 400.
 #
 #   tools/localdev/verify-part4b.sh
 set -euo pipefail
@@ -47,7 +47,7 @@ wk=$((RANDOM % 8)); bk=$((RANDOM % 8)); rook=$(( (bk + 1 + RANDOM % 7) % 8 ))
 rank() { local at="$1" piece="$2"; local before=$at after=$((7 - at)) out=""
   (( before > 0 )) && out+="$before"; out+="$piece"; (( after > 0 )) && out+="$after"; printf '%s' "$out"; }
 FEN="$(rank "$bk" k)/8/8/8/$(rank "$rook" R)/8/8/$(rank "$wk" K) w - - 0 1"
-analyse() { send "$1" POST -d "{\"positions\":[\"$FEN\"],\"think\":\"$2\"}" "http://$API_HOST/api/analysis"; }
+analyse() { send "$1" POST -d "{\"fen\":\"$FEN\",\"think\":\"$2\"}" "http://$API_HOST/api/analysis"; }
 known() { grep -q '"evaluation":{' <<<"$1"; }
 
 step "testuser asks for $FEN (normal); the engine evaluates it"
@@ -77,13 +77,10 @@ known "$(analyse "$SID_P" deep)" && fail "a deep request was answered by a short
 echo "ok (asked the engine)"
 
 step "nonsense is a 400"
-[[ "$(code "$SID_T" POST -d '{"positions":["not a fen"],"think":"normal"}' "http://$API_HOST/api/analysis")" == "400" ]] || fail "a bad FEN was accepted"
-[[ "$(code "$SID_T" POST -d "{\"positions\":[\"$FEN\"],\"think\":\"forever\"}" "http://$API_HOST/api/analysis")" == "400" ]] || fail "a bad think was accepted"
-eleven="\"$FEN\""; for _ in $(seq 1 10); do eleven+=",\"$FEN\""; done
-[[ "$(code "$SID_T" POST -d "{\"positions\":[$eleven],\"think\":\"quick\"}" "http://$API_HOST/api/analysis")" == "400" ]] \
-  || fail "more than 10 positions were accepted"
+[[ "$(code "$SID_T" POST -d '{"fen":"not a fen","think":"normal"}' "http://$API_HOST/api/analysis")" == "400" ]] || fail "a bad FEN was accepted"
+[[ "$(code "$SID_T" POST -d "{\"fen\":\"$FEN\",\"think\":\"forever\"}" "http://$API_HOST/api/analysis")" == "400" ]] || fail "a bad think was accepted"
 [[ "$(curl -sS --resolve "$API_HOST:80:$EDGE_IP" -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' \
-  -d "{\"positions\":[\"$FEN\"],\"think\":\"quick\"}" "http://$API_HOST/api/analysis")" == "401" ]] || fail "anonymous analysis was allowed"
+  -d "{\"fen\":\"$FEN\",\"think\":\"quick\"}" "http://$API_HOST/api/analysis")" == "401" ]] || fail "anonymous analysis was allowed"
 echo "ok"
 
 printf '\nAll part-4 (engine analysis) checks passed.\n'

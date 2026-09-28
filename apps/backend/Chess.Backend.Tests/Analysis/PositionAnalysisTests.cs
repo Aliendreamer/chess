@@ -56,12 +56,13 @@ public sealed class PositionAnalysisTests
         (ProjectDbContext db, AnalysisService service, Requests sent, _) = Build();
         using (db)
         {
-            IReadOnlyList<PositionAnswer> first = await service.AnalyseAsync([Start, Start, AfterE4], 3_000, CancellationToken.None);
-            IReadOnlyList<PositionAnswer> again = await service.AnalyseAsync([Start], 3_000, CancellationToken.None);
+            PositionAnswer first = await service.AnalyseAsync(AfterE4, 3_000, CancellationToken.None);
+            PositionAnswer again = await service.AnalyseAsync(AfterE4, 3_000, CancellationToken.None);
 
-            Assert.Equal([StartKey, StartKey, AfterE4Key], first.Select(a => a.Key));
-            Assert.All(first.Concat(again), a => Assert.Null(a.Evaluation));
-            Assert.Equal([(StartKey, Start, 3_000, 3), (AfterE4Key, AfterE4, 3_000, 3)], sent.Sent.Select(r => (r.Key, r.Fen, r.ThinkMs, r.MultiPv)));
+            Assert.Equal((AfterE4Key, AfterE4), (first.Key, first.Fen));
+            Assert.Null(first.Evaluation);
+            Assert.Null(again.Evaluation);
+            Assert.Equal([(AfterE4Key, AfterE4, 3_000, 3)], sent.Sent.Select(r => (r.Key, r.Fen, r.ThinkMs, r.MultiPv)));
         }
     }
 
@@ -71,11 +72,11 @@ public sealed class PositionAnalysisTests
         (ProjectDbContext db, AnalysisService service, Requests sent, FakeClock clock) = Build();
         using (db)
         {
-            await service.AnalyseAsync([Start], 1_000, CancellationToken.None);
+            await service.AnalyseAsync(Start, 1_000, CancellationToken.None);
             clock.Advance(TimeSpan.FromSeconds(119));
-            await service.AnalyseAsync([Start], 1_000, CancellationToken.None);
+            await service.AnalyseAsync(Start, 1_000, CancellationToken.None);
             clock.Advance(TimeSpan.FromSeconds(2));
-            await service.AnalyseAsync([Start], 1_000, CancellationToken.None);
+            await service.AnalyseAsync(Start, 1_000, CancellationToken.None);
 
             Assert.Equal(2, sent.Sent.Count);
             Assert.Equal(Now.AddSeconds(121), (await db.PositionEvaluations.SingleAsync()).RequestedAt);
@@ -90,9 +91,9 @@ public sealed class PositionAnalysisTests
         {
             await new AnalysisResultConsumer(db, clock).ApplyAsync(StartKey, Result(StartKey, 3_000, 22), CancellationToken.None);
 
-            Evaluation? normal = (await service.AnalyseAsync([Start], 3_000, CancellationToken.None))[0].Evaluation;
-            Evaluation? quick = (await service.AnalyseAsync([Start], 1_000, CancellationToken.None))[0].Evaluation;
-            Evaluation? deep = (await service.AnalyseAsync([Start], 10_000, CancellationToken.None))[0].Evaluation;
+            Evaluation? normal = (await service.AnalyseAsync(Start, 3_000, CancellationToken.None)).Evaluation;
+            Evaluation? quick = (await service.AnalyseAsync(Start, 1_000, CancellationToken.None)).Evaluation;
+            Evaluation? deep = (await service.AnalyseAsync(Start, 10_000, CancellationToken.None)).Evaluation;
 
             EvaluationLine line = Assert.Single(normal!.Lines);
             Assert.Equal((30, (int?)null), (line.Cp, line.Mate));
@@ -113,7 +114,7 @@ public sealed class PositionAnalysisTests
             await consumer.ApplyAsync(StartKey, Result(StartKey, 3_000, 22, cp: 20), CancellationToken.None);
             await consumer.ApplyAsync(StartKey, Result(StartKey, 10_000, 30, cp: 25), CancellationToken.None);
 
-            Evaluation? e = (await service.AnalyseAsync([Start], 1_000, CancellationToken.None))[0].Evaluation;
+            Evaluation? e = (await service.AnalyseAsync(Start, 1_000, CancellationToken.None)).Evaluation;
 
             Assert.Equal((10_000, 25), (e!.ThinkMs, e.Lines[0].Cp));
         }
@@ -160,12 +161,12 @@ public sealed class PositionAnalysisTests
     public void A_think_name_maps_to_its_time(string think, int ms) => Assert.Equal(ms, new AnalysisOptions().ThinkMs(think));
 
     [Fact]
-    public void A_request_needs_a_think_name_and_positions_that_are_all_fens()
+    public void A_request_needs_a_think_name_and_a_fen()
     {
-        AnalysePositionsRequestValidator v = new();
-        Assert.True(v.TestValidate(new AnalysePositionsRequest { Positions = [Start, AfterE4], Think = "deep" }).IsValid);
-        v.TestValidate(new AnalysePositionsRequest { Positions = [Start], Think = "forever" }).ShouldHaveValidationErrorFor(r => r.Think);
-        v.TestValidate(new AnalysePositionsRequest { Positions = [] }).ShouldHaveValidationErrorFor(r => r.Positions);
-        Assert.False(v.TestValidate(new AnalysePositionsRequest { Positions = [Start, "e4"] }).IsValid);
+        AnalysePositionRequestValidator v = new();
+        Assert.True(v.TestValidate(new AnalysePositionRequest { Fen = AfterE4, Think = "deep" }).IsValid);
+        v.TestValidate(new AnalysePositionRequest { Fen = Start, Think = "forever" }).ShouldHaveValidationErrorFor(r => r.Think);
+        v.TestValidate(new AnalysePositionRequest { Fen = "e4" }).ShouldHaveValidationErrorFor(r => r.Fen);
+        v.TestValidate(new AnalysePositionRequest()).ShouldHaveValidationErrorFor(r => r.Fen);
     }
 }

@@ -5,8 +5,8 @@ import type { StudyMove } from './studies'
 
 /**
  * Engine analysis on the study board (engine-analysis D5): the wire shapes of `POST /api/analysis`, the pure rules the
- * panel shows them with, and the hook that asks and polls. Client-safe. Evaluations are shared by everyone (D1), so a
- * position someone else analysed is answered at once.
+ * panel shows them with, and the hook that asks and polls. One position at a time: the one on the board. Client-safe.
+ * Evaluations are shared by everyone (D1), so a position someone else analysed is answered at once.
  */
 
 export type Think = 'quick' | 'normal' | 'deep'
@@ -17,10 +17,7 @@ export const THINKS: ReadonlyArray<{ value: Think; label: string }> = [
   { value: 'deep', label: 'Deep' },
 ]
 
-/** "Analyse line" asks for this many positions from the current one: the API's `Analysis:MaxPositions`. */
-export const LINE_POSITIONS = 10
-
-/** How often the board asks again for positions the engine is still working on. */
+/** How often the board asks again while the engine is still working on the position. */
 export const POLL_MS = 1500
 
 /** One of the engine's lines, scored from White's side: centipawns, or mate in N (negative when Black mates). */
@@ -36,16 +33,13 @@ export interface Evaluation {
   lines: Array<EvaluationLine>
 }
 
-export interface PositionAnswer {
+/** `POST /api/analysis`: the position, with its evaluation once one at this think time or longer is known. */
+export interface AnalysisView {
   key: string
   fen: string
-  evaluation: Evaluation | null
-}
-
-export interface AnalysisView {
   think: Think
   thinkMs: number
-  positions: Array<PositionAnswer>
+  evaluation: Evaluation | null
 }
 
 /**
@@ -94,24 +88,13 @@ export function lineMoves(fen: string, pv: ReadonlyArray<string>, max = 10): Arr
 }
 
 /** Known evaluations by position key; a longer think replaces a shorter one, never the other way round. */
-export function mergeEvaluations(
+export function remember(
   known: ReadonlyMap<string, Evaluation>,
-  answers: ReadonlyArray<PositionAnswer>,
-): Map<string, Evaluation> {
-  const next = new Map(known)
-  for (const { key, evaluation } of answers) {
-    const had = next.get(key)
-    if (evaluation && (!had || evaluation.thinkMs >= had.thinkMs)) next.set(key, evaluation)
-  }
-  return next
-}
-
-/** The positions of a request still waiting for the engine, each once. */
-export function stillPending(answers: ReadonlyArray<PositionAnswer>): Array<string> {
-  const seen = new Set<string>()
-  return answers
-    .filter((a) => !a.evaluation && !seen.has(a.key) && seen.add(a.key))
-    .map((a) => a.fen)
+  answer: Pick<AnalysisView, 'key' | 'evaluation'>,
+): ReadonlyMap<string, Evaluation> {
+  const had = known.get(answer.key)
+  if (!answer.evaluation || (had && had.thinkMs > answer.evaluation.thinkMs)) return known
+  return new Map(known).set(answer.key, answer.evaluation)
 }
 
 export interface Analysis {
@@ -119,79 +102,62 @@ export interface Analysis {
   setThink: (think: Think) => void
   /** The best evaluation known for a position, at any think time. */
   evaluationOf: (fen: string) => Evaluation | null
-  /** Asks for these positions at the chosen think time; the board polls until each is known. */
-  analyse: (fens: ReadonlyArray<string>) => void
-  /** `done of total` for the last request while positions are pending; null otherwise. */
-  progress: { done: number; total: number } | null
-  busy: boolean
+  /** Asks for this position at the chosen think time; the board polls until it is known. */
+  analyse: (fen: string) => void
+  /** The engine is working on the position asked for. */
+  thinking: boolean
   error: string | null
 }
 
 /**
- * Asks, then polls every {@link POLL_MS} for the positions still pending, until all are known or the page leaves. A
- * new request replaces the one being polled.
+ * Asks, then polls every {@link POLL_MS} until the evaluation is there or the page leaves. Asking for another position
+ * replaces the one being waited for; evaluations already known stay (they score the move tree).
  */
 export function useAnalysis(
-  request: (input: {
-    positions: Array<string>
-    think: Think
-  }) => Promise<CommandOutcome<AnalysisView>>,
+  request: (input: { fen: string; think: Think }) => Promise<CommandOutcome<AnalysisView>>,
 ): Analysis {
   const [think, setThink] = useState<Think>('normal')
   const [known, setKnown] = useState<ReadonlyMap<string, Evaluation>>(new Map())
-  const [job, setJob] = useState<{ total: number; pending: Array<string>; think: Think } | null>(
-    null,
-  )
-  const [busy, setBusy] = useState(false)
+  const [waiting, setWaiting] = useState<{ fen: string; think: Think; gen: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const generation = useRef(0)
 
-  async function ask(fens: Array<string>, at: Think, total: number, gen: number) {
+  async function ask(fen: string, at: Think, gen: number) {
     try {
-      const outcome = await request({ positions: fens, think: at })
+      const outcome = await request({ fen, think: at })
       if (gen !== generation.current) return
       if (!outcome.ok) {
         setError(outcome.error)
-        setJob(null)
+        setWaiting(null)
         return
       }
-      setKnown((k) => mergeEvaluations(k, outcome.view.positions))
-      const pending = stillPending(outcome.view.positions)
-      setJob(pending.length > 0 ? { total, pending, think: at } : null)
+      setKnown((k) => remember(k, outcome.view))
+      setWaiting(outcome.view.evaluation ? null : { fen, think: at, gen })
     } catch (e) {
       if (gen !== generation.current) return
       setError(e instanceof Error ? e.message : 'The analysis failed.')
-      setJob(null)
+      setWaiting(null)
     }
   }
 
+  // Each answer without an evaluation sets a new `waiting`, which schedules the next ask.
   useEffect(() => {
-    if (!job) return
-    const gen = generation.current
-    const timer = setTimeout(() => void ask(job.pending, job.think, job.total, gen), POLL_MS)
+    if (!waiting) return
+    const timer = setTimeout(() => void ask(waiting.fen, waiting.think, waiting.gen), POLL_MS)
     return () => clearTimeout(timer)
-  }, [job])
-
-  async function analyse(fens: ReadonlyArray<string>) {
-    const gen = ++generation.current
-    const distinct = [...new Map(fens.map((f) => [positionKey(f), f])).values()]
-    setError(null)
-    setJob(null)
-    setBusy(true)
-    try {
-      await ask(distinct, think, distinct.length, gen)
-    } finally {
-      if (gen === generation.current) setBusy(false)
-    }
-  }
+  }, [waiting])
 
   return {
     think,
     setThink,
     evaluationOf: (fen) => known.get(positionKey(fen)) ?? null,
-    analyse: (fens) => void analyse(fens),
-    progress: job ? { done: job.total - job.pending.length, total: job.total } : null,
-    busy,
+    analyse: (fen) => {
+      const gen = ++generation.current
+      setError(null)
+      setWaiting({ fen, think, gen })
+      void ask(fen, think, gen)
+    },
+    thinking: waiting !== null,
     error,
   }
 }

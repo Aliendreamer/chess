@@ -82,10 +82,10 @@ export function downloadStudyPgn(
   )
 }
 
-/** `POST /api/analysis`: each position with its evaluation when known; the engine is asked for the rest (engine-analysis D2). */
-export function analysePositions(
+/** `POST /api/analysis`: the position with its evaluation when known; otherwise the engine is asked (engine-analysis D2). */
+export function analysePosition(
   fetchImpl: typeof fetch,
-  input: { positions: ReadonlyArray<string>; think: Think },
+  input: { fen: string; think: Think },
 ): Promise<CommandOutcome<AnalysisView>> {
   return sendCommand<AnalysisView>(fetchImpl, 'POST', '/api/analysis', input)
 }

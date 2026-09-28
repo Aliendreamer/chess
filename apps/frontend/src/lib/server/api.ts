@@ -1,7 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader } from '@tanstack/react-start/server'
 import { CORRESPONDENCE, PRESETS } from '../games'
-import { LINE_POSITIONS } from '../analysis'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { apiUrl, isGuid } from './upstream'
 import { loadMe } from './auth'
@@ -15,7 +14,7 @@ import {
   startEngineGame,
 } from './games'
 import {
-  analysePositions,
+  analysePosition,
   createStudies,
   deleteStudy,
   loadMyStudies,
@@ -238,15 +237,11 @@ export const postStudyFromGame = createServerFn({ method: 'POST' })
   .validator((gameId: string) => guid(gameId))
   .handler(({ data }) => studyFromGame(serverFetch(), data))
 
+const THINKS: ReadonlyArray<Think> = ['quick', 'normal', 'deep']
+
 export const postAnalysis = createServerFn({ method: 'POST' })
-  .validator((input: { positions: Array<string>; think: Think }) => {
-    if (!['quick', 'normal', 'deep'].includes(input.think)) throw new Error('Not a think time.')
-    if (
-      !Array.isArray(input.positions) ||
-      input.positions.length === 0 ||
-      input.positions.length > LINE_POSITIONS
-    )
-      throw new Error(`Between 1 and ${LINE_POSITIONS} positions.`)
-    return { positions: input.positions.map(String), think: input.think }
+  .validator((input: { fen: string; think: Think }) => {
+    if (!THINKS.includes(input.think)) throw new Error('Not a think time.')
+    return { fen: String(input.fen), think: input.think }
   })
-  .handler(({ data }) => analysePositions(serverFetch(), data))
+  .handler(({ data }) => analysePosition(serverFetch(), data))

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  analysePositions,
+  analysePosition,
   createStudies,
   deleteStudy,
   downloadStudyPgn,
@@ -101,11 +101,11 @@ describe('studies over the API', () => {
 })
 
 describe('analysis over the API', () => {
-  it('sends the positions and the think time and answers the view', async () => {
+  it('sends the position and the think time and answers the view', async () => {
     const calls: Array<Call> = []
-    const view = { think: 'quick', thinkMs: 1000, positions: [] }
-    const outcome = await analysePositions(fakeFetch(200, view, calls), {
-      positions: ['8/8/8/4k3/8/8/4P3/4K3 w - - 0 40'],
+    const view = { key: 'k', fen: 'f', think: 'quick', thinkMs: 1000, evaluation: null }
+    const outcome = await analysePosition(fakeFetch(200, view, calls), {
+      fen: '8/8/8/4k3/8/8/4P3/4K3 w - - 0 40',
       think: 'quick',
     })
 
@@ -114,16 +114,16 @@ describe('analysis over the API', () => {
       {
         url: '/api/analysis',
         method: 'POST',
-        body: '{"positions":["8/8/8/4k3/8/8/4P3/4K3 w - - 0 40"],"think":"quick"}',
+        body: '{"fen":"8/8/8/4k3/8/8/4P3/4K3 w - - 0 40","think":"quick"}',
       },
     ])
   })
 
   it('shows a refusal', async () => {
-    const outcome = await analysePositions(
+    const outcome = await analysePosition(
       fakeFetch(400, { errors: { think: ['Think must be quick, normal or deep.'] } }),
       {
-        positions: ['x'],
+        fen: 'x',
         think: 'deep',
       },
     )

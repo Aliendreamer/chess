@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { lineMoves, mergeEvaluations, positionKey, scoreText, stillPending } from './analysis'
-import type { Evaluation, PositionAnswer } from './analysis'
+import { lineMoves, positionKey, remember, scoreText } from './analysis'
+import type { Evaluation } from './analysis'
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 const START_KEY = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -'
@@ -53,36 +53,14 @@ describe('engine lines', () => {
 })
 
 describe('answers', () => {
-  const answer = (key: string, e: Evaluation | null): PositionAnswer => ({
-    key,
-    fen: `${key} 0 1`,
-    evaluation: e,
-  })
-
   it('keep the longest think known for each position', () => {
-    const known = mergeEvaluations(new Map(), [
-      answer('a', evaluation(3000, 10)),
-      answer('b', null),
-    ])
-    const next = mergeEvaluations(known, [
-      answer('a', evaluation(1000, 99)),
-      answer('c', evaluation(1000, 5)),
-    ])
-    const deeper = mergeEvaluations(next, [answer('a', evaluation(10000, 20))])
+    const known = remember(new Map(), { key: 'a', evaluation: evaluation(3000, 10) })
+    const pending = remember(known, { key: 'b', evaluation: null })
+    const shorter = remember(pending, { key: 'a', evaluation: evaluation(1000, 99) })
+    const deeper = remember(shorter, { key: 'a', evaluation: evaluation(10000, 20) })
 
-    expect([...next.keys()]).toEqual(['a', 'c'])
-    expect(next.get('a')!.lines[0]!.cp).toBe(10)
+    expect([...shorter.keys()]).toEqual(['a'])
+    expect(shorter.get('a')!.lines[0]!.cp).toBe(10)
     expect(deeper.get('a')!.thinkMs).toBe(10000)
-  })
-
-  it('leave the positions still pending, each once', () => {
-    expect(
-      stillPending([
-        answer('a', null),
-        answer('b', evaluation(1000, 0)),
-        answer('a', null),
-        answer('c', null),
-      ]),
-    ).toEqual(['a 0 1', 'c 0 1'])
   })
 })

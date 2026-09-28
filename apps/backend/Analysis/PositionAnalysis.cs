@@ -7,7 +7,7 @@ using Confluent.Kafka;
 
 namespace Chess.Backend.Analysis;
 
-/// <summary>Section <c>Analysis</c> (engine-analysis): the think times, the lines per position and the request limits.</summary>
+/// <summary>Section <c>Analysis</c> (engine-analysis): the think times, the lines per position and the retry time.</summary>
 internal sealed class AnalysisOptions : ISettings
 {
     public const string SectionName = "Analysis";
@@ -20,9 +20,6 @@ internal sealed class AnalysisOptions : ISettings
 
     /// <summary>The engine's best lines per position (MultiPV).</summary>
     public int Lines { get; set; } = 3;
-
-    /// <summary>At most this many positions per request: "Analyse line" asks for the next ten.</summary>
-    public int MaxPositions { get; set; } = 10;
 
     /// <summary>A request unanswered for this long counts as lost and is sent again when someone asks.</summary>
     public int RetryAfterSeconds { get; set; } = 120;
@@ -43,9 +40,9 @@ internal sealed class AnalysisOptions : ISettings
             throw new InvalidOperationException("Analysis:QuickMs, NormalMs and DeepMs must be positive and rising.");
         }
 
-        if (Lines is < 1 or > 5 || MaxPositions <= 0 || RetryAfterSeconds <= 0)
+        if (Lines is < 1 or > 5 || RetryAfterSeconds <= 0)
         {
-            throw new InvalidOperationException("Analysis:Lines must be 1–5, and Analysis:MaxPositions and RetryAfterSeconds positive.");
+            throw new InvalidOperationException("Analysis:Lines must be 1–5, and Analysis:RetryAfterSeconds positive.");
         }
     }
 }
@@ -113,7 +110,7 @@ internal sealed record EvaluationLine(
 /// <summary>A finished evaluation, as the API answers it.</summary>
 internal sealed record Evaluation(int ThinkMs, int Depth, IReadOnlyList<EvaluationLine> Lines);
 
-/// <summary>A position asked about, and its evaluation when one good enough is known.</summary>
+/// <summary>The position asked about, and its evaluation when one good enough is known.</summary>
 internal sealed record PositionAnswer(string Key, string Fen, Evaluation? Evaluation);
 
 /// <summary>What the worker reads on <c>analysis.requests</c>.</summary>
@@ -174,8 +171,8 @@ internal sealed class NoAnalysisRequests : IAnalysisRequests
 
 internal interface IAnalysisService : IService
 {
-    /// <summary>Answers each position with the best known evaluation at <paramref name="thinkMs"/> or longer, and asks the engine for the rest.</summary>
-    Task<IReadOnlyList<PositionAnswer>> AnalyseAsync(IReadOnlyList<string> fens, int thinkMs, CancellationToken ct);
+    /// <summary>Answers the position with the best known evaluation at <paramref name="thinkMs"/> or longer, or asks the engine for one.</summary>
+    Task<PositionAnswer> AnalyseAsync(string fen, int thinkMs, CancellationToken ct);
 }
 
 /// <summary>
@@ -190,44 +187,40 @@ internal sealed class AnalysisService(
     IOptions<AnalysisOptions> options,
     TimeProvider clock) : BaseService(context, logger), IAnalysisService
 {
-    public async Task<IReadOnlyList<PositionAnswer>> AnalyseAsync(IReadOnlyList<string> fens, int thinkMs, CancellationToken ct)
+    public async Task<PositionAnswer> AnalyseAsync(string fen, int thinkMs, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(fens);
-        List<(string Fen, string Key)> positions = [.. fens.Select(f => (f, PositionKey.Of(f)!))];
-        List<string> keys = [.. positions.Select(p => p.Key).Distinct()];
+        string key = PositionKey.Of(fen) ?? throw new ArgumentException("Not a position (FEN).", nameof(fen));
         List<PositionEvaluation> known = await Context.PositionEvaluations
-            .Where(e => keys.Contains(e.PositionKey) && e.ThinkMs >= thinkMs)
+            .Where(e => e.PositionKey == key && e.ThinkMs >= thinkMs)
             .ToListAsync(ct);
 
-        Dictionary<string, Evaluation> best = known
-            .Where(e => e.Status == PositionEvaluation.Done && e.ThinkMs >= thinkMs && e.Depth is not null && e.Lines is not null)
-            .GroupBy(e => e.PositionKey)
-            .ToDictionary(g => g.Key, g => ToEvaluation(g.OrderByDescending(e => e.ThinkMs).First()), StringComparer.Ordinal);
-
-        DateTimeOffset now = clock.GetUtcNow();
-        TimeSpan retry = TimeSpan.FromSeconds(options.Value.RetryAfterSeconds);
-        foreach ((string fen, string key) in positions.DistinctBy(p => p.Key).Where(p => !best.ContainsKey(p.Key)))
+        PositionEvaluation? best = known
+            .Where(e => e.Status == PositionEvaluation.Done && e.Depth is not null && e.Lines is not null)
+            .MaxBy(e => e.ThinkMs);
+        if (best is not null)
         {
-            PositionEvaluation? pending = known.Find(e => e.PositionKey == key && e.ThinkMs == thinkMs);
-            if (pending is not null && now - pending.RequestedAt < retry)
-            {
-                continue; // being evaluated
-            }
-
-            if (pending is null)
-            {
-                Context.PositionEvaluations.Add(new PositionEvaluation { PositionKey = key, ThinkMs = thinkMs, Status = PositionEvaluation.Requested, RequestedAt = now });
-            }
-            else
-            {
-                pending.RequestedAt = now; // lost: ask again
-            }
-
-            await requests.RequestAsync(new AnalysisRequestMessage(key, fen, thinkMs, options.Value.Lines, now), ct);
+            return new PositionAnswer(key, fen, ToEvaluation(best));
         }
 
+        DateTimeOffset now = clock.GetUtcNow();
+        PositionEvaluation? pending = known.Find(e => e.ThinkMs == thinkMs);
+        if (pending is not null && now - pending.RequestedAt < TimeSpan.FromSeconds(options.Value.RetryAfterSeconds))
+        {
+            return new PositionAnswer(key, fen, null); // being evaluated
+        }
+
+        if (pending is null)
+        {
+            Context.PositionEvaluations.Add(new PositionEvaluation { PositionKey = key, ThinkMs = thinkMs, Status = PositionEvaluation.Requested, RequestedAt = now });
+        }
+        else
+        {
+            pending.RequestedAt = now; // lost: ask again
+        }
+
+        await requests.RequestAsync(new AnalysisRequestMessage(key, fen, thinkMs, options.Value.Lines, now), ct);
         await Context.SaveChangesAsync(ct);
-        return positions.ConvertAll(p => new PositionAnswer(p.Key, p.Fen, best.GetValueOrDefault(p.Key)));
+        return new PositionAnswer(key, fen, null);
     }
 
     internal static Evaluation ToEvaluation(PositionEvaluation e) =>

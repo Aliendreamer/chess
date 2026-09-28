@@ -14,7 +14,7 @@ import {
   remove,
   toInput,
 } from '#/lib/studies'
-import { LINE_POSITIONS, scoreText, useAnalysis } from '#/lib/analysis'
+import { scoreText, useAnalysis } from '#/lib/analysis'
 import { clickSquare, legalTargets, needsPromotion } from '#/lib/moveInput'
 import { Board, PromotionPicker } from '#/components/games'
 import { AnalysisPanel, MoveTree } from '#/components/studies'
@@ -127,13 +127,6 @@ function Study({ loaded }: { loaded: StudyView }) {
 
   const lastMove = current ? { from: current.uci.slice(0, 2), to: current.uci.slice(2, 4) } : null
   const hasVariations = childrenAt(tree, path.slice(0, -1)).length > 1
-  const line = [fen]
-  for (
-    let next = nextPath(tree, path);
-    next && line.length < LINE_POSITIONS;
-    next = nextPath(tree, next)
-  )
-    line.push(fenAt(saved.startFen, tree, next))
   const scoreOf = (at: string) => {
     const best = analysis.evaluationOf(at)?.lines[0]
     return best ? scoreText(best) : null
@@ -212,7 +205,6 @@ function Study({ loaded }: { loaded: StudyView }) {
           analysis={analysis}
           fen={fen}
           evaluation={analysis.evaluationOf(fen)}
-          line={line}
           onPlayLine={editable ? playLine : undefined}
         />
 

@@ -4,7 +4,7 @@ Closed on 2026-09-28. Two changes, both under `changes/archive/`:
 
 - **`studies`:** PGN import by paste or file (variations kept), a board with saved variations, sharing by link, a
   study from a finished game, and PGN export.
-- **`engine-analysis`:** evaluate a position or the next 10 positions of a line on the study board at Quick, Normal or Deep (1, 3 or
+- **`engine-analysis`:** evaluate the position on the study board (one at a time) at Quick, Normal or Deep (1, 3 or
   10 s). The engine gives three best lines and a score for each move. Evaluations are cached per position and shared
   by everyone.
 
@@ -13,8 +13,8 @@ Closed on 2026-09-28. Two changes, both under `changes/archive/`:
 - Backend: 667 unit tests and 34 integration tests. One integration test is the analysis round trip on real
   Redpanda: a request, a fake engine's answer, and a second request served from the cache with no new request.
 - Engine worker: 45 tests, including MultiPV parsing and White's-side scores.
-- Frontend: 245 unit tests and 21 Playwright tests. A study is imported, analysed along its line, scored move by move,
-  and an engine line is played into it.
+- Frontend: 245 unit tests and 21 Playwright tests. A study is imported, one of its positions evaluated and scored in
+  the tree, and an engine line is played into it.
 - `verify-part4a.sh` and `verify-part4b.sh` on the stack. `verify-part4b.sh` picks a random rook ending, so a run
   really reaches the engine rather than the cache.
 
@@ -49,8 +49,9 @@ Closed on 2026-09-28. Two changes, both under `changes/archive/`:
 
 ## Open, for later
 
-- **Scaling analysis.** A request holds at most 10 positions (lowered from 300 by the owner, 2026-09-28: a Deep line is
-  then at most 100 s of engine time). More throughput comes from more analysis consumers: `Engine:AnalysisProcesses`
+- **Scaling analysis.** A request is one position (owner decision 2026-09-28: you evaluate move 10 or move 15, not the
+  whole game — the batch "Analyse line" was removed), so one Deep request is 10 s of engine time. More throughput comes
+  from more analysis consumers: `Engine:AnalysisProcesses`
   per worker, or more worker replicas. They share one consumer group, so `analysis.requests` needs at least as many
   partitions as consumers in total (3 today, set in `redpanda-init`).
 - The openings explorer from imported games.

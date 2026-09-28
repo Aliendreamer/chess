@@ -21,13 +21,11 @@ public sealed class AnalysisFlowTests(StackFixture stack)
 
     private sealed record EvaluationView(int ThinkMs, int Depth, IReadOnlyList<Line> Lines);
 
-    private sealed record PositionView(string Key, string Fen, EvaluationView? Evaluation);
-
-    private sealed record AnalysisView(string Think, int ThinkMs, IReadOnlyList<PositionView> Positions);
+    private sealed record AnalysisView(string Key, string Fen, string Think, int ThinkMs, EvaluationView? Evaluation);
 
     private static async Task<AnalysisView> AnalyseAsync(HttpClient client, string subject, string think, CancellationToken ct)
     {
-        HttpRequestMessage req = new(HttpMethod.Post, "/api/analysis") { Content = JsonContent.Create(new { positions = new[] { Fen }, think }, options: Api.Json) };
+        HttpRequestMessage req = new(HttpMethod.Post, "/api/analysis") { Content = JsonContent.Create(new { fen = Fen, think }, options: Api.Json) };
         req.Headers.Add(PingApiFactory.SubjectHeader, subject);
         using HttpResponseMessage r = await client.SendAsync(req, ct);
         Assert.Equal(HttpStatusCode.OK, r.StatusCode);
@@ -53,7 +51,7 @@ public sealed class AnalysisFlowTests(StackFixture stack)
         engine.Subscribe(KafkaAnalysisRequests.Topic);
 
         AnalysisView first = await AnalyseAsync(client, subject, "normal", ct);
-        Assert.Equal((Key, (EvaluationView?)null), (first.Positions[0].Key, first.Positions[0].Evaluation));
+        Assert.Equal((Key, (EvaluationView?)null), (first.Key, first.Evaluation));
 
         AnalysisRequestMessage request = NextRequest(engine, ct)!;
         Assert.Equal((Key, Fen, 3_000, 3), (request.Key, request.Fen, request.ThinkMs, request.MultiPv));
@@ -65,14 +63,14 @@ public sealed class AnalysisFlowTests(StackFixture stack)
         }
 
         AnalysisView? answered = null;
-        await Api.EventuallyAsync(async () => (answered = await AnalyseAsync(client, subject, "quick", ct)).Positions[0].Evaluation is not null,
+        await Api.EventuallyAsync(async () => (answered = await AnalyseAsync(client, subject, "quick", ct)).Evaluation is not null,
             "the stored evaluation", TimeSpan.FromSeconds(45), ct, TimeSpan.FromMilliseconds(250));
-        EvaluationView evaluation = answered!.Positions[0].Evaluation!;
+        EvaluationView evaluation = answered!.Evaluation!;
         Assert.Equal((3_000, 24, 250), (evaluation.ThinkMs, evaluation.Depth, evaluation.Lines[0].Cp));
         Assert.Equal(["e1d2", "e8d7"], evaluation.Lines[0].Pv);
 
         // Served from the cache: neither the same think time nor a shorter one asks the engine again.
-        Assert.NotNull((await AnalyseAsync(client, subject, "normal", ct)).Positions[0].Evaluation);
+        Assert.NotNull((await AnalyseAsync(client, subject, "normal", ct)).Evaluation);
         Assert.Null(NextRequest(engine, ct, TimeSpan.FromSeconds(3)));
     }
 
