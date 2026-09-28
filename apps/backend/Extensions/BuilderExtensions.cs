@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using RedisRateLimiting;
@@ -48,7 +49,7 @@ internal static class BuilderExtension
         services.AddSingleton<IClaimsTransformation, KeycloakRolesClaimsTransformation>();
         services.AddHostedService<SessionCleanupService>();
         services.AddConventionServices();
-        services.AddObservability(configuration);
+        services.AddObservability(configuration, ObservabilityExtensions.NodeName(configuration));
         AddMessaging(services, configuration);
         services.AddSignalR();
         // One source per live kind; the resolver refuses two for the same kind at startup.
@@ -313,40 +314,141 @@ internal static class SharedConfigurationExtensions
             (context, services, config) => config
                 .ReadFrom.Configuration(context.Configuration)
                 .ReadFrom.Services(services)
-                .Enrich.FromLogContext(),
+                .Enrich.FromLogContext()
+                .ConfigureOtlpLogs(context.Configuration),
             preserveStaticLogger: !StartupLogging.ClaimBootstrapLogger());
 
         return builder;
     }
 }
 
+/// <summary>
+/// Section <c>Observability</c> (observability D2): whether this node exports traces, metrics and logs over OTLP, to
+/// where, and how many traces it keeps. Off by default, so tests and a bare <c>dotnet run</c> export nothing; the
+/// local stack turns it on.
+/// </summary>
+internal sealed class ObservabilityOptions : ISettings
+{
+    public const string SectionName = "Observability";
+
+    public bool Enabled { get; set; }
+
+    /// <summary>The collector's OTLP gRPC endpoint.</summary>
+    public string OtlpEndpoint { get; set; } = "http://otel-collector:4317";
+
+    /// <summary>
+    /// The share of traces kept where they start (parent-based: a trace is decided once, and every hop follows).
+    /// 1.0 locally; production turns it down, or samples by tail in the collector (observability D12).
+    /// </summary>
+    public double SampleRatio { get; set; } = 1.0;
+
+    /// <summary>The <c>deployment.environment</c> every signal carries.</summary>
+    public string Environment { get; set; } = "local";
+
+    /// <summary>How often metrics are pushed; the same as Prometheus's scrape interval, so dashboards move together.</summary>
+    public int MetricExportSeconds { get; set; } = 15;
+
+    public void Validate()
+    {
+        if (SampleRatio is < 0 or > 1)
+        {
+            throw new InvalidOperationException("Observability:SampleRatio must be between 0 and 1.");
+        }
+
+        if (MetricExportSeconds <= 0)
+        {
+            throw new InvalidOperationException("Observability:MetricExportSeconds must be positive.");
+        }
+
+        if (Enabled && !Uri.TryCreate(OtlpEndpoint, UriKind.Absolute, out _))
+        {
+            throw new InvalidOperationException("Observability:OtlpEndpoint must be an absolute URI when Observability:Enabled.");
+        }
+    }
+}
+
 internal static class ObservabilityExtensions
 {
     /// <summary>
-    /// Tracing for the whole request path — HTTP in, Npgsql, HTTP out (Keycloak) and the actors — exported
-    /// to the console. Off unless <c>Observability:Console</c> is true, so it stays a development tool
-    /// until there is somewhere real to send spans (OTLP endpoint, then this gains an exporter branch).
+    /// Traces (HTTP in, Npgsql, HTTP out, the actors) and metrics (ASP.NET Core, Kestrel, SignalR, HttpClient, Npgsql,
+    /// the .NET runtime, our <c>chess.*</c> meters) over OTLP, when <c>Observability:Enabled</c>. Logs go through
+    /// Serilog's OTLP sink (<see cref="ConfigureOtlpLogs"/>), so they carry the trace they were written in. Off, nothing
+    /// is registered: no listener exists, and every span start is a null.
     /// </summary>
-    public static IServiceCollection AddObservability(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddObservability(this IServiceCollection services, IConfiguration configuration, string node)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        if (!configuration.GetValue<bool>("Observability:Console"))
+        ObservabilityOptions options = services.AddSettings<ObservabilityOptions>(configuration, ObservabilityOptions.SectionName);
+        if (!options.Enabled)
         {
             return services;
         }
 
+        Uri endpoint = new(options.OtlpEndpoint);
         services.AddOpenTelemetry()
-            .ConfigureResource(resource => resource.AddService(Constants.ServiceName))
+            .ConfigureResource(resource => resource.AddAttributes(ResourceAttributes(options, node)))
             .WithTracing(tracing => tracing
+                .SetSampler(new ParentBasedSampler(new TraceIdRatioBasedSampler(options.SampleRatio)))
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddNpgsql()
                 .AddSource(ActorTracing.SourceName)
-                .AddConsoleExporter());
+                .AddOtlpExporter(o => o.Endpoint = endpoint))
+            // .NET publishes these meters itself; subscribing by name is all it takes.
+            .WithMetrics(metrics => metrics
+                .AddMeter(
+                    "Microsoft.AspNetCore.Hosting",
+                    "Microsoft.AspNetCore.Server.Kestrel",
+                    "Microsoft.AspNetCore.Http.Connections",
+                    "Microsoft.AspNetCore.SignalR",
+                    "Microsoft.AspNetCore.RateLimiting",
+                    "System.Net.Http",
+                    "System.Runtime",
+                    "Npgsql",
+                    "chess.*")
+                .AddOtlpExporter((exporter, reader) =>
+                {
+                    exporter.Endpoint = endpoint;
+                    reader.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = options.MetricExportSeconds * 1000;
+                }));
 
         return services;
+    }
+
+    /// <summary>Who is speaking: the app, this node (the Akka hostname in the cluster), and the environment.</summary>
+    public static IReadOnlyDictionary<string, object> ResourceAttributes(ObservabilityOptions options, string node)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        return new Dictionary<string, object>(StringComparer.Ordinal)
+        {
+            ["service.name"] = Constants.ServiceName,
+            ["service.instance.id"] = node,
+            ["deployment.environment"] = options.Environment,
+        };
+    }
+
+    /// <summary>This node's name for telemetry: its Akka hostname in the cluster, else the machine name.</summary>
+    public static string NodeName(IConfiguration configuration) =>
+        configuration["Akka:Hostname"] is { Length: > 0 } host ? host : System.Environment.MachineName;
+
+    /// <summary>Adds the OTLP sink to Serilog when export is on: every log reaches Loki with its trace and span ids.</summary>
+    public static LoggerConfiguration ConfigureOtlpLogs(this LoggerConfiguration logger, IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        ObservabilityOptions options = configuration.GetSection(ObservabilityOptions.SectionName).Get<ObservabilityOptions>() ?? new();
+        if (!options.Enabled)
+        {
+            return logger;
+        }
+
+        return logger.WriteTo.OpenTelemetry(o =>
+        {
+            o.Endpoint = options.OtlpEndpoint;
+            o.Protocol = Serilog.Sinks.OpenTelemetry.OtlpProtocol.Grpc;
+            o.ResourceAttributes = new Dictionary<string, object>(ResourceAttributes(options, NodeName(configuration)));
+        });
     }
 }
 

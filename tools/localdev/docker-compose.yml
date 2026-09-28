@@ -59,6 +59,9 @@ x-backend-env: &backend-env
   Smtp__Host: mailpit
   Smtp__Port: "1025"
   Smtp__From: chess@chess.localhost
+  # Traces, metrics and logs over OTLP to the collector (observability D2); the node name comes from Akka__Hostname.
+  Observability__Enabled: "true"
+  Observability__OtlpEndpoint: http://otel-collector:4317
 
 # Every service logs through json-file with its container name as the tag (chess-keycloak-1); the collector reads
 # these files and turns the tag into the service name in Loki (observability D9). Size-capped so logs never fill the disk.

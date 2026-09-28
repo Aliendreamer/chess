@@ -41,6 +41,7 @@ public sealed class SettingsTests
         Assert.Equivalent(new CorrespondenceOptions(), Bound<CorrespondenceOptions>(CorrespondenceOptions.SectionName), strict: true);
         Assert.Equivalent(new SmtpOptions(), Bound<SmtpOptions>(SmtpOptions.SectionName), strict: true);
         Assert.Equivalent(new AnalysisOptions(), Bound<AnalysisOptions>(AnalysisOptions.SectionName), strict: true);
+        Assert.Equivalent(new ObservabilityOptions(), Bound<ObservabilityOptions>(ObservabilityOptions.SectionName), strict: true);
 
         // Keycloak's section holds environment values (client id, URLs); only its tuning must match.
         Assert.Equal(new KeycloakOptions().HttpTimeoutSeconds, Bound<KeycloakOptions>(KeycloakOptions.SectionName).HttpTimeoutSeconds);
@@ -91,6 +92,9 @@ public sealed class SettingsTests
         { "Correspondence:MoveDeadline", () => new CorrespondenceOptions { MoveDeadline = TimeSpan.Zero }.Validate() },
         { "Smtp:Port", () => new SmtpOptions { Host = "mail", Port = 0 }.Validate() },
         { "Analysis:QuickMs", () => new AnalysisOptions { QuickMs = 5_000, NormalMs = 3_000 }.Validate() },
+        { "Observability:SampleRatio", () => new ObservabilityOptions { SampleRatio = 1.5 }.Validate() },
+        { "Observability:MetricExportSeconds", () => new ObservabilityOptions { MetricExportSeconds = 0 }.Validate() },
+        { "Observability:OtlpEndpoint", () => new ObservabilityOptions { Enabled = true, OtlpEndpoint = "collector" }.Validate() },
     };
 
     [Theory]

@@ -23,7 +23,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
 
 ## 3. Backend: export and the switch
 
-- [ ] 3.1 Failing tests first. `ObservabilityTests`: tracer, meter and logger providers are registered only when
+- [x] 3.1 Failing tests first. `ObservabilityTests`: tracer, meter and logger providers are registered only when
       `Observability:Enabled` (today it keys on `Console`, so the new cases fail). `SettingsTests`: the new
       `Observability` section (fails until `ObservabilityOptions` exists). Then build `ObservabilityOptions`, the
       OTLP exporters for traces, metrics and logs, the parent-based `SampleRatio` sampler, the resource (`service.name`, the node as `service.instance.id`),

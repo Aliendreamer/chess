@@ -86,8 +86,9 @@ sizes, sweep/passivation intervals) lives in an `ISettings` options class regist
 default; `SettingsTests` fails if the file and the class defaults drift. Game rules (D8/D15/D16/D17 timings) stay in
 code on purpose. Array options must not default to a non-empty array (the binder appends): see `AkkaOptions.Roles`.
 
-`Observability__Console=true` switches on OpenTelemetry console tracing (ASP.NET, HttpClient, Npgsql,
-and the `chess.actors` source); it is off by default, including in Development.
+`Observability:Enabled` (off in `appsettings.json`, on in the stack) exports traces, metrics and logs over OTLP to the
+collector (`Observability:OtlpEndpoint`), as `chess-backend` with the Akka hostname as `service.instance.id`; logs go
+through Serilog's OTLP sink with their trace ids. `Observability:SampleRatio` (1.0) is a parent-based head sampler.
 
 Local URLs (Traefik on :80, dashboard on 127.0.0.1:8090): `app.chess.localhost`, `api.chess.localhost`,
 `keycloak.chess.localhost` (admin/admin), `redisinsight.chess.localhost`, `mail.chess.localhost` (Mailpit), `console.chess.localhost`
