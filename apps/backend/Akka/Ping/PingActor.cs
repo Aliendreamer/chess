@@ -77,7 +77,7 @@ internal sealed class PingActor : ReceivePersistentActor
             long seq = LastSequenceNr;
             using Activity? activity = ActorTracing.StartPingHandle(_pingId, seq);
             PingState state = State();
-            _mediator?.Tell(new Publish(LiveTopics.PubSub, PingLiveSource.ToFrame(state)));
+            _mediator?.Tell(new Publish(LiveTopics.PubSub, PingLiveSource.ToFrame(state) with { Trace = persisted.Trace }));
             replyTo.Tell(state);
             if (seq % SnapshotEvery == 0)
             {

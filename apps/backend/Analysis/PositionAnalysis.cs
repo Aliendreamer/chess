@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Chess.Backend.Akka;
 using Chess.Backend.Extensions;
 using Chess.Backend.Games;
 using Chess.Backend.Projections;
@@ -151,7 +152,7 @@ internal sealed class KafkaAnalysisRequests(string bootstrapServers) : IAnalysis
     public Task RequestAsync(AnalysisRequestMessage request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return _producer.ProduceAsync(Topic, new Message<string, string> { Key = request.Key, Value = JsonSerializer.Serialize(request) }, ct);
+        return _producer.ProduceAsync(Topic, new Message<string, string> { Key = request.Key, Value = JsonSerializer.Serialize(request), Headers = PipelineTracing.CurrentHeaders() }, ct);
     }
 
     public void Dispose()

@@ -241,7 +241,7 @@ internal static class JournalPublisherRegistration
             .WithProperty("acks", "all");
         // FlexiFlow emits results in input order, so the pass-through ordering stays monotonic per stream.
         Flow<(OutboxRecord Record, long Ordering), long, NotUsed> producer = Flow.Create<(OutboxRecord Record, long Ordering)>()
-            .Select(x => ProducerMessage.Single(new ProducerRecord<string, string>(x.Record.Topic, x.Record.Key, x.Record.Json), x.Ordering))
+            .Select(x => ProducerMessage.Single(new ProducerRecord<string, string>(x.Record.Topic, x.Record.ToMessage()), x.Ordering))
             .Via(KafkaProducer.FlexiFlow<string, string, long>(settings))
             .Select(r => r.PassThrough);
         return new JournalPublisherLoop(

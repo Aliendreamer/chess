@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using Akka.Actor;
 using Akka.Persistence;
+using Akka.TestKit;
 using Akka.TestKit.Xunit2;
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
@@ -9,6 +10,7 @@ using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Akka.Ping;
 using Chess.Backend.Events;
 using Chess.Backend.Games;
+using Chess.Backend.Messaging;
 
 namespace Chess.Backend.Tests.Akka;
 
@@ -152,5 +154,24 @@ public sealed class ActorTracingTests : TestKit
         Assert.Equal(default, inTimer.ParentSpanId);
         Assert.Null(inUntraced);
         Assert.Same(stale, Activity.Current);
+    }
+
+    [Fact]
+    public void The_live_frame_of_a_traced_move_carries_the_moves_trace()
+    {
+        Guid id = Guid.CreateVersion7();
+        TestProbe mediator = CreateTestProbe();
+        IActorRef game = Sys.ActorOf(Props.Create(() => new GameActor(id, mediator.Ref, _clock)));
+        using Activity request = Test.StartActivity("POST /api/games/{id}/moves")!;
+        game.Tell(ActorTracing.Wrap(new CreateGame(id, 11, 22, Blitz)), TestActor);
+        ExpectMsg<GameView>();
+        game.Tell(ActorTracing.Wrap(new MakeMove(id, 11, "e2e4")), TestActor);
+        ExpectMsg<GameView>();
+
+        LiveFrame frame = (LiveFrame)mediator.FishForMessage<global::Akka.Cluster.Tools.PublishSubscribe.Publish>(
+            p => p.Message is LiveFrame { Seq: 2 }).Message;
+
+        Assert.Equal(Assert.Single(Journal(id).OfType<MoveMade>()).Trace, frame.Trace);
+        Assert.NotNull(frame.Trace);
     }
 }

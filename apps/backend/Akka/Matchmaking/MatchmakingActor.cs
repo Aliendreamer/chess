@@ -227,7 +227,7 @@ internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
     private void Publish(string tc)
     {
         _seq[tc] = _seq.GetValueOrDefault(tc) + 1;
-        _mediator?.Tell(new Publish(LiveTopics.PubSub, new LiveFrame(LiveTopics.Format(QueueLiveSource.KindName, tc), _seq[tc], View(tc))));
+        _mediator?.Tell(new Publish(LiveTopics.PubSub, new LiveFrame(LiveTopics.Format(QueueLiveSource.KindName, tc), _seq[tc], View(tc), ActorTracing.TraceOf(null))));
     }
 
     private static string NotAPreset(string tc) => $"'{tc}' is not one of the time controls on offer.";

@@ -4,6 +4,7 @@ using Akka.Streams.Kafka.Dsl;
 using Akka.Streams.Kafka.Helpers;
 using Akka.Streams.Kafka.Messages;
 using Akka.Streams.Kafka.Settings;
+using Chess.Backend.Akka;
 using Chess.Backend.Projections;
 using Confluent.Kafka;
 
@@ -63,7 +64,13 @@ internal sealed class KafkaConsumerHost(
                 streamCt => KafkaConsumer.CommittableSource(settings, Subscriptions.Topics(topic))
                     .SelectAsync(1, async msg =>
                     {
-                        await runner.RunAsync(projectionType, groupId, msg.Record.Message.Key, msg.Record.Message.Value, streamCt);
+                        await runner.RunAsync(
+                            projectionType,
+                            groupId,
+                            msg.Record.Message.Key,
+                            msg.Record.Message.Value,
+                            PipelineTracing.TraceParent(msg.Record.Message.Headers),
+                            streamCt);
                         return (ICommittable)msg.CommitableOffset;
                     })
                     .RunWith(Committer.Sink(CommitterSettings.Create(system)), materializer),

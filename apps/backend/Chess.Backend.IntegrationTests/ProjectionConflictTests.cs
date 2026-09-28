@@ -103,7 +103,7 @@ public sealed class ProjectionConflictTests(PostgresFixture pg) : IClassFixture<
             TimeProvider.System,
             NullLogger<ProjectionRunner>.Instance);
 
-        await runner.RunAsync(typeof(CountingPingProjection), "chess.rm-pings", "p1", json, CancellationToken.None);
+        await runner.RunAsync(typeof(CountingPingProjection), "chess.rm-pings", "p1", json, traceParent: null, CancellationToken.None);
 
         await using ProjectDbContext check = Context();
         RmPing row = await check.RmPings.SingleAsync(p => p.PingId == "p1");

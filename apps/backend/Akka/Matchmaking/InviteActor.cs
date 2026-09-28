@@ -120,7 +120,7 @@ internal sealed class InviteActor : ReceivePersistentActor
         Persist(ActorTracing.Stamp(new InviteCreated(cmd.CreatorId, cmd.TimeControl, cmd.Color, _clock.GetUtcNow())), e =>
         {
             Apply(e);
-            Published(replyTo);
+            Published(replyTo, e);
         });
     }
 
@@ -167,7 +167,7 @@ internal sealed class InviteActor : ReceivePersistentActor
         Command<Started>(s => Persist(ActorTracing.Stamp(new InviteAccepted(s.ById, s.GameId, _clock.GetUtcNow())), e =>
         {
             Apply(e);
-            Published(s.ReplyTo);
+            Published(s.ReplyTo, e);
             UnbecomeStacked();
             Stash.UnstashAll();
         }));
@@ -205,7 +205,7 @@ internal sealed class InviteActor : ReceivePersistentActor
         Persist(ActorTracing.Stamp(new InviteCancelled(_clock.GetUtcNow())), e =>
         {
             Apply(e);
-            Published(replyTo);
+            Published(replyTo, e);
         });
     }
 
@@ -226,11 +226,11 @@ internal sealed class InviteActor : ReceivePersistentActor
     private void Apply(InviteCancelled e) => _cancelled = true;
 
     /// <summary>Replies with the post-persist view and publishes it on the invite's live topic.</summary>
-    private void Published(IActorRef replyTo)
+    private void Published(IActorRef replyTo, object cause)
     {
         InviteView view = View();
         replyTo.Tell(view);
-        _mediator?.Tell(new Publish(LiveTopics.PubSub, InviteLiveSource.ToFrame(view)));
+        _mediator?.Tell(new Publish(LiveTopics.PubSub, InviteLiveSource.ToFrame(view) with { Trace = ActorTracing.TraceOf(cause) }));
     }
 
     private InviteView View() => new(

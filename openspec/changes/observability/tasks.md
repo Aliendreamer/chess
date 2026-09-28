@@ -44,7 +44,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
       `game.id`, and the persisted event's `Trace` equals that span. Then wire every actor (games, invites,
       matchmaking, pings, the deadline sweeper, the journal publisher, the hub fan-out) and every sender (endpoints,
       consumers, `IGameStarter`); timers start root spans. Commit `feat(backend): trace commands through the actors`.
-- [ ] 4.3 Failing tests first. The mapper and the publisher add a `traceparent` header when the event has `Trace`,
+- [x] 4.3 Failing tests first. The mapper and the publisher add a `traceparent` header when the event has `Trace`,
       none when it does not, and leave the envelope unchanged. `ProjectionRunner` makes one `consume` span per
       record, parented to the header, with the outcome tag. The publishing actor sets `LiveFrame.Trace`. Then add
       the headers to `KafkaEngineRequests` and `KafkaAnalysisRequests`. 🐳 Integration test

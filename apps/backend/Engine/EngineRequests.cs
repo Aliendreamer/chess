@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Chess.Backend.Akka;
 using Chess.Backend.Extensions;
 using Confluent.Kafka;
 
@@ -114,7 +115,7 @@ internal sealed class KafkaEngineRequests(IProducer<string, string> producer, En
         // Uniform over [min, max]: a human-feeling pause, whatever the strength (the engine uses all of it).
         int thinkMs = Random.Shared.Next(options.MinThinkMs, options.MaxThinkMs + 1);
         EngineMoveRequest request = new(gameId.ToString("N"), ply, fen, level, thinkMs, clock.GetUtcNow());
-        return new Message<string, string> { Key = request.GameId, Value = JsonSerializer.Serialize(request) };
+        return new Message<string, string> { Key = request.GameId, Value = JsonSerializer.Serialize(request), Headers = PipelineTracing.CurrentHeaders() };
     }
 }
 

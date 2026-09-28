@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Event;
 using Chess.Backend.Akka;
@@ -13,7 +14,11 @@ namespace Chess.Backend.Messaging;
 /// <c>"{kind}:{id}"</c>, <see cref="Seq"/> is the aggregate's journal sequence (the browser drops anything not newer
 /// than what it shows), and <see cref="Payload"/> is kind-specific. Nothing between the actor and the browser reads it.
 /// </summary>
-internal sealed record LiveFrame(string Topic, long Seq, object Payload);
+/// <summary>
+/// One live update. <see cref="Trace"/> is the traceparent of the work that caused it (observability D6): the BFF pushes
+/// the frame under it and strips it before the frame reaches a browser.
+/// </summary>
+internal sealed record LiveFrame(string Topic, long Seq, object Payload, string? Trace = null);
 
 internal static class LiveTopics
 {
@@ -156,7 +161,10 @@ internal sealed class HubFanOutActor : ReceiveActor
         Receive<LiveFrame>(frame =>
         {
             string topic = frame.Topic;
-            hub.Clients.Group(topic).SendAsync(LiveTopics.FrameMethod, frame)
+            // The push is part of the trace that made the frame; the BFF continues it from the frame's new trace.
+            using Activity? push = ActorTracing.StartChild($"hub push {topic.Split(':')[0]}", frame.Trace, ActivityKind.Producer);
+            LiveFrame outgoing = push?.Id is { } pushed ? frame with { Trace = pushed } : frame;
+            hub.Clients.Group(topic).SendAsync(LiveTopics.FrameMethod, outgoing)
                 .PipeTo(Self, success: () => Done.Instance, failure: ex => new PushFailed(topic, ex));
         });
         Receive<Done>(_ => { });

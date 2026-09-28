@@ -24,6 +24,22 @@ public sealed class JournalEventMapperTests
     }
 
     [Fact]
+    public void An_events_trace_travels_beside_the_envelope_never_inside_it()
+    {
+        const string Trace = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01";
+        JournalEventMappers games = new(GameJournalMappers.All());
+
+        OutboxRecord traced = Registry().Map("ping-abc", 3, new Pinged("hello", 42, At, Trace));
+        OutboxRecord bare = Registry().Map("ping-abc", 3, new Pinged("hello", 42, At));
+        OutboxRecord move = games.Map("game-0199f1c2a3b47c5d8e9f0a1b2c3d4e5f", 2, new MoveMade(1, "e2e4", "e4", "fen", 1_000, 1_000, At, Trace));
+
+        Assert.Equal(Trace, traced.Trace);
+        Assert.Null(bare.Trace);
+        Assert.Equal(bare.Json, traced.Json);
+        Assert.Equal(Trace, move.Trace);
+    }
+
+    [Fact]
     public void Unmapped_event_throws_with_type_and_persistence_id()
     {
         UnmappedJournalEventException ex = Assert.Throws<UnmappedJournalEventException>(() => Registry().Map("game-1", 7, "not an event"));

@@ -1,3 +1,6 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using Chess.Backend.Akka;
 using Chess.Backend.Projections;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +18,9 @@ public sealed class ProjectionRunnerTests
         public Exception? Always { get; set; }
 
         public int Calls { get; set; }
+
+        /// <summary>When set, the projection asks the idempotency guard about (last seq, seq), as real projections do.</summary>
+        public (long Last, long Seq)? Decide { get; set; }
     }
 
     private sealed class ScriptedProjection(Script script) : IProjection
@@ -26,6 +32,11 @@ public sealed class ProjectionRunnerTests
         public Task ApplyAsync(string key, string json, CancellationToken ct)
         {
             script.Calls++;
+            if (script.Decide is { } d)
+            {
+                IdempotencyGuard.Decide(d.Last, d.Seq);
+            }
+
             if (script.Always is { } always)
             {
                 throw always;
@@ -57,8 +68,8 @@ public sealed class ProjectionRunnerTests
 
         public ProjectionRunner Runner { get; }
 
-        public Task RunAsync(string value, string key = "k", string group = Group, CancellationToken ct = default) =>
-            Runner.RunAsync(typeof(ScriptedProjection), group, key, value, ct);
+        public Task RunAsync(string value, string key = "k", string group = Group, string? traceParent = null, CancellationToken ct = default) =>
+            Runner.RunAsync(typeof(ScriptedProjection), group, key, value, traceParent, ct);
 
         public Task<List<ProjectionDeadLetter>> ParkedAsync() =>
             Host.WithDbAsync(db => db.ProjectionDeadLetters.OrderBy(d => d.Seq).ToListAsync());
@@ -184,5 +195,77 @@ public sealed class ProjectionRunnerTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => h.RunAsync(Event("a", 1), ct: cts.Token));
 
         Assert.Empty(await h.ParkedAsync());
+    }
+
+    /// <summary>Records the runner's spans for one trace, so tests running in parallel never see each other's.</summary>
+    private sealed class Spans : IDisposable
+    {
+        private readonly ConcurrentQueue<Activity> _stopped = new();
+        private readonly ActivityListener _listener;
+
+        public Spans()
+        {
+            _listener = new ActivityListener
+            {
+                ShouldListenTo = source => source.Name == PipelineTracing.SourceName,
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStopped = _stopped.Enqueue,
+            };
+            ActivitySource.AddActivityListener(_listener);
+        }
+
+        public ActivityTraceId TraceId { get; } = ActivityTraceId.CreateRandom();
+
+        public string Parent => $"00-{TraceId.ToHexString()}-b7ad6b7169203331-01";
+
+        public Activity Consume => Assert.Single(_stopped, a => a.TraceId == TraceId);
+
+        public void Dispose() => _listener.Dispose();
+    }
+
+    [Fact]
+    public async Task A_record_is_projected_in_a_consume_span_continuing_its_trace()
+    {
+        using Spans spans = new();
+        Harness h = new();
+
+        await h.RunAsync(Event("a", 1), traceParent: spans.Parent);
+
+        Activity consume = spans.Consume;
+        Assert.Equal($"consume {Group}", consume.OperationName);
+        Assert.Equal(ActivityKind.Consumer, consume.Kind);
+        Assert.Equal("b7ad6b7169203331", consume.ParentSpanId.ToHexString());
+        Assert.Equal("applied", consume.GetTagItem("projection.outcome"));
+    }
+
+    [Fact]
+    public async Task A_redelivered_record_is_named_skipped_by_the_idempotency_guard()
+    {
+        using Spans spans = new();
+        Harness h = new();
+        h.Script.Decide = (5, 3);
+
+        await h.RunAsync(Event("a", 3), traceParent: spans.Parent);
+
+        Assert.Equal("skipped", spans.Consume.GetTagItem("projection.outcome"));
+    }
+
+    [Fact]
+    public async Task Retries_parking_and_gaps_are_named_on_the_span()
+    {
+        using Spans parked = new();
+        Harness failing = new(maxAttempts: 2);
+        failing.Script.Always = new InvalidOperationException("broken");
+        await failing.RunAsync(Event("a", 1), traceParent: parked.Parent);
+
+        using Spans gap = new();
+        Harness gapped = new(maxAttempts: 1);
+        gapped.Script.Always = new ProjectionGapException(Group, "b", 3, 5);
+        await Assert.ThrowsAsync<ProjectionGapException>(() => gapped.RunAsync(Event("b", 5), traceParent: gap.Parent));
+
+        Assert.Equal("parked", parked.Consume.GetTagItem("projection.outcome"));
+        Assert.Single(parked.Consume.Events, e => e.Name == "retry");
+        Assert.Equal("gap", gap.Consume.GetTagItem("projection.outcome"));
+        Assert.Equal(ActivityStatusCode.Error, gap.Consume.Status);
     }
 }

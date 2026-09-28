@@ -476,7 +476,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         PersistAll(ActorTracing.StampAll(events), e =>
         {
             ApplyLive(e);
-            Publish();
+            Publish(e);
             MaybeSnapshot();
             Rearm();
         });
@@ -499,7 +499,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         PersistAll(ActorTracing.StampAll<object>([TimedOut(now)]), e =>
         {
             ApplyLive(e);
-            Publish();
+            Publish(e);
             MaybeSnapshot();
             Rearm();
         });
@@ -522,7 +522,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         PersistAll(ActorTracing.StampAll<object>([Ended(GameResult.None, EndReason.Aborted, now)]), e =>
         {
             ApplyLive(e);
-            Publish();
+            Publish(e);
             MaybeSnapshot();
             Rearm();
         });
@@ -540,7 +540,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         PersistAll(ActorTracing.StampAll<object>([MissedDeadline(now)]), e =>
         {
             ApplyLive(e);
-            Publish();
+            Publish(e);
             MaybeSnapshot();
             Rearm();
         });
@@ -572,7 +572,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         PersistAll(ActorTracing.StampAll(events), e =>
         {
             ApplyLive(e);
-            Publish();
+            Publish(e);
             MaybeSnapshot();
             Rearm();
         });
@@ -731,7 +731,9 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             _drawOfferedBy, _drawBlocked, _result, _reason, _createdAt, _lastMoveAt, [.. _absentSince.Keys], _engine));
     }
 
-    private void Publish() => _mediator?.Tell(new Publish(LiveTopics.PubSub, new LiveFrame(Topic, LastSequenceNr, View())));
+    /// <summary>The game's new view on its live topic, carrying the trace of the event that changed it.</summary>
+    private void Publish(object cause) =>
+        _mediator?.Tell(new Publish(LiveTopics.PubSub, new LiveFrame(Topic, LastSequenceNr, View(), ActorTracing.TraceOf(cause))));
 
     // ---- helpers -----------------------------------------------------------------------------------------------
 

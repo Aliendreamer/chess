@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Text.Json;
+using Chess.Backend.Akka;
 using Chess.Backend.Events;
 using Npgsql;
 
@@ -42,13 +44,39 @@ internal sealed class ProjectionRunner(
     TimeProvider clock,
     ILogger<ProjectionRunner> logger)
 {
-    public async Task RunAsync(Type projectionType, string groupId, string key, string value, CancellationToken ct)
+    /// <summary>
+    /// Every attempt at the record runs inside one <c>consume {group}</c> span continuing <paramref name="traceParent"/>
+    /// (observability D5), tagged with the outcome: applied, skipped (the idempotency guard said so), parked, or gap;
+    /// each failed attempt is a <c>retry</c> event on it.
+    /// </summary>
+    public async Task RunAsync(Type projectionType, string groupId, string key, string value, string? traceParent, CancellationToken ct)
     {
         (string aggregateId, long seq) = Identify(key, value);
+        using Activity? consume = PipelineTracing.StartConsume(groupId, traceParent);
+        consume?.SetTag("projection.aggregate", aggregateId);
+        consume?.SetTag("projection.seq", seq);
+        try
+        {
+            // Never inline the call into `consume?.SetTag(...)`: with tracing off the whole call, work included, would be skipped.
+            string outcome = await RunAttemptsAsync(projectionType, groupId, key, value, aggregateId, seq, ct);
+            consume?.SetTag(OutcomeTag, outcome);
+        }
+        catch (ProjectionGapException e)
+        {
+            consume?.SetTag(OutcomeTag, "gap");
+            consume?.SetStatus(ActivityStatusCode.Error, e.Message);
+            throw;
+        }
+    }
+
+    private const string OutcomeTag = "projection.outcome";
+
+    private async Task<string> RunAttemptsAsync(Type projectionType, string groupId, string key, string value, string aggregateId, long seq, CancellationToken ct)
+    {
         if (await ParkedBehindQuarantineAsync(groupId, aggregateId, seq, key, value, ct))
         {
             Log.ProjectionParkedBehindQuarantine(logger, groupId, aggregateId, seq);
-            return;
+            return "parked";
         }
 
         int attempts = 0;
@@ -61,7 +89,7 @@ internal sealed class ProjectionRunner(
                 await using AsyncServiceScope scope = scopes.CreateAsyncScope();
                 IProjection projection = (IProjection)scope.ServiceProvider.GetRequiredService(projectionType);
                 await projection.ApplyAsync(key, value, ct);
-                return;
+                return Activity.Current?.GetTagItem(IdempotencyGuard.DecisionTag) is SeqDecision.Skip ? "skipped" : "applied";
             }
             catch (ProjectionGapException)
             {
@@ -84,10 +112,11 @@ internal sealed class ProjectionRunner(
                 {
                     await ParkAsync(new ParkRequest(groupId, aggregateId, seq, key, value, attempts, Describe(e), firstFailedAt.Value), ct);
                     Log.ProjectionParked(logger, e, groupId, aggregateId, seq, attempts);
-                    return;
+                    return "parked";
                 }
 
                 Log.ProjectionAttemptFailed(logger, e, groupId, aggregateId, seq, attempts);
+                Activity.Current?.AddEvent(new ActivityEvent("retry", tags: new ActivityTagsCollection { ["attempt"] = attempts, ["error"] = Describe(e) }));
                 await Task.Delay(Backoff(attempts), clock, ct);
             }
         }
@@ -156,10 +185,17 @@ internal enum SeqDecision
 /// </summary>
 internal static class IdempotencyGuard
 {
-    public static SeqDecision Decide(long lastSeq, long seq) =>
-        seq <= lastSeq ? SeqDecision.Skip
-        : seq == lastSeq + 1 ? SeqDecision.Apply
-        : SeqDecision.Gap;
+    /// <summary>The span tag the decision is recorded under, so the consume span can say "skipped".</summary>
+    public const string DecisionTag = "projection.decision";
+
+    public static SeqDecision Decide(long lastSeq, long seq)
+    {
+        SeqDecision decision = seq <= lastSeq ? SeqDecision.Skip
+            : seq == lastSeq + 1 ? SeqDecision.Apply
+            : SeqDecision.Gap;
+        Activity.Current?.SetTag(DecisionTag, decision);
+        return decision;
+    }
 }
 
 internal sealed class ProjectionGapException : Exception

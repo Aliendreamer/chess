@@ -2,6 +2,7 @@ using Akka.Persistence.Journal;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Ping;
 using Chess.Backend.Events;
+using Confluent.Kafka;
 
 namespace Chess.Backend.Akka.Outbox;
 
@@ -34,8 +35,16 @@ internal sealed class TopicTagger : IWriteEventAdapter
     };
 }
 
-/// <summary>One Kafka record, ready to produce.</summary>
-internal sealed record OutboxRecord(string Topic, string Key, string Json);
+/// <summary>
+/// One Kafka record, ready to produce, with the trace of the event it came from (observability D5): the trace rides
+/// beside the envelope as a header, never inside it.
+/// </summary>
+internal sealed record OutboxRecord(string Topic, string Key, string Json, string? Trace = null)
+{
+    /// <summary>The message to produce, published in a span continuing <see cref="Trace"/> whose context is its header.</summary>
+    public Message<string, string> ToMessage() =>
+        new() { Key = Key, Value = Json, Headers = PipelineTracing.Headers(PipelineTracing.Publish(Topic, Key, Trace)) };
+}
 
 /// <summary>Turns one journal event of <see cref="EventType"/> into the record the rest of the system consumes.</summary>
 internal interface IJournalEventMapper
@@ -138,7 +147,7 @@ internal sealed class GameJournalMapper<TEvent>(string type, Func<TEvent, DateTi
         TEvent e = (TEvent)evt;
         string gameId = persistenceId[GameActor.PersistenceIdPrefix.Length..];
         EventEnvelope<TEvent> envelope = new(type, 1, gameId, sequenceNr, at(e), e);
-        return new OutboxRecord(GameTopics.Kafka, GameTopics.Key(gameId), EventJson.Serialize(envelope));
+        return new OutboxRecord(GameTopics.Kafka, GameTopics.Key(gameId), EventJson.Serialize(envelope), (e as ITracedEvent)?.Trace);
     }
 }
 
@@ -158,6 +167,6 @@ internal sealed class PingedJournalMapper : IJournalEventMapper
 
         string pingId = persistenceId[PingActor.PersistenceIdPrefix.Length..];
         EventEnvelope<Pinged> envelope = new(EventTypes.Pinged, 1, pingId, sequenceNr, pinged.At, pinged);
-        return new OutboxRecord(PingTopics.Kafka, PingTopics.Key(pingId), EventJson.Serialize(envelope));
+        return new OutboxRecord(PingTopics.Kafka, PingTopics.Key(pingId), EventJson.Serialize(envelope), pinged.Trace);
     }
 }
