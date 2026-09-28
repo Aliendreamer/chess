@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import type { ImportResult } from '#/lib/studies'
 import { getMyStudies, postCreateStudies } from '#/lib/server/api'
@@ -56,6 +56,13 @@ function ImportForm() {
   const [text, setText] = useState('')
   const [report, setReport] = useState<Array<string>>([])
   const importing = useCommand()
+  const box = useRef<HTMLTextAreaElement>(null)
+
+  // Text pasted before the page hydrated is in the box but not in state, and React will not report it as a change:
+  // adopt it once, so Import is not dead with a PGN in view.
+  useEffect(() => {
+    if (box.current?.value) setText(box.current.value)
+  }, [])
 
   async function importPgn(pgn: string) {
     const games = parsePgn(pgn)
@@ -83,6 +90,7 @@ function ImportForm() {
   return (
     <Panel variant="filled" className="gap-3" testId="import-form">
       <textarea
+        ref={box}
         aria-label="PGN"
         value={text}
         onChange={(e) => setText(e.target.value)}
