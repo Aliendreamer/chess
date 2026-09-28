@@ -66,6 +66,7 @@ tools/localdev/verify-part1.sh [--cluster]     # two logins → queue pairing �
 tools/localdev/verify-part2.sh [--quick]       # vs Stockfish: 10 moves at 1320/2000/max, engine restart mid-think, a full game
 tools/localdev/verify-part3.sh                 # correspondence: 7d invite, deadline, your-turn list, mails in Mailpit
 tools/localdev/verify-part4a.sh                # studies: import, variation saved, 409 on stale save, share, PGN, from a game
+tools/localdev/verify-part4b.sh                # engine analysis: a random position evaluated, then served from the shared cache
 tools/localdev/stack.sh up --cluster            # adds backend-2 (down/ps/logs always include it)
 tools/e2e.sh                                   # Playwright against the live stack
 ```
@@ -243,6 +244,17 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   `@mliebelt/pgn-parser` — chess.js drops variations — per game, so a broken game is reported), `/studies`,
   `/studies/$id`, `/pgn/study/$id`. A controlled input must adopt text typed before hydration (see the import form).
 
+- **Engine analysis (engine-analysis)** — `POST /api/analysis {positions, think}` (quick/normal/deep =
+  `Analysis:QuickMs`/`NormalMs`/`DeepMs`, at most `Analysis:MaxPositions`) answers each position from the shared cache
+  `position_evaluations` (PK `(PositionKey, ThinkMs)`; `Analysis/PositionAnalysis.cs`) — a longer think answers a
+  shorter request — and produces the rest to `analysis.requests` (`KafkaAnalysisRequests` owns its producer), unless a
+  request for that key and think is younger than `Analysis:RetryAfterSeconds`. `PositionKey.Of` = the FEN's first four
+  fields, en passant kept only when a pawn can take (chess.js and Gera write it differently; `lib/analysis.ts#positionKey`
+  mirrors it). The worker's analysis loop (`Engine:AnalysisProcesses`, own consumer group, full strength, MultiPV
+  `Analysis:Lines`, scores turned to White's side) answers on `analysis.results`; `AnalysisResultConsumer` stores it,
+  keeping the deeper of two answers. The study board (`AnalysisPanel`, `useAnalysis`) asks, then polls every 1.5 s for
+  the pending positions; scores follow moves in the tree, and a line clicked is played into the study.
+
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/
   `.slnx`/`Directory.*.props`/runsettings so JS edits don't bust the backend cache and vice versa.
   The backend's `project.json` must reference this input.
@@ -253,7 +265,8 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   reads; seeded by `postgres/replica-entrypoint.sh` via `pg_basebackup -R`, replication role from
   `postgres/primary-init-replication.sh` — both only run on a FRESH data dir, so changes need `down -v`).
   `redpanda` (Kafka API, dev-container mode) + `redpanda-init` (creates `game.events`, `matchmaking.events`,
-  `analysis.requests`, `analysis.results`) + `redpanda-console`. Backend env already carries
+  `analysis.requests`, `analysis.results`; the integration fixture creates the engine and analysis topics itself) +
+  `redpanda-console`. Backend env already carries
   `ConnectionStrings__PostgresReplica` and `Kafka__BootstrapServers` for Part 0 code.
 - **Local stack** — `tools/localdev/docker-compose.yml`, project name `chess` (explicit, so volumes
   are `chess_*` and don't collide with other repos' `localdev_*`). Traefik routes by Host labels;

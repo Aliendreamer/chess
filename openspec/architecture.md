@@ -329,11 +329,29 @@ GameActor ──journal──▶ game.events ──┬─▶ DeadlineProjection 
 - Import parses PGN in the browser (variations kept), one game at a time; export writes PGN with variations on the
   server. A finished game becomes a study from its projected moves.
 
+### Engine analysis (engine-analysis)
+
+```text
+study board ──POST /api/analysis──▶ AnalysisService ──▶ position_evaluations (cache: key × think)
+   ▲  (polls 1.5 s)                      │ missing                        ▲
+   │                                     ▼                                │
+   └────────── answers ◀──────── analysis.requests ──▶ apps/engine ──▶ analysis.results ──▶ AnalysisResultConsumer
+```
+
+- An evaluation belongs to a position, not to a study or a user: the key is the FEN without the move counters (and
+  without an en-passant square no pawn can use), so the same position reached in any game or study, by anyone, is
+  evaluated once per think time and reused. A longer think answers a shorter request.
+- The API never waits on the engine. It answers what the cache has, asks for the rest, and the board asks again for
+  what is still missing. A request lost on the way is asked again once it is older than `Analysis:RetryAfterSeconds`;
+  a repeated answer only replaces a stored one that went less deep.
+- The worker analyses on its own processes and consumer group, at full strength with three lines, so analysis never
+  delays an engine game's move.
+
 ### The screens (`apps/frontend`, part1-ui)
 
 The UI is the owner's Club design (`Design/`, untracked) in TypeScript: tokens as CSS variables in Tailwind's
 `@theme` (`styles.css`), self-hosted fonts, presentational components in `src/components/{ui,layout,games,pings}.tsx`,
-and pure, tested rules in `src/lib/{games,moveInput,play,live}.ts` (frontend-layout).
+and pure, tested rules in `src/lib/{games,moveInput,play,live,studies,analysis}.ts` (frontend-layout).
 
 | Route            | Reads (server functions)                                                       | Live                       | Acts                                                                  |
 | ---------------- | ------------------------------------------------------------------------------ | -------------------------- | --------------------------------------------------------------------- |

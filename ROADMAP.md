@@ -174,8 +174,9 @@ Goal: the architecture exists end to end with a trivial domain, so every later p
 - Two changes (owner decision 2026-09-28). **`studies` — built 2026-09-28**: PGN import (paste or file, variations
   kept), a board with saved variations, sharing by link, a study from a finished game, PGN export; plain rows, no actor.
   Verify: `tools/localdev/verify-part4a.sh`.
-- **`engine-analysis` — next**: evaluate a position or a whole game at a chosen think time, over `analysis.*` with its
-  own engine process; evaluations cached per position and shown live.
+- **`engine-analysis` — built 2026-09-28**: evaluate a position or a whole line on the study board at Quick, Normal or
+  Deep (1/3/10 s), three best lines, over `analysis.*` with its own engine process; evaluations cached per position for
+  everyone, the board polls until they arrive. Verify: `tools/localdev/verify-part4b.sh`.
 - Later: the openings explorer from imported games.
 
 ## 7. Cross-cutting
