@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Http;
 using Chess.Backend.Data.ReadModels;
 using Chess.Backend.Studies;
+using Microsoft.AspNetCore.Http;
 
 namespace Chess.Backend.Tests.Studies;
 
@@ -151,8 +151,19 @@ public sealed class StudyServiceTests
             DateTimeOffset at = Time.Utc("2026-09-27T10:00:00Z");
             db.RmGames.Add(new RmGame
             {
-                GameId = game, WhiteId = Ann, WhiteName = "ann", BlackId = Bob, BlackName = "bob", TimeControl = "5+3",
-                Status = RmGame.Ended, Result = "0-1", Reason = "Checkmate", Ply = 4, LastFen = "x", CreatedAt = at, UpdatedAt = at,
+                GameId = game,
+                WhiteId = Ann,
+                WhiteName = "ann",
+                BlackId = Bob,
+                BlackName = "bob",
+                TimeControl = "5+3",
+                Status = RmGame.Ended,
+                Result = "0-1",
+                Reason = "Checkmate",
+                Ply = 4,
+                LastFen = "x",
+                CreatedAt = at,
+                UpdatedAt = at,
             });
             string[] moves = ["f2f3", "e7e5", "g2g4", "d8h4"];
             for (int i = 0; i < moves.Length; i++)
