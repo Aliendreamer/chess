@@ -223,3 +223,29 @@ function play(fen: string, san: string): { uci: string; fen: string } {
   const m = board.move(san) // throws on an illegal move, which reports the game
   return { uci: `${m.from}${m.to}${m.promotion ?? ''}`, fen: board.fen() }
 }
+
+/**
+ * A move played on the study board, as a tree node: chess.js gives the SAN and FEN at once (feedback only, like the game
+ * page); the server replays and replaces them on save. Null when chess.js finds the move illegal.
+ */
+export function playMove(fen: string, uci: string): StudyMove | null {
+  try {
+    const board = new Chess(fen)
+    const promotion = uci[4]
+    const m = board.move({
+      from: uci.slice(0, 2),
+      to: uci.slice(2, 4),
+      ...(promotion ? { promotion } : {}),
+    })
+    return { uci, san: m.san, fen: board.fen(), children: [] }
+  } catch {
+    return null
+  }
+}
+
+/** How a move is numbered in a line: `12.` before White's move, `12...` before Black's when it starts a line. */
+export function moveNumber(fenBefore: string, startsLine: boolean): string | null {
+  const [, side, , , , number] = fenBefore.split(' ')
+  if (side === 'w') return `${number ?? '1'}.`
+  return startsLine ? `${number ?? '1'}...` : null
+}

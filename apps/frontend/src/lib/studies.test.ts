@@ -5,9 +5,11 @@ import {
   childrenAt,
   fenAt,
   lineEnd,
+  moveNumber,
   nextPath,
   nodeAt,
   parsePgn,
+  playMove,
   promote,
   remove,
   toInput,
@@ -121,5 +123,26 @@ describe('parsePgn', () => {
     const [game] = parsePgn('[White "cat"]\n[Black "dan"]\n\n1. d4 *')
 
     expect(game).toMatchObject({ ok: true, study: { title: 'cat – dan' } })
+  })
+})
+
+describe('playing on the study board', () => {
+  it('gives the move its SAN and the position after it, or nothing when illegal', () => {
+    expect(playMove(STANDARD_START, 'e2e4')).toEqual({
+      uci: 'e2e4',
+      san: 'e4',
+      // chess.js writes the en-passant square only when a capture is possible; the server's FEN replaces it on save.
+      fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+      children: [],
+    })
+    expect(playMove(STANDARD_START, 'e2e5')).toBeNull()
+    expect(playMove('8/P7/8/8/8/8/8/k6K w - - 0 1', 'a7a8n')?.san).toBe('a8=N')
+  })
+
+  it('numbers White always and Black only where a line starts', () => {
+    expect(moveNumber(STANDARD_START, false)).toBe('1.')
+    const afterE4 = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1'
+    expect(moveNumber(afterE4, true)).toBe('1...')
+    expect(moveNumber(afterE4, false)).toBeNull()
   })
 })

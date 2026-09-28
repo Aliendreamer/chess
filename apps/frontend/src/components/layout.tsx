@@ -15,6 +15,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
         </NavGroup>
         <NavGroup label="Games">
           <NavItem to="/games" label="History" />
+          <NavItem to="/studies" label="Studies" />
         </NavGroup>
         <div className="mt-auto flex items-center gap-2.5 px-2">
           <div

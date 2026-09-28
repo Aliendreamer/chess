@@ -288,10 +288,15 @@ export function GameResultPanel({
   result,
   reason,
   pgnHref,
+  onAnalyse,
+  analysing = false,
 }: {
   result: string
   reason: string | null
   pgnHref: string
+  /** Opens the game as a new study (studies D5). */
+  onAnalyse?: () => void
+  analysing?: boolean
 }) {
   return (
     <Panel variant="accent" title="Result">
@@ -302,6 +307,11 @@ export function GameResultPanel({
         Download PGN
       </a>
       {reason ? <p className="m-0 text-sm text-fg-secondary">{reasonText(reason)}</p> : null}
+      {onAnalyse ? (
+        <Button variant="outline" disabled={analysing} onClick={onAnalyse}>
+          Analyse
+        </Button>
+      ) : null}
     </Panel>
   )
 }
