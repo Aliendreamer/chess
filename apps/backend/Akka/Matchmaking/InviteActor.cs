@@ -51,6 +51,12 @@ internal sealed class InviteActor : ReceivePersistentActor
     protected override bool AroundReceive(Receive receive, object message) =>
         ActorTracing.Receive("invite", message, m => base.AroundReceive(receive, m), entity: new("invite.id", _inviteId.ToString("N")));
 
+    protected override void OnReplaySuccess()
+    {
+        ActorMetrics.Recovered("invite", _startedAt);
+        base.OnReplaySuccess();
+    }
+
     public const string PersistenceIdPrefix = "invite-";
 
     public static readonly TimeSpan Lifetime = TimeSpan.FromHours(24);
@@ -58,6 +64,9 @@ internal sealed class InviteActor : ReceivePersistentActor
     private static readonly string[] Colors = ["white", "black", "random"];
 
     private readonly Guid _inviteId;
+
+    /// <summary>When this incarnation started, for its recovery time.</summary>
+    private readonly long _startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
     private readonly IGameStarter _starter;
     private readonly IActorRef? _mediator;
     private readonly TimeProvider _clock;
@@ -117,11 +126,11 @@ internal sealed class InviteActor : ReceivePersistentActor
         }
 
         IActorRef replyTo = Sender;
-        Persist(ActorTracing.Stamp(new InviteCreated(cmd.CreatorId, cmd.TimeControl, cmd.Color, _clock.GetUtcNow())), e =>
+        Persist(ActorTracing.Stamp(new InviteCreated(cmd.CreatorId, cmd.TimeControl, cmd.Color, _clock.GetUtcNow())), ActorTracing.Persisting<InviteCreated>("invite", 1, e =>
         {
             Apply(e);
             Published(replyTo, e);
-        });
+        }));
     }
 
     private void HandleAccept(AcceptInvite cmd)
@@ -164,13 +173,13 @@ internal sealed class InviteActor : ReceivePersistentActor
     /// <summary>While the game is being started: everything else waits, so no second accept can slip in.</summary>
     private void Starting()
     {
-        Command<Started>(s => Persist(ActorTracing.Stamp(new InviteAccepted(s.ById, s.GameId, _clock.GetUtcNow())), e =>
+        Command<Started>(s => Persist(ActorTracing.Stamp(new InviteAccepted(s.ById, s.GameId, _clock.GetUtcNow())), ActorTracing.Persisting<InviteAccepted>("invite", 1, e =>
         {
             Apply(e);
             Published(s.ReplyTo, e);
             UnbecomeStacked();
             Stash.UnstashAll();
-        }));
+        })));
         Command<StartFailed>(f =>
         {
             _log.Warning(f.Cause, "invite {0} could not start its game", _inviteId);
@@ -202,11 +211,11 @@ internal sealed class InviteActor : ReceivePersistentActor
         }
 
         IActorRef replyTo = Sender;
-        Persist(ActorTracing.Stamp(new InviteCancelled(_clock.GetUtcNow())), e =>
+        Persist(ActorTracing.Stamp(new InviteCancelled(_clock.GetUtcNow())), ActorTracing.Persisting<InviteCancelled>("invite", 1, e =>
         {
             Apply(e);
             Published(replyTo, e);
-        });
+        }));
     }
 
     private void Apply(InviteCreated e)

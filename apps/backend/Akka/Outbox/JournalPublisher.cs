@@ -87,6 +87,7 @@ internal sealed class PublisherLagHealthCheck(string connectionString, TimeProvi
         List<string> stuck = [];
         foreach (PublisherLag l in lags)
         {
+            PipelineMetrics.Lag(l.StreamId, l.Lag);
             data[$"{l.StreamId}.lastOrdering"] = l.LastOrdering;
             data[$"{l.StreamId}.journalHead"] = l.JournalHead;
             data[$"{l.StreamId}.lag"] = l.Lag;

@@ -18,11 +18,20 @@ internal sealed class PingActor : ReceivePersistentActor
     protected override bool AroundReceive(Receive receive, object message) =>
         ActorTracing.Receive("ping", message, m => base.AroundReceive(receive, m), entity: new("ping.id", _pingId));
 
+    protected override void OnReplaySuccess()
+    {
+        ActorMetrics.Recovered("ping", _startedAt);
+        base.OnReplaySuccess();
+    }
+
     public const int SnapshotEvery = 20;
     public const string PersistenceIdPrefix = "ping-";
     private const int MaxTextLength = 200;
 
     private readonly string _pingId;
+
+    /// <summary>When this incarnation started, for its recovery time.</summary>
+    private readonly long _startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
     private readonly IActorRef? _mediator;
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private long _count;
@@ -71,7 +80,7 @@ internal sealed class PingActor : ReceivePersistentActor
 
         Pinged evt = new(cmd.Text.Trim(), cmd.UserId, DateTimeOffset.UtcNow);
         IActorRef replyTo = Sender;
-        Persist(ActorTracing.Stamp(evt), persisted =>
+        Persist(ActorTracing.Stamp(evt), ActorTracing.Persisting<Pinged>("ping", 1, persisted =>
         {
             Apply(persisted);
             long seq = LastSequenceNr;
@@ -83,7 +92,7 @@ internal sealed class PingActor : ReceivePersistentActor
             {
                 SaveSnapshot(new PingSnapshot(_count, _lastText, _lastAt));
             }
-        });
+        }));
     }
 
     private void Apply(Pinged evt)

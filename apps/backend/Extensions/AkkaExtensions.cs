@@ -254,3 +254,28 @@ internal static class JournalPublisherRegistration
             resolver.GetService<ILogger<JournalPublisherLoop>>());
     }
 }
+
+internal static class ClusterMetricsRegistration
+{
+    /// <summary>
+    /// One <see cref="ClusterMetricsActor"/> per node (observability D8): samples the cluster, the singletons it hosts
+    /// and its entities per shard of every region, and counts dead letters.
+    /// </summary>
+    public static AkkaConfigurationBuilder WithClusterMetrics(this AkkaConfigurationBuilder akka, TimeSpan every, bool publisher) =>
+        akka.WithActors((system, registry, _) =>
+        {
+            Dictionary<string, IActorRef> regions = new(StringComparer.Ordinal)
+            {
+                [GameShardingExtensions.ShardTypeName] = registry.Get<GameActor>(),
+                [InviteShardingExtensions.ShardTypeName] = registry.Get<InviteActor>(),
+                [PingTopics.ShardTypeName] = registry.Get<PingActor>(),
+            };
+            List<string> singletons = [MatchmakingActor.SingletonName, DeadlineSweeper.SingletonName];
+            if (publisher)
+            {
+                singletons.Add(JournalPublisher.SingletonName);
+            }
+
+            system.ActorOf(Props.Create(() => new ClusterMetricsActor(regions, singletons, AkkaOptions.BackendRole, every)), "cluster-metrics");
+        });
+}

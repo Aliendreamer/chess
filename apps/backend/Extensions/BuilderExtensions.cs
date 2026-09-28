@@ -71,6 +71,10 @@ internal static class BuilderExtension
             {
                 akka.WithJournalPublisher();
             }
+
+            akka.WithClusterMetrics(
+                TimeSpan.FromSeconds(sp.GetRequiredService<ObservabilityOptions>().ClusterSampleSeconds),
+                publisher: sp.GetRequiredService<KafkaOptions>().Enabled);
         });
 
         AddJwtBearer(services, keycloak, isDevelopment);
@@ -348,6 +352,9 @@ internal sealed class ObservabilityOptions : ISettings
     /// <summary>How often metrics are pushed; the same as Prometheus's scrape interval, so dashboards move together.</summary>
     public int MetricExportSeconds { get; set; } = 15;
 
+    /// <summary>How often each node samples the cluster and its shard regions for the Actors &amp; cluster gauges.</summary>
+    public int ClusterSampleSeconds { get; set; } = 10;
+
     public void Validate()
     {
         if (SampleRatio is < 0 or > 1)
@@ -355,9 +362,9 @@ internal sealed class ObservabilityOptions : ISettings
             throw new InvalidOperationException("Observability:SampleRatio must be between 0 and 1.");
         }
 
-        if (MetricExportSeconds <= 0)
+        if (MetricExportSeconds <= 0 || ClusterSampleSeconds <= 0)
         {
-            throw new InvalidOperationException("Observability:MetricExportSeconds must be positive.");
+            throw new InvalidOperationException("Observability:MetricExportSeconds and Observability:ClusterSampleSeconds must be positive.");
         }
 
         if (Enabled && !Uri.TryCreate(OtlpEndpoint, UriKind.Absolute, out _))

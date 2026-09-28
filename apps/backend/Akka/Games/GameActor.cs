@@ -37,6 +37,9 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private const string EngineStallTimer = "engine-stall";
 
     private readonly Guid _gameId;
+
+    /// <summary>When this incarnation started, for its recovery time.</summary>
+    private readonly long _startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
     private readonly IActorRef? _mediator;
     private readonly TimeProvider _clock;
     private readonly GameTimings _timings;
@@ -132,7 +135,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         Command<AbortCheck>(_ => HandleAbortCheck());
         Command<EngineStall>(_ => HandleEngineStall());
         Command<CheckDeadline>(_ => HandleCheckDeadline());
-        Command<PassivateNow>(_ => Context.Parent.Tell(new global::Akka.Cluster.Sharding.Passivate(PoisonPill.Instance)));
+        Command<PassivateNow>(_ =>
+        {
+            ActorMetrics.Passivated("game");
+            Context.Parent.Tell(new global::Akka.Cluster.Sharding.Passivate(PoisonPill.Instance));
+        });
         Command<SaveSnapshotSuccess>(_ => { });
         Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "snapshot failed for game {0}", _gameId));
     }
@@ -160,6 +167,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     /// </summary>
     protected override void OnReplaySuccess()
     {
+        ActorMetrics.Recovered("game", _startedAt);
         DateTimeOffset now = _clock.GetUtcNow();
         if (ClocksRunning)
         {
@@ -473,13 +481,13 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        PersistAll(ActorTracing.StampAll(events), e =>
+        PersistAll(ActorTracing.StampAll(events), ActorTracing.Persisting<object>("game", events.Count, e =>
         {
             ApplyLive(e);
             Publish(e);
             MaybeSnapshot();
             Rearm();
-        });
+        }));
     }
 
     private void HandleFlagCheck()
@@ -496,13 +504,13 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        PersistAll(ActorTracing.StampAll<object>([TimedOut(now)]), e =>
+        PersistAll(ActorTracing.StampAll<object>([TimedOut(now)]), ActorTracing.Persisting<object>("game", 1, e =>
         {
             ApplyLive(e);
             Publish(e);
             MaybeSnapshot();
             Rearm();
-        });
+        }));
     }
 
     private void HandleAbortCheck()
@@ -519,13 +527,13 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        PersistAll(ActorTracing.StampAll<object>([Ended(GameResult.None, EndReason.Aborted, now)]), e =>
+        PersistAll(ActorTracing.StampAll<object>([Ended(GameResult.None, EndReason.Aborted, now)]), ActorTracing.Persisting<object>("game", 1, e =>
         {
             ApplyLive(e);
             Publish(e);
             MaybeSnapshot();
             Rearm();
-        });
+        }));
     }
 
     /// <summary>A correspondence game past its deadline ends: aborted before both first moves, else lost on time.</summary>
@@ -537,13 +545,13 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        PersistAll(ActorTracing.StampAll<object>([MissedDeadline(now)]), e =>
+        PersistAll(ActorTracing.StampAll<object>([MissedDeadline(now)]), ActorTracing.Persisting<object>("game", 1, e =>
         {
             ApplyLive(e);
             Publish(e);
             MaybeSnapshot();
             Rearm();
-        });
+        }));
     }
 
     /// <summary>The engine has not moved in time: a request was lost, or the game moved node mid-think. Ask again.</summary>
@@ -566,16 +574,16 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
 
     // ---- persistence -------------------------------------------------------------------------------------------
 
-    private void PersistAndReply(IReadOnlyList<object> events)
+    private void PersistAndReply(List<object> events)
     {
         IActorRef replyTo = Sender;
-        PersistAll(ActorTracing.StampAll(events), e =>
+        PersistAll(ActorTracing.StampAll(events), ActorTracing.Persisting<object>("game", events.Count, e =>
         {
             ApplyLive(e);
             Publish(e);
             MaybeSnapshot();
             Rearm();
-        });
+        }));
         DeferAsync(events[^1], _ => replyTo.Tell(View()));
     }
 

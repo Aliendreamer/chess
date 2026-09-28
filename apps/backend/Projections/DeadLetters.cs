@@ -1,3 +1,4 @@
+using Chess.Backend.Akka;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -163,6 +164,7 @@ internal sealed class DeadLetterService(
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
         IReadOnlyDictionary<string, int> counts = await CountsAsync(cancellationToken);
+        PipelineMetrics.Quarantined(counts);
         if (counts.Count == 0)
         {
             return HealthCheckResult.Healthy("No quarantined aggregates.");

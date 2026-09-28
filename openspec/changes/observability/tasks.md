@@ -53,7 +53,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
 
 ## 5. Backend: actor, cluster and pipeline metrics
 
-- [ ] 5.1 Failing tests first. A `MeterListener` sees `chess.actor.messages`, `chess.actor.handle.duration` and
+- [x] 5.1 Failing tests first. A `MeterListener` sees `chess.actor.messages`, `chess.actor.handle.duration` and
       `chess.actor.persist.duration` with actor, message and outcome for a handled `MakeMove`. Dead and unhandled
       messages are counted. The label rule: no instrument in `chess.*` has an id-like tag key. Then build
       `ClusterMetricsActor` (members, unreachable, singletons, and `GetShardRegionState` → entities per region and

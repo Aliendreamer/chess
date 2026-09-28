@@ -52,6 +52,7 @@ internal sealed class ProjectionRunner(
     public async Task RunAsync(Type projectionType, string groupId, string key, string value, string? traceParent, CancellationToken ct)
     {
         (string aggregateId, long seq) = Identify(key, value);
+        long started = Stopwatch.GetTimestamp();
         using Activity? consume = PipelineTracing.StartConsume(groupId, traceParent);
         consume?.SetTag("projection.aggregate", aggregateId);
         consume?.SetTag("projection.seq", seq);
@@ -60,9 +61,11 @@ internal sealed class ProjectionRunner(
             // Never inline the call into `consume?.SetTag(...)`: with tracing off the whole call, work included, would be skipped.
             string outcome = await RunAttemptsAsync(projectionType, groupId, key, value, aggregateId, seq, ct);
             consume?.SetTag(OutcomeTag, outcome);
+            PipelineMetrics.Projected(groupId, outcome, Stopwatch.GetElapsedTime(started));
         }
         catch (ProjectionGapException e)
         {
+            PipelineMetrics.Projected(groupId, "gap", Stopwatch.GetElapsedTime(started));
             consume?.SetTag(OutcomeTag, "gap");
             consume?.SetStatus(ActivityStatusCode.Error, e.Message);
             throw;

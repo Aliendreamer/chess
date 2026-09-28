@@ -73,9 +73,13 @@ internal static class ActorTracing
             activity.SetTag(tag.Key, tag.Value);
         }
 
+        long started = Stopwatch.GetTimestamp();
+        string outcome = "failed";
         try
         {
-            return handle(inner);
+            bool handled = handle(inner);
+            outcome = handled ? "handled" : "unhandled";
+            return handled;
         }
         catch (Exception e)
         {
@@ -85,6 +89,7 @@ internal static class ActorTracing
         }
         finally
         {
+            ActorMetrics.Handled(actor, inner.GetType().Name, outcome, Stopwatch.GetElapsedTime(started));
             activity?.Dispose();
             Activity.Current = previous;
         }
@@ -110,6 +115,32 @@ internal static class ActorTracing
         activity?.SetTag("actor.type", actor);
         activity?.SetTag("actor.message", inner.GetType().Name);
         return activity;
+    }
+
+    /// <summary>
+    /// The callback for a <c>Persist</c>/<c>PersistAll</c> of <paramref name="count"/> events: it records each event's
+    /// persist latency and closes a <c>{actor} persist</c> span (a child of the span handling the command) once the last
+    /// event is written, then runs <paramref name="handler"/>. Call it as the argument, so it starts when the persist does.
+    /// </summary>
+    public static Action<T> Persisting<T>(string actor, int count, Action<T> handler)
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        long started = Stopwatch.GetTimestamp();
+        Activity? parent = Activity.Current;
+        Activity? span = parent is null ? null : Source.StartActivity($"{actor} persist", ActivityKind.Internal);
+        span?.SetTag("persist.events", count);
+        Activity.Current = parent; // the handler goes on in its own span
+        int left = Math.Max(count, 1);
+        return e =>
+        {
+            ActorMetrics.Persisted(actor, e?.GetType().Name ?? "none", Stopwatch.GetElapsedTime(started));
+            if (--left == 0)
+            {
+                span?.Dispose();
+            }
+
+            handler(e);
+        };
     }
 
     /// <summary>A span continuing <paramref name="traceParent"/>, or none when there is no trace to continue.</summary>

@@ -125,6 +125,7 @@ internal sealed class JournalPublisherLoop(
                 long acked = batch.Max();
                 using Activity? activity = ActorTracing.StartOutboxBatch(streamId, batch.Count(), acked);
                 await lease.SaveOffsetAsync(streamId, acked, ct);
+                PipelineMetrics.Produced(streamId, batch.Count());
                 return acked;
             })
             .ViaMaterialized(KillSwitches.Single<long>(), Keep.Right)
