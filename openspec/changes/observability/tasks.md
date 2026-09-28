@@ -34,7 +34,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
 
 ## 4. Backend: one trace across actors, the journal, Kafka and the relay
 
-- [ ] 4.1 A failing replay test first: an event stored in the old format (a real serialized row, a fixed literal) is
+- [x] 4.1 A failing replay test first: an event stored in the old format (a real serialized row, a fixed literal) is
       read back through the journal's actual serializer after `Trace` is added. It fails to compile until the member
       exists, then must pass unchanged. Add `string? Trace = null` to every domain event. Commit
       `feat(backend): events carry their trace context`.
