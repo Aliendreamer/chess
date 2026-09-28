@@ -15,6 +15,7 @@
 @tc = 5+3
 @gameId = 00000000000000000000000000000000
 @inviteId = 00000000000000000000000000000000
+@studyId = 00000000000000000000000000000000
 @aggregateId = paste-from-dead-letter-list
 
 ### ---------- auth (browser flow; shown for completeness) ----------
@@ -66,6 +67,38 @@ Cookie: mp_sid={{sid}}
 Content-Type: application/json
 
 { "level": "1600", "color": "white" }
+
+### ---------- studies (studies) ----------
+
+### Import or create studies (UCI trees; the server replays every line)
+POST {{host}}/api/studies
+Cookie: mp_sid={{sid}}
+Content-Type: application/json
+
+{ "studies": [ { "title": "Ruy Lopez ideas", "tree": [ { "uci": "e2e4", "children": [ { "uci": "e7e5" } ] } ] } ] }
+
+### My studies
+GET {{host}}/api/studies
+Cookie: mp_sid={{sid}}
+
+### A study (owner, or anyone signed in when shared)
+GET {{host}}/api/studies/{{studyId}}
+Cookie: mp_sid={{sid}}
+
+### Share it
+POST {{host}}/api/studies/{{studyId}}/share
+Cookie: mp_sid={{sid}}
+Content-Type: application/json
+
+{ "shared": true }
+
+### As PGN
+GET {{host}}/api/studies/{{studyId}}/pgn
+Cookie: mp_sid={{sid}}
+
+### A finished game as a new study
+POST {{host}}/api/games/{{gameId}}/study
+Cookie: mp_sid={{sid}}
 
 ### ---------- invites ----------
 

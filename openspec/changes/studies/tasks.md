@@ -8,7 +8,7 @@ Each group ends in one commit passing its gate. 🐳 = live stack.
 
 - [x] 2.1 `Study` entity + migration; `Studies/StudyTree.cs` (validate + complete a tree with `ChessRules`, limits) and
       `StudyPgn` (export). Tests. Commit `feat(backend): studies with validated move trees`.
-- [ ] 2.2 Endpoints (`WebApi/Studies/…`: create/import, mine, get, update with version, share, delete, pgn) and
+- [x] 2.2 Endpoints (`WebApi/Studies/…`: create/import, mine, get, update with version, share, delete, pgn) and
       `POST /api/games/{id}/study`. Tests. Commit `feat(backend): study endpoints`.
 - [ ] 2.3 🐳 Integration: import → edit → share → another user reads → private is 404 → from a game.
 
