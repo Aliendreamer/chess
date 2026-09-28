@@ -1,0 +1,12 @@
+# Dashboards are code (observability D11): the JSON files in grafana/dashboards are the source of truth. An edit made
+# in the UI cannot be saved over them; export it and commit the file instead.
+apiVersion: 1
+
+providers:
+  - name: chess
+    folder: Chess
+    type: file
+    allowUiUpdates: false
+    disableDeletion: true
+    options:
+      path: /var/lib/grafana/dashboards

@@ -34,6 +34,10 @@ http:
       rule: Host(`console.chess.localhost`)
       entryPoints: [web]
       service: console
+    grafana:
+      rule: Host(`grafana.chess.localhost`)
+      entryPoints: [web]
+      service: grafana
   services:
     app:
       loadBalancer:
@@ -63,3 +67,7 @@ http:
       loadBalancer:
         servers:
           - url: http://redpanda-console:8080
+    grafana:
+      loadBalancer:
+        servers:
+          - url: http://grafana:3000

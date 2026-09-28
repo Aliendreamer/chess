@@ -7,15 +7,14 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
 
 ## 2. The stack
 
-- [ ] 2.1 Add the services to `tools/localdev/docker-compose.yml`, pinned, with memory limits and `chess_*` volumes:
-      `otel-collector`, `prometheus` (remote-write receiver, 7 d), `tempo` (metrics-generator → Prometheus, 72 h),
+- [x] 2.1 Add the services to `tools/localdev/docker-compose.yml`, pinned, with memory limits and `chess_*` volumes:
+      `otel-collector`, `prometheus` (OTLP and remote-write receivers, 7 d), `tempo` (metrics-generator → Prometheus, 72 h),
       `loki` (OTLP, 72 h), `pyroscope` (72 h), `grafana`, `postgres-exporter` ×2, `redis-exporter` and `cadvisor`.
       Add their configuration files, the Traefik route `grafana.chess.localhost`, and the provisioned datasources
       with the trace ↔ logs ↔ profiles links. Grafana has anonymous access off, the `admin` account from compose, and a
       `grafana-init` step that creates `viewer`. The collector carries the tail-sampling policy, off.
-      `stack.sh` prints the Grafana URL and logins. Confirm Redpanda's consumer-lag
-      metric and record it in the design.
-- [ ] 2.2 Container logs to Loki (design D9): a compose logging anchor on every service (`json-file`, `tag` = the
+      `stack.sh` prints the Grafana URL and logins. Confirm Redpanda's consumer-lag metric and record it in the design (`redpanda_kafka_consumer_group_lag_sum`, enabled by `redpanda-init`).
+- [x] 2.2 Container logs to Loki (design D9): a compose logging anchor on every service (`json-file`, `tag` = the
       service name), and the collector's `filelog` receiver on `/var/lib/docker/containers` (read-only), with
       multi-line recombining. The backend, engine and frontend containers are excluded (their logs come over OTLP).
       🐳 Proof for group 2: `stack.sh up`, then `verify-stack.sh` extended with the collector's health, `up` for every
@@ -85,7 +84,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
 
 ## 8. Dashboards
 
-- [ ] 8.1 Provision the dashboards as JSON in `tools/localdev/grafana/dashboards/`: Overview, Actors & cluster (with
+- [ ] 8.1 Provision the dashboards as JSON in `tools/localdev/observability/grafana/dashboards/`: Overview, Actors & cluster (with
       the node graph), Event pipeline, HTTP & BFF, Runtime & containers, Engine worker, Infrastructure and Logs.
       Check every panel's query against live data. 🐳 Proof: each dashboard renders with data after
       `verify-part1.sh --cluster` and `verify-part2.sh --quick`. Commit `feat(repo): grafana dashboards`.

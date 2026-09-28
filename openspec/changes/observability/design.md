@@ -34,15 +34,19 @@ Traefik (their logs do reach Loki, D9).
 ```text
 backend-1/2, engine ──OTLP gRPC──┐                 ┌─▶ Tempo ──metrics-generator (service graph, span metrics)──┐
 BFF (Node) ─────────OTLP HTTP────┼─▶ otel-collector ┼─▶ Loki (OTLP)                                               │
-browser ──/otel/v1/traces on app.─┘  (via the BFF)  └─▶ Prometheus (remote write) ◀──────────────────────────────┘
+browser ──/otel/v1/traces on app.─┘  (via the BFF)  └─▶ Prometheus (OTLP receiver) ◀──────────────────────────────┘
                                                           ▲ scrapes: redpanda /public_metrics, postgres-exporter ×2,
 apps ──profiles──▶ Pyroscope                               redis-exporter, cadvisor, collector self-metrics
 Grafana ─▶ Prometheus · Tempo · Loki · Pyroscope (provisioned)
 ```
 
 - Apps speak plain OTLP to one collector. Moving to a hosted backend later is a change of endpoint.
-- The collector pushes metrics to Prometheus by remote write, so apps need no scrape targets and new nodes appear
-  without configuration. Prometheus still scrapes the infrastructure exporters.
+- The collector pushes the apps' metrics to Prometheus's native OTLP receiver (`--web.enable-otlp-receiver`), which
+  promotes `service.name`, `service.instance.id` and `deployment.environment` to labels. Apps need no scrape targets
+  and new nodes appear without configuration. Tempo's metrics-generator uses remote write
+  (`--web.enable-remote-write-receiver`). Prometheus still scrapes the infrastructure: Redpanda, both Postgres
+  exporters, Redis, cAdvisor, and the stack's own services.
+- All the configuration lives in `tools/localdev/observability/`.
 - Profiles go straight to Pyroscope: the collector's profiles pipeline is still experimental.
 - **Alternatives:**
   - The `grafana/otel-lgtm` all-in-one image: one opaque development image, each part's configuration and
@@ -171,7 +175,9 @@ The rule for labels: types, groups, topics, regions and shard numbers only. Neve
 | built-in                                                                 | ASP.NET Core, Kestrel, SignalR, HttpClient, Npgsql, `System.Runtime`, Node runtime | as shipped                      |
 
 - The node label comes from the resource (`service.instance.id`), promoted to a Prometheus label by the collector.
-- Consumer lag per group comes from Redpanda's own metrics; the exact metric is confirmed in task 2.
+- Consumer lag per group comes from Redpanda: `redpanda_kafka_consumer_group_lag_sum` / `_lag_max` (label
+  `redpanda_group`). Redpanda only reports it with `consumer_lag` in `enable_consumer_group_metrics`, which
+  `redpanda-init` sets.
 - The existing health checks (`/health` publisher lag, dead letters) stay as they are. The gauges read the same
   sources.
 
@@ -188,7 +194,9 @@ Two paths, so that nothing is collected twice:
 - **Everything else, from container output:**
   - The collector's `filelog` receiver reads Docker's `json-file` logs from `/var/lib/docker/containers`, mounted
     read-only (Docker runs natively in WSL here, so the files are on the host).
-  - A compose logging anchor sets the driver's `tag` to the service name, which becomes Loki's `service_name`.
+  - A compose logging anchor on every service sets the driver's `tag` to the container name (`chess-keycloak-1`).
+    The collector turns it into the service name (`keycloak`), which becomes Loki's `service_name`. The same anchor
+    caps each log file (10 MB × 3).
   - Covered: Postgres (primary and replica), Redpanda, Keycloak, Traefik, Redis, Mailpit, and the stack's own
     services.
   - The containers of our apps are excluded here, because their logs already arrive over OTLP.
@@ -213,7 +221,7 @@ Two paths, so that nothing is collected twice:
 
 ### D11 — Grafana
 
-- **Provisioned from `tools/localdev/grafana/`:**
+- **Provisioned from `tools/localdev/observability/grafana/`:**
   - datasources: Prometheus (default), Tempo (traces → logs, traces → profiles, service map from Prometheus), Loki
     (the `trace_id` field → Tempo), Pyroscope;
   - dashboards (JSON), one per area in the proposal.
@@ -259,5 +267,4 @@ Two paths, so that nothing is collected twice:
 
 ## Open Questions
 
-- Redpanda's consumer-lag metric name in the pinned version (task 2).
 - The backend image's C library for the Pyroscope native profiler (task 6).

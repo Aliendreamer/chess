@@ -1,0 +1,116 @@
+# OpenTelemetry Collector (observability D1): the one place every app sends OTLP to, and the reader of every other
+# container's log file. Traces → Tempo, metrics → Prometheus's OTLP receiver, logs → Loki's OTLP endpoint.
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  # Remembers how far each container log file was read, so a collector restart neither skips nor repeats lines.
+  file_storage:
+    directory: /var/lib/otelcol/file_storage
+    create_directory: true
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # Every container's stdout/stderr from Docker's json-file logs (observability D9). Compose sets each service's log
+  # tag to its container name (chess-keycloak-1), which becomes service.name. Our own apps are dropped here: their
+  # logs arrive over OTLP, structured and with trace ids, and must not arrive twice.
+  file_log/containers:
+    include: [/var/lib/docker/containers/*/*-json.log]
+    start_at: end
+    include_file_path: true
+    storage: file_storage
+    operators:
+      - type: json_parser
+        parse_to: attributes.docker
+        timestamp:
+          parse_from: attributes.docker.time
+          layout_type: gotime
+          layout: "2006-01-02T15:04:05.999999999Z07:00"
+      - type: regex_parser
+        parse_from: attributes.docker.attrs.tag
+        regex: '^chess-(?P<service>.+)-\d+$'
+        on_error: drop_quiet
+      - type: filter
+        expr: 'attributes.service == nil or attributes.service matches "^(backend|backend-2|engine|frontend)$"'
+      - type: move
+        from: attributes.service
+        to: resource["service.name"]
+      - type: move
+        from: attributes.docker.log
+        to: body
+      - type: move
+        from: attributes.docker.stream
+        to: attributes["log.iostream"]
+      - type: remove
+        field: attributes.docker
+      # A multi-line entry (a Java stack trace in Keycloak) arrives one line per record; continuation lines start
+      # with whitespace, so they are joined to the line before.
+      - type: recombine
+        combine_field: body
+        is_first_entry: body matches "^\\S"
+        source_identifier: attributes["log.file.path"]
+        combine_with: ""
+        force_flush_period: 2s
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  batch: {}
+  # Production's sampling policy (observability D12), deliberately not in any pipeline below: locally every trace is
+  # kept. To use it, add `tail_sampling` to the traces pipeline before `batch`.
+  tail_sampling:
+    decision_wait: 10s
+    policies:
+      - name: errors
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      - name: slow
+        type: latency
+        latency:
+          threshold_ms: 1000
+      - name: sample-the-rest
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+
+exporters:
+  otlp_grpc/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  otlp_http/prometheus:
+    endpoint: http://prometheus:9090/api/v1/otlp
+  otlp_http/loki:
+    endpoint: http://loki:3100/otlp
+
+service:
+  extensions: [health_check, file_storage]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_grpc/tempo]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/prometheus]
+    logs:
+      receivers: [otlp, file_log/containers]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/loki]
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888

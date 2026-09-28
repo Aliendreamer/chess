@@ -1,0 +1,44 @@
+# Prometheus (observability D1): metrics from the apps arrive through the collector on the OTLP receiver
+# (--web.enable-otlp-receiver); Tempo's metrics-generator remote-writes service-graph and span metrics
+# (--web.enable-remote-write-receiver). Only the infrastructure is scraped. Retention (7 d) is a command flag.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+otlp:
+  # Every resource attribute that identifies a process becomes a label: the node of a backend, the app.
+  keep_identifying_resource_attributes: true
+  promote_resource_attributes:
+    [service.name, service.instance.id, deployment.environment]
+
+storage:
+  tsdb:
+    # OTLP pushes can arrive slightly out of order across nodes.
+    out_of_order_time_window: 30m
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs: [{ targets: ["localhost:9090"] }]
+  - job_name: otel-collector
+    static_configs: [{ targets: ["otel-collector:8888"] }]
+  - job_name: redpanda
+    metrics_path: /public_metrics
+    static_configs: [{ targets: ["redpanda:9644"] }]
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels: { role: primary }
+      - targets: ["postgres-replica-exporter:9187"]
+        labels: { role: replica }
+  - job_name: redis
+    static_configs: [{ targets: ["redis-exporter:9121"] }]
+  - job_name: cadvisor
+    static_configs: [{ targets: ["cadvisor:8080"] }]
+  - job_name: tempo
+    static_configs: [{ targets: ["tempo:3200"] }]
+  - job_name: loki
+    static_configs: [{ targets: ["loki:3100"] }]
+  - job_name: pyroscope
+    static_configs: [{ targets: ["pyroscope:4040"] }]
+  - job_name: grafana
+    static_configs: [{ targets: ["grafana:3000"] }]

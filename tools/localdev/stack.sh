@@ -48,6 +48,7 @@ case "$cmd" in
     echo "  redisinsight http://redisinsight.chess.localhost"
     echo "  console      http://console.chess.localhost (Redpanda)"
     echo "  mail         http://mail.chess.localhost (Mailpit: every mail the stack sends)"
+    echo "  grafana      http://grafana.chess.localhost (admin/Admin123! edits · viewer/Viewer123! views)"
     echo "  postgres     127.0.0.1:5432 primary · 127.0.0.1:5433 replica (chess/chess)"
     echo "  redpanda     127.0.0.1:19092 (kafka api)"
     echo "  traefik ui   http://127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-8090}"

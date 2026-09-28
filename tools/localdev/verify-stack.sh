@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Prove the data plane of the local stack: the replica streams from the primary (write on primary, read
-# on replica), Redpanda is healthy with the roadmap topics, and the console is routed.
+# on replica), Redpanda is healthy with the roadmap topics, and the console is routed. Then the observability stack:
+# the collector is healthy, Prometheus scrapes every target, Grafana needs a login and its four datasources answer,
+# and container logs (multi-line entries joined) reach Loki under their service name.
 #
 #   tools/localdev/verify-stack.sh
 set -euo pipefail
@@ -65,5 +67,55 @@ step "console routed at console.chess.localhost"
 code="$(curl -sS -o /dev/null -w '%{http_code}' --resolve console.chess.localhost:80:127.0.0.1 http://console.chess.localhost/)"
 [[ "$code" =~ ^(200|30[0-9])$ ]] || fail "console returned $code"
 echo "ok ($code)"
+
+step "otel collector healthy"
+code="$(compose exec -T grafana wget -qO /dev/null -S http://otel-collector:13133/ 2>&1 | awk '/HTTP\//{print $2}' | tail -1)"
+[[ "$code" == "200" ]] || fail "collector health returned '${code:-nothing}'"
+echo "ok"
+
+step "prometheus scrapes every target"
+targets="$(compose exec -T prometheus wget -qO- 'http://localhost:9090/api/v1/targets?state=active')"
+down="$(python3 -c 'import json,sys; t=json.load(sys.stdin)["data"]["activeTargets"]; print(" ".join(x["labels"]["job"] for x in t if x["health"]!="up"))' <<<"$targets")"
+count="$(python3 -c 'import json,sys; print(len(json.load(sys.stdin)["data"]["activeTargets"]))' <<<"$targets")"
+[[ -z "$down" ]] || fail "targets not up: $down"
+echo "ok ($count targets up)"
+
+step "consumer lag is a metric"
+lag="$(compose exec -T prometheus wget -qO- 'http://localhost:9090/api/v1/query?query=count(redpanda_kafka_consumer_group_lag_sum)')"
+grep -q '"result":\[{' <<<"$lag" || fail "no redpanda_kafka_consumer_group_lag_sum (enable_consumer_group_metrics lacks consumer_lag?)"
+echo "ok"
+
+grafana() { curl -sS --resolve grafana.chess.localhost:80:127.0.0.1 "$@"; }
+step "grafana needs a login; viewer reads, admin's datasources answer"
+[[ "$(grafana -o /dev/null -w '%{http_code}' http://grafana.chess.localhost/api/search)" == "401" ]] || fail "anonymous access is open"
+[[ "$(grafana -o /dev/null -w '%{http_code}' -u 'viewer:Viewer123!' http://grafana.chess.localhost/api/search)" == "200" ]] || fail "viewer cannot read"
+[[ "$(grafana -o /dev/null -w '%{http_code}' -u 'viewer:Viewer123!' -H 'content-type: application/json' \
+  -d '{"dashboard":{"title":"verify"}}' http://grafana.chess.localhost/api/dashboards/db)" == "403" ]] || fail "viewer can save a dashboard"
+for ds in prometheus tempo loki pyroscope; do
+  grafana -u 'admin:Admin123!' "http://grafana.chess.localhost/api/datasources/uid/$ds/health" | grep -q '"status":"OK"' \
+    || fail "datasource $ds is not healthy"
+done
+echo "ok (prometheus, tempo, loki, pyroscope)"
+
+loki() { compose exec -T grafana wget -qO- "http://loki:3100/loki/api/v1/query_range?limit=20&query=$1"; }
+step "container logs reach loki, one entry per multi-line message"
+probe="probe$(date +%s%N)"
+docker run --rm --log-driver json-file --log-opt tag=chess-verifyprobe-1 alpine:3 \
+  sh -c "printf '$probe Exception: boom\n\tat A.run(A.java:1)\n\tat B.run(B.java:2)\n$probe next\n'" >/dev/null
+entries=""
+for _ in $(seq 1 30); do
+  entries="$(loki '%7Bservice_name%3D%22verifyprobe%22%7D' | python3 -c 'import json,sys; print(sum(len(r["values"]) for r in json.load(sys.stdin)["data"]["result"]))' || true)"
+  [[ "$entries" == "2" ]] && break
+  sleep 1
+done
+[[ "$entries" == "2" ]] || fail "expected the probe's 4 lines as 2 entries in Loki, got '${entries:-none}'"
+services="$(compose exec -T grafana wget -qO- 'http://loki:3100/loki/api/v1/label/service_name/values')"
+for s in keycloak postgres redpanda proxy; do
+  grep -q "\"$s\"" <<<"$services" || fail "no logs from $s in Loki (have: $services)"
+done
+for s in backend backend-2 engine frontend; do
+  if grep -q "\"$s\"" <<<"$services"; then fail "$s's container output is in Loki; its logs must only come over OTLP"; fi
+done
+echo "ok"
 
 printf '\nAll stack checks passed.\n'
