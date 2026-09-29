@@ -229,6 +229,12 @@ Two paths, so that nothing is collected twice:
   - datasources: Prometheus (default), Tempo (traces → logs, traces → profiles, service map from Prometheus), Loki
     (the `trace_id` field → Tempo), Pyroscope;
   - dashboards (JSON), one per area in the proposal.
+- **Eight dashboards**, uid `chess-*`: Overview, Actors & cluster, Event pipeline, HTTP & BFF, Runtime & containers,
+  Engine worker, Infrastructure, Logs. Each links to the others; the backend ones filter by node.
+- **The node graph is Tempo's service map** (Overview), built from the traces. A "nodes → regions → shards" graph from
+  Prometheus gauges would need a nodes-and-edges frame Prometheus cannot return, so the cluster's layout is shown as
+  tables and bar gauges instead: members per node, singletons per node, live entities per node and region, and per
+  shard.
 - No anonymous access. Test accounts: `admin` / `Admin123!` (`GF_SECURITY_ADMIN_*` in compose) and `viewer` /
   `Viewer123!`, created through Grafana's API by a `grafana-init` step (the `keycloak-init` pattern). Signing in
   through the Keycloak realm is possible later with generic OAuth.

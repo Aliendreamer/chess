@@ -84,8 +84,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
 
 ## 8. Dashboards
 
-- [ ] 8.1 Provision the dashboards as JSON in `tools/localdev/observability/grafana/dashboards/`: Overview, Actors & cluster (with
-      the node graph), Event pipeline, HTTP & BFF, Runtime & containers, Engine worker, Infrastructure and Logs.
+- [x] 8.1 Provision the dashboards as JSON in `tools/localdev/observability/grafana/dashboards/`: Overview (with the service map), Actors & cluster, Event pipeline, HTTP & BFF, Runtime & containers, Engine worker, Infrastructure and Logs.
       Check every panel's query against live data. 🐳 Proof: each dashboard renders with data after
       `verify-part1.sh --cluster` and `verify-part2.sh --quick`. Commit `feat(repo): grafana dashboards`.
 
