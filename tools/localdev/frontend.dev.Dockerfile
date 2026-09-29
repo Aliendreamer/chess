@@ -14,6 +14,7 @@ ENV CHOKIDAR_USEPOLLING=1 \
 # Manifests only: warm the install layer (override the 7-day cooldown for this pinned, frozen install).
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/frontend/package.json apps/frontend/package.json
+COPY apps/frontend/otel/package.json apps/frontend/otel/package.json
 RUN pnpm install --frozen-lockfile --config.minimumReleaseAge=0
 
 EXPOSE 3000

@@ -465,6 +465,7 @@ services:
       # Keep node_modules in the container (don't let the host's shadow it).
       - /app/node_modules
       - /app/apps/frontend/node_modules
+      - /app/apps/frontend/otel/node_modules
     extra_hosts:
       - "keycloak.chess.localhost:host-gateway"
     depends_on:

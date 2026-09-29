@@ -272,7 +272,8 @@ ActorTracing.Persisting<T>(actor, count, e => …))` — events carry `Trace` (`
   `ProjectionRunner` continues it (`consume {group}` span, outcome tag), `LiveFrame.trace` carries it to the BFF, which
   strips it before the browser. A new actor, sender or event must follow these, or its trace breaks. Metric labels are
   types only, never ids (`ActorMetricsTests` checks). The BFF loads its SDK with `node --import ./otel/instrument.mjs`
-  (`dev:stack`, `start`; the prod image does not yet); the page's tracer reports to `POST /otel/v1/traces` on `app.`.
+  (`dev:stack`, `start`, and the prod image, which ships only `apps/frontend/otel`, its own workspace package, deployed
+  with `pnpm deploy`; it must declare `@opentelemetry/api`, the SDK's peer); the page's tracer reports to `POST /otel/v1/traces` on `app.`.
 
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/
   `.slnx`/`Directory.*.props`/runsettings so JS edits don't bust the backend cache and vice versa.

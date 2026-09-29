@@ -1,0 +1,21 @@
+{
+  "name": "chess-frontend-otel",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The BFF's OpenTelemetry SDK and Pyroscope agent, loaded with `node --import ./otel/instrument.mjs` before the server (observability D7). Its own package so the production image ships only these dependencies.",
+  "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/exporter-metrics-otlp-http": "0.222.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.222.0",
+    "@opentelemetry/instrumentation": "0.222.0",
+    "@opentelemetry/instrumentation-http": "0.222.0",
+    "@opentelemetry/instrumentation-runtime-node": "0.35.0",
+    "@opentelemetry/instrumentation-undici": "0.32.0",
+    "@opentelemetry/resources": "2.11.0",
+    "@opentelemetry/sdk-metrics": "2.11.0",
+    "@opentelemetry/sdk-node": "0.222.0",
+    "@opentelemetry/sdk-trace-base": "2.11.0",
+    "@pyroscope/nodejs": "0.6.3"
+  }
+}

@@ -1,5 +1,7 @@
 packages:
   - apps/*
+  # The BFF's Node telemetry (observability D7): a package of its own, so the prod image ships only its dependencies.
+  - apps/frontend/otel
 
 # Supply-chain guard: don't resolve package versions newer than 7 days (carried from frontend).
 minimumReleaseAge: 10080

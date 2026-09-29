@@ -42,12 +42,17 @@ through a switch; one user action is one trace from the browser to the other pla
 - **Browser spans named "POST".** TanStack calls `fetch(url, init)`, so the URL is only on the span; server-function
   names are decoded from it.
 - **`--force-recreate` recreates dependencies too:** recreating the frontend took the proxy down with it.
-- **One unit-test failure in ~25 runs**, while `dotnet format` ran alongside; not reproduced, not identified.
+- **A flaky test, found under load.** `StudyServiceTests.My_studies_are_mine_newest_first` failed 2 times in 30 with every
+  core busy: studies made in one tick of the real clock were ordered by their random ids. It now moves a fake clock
+  (0 failures in 50 loaded runs).
+- **A missing peer dependency broke the SDK silently.** The BFF's telemetry package (`apps/frontend/otel`) did not
+  declare `@opentelemetry/api`, so pnpm linked a variant of `sdk-node` it never installed; `pnpm install
+--fix-lockfile` re-resolved it once the peer was declared.
 
 ## Open, for later
 
-- The production frontend image does not load the Node SDK yet (it runs `node .output/server/index.mjs` without the
-  OpenTelemetry packages); the deploy target is not implemented either.
+- The deploy target is not implemented; the production images are ready (the frontend's loads the Node SDK, off until
+  `OTEL_ENABLED=true`; the backend's carries the profiler, off until `CORECLR_ENABLE_PROFILING=1`).
 - Alerting (Grafana alert rules on outbox lag, quarantine, unreachable members).
 - The tail-sampling policy is written but off; production turns it on.
 - A per-node view of individual games stays out: ids would explode the labels. Find a game's traces by `game.id`.
