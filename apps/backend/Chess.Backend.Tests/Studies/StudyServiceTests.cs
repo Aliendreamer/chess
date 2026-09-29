@@ -11,9 +11,9 @@ public sealed class StudyServiceTests
 
     private static StudyMoveInput M(string uci, params StudyMoveInput[] children) => new(uci, children);
 
-    private static (ProjectDbContext Db, StudyService Service) Build()
+    private static (ProjectDbContext Db, StudyService Service) Build(FakeClock? clock = null)
     {
-        ProjectDbContext db = TestDb.Create();
+        ProjectDbContext db = TestDb.Create(clock);
         db.Users.AddRange(new User { Id = Ann, Sub = "a", Username = "ann" }, new User { Id = Bob, Sub = "b", Username = "bob" });
         db.SaveChanges();
         return (db, new StudyService(db, NullLogger<StudyService>.Instance));
@@ -128,11 +128,16 @@ public sealed class StudyServiceTests
     [Fact]
     public async Task My_studies_are_mine_newest_first()
     {
-        (ProjectDbContext db, StudyService service) = Build();
+        // The studies' times come from the clock the test moves: two creations in one tick of the real clock would fall
+        // back to their random ids for the order, and fail now and then.
+        FakeClock clock = new(Time.Utc("2026-09-28T10:00:00Z"));
+        (ProjectDbContext db, StudyService service) = Build(clock);
         using (db)
         {
             await CreatedAsync(service, title: "first");
+            clock.Advance(TimeSpan.FromSeconds(1));
             await CreatedAsync(service, owner: Bob, title: "bob's");
+            clock.Advance(TimeSpan.FromSeconds(1));
             await CreatedAsync(service, title: "second");
 
             CursorPage<StudyListItem> page = await service.MineAsync(Ann, null, 10, CancellationToken.None);
