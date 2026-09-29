@@ -67,6 +67,7 @@ tools/localdev/verify-part2.sh [--quick]       # vs Stockfish: 10 moves at 1320/
 tools/localdev/verify-part3.sh                 # correspondence: 7d invite, deadline, your-turn list, mails in Mailpit
 tools/localdev/verify-part4a.sh                # studies: import, variation saved, 409 on stale save, share, PGN, from a game
 tools/localdev/verify-part4b.sh                # engine analysis: a random position evaluated, then served from the shared cache
+tools/localdev/verify-observability.sh         # a move's trace in Tempo, its logs in Loki (once), metrics from both nodes, profiles
 tools/localdev/stack.sh up --cluster            # adds backend-2 (down/ps/logs always include it)
 tools/e2e.sh                                   # Playwright against the live stack
 ```
@@ -92,7 +93,7 @@ through Serilog's OTLP sink with their trace ids. `Observability:SampleRatio` (1
 
 Local URLs (Traefik on :80, dashboard on 127.0.0.1:8090): `app.chess.localhost`, `api.chess.localhost`,
 `keycloak.chess.localhost` (admin/admin), `redisinsight.chess.localhost`, `mail.chess.localhost` (Mailpit), `console.chess.localhost`
-(Redpanda). Postgres primary `127.0.0.1:5432`, replica `127.0.0.1:5433` (`chess`/`chess`/`chess`);
+(Redpanda), `grafana.chess.localhost` (admin/Admin123! edits, viewer/Viewer123! views; no anonymous access). Postgres primary `127.0.0.1:5432`, replica `127.0.0.1:5433` (`chess`/`chess`/`chess`);
 Redpanda Kafka API `127.0.0.1:19092`.
 
 ## Commit rules (load-bearing)
@@ -256,6 +257,22 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   keeping the deeper of two answers. Scale with `Engine:AnalysisProcesses` or worker replicas (one group: total
   consumers ≤ the topic's 3 partitions). The study board (`AnalysisPanel`, `useAnalysis`) asks, then polls every 1.5 s until
   the evaluation is there; scores of the positions evaluated follow their moves in the tree, and a line clicked is played into the study.
+
+- **Observability (observability)** — `tools/localdev/observability/`: every app sends OTLP to `otel-collector`, which
+  writes traces to Tempo, metrics to Prometheus's OTLP receiver (7 d) and logs to Loki; the collector also reads every
+  other container's Docker log file (not backend/engine: theirs come over OTLP, never twice). Pyroscope holds profiles
+  (backend via the dev image's `stack` launch profile, the BFF via its Node agent; the engine is not profiled). Grafana
+  dashboards are JSON in `observability/grafana/dashboards/` (provisioned, not editable in the UI: export and commit).
+  Switches: `Observability:Enabled` (backend, engine; off in appsettings, on in compose) and `OTEL_ENABLED` (BFF).
+  **One trace per user action:** senders `ActorTracing.Wrap(cmd)` (a `Traced` envelope, only while tracing); extractors
+  `Unwrap`; every actor overrides `AroundReceive` with `ActorTracing.Receive(actor, …)` (span + `chess.actor.*`
+  metrics; timers start root traces); every persist is `PersistAll(ActorTracing.StampAll(events),
+ActorTracing.Persisting<T>(actor, count, e => …))` — events carry `Trace` (`ITracedEvent`, `[JsonIgnore]` so Kafka
+  payloads are unchanged); the publisher writes it as the `traceparent` header (`OutboxRecord.ToMessage`),
+  `ProjectionRunner` continues it (`consume {group}` span, outcome tag), `LiveFrame.trace` carries it to the BFF, which
+  strips it before the browser. A new actor, sender or event must follow these, or its trace breaks. Metric labels are
+  types only, never ids (`ActorMetricsTests` checks). The BFF loads its SDK with `node --import ./otel/instrument.mjs`
+  (`dev:stack`, `start`; the prod image does not yet); the page's tracer reports to `POST /otel/v1/traces` on `app.`.
 
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/
   `.slnx`/`Directory.*.props`/runsettings so JS edits don't bust the backend cache and vice versa.

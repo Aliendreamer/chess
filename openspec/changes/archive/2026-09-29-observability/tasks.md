@@ -96,5 +96,5 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
       that trace id (once each) and lines from `keycloak` and `postgres`. Pyroscope lists every service. Then a
       Playwright spec: a move from the browser yields a trace holding `chess-frontend-web`, `chess-frontend` and
       `chess-backend` spans. Run the whole e2e suite. Commit `test(repo): verify observability`.
-- [ ] 9.2 CLAUDE.md, architecture, ROADMAP §7, and an experiment note for this change; archive. Commit
+- [x] 9.2 CLAUDE.md, architecture, ROADMAP §7, and an experiment note for this change; archive. Commit
       `docs(repo): observability`.

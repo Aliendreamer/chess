@@ -414,3 +414,27 @@ enforced in every deployed environment. Two clients carry that audience:
   hub admits.
 
 A realm token issued to any other client (e.g. `admin-cli`) gets 401.
+
+## 8. Observability (observability)
+
+```text
+browser ──/otel/v1/traces──▶ BFF ─┐
+BFF (Node SDK) ──────────OTLP─────┼─▶ otel-collector ─┬─▶ Tempo (traces, service graph → Prometheus)
+backend-1/2, engine ─────OTLP─────┘        ▲          ├─▶ Prometheus (metrics; also scrapes Redpanda, Postgres, Redis,
+every other container's log file ─────────┘          │   cAdvisor)
+backend, BFF ──profiles──▶ Pyroscope                  └─▶ Loki (logs)
+Grafana ─▶ all four, linked: span ↔ logs, span → profile, metrics → exemplar traces
+```
+
+- **A trace crosses every hop by carrying its context:** in a `Traced` envelope through actor mailboxes, as the
+  `Trace` member of every persisted event through the journal, as the `traceparent` header through Kafka (records
+  from the publisher, the engine and analysis requests, the engine's results), and as `trace` on a live frame through
+  the relay. So a move is one trace: browser → BFF → endpoint → game actor → persist → publish (≈200 ms later: the
+  outbox's latency, visible as a gap) → each consumer → the engine worker → its answer applied → the frame pushed to
+  both players.
+- **What each node says about itself:** `chess.actors` (messages by actor/message/outcome, handling, persist and
+  recovery time, passivations, dead letters), `chess.cluster` (members, unreachable, singletons it hosts, entities per
+  shard; sampled every 10 s), `chess.pipeline` (published, outbox lag, projection outcomes and time, quarantine),
+  `chess.engine`, `chess.bff`, and the runtime and framework meters. Labels are types, never ids.
+- **Why build it rather than buy it:** Phobos (Akka's paid monitoring) gives much the same view; here it is plain
+  OpenTelemetry, so any backend that speaks OTLP can replace the local stores by configuration.

@@ -183,8 +183,11 @@ Goal: the architecture exists end to end with a trivial domain, so every later p
 
 - **Testing**: unit (xUnit + Akka TestKit; vitest), integration (Testcontainers), e2e (Playwright);
   coverage gate stays at 90 % for the non-actor code, actors measured via TestKit scenarios.
-- **Observability**: OpenTelemetry (traces + metrics) from Part 0; Akka and Kafka client
-  instrumentation; a local OTel collector + Grafana are optional compose profile `observability`.
+- **Observability — built 2026-09-29 (`observability`)**: always part of the local stack — OTel Collector, Prometheus,
+  Tempo, Loki, Pyroscope and Grafana (eight dashboards as code). One trace per user action from the browser through the
+  BFF, the actors, the journal, Kafka, the consumers and the engine worker back to the other player's socket; actor,
+  cluster and pipeline metrics per node; every container's logs; profiles of the backend and the BFF. Verify:
+  `tools/localdev/verify-observability.sh`.
 - **Security**: all commands pass the existing `[Authorize]` + `ICurrentUser`; hub connections carry
   the same cookie; rate limiting already per client via Redis; Kafka/Redpanda unauthenticated on the
   compose network only.
