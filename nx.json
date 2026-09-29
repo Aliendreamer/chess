@@ -43,7 +43,8 @@
     },
     "changelog": {
       "workspaceChangelog": false,
-      "projectChangelogs": true
+      "projectChangelogs": true,
+      "automaticFromRef": true
     },
     "groups": {
       "frontend": {
