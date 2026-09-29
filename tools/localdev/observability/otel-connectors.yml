@@ -1,0 +1,13 @@
+# Span metrics and the service graph (tail-sampling D3), derived here from every span — never from what sampling
+# kept. Names match what Tempo produced before, so Grafana's service map and the dashboards read them unchanged.
+connectors:
+  span_metrics:
+    namespace: traces.spanmetrics
+    metrics_flush_interval: 15s
+    histogram:
+      unit: s
+  service_graph:
+    metrics_flush_interval: 15s
+    store:
+      ttl: 10s
+      max_items: 10000

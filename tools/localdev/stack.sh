@@ -5,6 +5,7 @@
 #
 #   tools/localdev/stack.sh up             # build + start (detached)
 #   tools/localdev/stack.sh up --cluster   # same, plus the second Akka node (backend-2, 'cluster' profile)
+#   tools/localdev/stack.sh up --tail-sampling  # the collectors as in production: gateway + 2 samplers (combinable)
 #   tools/localdev/stack.sh down           # stop + remove containers, every profile included
 #   tools/localdev/stack.sh down -v        # also drop volumes (fresh DB/Keycloak)
 #   tools/localdev/stack.sh logs [svc]     # follow logs (backend-2 included)
@@ -14,6 +15,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
+SAMPLING_FILE="$SCRIPT_DIR/docker-compose.tail-sampling.yml"
 
 # Pick a compose-capable runtime.
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
@@ -26,9 +28,9 @@ else
 fi
 
 compose() { "${RUNTIME[@]}" -f "$COMPOSE_FILE" "$@"; }
-# Every profile at once: `down` and `ps` must see backend-2 even when it was started with --cluster,
-# otherwise a plain `down` leaves it running on its own.
-all_profiles() { compose --profile '*' "$@"; }
+# Every profile and the sampling override at once: `down` and `ps` must see backend-2 and the samplers even when they
+# were started with --cluster or --tail-sampling, otherwise a plain `down` leaves them running on their own.
+all_profiles() { "${RUNTIME[@]}" -f "$COMPOSE_FILE" -f "$SAMPLING_FILE" --profile '*' "$@"; }
 
 cmd="${1:-up}"
 [ $# -gt 0 ] && shift
@@ -36,11 +38,17 @@ cmd="${1:-up}"
 case "$cmd" in
   up)
     profile=()
-    if [ "${1:-}" = "--cluster" ]; then
-      profile=(--profile cluster)
-      shift
-    fi
-    compose "${profile[@]}" up --build -d "$@"
+    files=(-f "$COMPOSE_FILE")
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --cluster) profile=(--profile cluster); shift ;;
+        # The sampling setup (tail-sampling): a gateway collector and two samplers instead of the single collector.
+        --tail-sampling) files+=(-f "$SAMPLING_FILE"); shift ;;
+        *) break ;;
+      esac
+    done
+    # --remove-orphans: going back from --tail-sampling to the plain stack removes the samplers.
+    "${RUNTIME[@]}" "${files[@]}" "${profile[@]}" up --build -d --remove-orphans "$@"
     echo "Stack up via '${RUNTIME[*]}' →"
     echo "  frontend     http://app.chess.localhost"
     echo "  backend api  http://api.chess.localhost"

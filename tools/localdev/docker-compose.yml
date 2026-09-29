@@ -483,12 +483,21 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.161.0
     logging: *default-logging
-    command: ["--config=/etc/otelcol/config.yml"]
+    # The shared part and the local trace path (every trace kept); `stack.sh up --tail-sampling` swaps the trace path
+    # for the gateway of the sampling setup (docker-compose.tail-sampling.yml).
+    command:
+      [
+        "--config=/etc/otelcol/config.yml",
+        "--config=/etc/otelcol/connectors.yml",
+        "--config=/etc/otelcol/traces.yml",
+      ]
     # Root only to read Docker's container log files (root:root 0640) for Loki.
     user: "0"
     mem_limit: 512m
     volumes:
       - ./observability/otel-collector.yml:/etc/otelcol/config.yml:ro
+      - ./observability/otel-connectors.yml:/etc/otelcol/connectors.yml:ro
+      - ./observability/otel-traces-local.yml:/etc/otelcol/traces.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - otelcol:/var/lib/otelcol
     depends_on:

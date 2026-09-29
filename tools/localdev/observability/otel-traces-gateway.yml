@@ -1,0 +1,26 @@
+# The sampling setup's gateway (tail-sampling D2), merged over otel-collector.yml. Metrics and logs go on directly;
+# traces are routed by trace id to the samplers, so every span of a trace reaches the same sampler, whichever app and
+# node sent it. The samplers are found through DNS: `otel-sampler` resolves to one address per replica.
+exporters:
+  load_balancing:
+    routing_key: traceID
+    protocol:
+      otlp:
+        tls:
+          insecure: true
+    resolver:
+      dns:
+        hostname: otel-sampler
+        port: "4317"
+        interval: 5s
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter]
+      exporters: [load_balancing]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/prometheus]

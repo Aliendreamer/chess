@@ -1,0 +1,18 @@
+# The local trace path (tail-sampling D3): every trace to Tempo, and span metrics and the service graph from every span.
+# Merged over otel-collector.yml and otel-connectors.yml.
+exporters:
+  otlp_grpc/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_grpc/tempo, span_metrics, service_graph]
+    metrics:
+      receivers: [otlp, span_metrics, service_graph]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/prometheus]

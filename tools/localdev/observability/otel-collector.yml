@@ -1,5 +1,8 @@
 # OpenTelemetry Collector (observability D1): the one place every app sends OTLP to, and the reader of every other
-# container's log file. Traces → Tempo, metrics → Prometheus's OTLP receiver, logs → Loki's OTLP endpoint.
+# container's log file. This file is the part every collector shares (receivers, logs → Loki); the trace path and the
+# metrics pipeline come from an overlay passed as a second --config (the collector merges them):
+#   otel-traces-local.yml    locally: every trace to Tempo, span metrics and the service graph from every span
+#   otel-traces-gateway.yml  the sampling setup's gateway: traces routed by trace id to the samplers (tail-sampling D2)
 extensions:
   health_check:
     endpoint: 0.0.0.0:13133
@@ -58,22 +61,6 @@ receivers:
         combine_with: ""
         force_flush_period: 2s
 
-# Span metrics and the service graph (tail-sampling D3), derived here from every span — never from what sampling
-# kept. Names match what Tempo produced before, so Grafana's service map and the dashboards read them unchanged.
-connectors:
-  span_metrics:
-    namespace: traces.spanmetrics
-    metrics_flush_interval: 15s
-    histogram:
-      unit: s
-  service_graph:
-    metrics_flush_interval: 15s
-    store:
-      ttl: 10s
-      max_items: 10000
-
-# Locally every trace is kept. Sampling lives in the two-tier setup (otel-gateway.yml, otel-sampler.yml), run with
-# `stack.sh up --tail-sampling`.
 processors:
   memory_limiter:
     check_interval: 1s
@@ -82,10 +69,6 @@ processors:
   batch: {}
 
 exporters:
-  otlp_grpc/tempo:
-    endpoint: tempo:4317
-    tls:
-      insecure: true
   otlp_http/prometheus:
     endpoint: http://prometheus:9090/api/v1/otlp
   otlp_http/loki:
@@ -94,14 +77,6 @@ exporters:
 service:
   extensions: [health_check, file_storage]
   pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [memory_limiter, batch]
-      exporters: [otlp_grpc/tempo, span_metrics, service_graph]
-    metrics:
-      receivers: [otlp, span_metrics, service_graph]
-      processors: [memory_limiter, batch]
-      exporters: [otlp_http/prometheus]
     logs:
       receivers: [otlp, file_log/containers]
       processors: [memory_limiter, batch]

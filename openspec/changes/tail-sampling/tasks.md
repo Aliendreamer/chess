@@ -12,7 +12,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker.
 
 ## 3. The sampling setup
 
-- [ ] 3.1 The gateway and sampler configurations (per-operation "slow", errors, 10 %), the compose override with two
+- [x] 3.1 The gateway and sampler configurations (per-operation "slow", errors, 10 %), the compose override with two
       samplers, `stack.sh up --tail-sampling`. 🐳 `verify-tail-sampling.sh` with synthetic traces (telemetrygen):
       every error and slow trace kept, about 10 % of fast ones, a 7 s `engine move` not kept by the slow rules,
       kept traces complete, span-metric counts exact. Then back to the single collector. Commit

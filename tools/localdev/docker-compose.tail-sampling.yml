@@ -1,0 +1,43 @@
+# The sampling setup (tail-sampling D2), over docker-compose.yml: `tools/localdev/stack.sh up --tail-sampling`.
+#
+#   apps ──OTLP──▶ otel-collector (gateway) ──metrics, logs──▶ Prometheus, Loki
+#                        │ traces, routed by trace id
+#                        ▼
+#                  otel-sampler × 2 ──span metrics, service graph──▶ Prometheus
+#                        │ tail sampling: errors, slow operations, 10 % of the rest
+#                        ▼
+#                      Tempo
+#
+# The gateway keeps the name otel-collector, so no app changes its endpoint. Locally this is for proving the setup
+# (verify-tail-sampling.sh); the plain stack keeps every trace.
+services:
+  otel-collector:
+    command:
+      ["--config=/etc/otelcol/config.yml", "--config=/etc/otelcol/gateway.yml"]
+    volumes:
+      - ./observability/otel-traces-gateway.yml:/etc/otelcol/gateway.yml:ro
+    depends_on:
+      - otel-sampler
+
+  otel-sampler:
+    image: otel/opentelemetry-collector-contrib:0.161.0
+    command:
+      [
+        "--config=/etc/otelcol/connectors.yml",
+        "--config=/etc/otelcol/sampler.yml",
+      ]
+    deploy:
+      replicas: 2
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.Name}}"
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - ./observability/otel-connectors.yml:/etc/otelcol/connectors.yml:ro
+      - ./observability/otel-sampler.yml:/etc/otelcol/sampler.yml:ro
+    depends_on:
+      - tempo
+      - prometheus
