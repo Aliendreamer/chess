@@ -438,3 +438,7 @@ Grafana ─▶ all four, linked: span ↔ logs, span → profile, metrics → ex
   `chess.engine`, `chess.bff`, and the runtime and framework meters. Labels are types, never ids.
 - **Why build it rather than buy it:** Phobos (Akka's paid monitoring) gives much the same view; here it is plain
   OpenTelemetry, so any backend that speaks OTLP can replace the local stores by configuration.
+- **Sampling (tail-sampling):** kept whole locally. In production shape a gateway routes each trace by id to one of
+  several samplers, which first count every span (span metrics and the service graph never see sampling) and then keep
+  errors, slow operations (per operation: a request over 1 s, an actor message over 500 ms, a projection record over
+  2 s; never the engine's think) and 10 % of the rest.

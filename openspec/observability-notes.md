@@ -54,5 +54,29 @@ through a switch; one user action is one trace from the browser to the other pla
 - The deploy target is not implemented; the production images are ready (the frontend's loads the Node SDK, off until
   `OTEL_ENABLED=true`; the backend's carries the profiler, off until `CORECLR_ENABLE_PROFILING=1`).
 - Alerting (Grafana alert rules on outbox lag, quarantine, unreachable members).
-- The tail-sampling policy is written but off; production turns it on.
+- Sampling (the tail-sampling change) is ready and proven locally, not deployed; see below.
+
+## Tail sampling (tail-sampling, 2026-09-29)
+
+Locally every trace is kept. The production shape runs with `stack.sh up --tail-sampling`: the gateway
+(`otel-collector`) routes traces by trace id to two samplers, which count every span (span metrics, service graph)
+and then keep a trace if it has an error, a SERVER span over 1 s (not a 101 upgrade), an actor message over 500 ms, a
+projection record over 2 s, or falls in the 10 % share. `verify-tail-sampling.sh` proved it twice with 280 synthetic
+traces: every error and slow trace kept, and whole (the second span sent a second later still reached the same
+sampler); 23 and 12 of 200 fast traces kept; 4 and 1 of 30 engine traces with a 7 s think; span metrics counting 200 of 200.
+
+**Known: links to dropped traces.** Loki's log lines and Pyroscope's profiles keep the trace id of every trace,
+including the ~90 % that sampling drops, so their "open trace" link finds nothing for those. How to adjust, cheapest
+first:
+
+1. Raise `sampling_percentage` in `otel-sampler.yml` (cost: Tempo storage).
+2. Keep what matters with one more policy: an `ottl_condition` on an attribute (e.g. `attributes["game.id"] != nil` to
+   keep every game's traces) or a `string_attribute` on a service name.
+3. Make error logs always point at a kept trace: an error that is logged should also mark its span as an error (the
+   backend's exceptions already do); the `errors` policy then keeps it.
+4. Filter the link, not the data: search logs at level error or warn, whose traces are almost always kept.
+
+The cost of scaling the samplers: while their number changes (DNS re-resolved every 5 s), traces in flight may be
+split and judged on part of their spans. A sampler that dies loses the traces in its 10 s decision wait.
+
 - A per-node view of individual games stays out: ids would explode the labels. Find a game's traces by `game.id`.

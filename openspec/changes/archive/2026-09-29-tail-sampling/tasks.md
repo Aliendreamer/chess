@@ -20,5 +20,5 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker.
 
 ## 4. Docs
 
-- [ ] 4.1 CLAUDE.md, architecture, the observability note (including dangling links, known, and how to adjust);
+- [x] 4.1 CLAUDE.md, architecture, the observability note (including dangling links, known, and how to adjust);
       archive. Commit `docs(repo): tail sampling`.
