@@ -22,7 +22,8 @@ processors:
     spike_limit_percentage: 20
   batch: {}
   # A trace is kept when ANY policy matches (tail-sampling D1). "Slow" is judged per operation, never on the whole
-  # trace: a move against the engine takes its think time (5–10 s) and the consumers run later, by design.
+  # trace: a move against the engine takes its think time (5–10 s) and the consumers run later, by design. The engine
+  # worker is excluded from every slow rule by name, whatever its spans' kind: its time IS the think time.
   tail_sampling:
     decision_wait: 10s
     num_traces: 50000
@@ -39,21 +40,21 @@ processors:
         ottl_condition:
           error_mode: ignore
           span:
-            - kind == SPAN_KIND_SERVER and end_time_unix_nano - start_time_unix_nano > 1000000000 and attributes["http.response.status_code"] != 101 and attributes["http.status_code"] != 101
+            - kind == SPAN_KIND_SERVER and end_time_unix_nano - start_time_unix_nano > 1000000000 and attributes["http.response.status_code"] != 101 and attributes["http.status_code"] != 101 and resource.attributes["service.name"] != "chess-engine"
       # One actor message is handled synchronously; a persist, the slowest part, takes ~10 ms.
       - name: slow-actor-messages
         type: ottl_condition
         ottl_condition:
           error_mode: ignore
           span:
-            - attributes["actor.type"] != nil and end_time_unix_nano - start_time_unix_nano > 500000000
+            - attributes["actor.type"] != nil and end_time_unix_nano - start_time_unix_nano > 500000000 and resource.attributes["service.name"] != "chess-engine"
       # One Kafka record for one projection, retries included (backoff 200 ms, doubling): over 2 s means retries.
       - name: slow-projection-records
         type: ottl_condition
         ottl_condition:
           error_mode: ignore
           span:
-            - IsMatch(name, "^consume ") and end_time_unix_nano - start_time_unix_nano > 2000000000
+            - IsMatch(name, "^consume ") and end_time_unix_nano - start_time_unix_nano > 2000000000 and resource.attributes["service.name"] != "chess-engine"
       - name: sample-the-rest
         type: probabilistic
         probabilistic:
