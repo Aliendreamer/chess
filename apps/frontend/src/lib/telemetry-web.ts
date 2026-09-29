@@ -37,9 +37,11 @@ export function startBrowserTracing(): void {
       // Same-origin requests get `traceparent` by default; exporting spans must not make spans of its own.
       new FetchInstrumentation({
         ignoreUrls: [/\/otel\/v1\/traces/],
-        applyCustomAttributesOnSpan: (span, request) => {
-          const url = request instanceof Request ? request.url : ''
-          const fn = serverFnName(url)
+        // TanStack calls fetch(url, init), so the URL is only on the span (the instrumentation records it there).
+        applyCustomAttributesOnSpan: (span) => {
+          const attributes =
+            (span as unknown as { attributes?: Record<string, unknown> }).attributes ?? {}
+          const fn = serverFnName(String(attributes['url.full'] ?? attributes['http.url'] ?? ''))
           if (fn) span.updateName(`serverFn ${fn}`)
         },
       }),
