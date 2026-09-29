@@ -1,5 +1,6 @@
-# Tempo (observability D1), single binary, local storage, 72 h. The metrics-generator derives the service graph and
-# RED metrics per span from the traces and remote-writes them to Prometheus (Grafana's service map reads them).
+# Tempo (observability D1), single binary, local storage, 72 h. The service graph and span metrics come from the
+# collector (tail-sampling D3), so they count every trace even when traces are sampled; Tempo's metrics-generator only
+# keeps `local-blocks`, for TraceQL metrics over what it stores.
 stream_over_http_enabled: true
 server:
   http_listen_port: 3200
@@ -43,4 +44,4 @@ storage:
 overrides:
   defaults:
     metrics_generator:
-      processors: [service-graphs, span-metrics, local-blocks]
+      processors: [local-blocks]

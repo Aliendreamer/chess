@@ -58,29 +58,28 @@ receivers:
         combine_with: ""
         force_flush_period: 2s
 
+# Span metrics and the service graph (tail-sampling D3), derived here from every span — never from what sampling
+# kept. Names match what Tempo produced before, so Grafana's service map and the dashboards read them unchanged.
+connectors:
+  span_metrics:
+    namespace: traces.spanmetrics
+    metrics_flush_interval: 15s
+    histogram:
+      unit: s
+  service_graph:
+    metrics_flush_interval: 15s
+    store:
+      ttl: 10s
+      max_items: 10000
+
+# Locally every trace is kept. Sampling lives in the two-tier setup (otel-gateway.yml, otel-sampler.yml), run with
+# `stack.sh up --tail-sampling`.
 processors:
   memory_limiter:
     check_interval: 1s
     limit_percentage: 80
     spike_limit_percentage: 20
   batch: {}
-  # Production's sampling policy (observability D12), deliberately not in any pipeline below: locally every trace is
-  # kept. To use it, add `tail_sampling` to the traces pipeline before `batch`.
-  tail_sampling:
-    decision_wait: 10s
-    policies:
-      - name: errors
-        type: status_code
-        status_code:
-          status_codes: [ERROR]
-      - name: slow
-        type: latency
-        latency:
-          threshold_ms: 1000
-      - name: sample-the-rest
-        type: probabilistic
-        probabilistic:
-          sampling_percentage: 10
 
 exporters:
   otlp_grpc/tempo:
@@ -98,9 +97,9 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlp_grpc/tempo]
+      exporters: [otlp_grpc/tempo, span_metrics, service_graph]
     metrics:
-      receivers: [otlp]
+      receivers: [otlp, span_metrics, service_graph]
       processors: [memory_limiter, batch]
       exporters: [otlp_http/prometheus]
     logs:

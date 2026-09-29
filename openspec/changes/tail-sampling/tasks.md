@@ -6,7 +6,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker.
 
 ## 2. Metrics before sampling (local)
 
-- [ ] 2.1 The single collector derives span metrics and the service graph (connectors); Tempo keeps only
+- [x] 2.1 The single collector derives span metrics and the service graph (connectors); Tempo keeps only
       `local-blocks`. 🐳 Proof: `verify-stack.sh`, the Grafana service map shows edges, `verify-observability.sh`.
       Commit `feat(repo): span metrics and the service graph from the collector`.
 
