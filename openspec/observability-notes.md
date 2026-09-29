@@ -61,7 +61,8 @@ through a switch; one user action is one trace from the browser to the other pla
 Locally every trace is kept. The production shape runs with `stack.sh up --tail-sampling`: the gateway
 (`otel-collector`) routes traces by trace id to two samplers, which count every span (span metrics, service graph)
 and then keep a trace if it has an error, a SERVER span over 1 s (not a 101 upgrade), an actor message over 500 ms, a
-projection record over 2 s, or falls in the 10 % share. `verify-tail-sampling.sh` proved it twice with 280 synthetic
+projection record over 2 s, or falls in the 10 % share. The engine worker is excluded from every slow rule by
+service name, whatever its spans' kind: it thinks for up to 10 s (moves and Deep analysis) on purpose. `verify-tail-sampling.sh` proved it twice with 280 synthetic
 traces: every error and slow trace kept, and whole (the second span sent a second later still reached the same
 sampler); 23 and 12 of 200 fast traces kept; 4 and 1 of 30 engine traces with a 7 s think; span metrics counting 200 of 200.
 

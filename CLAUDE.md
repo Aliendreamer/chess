@@ -260,29 +260,31 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   consumers ≤ the topic's 3 partitions). The study board (`AnalysisPanel`, `useAnalysis`) asks, then polls every 1.5 s until
   the evaluation is there; scores of the positions evaluated follow their moves in the tree, and a line clicked is played into the study.
 
-- **Observability (observability)** — `tools/localdev/observability/`: every app sends OTLP to `otel-collector`, which
-  writes traces to Tempo, metrics to Prometheus's OTLP receiver (7 d) and logs to Loki; the collector also reads every
-  other container's Docker log file (not backend/engine: theirs come over OTLP, never twice). Pyroscope holds profiles
-  (backend via the dev image's `stack` launch profile, the BFF via its Node agent; the engine is not profiled). Grafana
-  dashboards are JSON in `observability/grafana/dashboards/` (provisioned, not editable in the UI: export and commit).
-  The collector configuration is merged from several `--config` files: `otel-collector.yml` (shared) +
-  `otel-connectors.yml` (span metrics and the service graph, from every span, before any sampling; Tempo only keeps
-  `local-blocks`) + `otel-traces-local.yml` (every trace kept). `--tail-sampling` swaps in `otel-traces-gateway.yml`
-  (traces routed by trace id to `otel-sampler` replicas) and `otel-sampler.yml` (tail-sampling: errors; SERVER spans
-
-  > 1 s except 101 upgrades; actor messages > 500 ms; `consume …` > 2 s; 10 % of the rest; the engine's think is never
-  > "slow"). Sampled traces leave logs and profiles pointing at dropped trace ids (known; see the observability note).
-  > Switches: `Observability:Enabled` (backend, engine; off in appsettings, on in compose) and `OTEL_ENABLED` (BFF).
-  > **One trace per user action:** senders `ActorTracing.Wrap(cmd)` (a `Traced` envelope, only while tracing); extractors
-  > `Unwrap`; every actor overrides `AroundReceive` with `ActorTracing.Receive(actor, …)` (span + `chess.actor.*`
-  > metrics; timers start root traces); every persist is `PersistAll(ActorTracing.StampAll(events),
-ActorTracing.Persisting<T>(actor, count, e => …))` — events carry `Trace` (`ITracedEvent`, `[JsonIgnore]` so Kafka
-  > payloads are unchanged); the publisher writes it as the `traceparent` header (`OutboxRecord.ToMessage`),
-  > `ProjectionRunner` continues it (`consume {group}` span, outcome tag), `LiveFrame.trace` carries it to the BFF, which
-  > strips it before the browser. A new actor, sender or event must follow these, or its trace breaks. Metric labels are
-  > types only, never ids (`ActorMetricsTests` checks). The BFF loads its SDK with `node --import ./otel/instrument.mjs`
-  > (`dev:stack`, `start`, and the prod image, which ships only `apps/frontend/otel`, its own workspace package, deployed
-  > with `pnpm deploy`; it must declare `@opentelemetry/api`, the SDK's peer); the page's tracer reports to `POST /otel/v1/traces` on `app.`.
+- **Observability (observability, tail-sampling)** — `tools/localdev/observability/`: every app sends OTLP to
+  `otel-collector`, which writes traces to Tempo, metrics to Prometheus's OTLP receiver (7 d) and logs to Loki; it
+  also reads every other container's Docker log file (not the backend's or the engine's: theirs come over OTLP, never
+  twice). Pyroscope holds profiles (the backend via the dev image's `stack` launch profile, the BFF via its Node agent;
+  the engine is not profiled). Grafana dashboards are JSON in `observability/grafana/dashboards/` (provisioned, not
+  editable in the UI: export and commit). Switches: `Observability:Enabled` (backend, engine; off in appsettings, on in
+  compose) and `OTEL_ENABLED` (BFF).
+  The collector configuration is merged from several `--config` files: `otel-collector.yml` (shared),
+  `otel-connectors.yml` (span metrics and the service graph from every span, before any sampling; Tempo keeps only
+  `local-blocks`) and `otel-traces-local.yml` (every trace kept). `stack.sh up --tail-sampling` swaps in
+  `otel-traces-gateway.yml` (traces routed by trace id to the `otel-sampler` replicas) and `otel-sampler.yml`, which
+  keeps errors, SERVER spans over 1 s (not 101 upgrades), actor messages over 500 ms, `consume …` records over 2 s,
+  and 10 % of the rest. The `chess-engine` service is excluded from every slow rule by name: its time is the think
+  time. Sampled traces leave logs and profiles pointing at dropped trace ids (known; see the observability note).
+  **One trace per user action:** senders `ActorTracing.Wrap(cmd)` (a `Traced` envelope, only while tracing);
+  extractors `Unwrap`; every actor overrides `AroundReceive` with `ActorTracing.Receive(actor, …)` (a span and the
+  `chess.actor.*` metrics; timers start root traces); every persist is written as
+  `PersistAll(ActorTracing.StampAll(events), ActorTracing.Persisting<T>(actor, count, e => …))`. Events carry `Trace`
+  (`ITracedEvent`, `[JsonIgnore]`, so Kafka payloads are unchanged); the publisher writes it as the `traceparent`
+  header (`OutboxRecord.ToMessage`); `ProjectionRunner` continues it (a `consume {group}` span with the outcome); and
+  `LiveFrame.trace` carries it to the BFF, which strips it before the browser. A new actor, sender or event must follow
+  these, or its trace breaks. Metric labels are types only, never ids (`ActorMetricsTests` checks). The BFF loads its
+  SDK with `node --import ./otel/instrument.mjs` (`dev:stack`, `start`, and the prod image, which ships only
+  `apps/frontend/otel`, its own workspace package, deployed with `pnpm deploy`; it must declare `@opentelemetry/api`,
+  the SDK's peer). The page's tracer reports to `POST /otel/v1/traces` on `app.`.
 
 - **Nx caching across languages** — `nx.json#namedInputs.dotnet` lists only `.cs`/`.csproj`/
   `.slnx`/`Directory.*.props`/runsettings so JS edits don't bust the backend cache and vice versa.
