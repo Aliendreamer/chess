@@ -22,3 +22,7 @@ allowBuilds:
   nx: true
   lightningcss: true
   unrs-resolver: true
+  # Pyroscope's profiler (observability D10): the native module ships prebuilt binaries (musl included) and its
+  # install script is `exit 0`; protobufjs's postinstall only checks versions. Neither needs to run.
+  "@datadog/pprof": false
+  protobufjs: false

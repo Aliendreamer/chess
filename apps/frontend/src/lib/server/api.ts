@@ -4,6 +4,7 @@ import { CORRESPONDENCE, PRESETS } from '../games'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { apiUrl, isGuid } from './upstream'
 import { loadMe } from './auth'
+import { telemetryEnabled } from './telemetry'
 import { loadPingLive, sendPing } from './pings'
 import {
   loadEngineLevels,
@@ -54,6 +55,11 @@ function serverFetch(): typeof fetch {
 // These run on the SSR server during SSR and via RPC to the same server on client navigation,
 // so the browser never learns the API host.
 export const getMe = createServerFn({ method: 'GET' }).handler(() => loadMe(serverFetch()))
+
+/** Whether the page should load its tracer (observability D7); the client bundle never reads the environment. */
+export const getTelemetry = createServerFn({ method: 'GET' }).handler(() => ({
+  enabled: telemetryEnabled(),
+}))
 
 export const getPingLive = createServerFn({ method: 'GET' })
   .validator((id: string) => id)

@@ -1,6 +1,7 @@
 import { HttpTransportType, HubConnectionBuilder } from '@microsoft/signalr'
 import { isLiveFrame } from '../live'
 import { apiUrl, keycloakTokenUrl, relayClient } from './upstream'
+import { bffMetrics, pushFrame, withoutTrace } from './telemetry'
 import type { LiveFrame, SocketMessage } from '../live'
 
 /**
@@ -49,7 +50,12 @@ export const HUB_UNAVAILABLE = 1011
 
 const PRESENCE_KIND = 'game:'
 
-const send = (socket: LocalSocket, message: SocketMessage) => socket.send(JSON.stringify(message))
+const send = (socket: LocalSocket, message: SocketMessage) =>
+  socket.send(
+    JSON.stringify(
+      message.kind === 'frame' ? { ...message, frame: withoutTrace(message.frame) } : message,
+    ),
+  )
 
 const defaultPresence = (): PresenceOptions => ({
   instance: crypto.randomUUID(),
@@ -114,10 +120,15 @@ export function createHubMultiplexer(
   function started(): Promise<HubPort> {
     if (starting) return starting
     const p = connect()
-    p.onFrame((frame) => {
-      for (const s of topics.get(frame.topic) ?? []) send(s, { kind: 'frame', frame })
-    })
+    p.onFrame((frame) =>
+      pushFrame(frame, (bare) => {
+        const listeners = topics.get(frame.topic) ?? new Set<LocalSocket>()
+        for (const s of listeners) send(s, { kind: 'frame', frame: bare })
+        return listeners.size
+      }),
+    )
     p.onReconnected(() => {
+      bffMetrics.hubReconnected()
       // Group membership lives on the connection: rejoin every live topic and refresh its sockets.
       for (const topic of topics.keys()) {
         void p

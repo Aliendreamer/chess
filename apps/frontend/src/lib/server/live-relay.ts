@@ -3,6 +3,7 @@ import { loadMe } from './auth'
 import { apiUrl, relayRevalidateMs } from './upstream'
 import { liveMultiplexer } from './live-hub'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
+import { bffMetrics } from './telemetry'
 import type { HubMultiplexer, LocalSocket } from './live-hub'
 import type { IncomingMessage } from 'node:http'
 import type { Socket } from 'node:net'
@@ -89,22 +90,26 @@ export function openRelay(
     timer = null
     if (subscribed) {
       subscribed = false
+      bffMetrics.socketClosed()
       await deps.mux.unsubscribe(target.topic, socket, userId)
     }
   }
 
   async function open(): Promise<void> {
     if (!cookie) {
+      bffMetrics.refused(UNAUTHENTICATED)
       socket.close(UNAUTHENTICATED, 'unauthenticated')
       return
     }
     const user = await deps.sessionUser(cookie)
     if (closed) return
     if (user === null) {
+      bffMetrics.refused(UNAUTHENTICATED)
       socket.close(UNAUTHENTICATED, 'unauthenticated')
       return
     }
     subscribed = true
+    bffMetrics.socketOpened()
     userId = user
     timer = deps.setInterval(async () => {
       const stillValid = await deps
@@ -175,6 +180,7 @@ export function devLiveRelay(): Plugin {
         sockets.handleUpgrade(request, socket, head, (ws: WebSocket) => {
           const target = parseLiveUrl(url)
           if (!target) {
+            bffMetrics.refused(BAD_TOPIC)
             ws.close(BAD_TOPIC, 'unknown live topic')
             return
           }

@@ -6,6 +6,7 @@ import {
   parseLiveUrl,
   relayDeps,
 } from '../../../../../../src/lib/server/live-relay'
+import { bffMetrics } from '../../../../../../src/lib/server/telemetry'
 import type { RelayHandle } from '../../../../../../src/lib/server/live-relay'
 
 /**
@@ -21,6 +22,7 @@ export default defineWebSocketHandler({
   open(peer) {
     const target = parseLiveUrl(peer.request.url)
     if (!target) {
+      bffMetrics.refused(BAD_TOPIC)
       peer.close(BAD_TOPIC, 'unknown live topic')
       return
     }

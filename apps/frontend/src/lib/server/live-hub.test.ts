@@ -69,6 +69,20 @@ describe('HubMultiplexer', () => {
     expect(onB.sent).toHaveLength(1) // its snapshot only
   })
 
+  it("strips a frame's trace before it reaches a browser", async () => {
+    const hub = fakeHub()
+    const mux = createHubMultiplexer(() => hub.port)
+    const a = socket()
+    await mux.subscribe('ping:a', a)
+
+    hub.push({
+      ...frame('ping:a', 6),
+      trace: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01',
+    })
+
+    expect(a.sent.at(-1)).toEqual({ kind: 'frame', frame: frame('ping:a', 6) })
+  })
+
   it('leaves the group after the last local subscriber and keeps the connection', async () => {
     const hub = fakeHub()
     const mux = createHubMultiplexer(() => hub.port)

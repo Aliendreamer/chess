@@ -189,8 +189,8 @@ Two paths, so that nothing is collected twice:
   - The backend and the engine worker: Serilog adds an OTLP sink when `Enabled` (`Serilog.Sinks.OpenTelemetry`),
     next to the console sink. Trace and span ids come from `Activity.Current`, so a log written while handling a
     message is linked to that message's span. Structured properties (game id, topic, group) become log attributes.
-  - The BFF: a small `lib/server/log.ts` replaces its `console.*` calls. It writes to the console and, when
-    `OTEL_ENABLED`, emits through the OpenTelemetry Logs API with the active span's context.
+  - Not the BFF: its source writes no logs of its own (no `console.*` anywhere), so a logger would have nothing to
+    carry. Its errors ride on its spans; its container output (vite, nitro) is collected like any other service's.
 - **Everything else, from container output:**
   - The collector's `filelog` receiver reads Docker's `json-file` logs from `/var/lib/docker/containers`, mounted
     read-only (Docker runs natively in WSL here, so the files are on the host).

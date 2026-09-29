@@ -16,7 +16,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
       `stack.sh` prints the Grafana URL and logins. Confirm Redpanda's consumer-lag metric and record it in the design (`redpanda_kafka_consumer_group_lag_sum`, enabled by `redpanda-init`).
 - [x] 2.2 Container logs to Loki (design D9): a compose logging anchor on every service (`json-file`, `tag` = the
       service name), and the collector's `filelog` receiver on `/var/lib/docker/containers` (read-only), with
-      multi-line recombining. The backend, engine and frontend containers are excluded (their logs come over OTLP).
+      multi-line recombining. The backend and engine containers are excluded (their logs come over OTLP).
       🐳 Proof for group 2: `stack.sh up`, then `verify-stack.sh` extended with the collector's health, `up` for every
       scrape target in Prometheus, each Grafana datasource answering its health API, and a Loki query returning lines
       for `keycloak`, `postgres` and `redpanda`. Commit `feat(repo): observability stack`.
@@ -73,13 +73,13 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
 
 ## 7. Frontend: the BFF and the browser
 
-- [ ] 7.1 Failing tests first (vitest). The `/otel/v1/traces` handler answers 404 when off, 413 over 256 KB and 429
+- [x] 7.1 Failing tests first (vitest). The `/otel/v1/traces` handler answers 404 when off, 413 over 256 KB and 429
       over the rate, and forwards the body unchanged to the collector when on. The relay strips `trace` from a frame
-      before it reaches the browser and starts `relay.push` under it. `lib/server/log.ts` writes to the console and,
-      when on, emits an OpenTelemetry log record carrying the active span. The `chess.bff` instruments. Then add the
-      Node SDK instrumentation file (`--import` in the dev and prod start commands; http, undici, runtime metrics,
-      logs; the Pyroscope agent), replace the BFF's `console.*` calls with `log.ts`, and add the lazy browser tracer
-      (document load and fetch), enabled through the root loader. Commit
+      before it reaches the browser and starts `relay.push` under it. The `chess.bff` instruments. Then add the Node
+      SDK instrumentation file (`--import` in `dev:stack` and `start`; http, undici, runtime metrics; the Pyroscope
+      agent) and the lazy browser tracer (document load and fetch, spans named after the server function), enabled
+      through the root loader. The BFF has no logs of its own to carry (no `console.*`); its container output goes to
+      Loki with the others. Commit
       `feat(frontend): tracing from the browser through the bff`.
 
 ## 8. Dashboards

@@ -114,7 +114,6 @@ Cross-cutting, after Part 4 (ROADMAP §7 "Observability").
 - **Frontend (BFF):**
   - the OpenTelemetry Node SDK (server functions, `fetch` to the API with `traceparent`, relay metrics) and the
     Pyroscope Node agent;
-  - `lib/server/log.ts` in place of `console.*`, sending structured logs with the trace;
   - a browser tracer that reports through a BFF route.
 - **ROADMAP decisions:** settles §7 "Observability" (the collector, Grafana, the profile that was optional) and
   extends D8: Kafka records get headers.

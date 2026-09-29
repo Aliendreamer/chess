@@ -17,8 +17,9 @@ receivers:
         endpoint: 0.0.0.0:4318
 
   # Every container's stdout/stderr from Docker's json-file logs (observability D9). Compose sets each service's log
-  # tag to its container name (chess-keycloak-1), which becomes service.name. Our own apps are dropped here: their
-  # logs arrive over OTLP, structured and with trace ids, and must not arrive twice.
+  # tag to its container name (chess-keycloak-1), which becomes service.name. The backend and the engine are dropped
+  # here: their logs arrive over OTLP, structured and with trace ids, and must not arrive twice. The BFF writes no logs
+  # of its own, so its container output (vite, nitro) comes this way.
   file_log/containers:
     include: [/var/lib/docker/containers/*/*-json.log]
     start_at: end
@@ -36,7 +37,7 @@ receivers:
         regex: '^chess-(?P<service>.+)-\d+$'
         on_error: drop_quiet
       - type: filter
-        expr: 'attributes.service == nil or attributes.service matches "^(backend|backend-2|engine|frontend)$"'
+        expr: 'attributes.service == nil or attributes.service matches "^(backend|backend-2|engine)$"'
       - type: move
         from: attributes.service
         to: resource["service.name"]

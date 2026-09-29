@@ -13,6 +13,8 @@ export interface LiveFrame<TPayload = unknown> {
   topic: string
   seq: number
   payload: TPayload
+  /** The traceparent of the work that made the frame (observability D6); the BFF strips it before a browser sees it. */
+  trace?: string
 }
 
 /** What travels over the browser ↔ BFF socket. */

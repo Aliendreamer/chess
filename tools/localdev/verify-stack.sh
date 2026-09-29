@@ -110,10 +110,10 @@ for _ in $(seq 1 30); do
 done
 [[ "$entries" == "2" ]] || fail "expected the probe's 4 lines as 2 entries in Loki, got '${entries:-none}'"
 services="$(compose exec -T grafana wget -qO- 'http://loki:3100/loki/api/v1/label/service_name/values')"
-for s in keycloak postgres redpanda proxy; do
+for s in keycloak postgres redpanda proxy frontend; do
   grep -q "\"$s\"" <<<"$services" || fail "no logs from $s in Loki (have: $services)"
 done
-for s in backend backend-2 engine frontend; do
+for s in backend backend-2 engine; do
   if grep -q "\"$s\"" <<<"$services"; then fail "$s's container output is in Loki; its logs must only come over OTLP"; fi
 done
 echo "ok"

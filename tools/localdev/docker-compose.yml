@@ -437,6 +437,7 @@ services:
     build:
       context: ../..
       dockerfile: tools/localdev/frontend.dev.Dockerfile
+    command: ["pnpm", "--filter", "chess-frontend", "dev:stack"]
     environment:
       # Server-side only; never exposed to the client bundle. The SSR server is the BFF.
       API_URL: http://backend:8080
@@ -449,6 +450,12 @@ services:
       RELAY_CLIENT_ID: chess_bff
       RELAY_CLIENT_SECRET: chess-bff-dev-secret
       DOCKER_DEV: "1"
+      # Traces and metrics (observability D7): `dev:stack` loads the SDK before vite; the page's tracer reports through
+      # /otel/v1/traces. Its logs are the container's output, collected for Loki like any other service.
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_INSTANCE: frontend
+      PYROSCOPE_SERVER_ADDRESS: http://pyroscope:4040
     volumes:
       - ../../apps/frontend:/app/apps/frontend
       - ../../package.json:/app/package.json

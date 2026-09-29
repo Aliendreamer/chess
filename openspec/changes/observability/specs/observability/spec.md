@@ -104,9 +104,9 @@ container. The Engine worker dashboard SHALL show jobs by kind and outcome, thin
 
 ### Requirement: Every log in the stack reaches Loki
 
-Logs SHALL reach Loki from every container of the local stack, each labelled with its service. The backend, engine
-worker and BFF logs MUST arrive structured over OTLP, carrying the trace and span ids of the work they were written
-in, and MUST NOT arrive a second time from container output. Every other container's output MUST be collected from
+Logs SHALL reach Loki from every container of the local stack, each labelled with its service. The backend and engine
+worker logs MUST arrive structured over OTLP, carrying the trace and span ids of the work they were written in, and
+MUST NOT arrive a second time from container output. Every other container's output MUST be collected from
 Docker's log files. A Logs dashboard MUST show log volume and errors per service and a tail filtered by service, level
 and text.
 

@@ -15,6 +15,7 @@ import { Route as PgnIdRouteImport } from './routes/pgn/$id'
 import { Route as AuthenticatedStudiesIndexRouteImport } from './routes/_authenticated/studies.index'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
 import { Route as PgnStudyIdRouteImport } from './routes/pgn/study.$id'
+import { Route as OtelV1TracesRouteImport } from './routes/otel/v1/traces'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthenticatedStudiesIdRouteImport } from './routes/_authenticated/studies.$id'
 import { Route as AuthenticatedPingsIdRouteImport } from './routes/_authenticated/pings.$id'
@@ -51,6 +52,11 @@ const PgnStudyIdRoute = PgnStudyIdRouteImport.update({
   path: '/pgn/study/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OtelV1TracesRoute = OtelV1TracesRouteImport.update({
+  id: '/otel/v1/traces',
+  path: '/otel/v1/traces',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/pings/$id': typeof AuthenticatedPingsIdRoute
   '/studies/$id': typeof AuthenticatedStudiesIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/otel/v1/traces': typeof OtelV1TracesRoute
   '/pgn/study/$id': typeof PgnStudyIdRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
   '/studies/': typeof AuthenticatedStudiesIndexRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/pings/$id': typeof AuthenticatedPingsIdRoute
   '/studies/$id': typeof AuthenticatedStudiesIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/otel/v1/traces': typeof OtelV1TracesRoute
   '/pgn/study/$id': typeof PgnStudyIdRoute
   '/games': typeof AuthenticatedGamesIndexRoute
   '/studies': typeof AuthenticatedStudiesIndexRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/_authenticated/pings/$id': typeof AuthenticatedPingsIdRoute
   '/_authenticated/studies/$id': typeof AuthenticatedStudiesIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/otel/v1/traces': typeof OtelV1TracesRoute
   '/pgn/study/$id': typeof PgnStudyIdRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
   '/_authenticated/studies/': typeof AuthenticatedStudiesIndexRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/pings/$id'
     | '/studies/$id'
     | '/api/auth/$'
+    | '/otel/v1/traces'
     | '/pgn/study/$id'
     | '/games/'
     | '/studies/'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/pings/$id'
     | '/studies/$id'
     | '/api/auth/$'
+    | '/otel/v1/traces'
     | '/pgn/study/$id'
     | '/games'
     | '/studies'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pings/$id'
     | '/_authenticated/studies/$id'
     | '/api/auth/$'
+    | '/otel/v1/traces'
     | '/pgn/study/$id'
     | '/_authenticated/games/'
     | '/_authenticated/studies/'
@@ -159,6 +171,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   PgnIdRoute: typeof PgnIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  OtelV1TracesRoute: typeof OtelV1TracesRoute
   PgnStudyIdRoute: typeof PgnStudyIdRoute
 }
 
@@ -204,6 +217,13 @@ declare module '@tanstack/react-router' {
       path: '/pgn/study/$id'
       fullPath: '/pgn/study/$id'
       preLoaderRoute: typeof PgnStudyIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/otel/v1/traces': {
+      id: '/otel/v1/traces'
+      path: '/otel/v1/traces'
+      fullPath: '/otel/v1/traces'
+      preLoaderRoute: typeof OtelV1TracesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -272,6 +292,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   PgnIdRoute: PgnIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  OtelV1TracesRoute: OtelV1TracesRoute,
   PgnStudyIdRoute: PgnStudyIdRoute,
 }
 export const routeTree = rootRouteImport
