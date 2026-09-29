@@ -90,7 +90,7 @@ Each group ends in one commit that passes its gate. 🐳 = needs Docker or the l
 
 ## 9. Verify and docs
 
-- [ ] 9.1 🐳 `tools/localdev/verify-observability.sh`. Make a move against the engine through the API, then find its
+- [x] 9.1 🐳 `tools/localdev/verify-observability.sh`. Make a move against the engine through the API, then find its
       trace in Tempo by `game.id`, with spans from `chess-backend` (endpoint, actor, persist, publish, consume) and
       `chess-engine`. Prometheus has `chess_actor_messages_total` for both nodes. Loki has the backend's logs with
       that trace id (once each) and lines from `keycloak` and `postgres`. Pyroscope lists every service. Then a
