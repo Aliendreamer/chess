@@ -49,7 +49,7 @@ internal sealed record InviteView(
 internal sealed class InviteActor : ReceivePersistentActor
 {
     protected override bool AroundReceive(Receive receive, object message) =>
-        ActorTracing.Receive("invite", message, m => base.AroundReceive(receive, m), entity: new("invite.id", _inviteId.ToString("N")));
+        ActorTracing.Receive("invite", message, m => base.AroundReceive(receive, m), entity: new(TelemetryTags.InviteId, _inviteId.ToString("N")));
 
     protected override void OnReplaySuccess()
     {

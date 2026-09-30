@@ -53,25 +53,23 @@ internal sealed class ProjectionRunner(
         (string aggregateId, long seq) = Identify(key, value);
         long started = Stopwatch.GetTimestamp();
         using Activity? consume = PipelineTracing.StartConsume(groupId, traceParent);
-        consume?.SetTag("projection.aggregate", aggregateId);
-        consume?.SetTag("projection.seq", seq);
+        consume?.SetTag(TelemetryTags.ProjectionAggregate, aggregateId);
+        consume?.SetTag(TelemetryTags.ProjectionSeq, seq);
         try
         {
             // Never inline the call into `consume?.SetTag(...)`: with tracing off the whole call, work included, would be skipped.
             ProjectionOutcome outcome = await RunAttemptsAsync(projectionType, groupId, key, value, aggregateId, seq, ct);
-            consume?.SetTag(OutcomeTag, outcome.Label());
+            consume?.SetTag(TelemetryTags.ProjectionOutcome, outcome.Label());
             PipelineMetrics.Projected(groupId, outcome, Stopwatch.GetElapsedTime(started));
         }
         catch (ProjectionGapException e)
         {
             PipelineMetrics.Projected(groupId, ProjectionOutcome.Gap, Stopwatch.GetElapsedTime(started));
-            consume?.SetTag(OutcomeTag, ProjectionOutcome.Gap.Label());
+            consume?.SetTag(TelemetryTags.ProjectionOutcome, ProjectionOutcome.Gap.Label());
             consume?.SetStatus(ActivityStatusCode.Error, e.Message);
             throw;
         }
     }
-
-    private const string OutcomeTag = "projection.outcome";
 
     private async Task<ProjectionOutcome> RunAttemptsAsync(Type projectionType, string groupId, string key, string value, string aggregateId, long seq, CancellationToken ct)
     {

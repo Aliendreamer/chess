@@ -29,9 +29,9 @@ internal static class PipelineTracing
         }
 
         using Activity? publish = Source.StartActivity($"publish {topic}", ActivityKind.Producer, parent);
-        publish?.SetTag("messaging.system", "kafka");
-        publish?.SetTag("messaging.destination.name", topic);
-        publish?.SetTag("messaging.kafka.message.key", key);
+        publish?.SetTag(TelemetryTags.MessagingSystem, TelemetryTags.MessagingKafka);
+        publish?.SetTag(TelemetryTags.MessagingDestination, topic);
+        publish?.SetTag(TelemetryTags.MessagingKey, key);
         return publish?.Id ?? eventTrace;
     }
 
@@ -46,15 +46,18 @@ internal static class PipelineTracing
     public static string? TraceParent(Headers? headers) =>
         headers is not null && headers.TryGetLastBytes(TraceParentHeader, out byte[] value) ? Encoding.UTF8.GetString(value) : null;
 
-    /// <summary>The span around every attempt at one record for one consumer group; a new trace when the record has none.</summary>
+    /// <summary>
+    /// The span around every attempt at one record for one consumer group; a new trace when the record has none. The
+    /// slow-consume rule in otel-sampler.yml matches its name, <c>consume {group}</c>.
+    /// </summary>
     public static Activity? StartConsume(string groupId, string? traceParent)
     {
         string name = $"consume {groupId}";
         Activity? activity = traceParent is not null && ActivityContext.TryParse(traceParent, null, out ActivityContext parent)
             ? Source.StartActivity(name, ActivityKind.Consumer, parent)
             : Source.StartActivity(name, ActivityKind.Consumer);
-        activity?.SetTag("messaging.system", "kafka");
-        activity?.SetTag("messaging.consumer.group.name", groupId);
+        activity?.SetTag(TelemetryTags.MessagingSystem, TelemetryTags.MessagingKafka);
+        activity?.SetTag(TelemetryTags.MessagingGroup, groupId);
         return activity;
     }
 }

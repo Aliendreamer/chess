@@ -22,7 +22,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         message,
         m => base.AroundReceive(receive, m),
         m => m is FlagCheck or AbortCheck or EngineStall or PresenceCheck,
-        new("game.id", _gameId.ToString("N")));
+        new(TelemetryTags.GameId, _gameId.ToString("N")));
 
     public const string PersistenceIdPrefix = "game-";
     public const int SnapshotEvery = 20;

@@ -31,12 +31,12 @@ internal sealed class ClusterMetricsActor : ReceiveActor, IWithTimers
         Receive<RegionState>(r => _regionStates[r.Region] = r.State);
         Receive<Status.Failure>(_ => { });
         // UnhandledMessage is itself an AllDeadLetters in Akka.NET 1.5, so it must be matched first.
-        Receive<UnhandledMessage>(u => ActorMetrics.DeadLetter(ActorTracing.Unwrap(u.Message).GetType().Name, "unhandled"));
+        Receive<UnhandledMessage>(u => ActorMetrics.DeadLetter(ActorTracing.Unwrap(u.Message).GetType().Name, DeadLetterKind.Unhandled));
         Receive<AllDeadLetters>(d => ActorMetrics.DeadLetter(ActorTracing.Unwrap(d.Message).GetType().Name, d switch
         {
-            Dropped => "dropped",
-            SuppressedDeadLetter => "suppressed",
-            _ => "dead",
+            Dropped => DeadLetterKind.Dropped,
+            SuppressedDeadLetter => DeadLetterKind.Suppressed,
+            _ => DeadLetterKind.Dead,
         }));
     }
 

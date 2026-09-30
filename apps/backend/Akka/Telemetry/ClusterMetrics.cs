@@ -21,15 +21,15 @@ internal static class ClusterMetrics
     static ClusterMetrics()
     {
         Meter.CreateObservableGauge("chess.cluster.members", () =>
-            Current.MembersByStatus.Select(m => new Measurement<int>(m.Value, new KeyValuePair<string, object?>("status", m.Key))), description: "Cluster members by status, as this node sees them");
+            Current.MembersByStatus.Select(m => new Measurement<int>(m.Value, new KeyValuePair<string, object?>(TelemetryTags.Status, m.Key))), description: "Cluster members by status, as this node sees them");
         Meter.CreateObservableGauge("chess.cluster.unreachable", () => Current.Unreachable, description: "Members this node cannot reach");
         Meter.CreateObservableGauge("chess.cluster.singleton", () =>
-            Current.Singletons.Select(s => new Measurement<int>(1, new KeyValuePair<string, object?>("singleton", s))), description: "Singletons hosted on this node");
+            Current.Singletons.Select(s => new Measurement<int>(1, new KeyValuePair<string, object?>(TelemetryTags.Singleton, s))), description: "Singletons hosted on this node");
         Meter.CreateObservableGauge("chess.shard.entities", () =>
             Current.Shards.Select(s => new Measurement<int>(
                 s.Entities,
-                new KeyValuePair<string, object?>("region", s.Region),
-                new KeyValuePair<string, object?>("shard", s.Shard))), description: "Live entities per shard on this node");
+                new KeyValuePair<string, object?>(TelemetryTags.Region, s.Region),
+                new KeyValuePair<string, object?>(TelemetryTags.Shard, s.Shard))), description: "Live entities per shard on this node");
     }
 
     public static ClusterSnapshot Current => Volatile.Read(ref SnapshotValue);

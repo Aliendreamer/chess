@@ -27,17 +27,17 @@ internal static class PipelineMetrics
     static PipelineMetrics()
     {
         Meter.CreateObservableGauge("chess.outbox.lag", () =>
-            Volatile.Read(ref LagByTopic).Select(l => new Measurement<long>(l.Value, new KeyValuePair<string, object?>("topic", l.Key))), description: "Journal events not yet on Kafka, per topic");
+            Volatile.Read(ref LagByTopic).Select(l => new Measurement<long>(l.Value, new KeyValuePair<string, object?>(TelemetryTags.Topic, l.Key))), description: "Journal events not yet on Kafka, per topic");
         Meter.CreateObservableGauge("chess.projection.quarantined", () =>
-            Volatile.Read(ref QuarantinedByGroup).Select(q => new Measurement<int>(q.Value, new KeyValuePair<string, object?>("group", q.Key))), description: "Aggregates parked per consumer group");
+            Volatile.Read(ref QuarantinedByGroup).Select(q => new Measurement<int>(q.Value, new KeyValuePair<string, object?>(TelemetryTags.Group, q.Key))), description: "Aggregates parked per consumer group");
     }
 
-    public static void Produced(string topic, int count) => Published.Add(count, new TagList { { "topic", topic } });
+    public static void Produced(string topic, int count) => Published.Add(count, new TagList { { TelemetryTags.Topic, topic } });
 
     public static void Projected(string group, ProjectionOutcome outcome, TimeSpan elapsed)
     {
-        Records.Add(1, new TagList { { "group", group }, { "outcome", outcome.Label() } });
-        RecordDuration.Record(elapsed.TotalSeconds, new TagList { { "group", group } });
+        Records.Add(1, new TagList { { TelemetryTags.Group, group }, { TelemetryTags.Outcome, outcome.Label() } });
+        RecordDuration.Record(elapsed.TotalSeconds, new TagList { { TelemetryTags.Group, group } });
     }
 
     public static void Lag(string topic, long lag) => ImmutableInterlocked.AddOrUpdate(ref LagByTopic, topic, lag, (_, _) => lag);

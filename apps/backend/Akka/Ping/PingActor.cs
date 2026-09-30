@@ -16,7 +16,7 @@ namespace Chess.Backend.Akka.Ping;
 internal sealed class PingActor : ReceivePersistentActor
 {
     protected override bool AroundReceive(Receive receive, object message) =>
-        ActorTracing.Receive("ping", message, m => base.AroundReceive(receive, m), entity: new("ping.id", _pingId));
+        ActorTracing.Receive("ping", message, m => base.AroundReceive(receive, m), entity: new(TelemetryTags.PingId, _pingId));
 
     protected override void OnReplaySuccess()
     {

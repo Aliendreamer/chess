@@ -23,22 +23,22 @@ internal static class ActorMetrics
     private static readonly Counter<long> Passivations = Meter.CreateCounter<long>("chess.actor.passivations", description: "Entities passivated");
     private static readonly Counter<long> DeadLetters = Meter.CreateCounter<long>("chess.akka.dead_letters", description: "Messages no actor took");
 
-    public static void Handled(string actor, string message, string outcome, TimeSpan elapsed)
+    public static void Handled(string actor, string message, MessageOutcome outcome, TimeSpan elapsed)
     {
-        TagList tags = new() { { "actor", actor }, { "message", message } };
+        TagList tags = new() { { TelemetryTags.Actor, actor }, { TelemetryTags.Message, message } };
         HandleDuration.Record(elapsed.TotalSeconds, tags);
-        tags.Add("outcome", outcome);
+        tags.Add(TelemetryTags.Outcome, outcome.Label());
         Messages.Add(1, tags);
     }
 
     public static void Persisted(string actor, string evt, TimeSpan elapsed) =>
-        PersistDuration.Record(elapsed.TotalSeconds, new TagList { { "actor", actor }, { "event", evt } });
+        PersistDuration.Record(elapsed.TotalSeconds, new TagList { { TelemetryTags.Actor, actor }, { TelemetryTags.Event, evt } });
 
     public static void Recovered(string actor, long startedAt) =>
-        RecoveryDuration.Record(Stopwatch.GetElapsedTime(startedAt).TotalSeconds, new TagList { { "actor", actor } });
+        RecoveryDuration.Record(Stopwatch.GetElapsedTime(startedAt).TotalSeconds, new TagList { { TelemetryTags.Actor, actor } });
 
-    public static void Passivated(string actor) => Passivations.Add(1, new TagList { { "actor", actor } });
+    public static void Passivated(string actor) => Passivations.Add(1, new TagList { { TelemetryTags.Actor, actor } });
 
-    public static void DeadLetter(string message, string kind) =>
-        DeadLetters.Add(1, new TagList { { "message", message }, { "kind", kind } });
+    public static void DeadLetter(string message, DeadLetterKind kind) =>
+        DeadLetters.Add(1, new TagList { { TelemetryTags.Message, message }, { TelemetryTags.Kind, kind.Label() } });
 }

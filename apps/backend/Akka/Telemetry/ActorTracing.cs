@@ -66,11 +66,11 @@ internal static class ActorTracing
         }
 
         long started = Stopwatch.GetTimestamp();
-        string outcome = "failed";
+        MessageOutcome outcome = MessageOutcome.Failed;
         try
         {
             bool handled = handle(inner);
-            outcome = handled ? "handled" : "unhandled";
+            outcome = handled ? MessageOutcome.Handled : MessageOutcome.Unhandled;
             return handled;
         }
         catch (Exception e)
@@ -104,8 +104,8 @@ internal static class ActorTracing
             return null;
         }
 
-        activity?.SetTag("actor.type", actor);
-        activity?.SetTag("actor.message", inner.GetType().Name);
+        activity?.SetTag(TelemetryTags.ActorType, actor);
+        activity?.SetTag(TelemetryTags.ActorMessage, inner.GetType().Name);
         return activity;
     }
 
@@ -120,7 +120,7 @@ internal static class ActorTracing
         long started = Stopwatch.GetTimestamp();
         Activity? parent = Activity.Current;
         Activity? span = parent is null ? null : Source.StartActivity($"{actor} persist", ActivityKind.Internal);
-        span?.SetTag("persist.events", count);
+        span?.SetTag(TelemetryTags.PersistEvents, count);
         Activity.Current = parent; // the handler goes on in its own span
         int left = Math.Max(count, 1);
         return e =>
@@ -145,8 +145,8 @@ internal static class ActorTracing
     public static Activity? StartPingHandle(string pingId, long seq)
     {
         Activity? activity = Source.StartActivity("ping.handle");
-        activity?.SetTag("ping.id", pingId);
-        activity?.SetTag("ping.seq", seq);
+        activity?.SetTag(TelemetryTags.PingId, pingId);
+        activity?.SetTag(TelemetryTags.PingSeq, seq);
         return activity;
     }
 
@@ -154,9 +154,9 @@ internal static class ActorTracing
     public static Activity? StartOutboxBatch(string streamId, int count, long lastOrdering)
     {
         Activity? activity = Source.StartActivity("outbox.batch");
-        activity?.SetTag("outbox.stream", streamId);
-        activity?.SetTag("outbox.count", count);
-        activity?.SetTag("outbox.last_ordering", lastOrdering);
+        activity?.SetTag(TelemetryTags.OutboxStream, streamId);
+        activity?.SetTag(TelemetryTags.OutboxCount, count);
+        activity?.SetTag(TelemetryTags.OutboxLastOrdering, lastOrdering);
         return activity;
     }
 }
