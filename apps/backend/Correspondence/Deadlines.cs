@@ -46,13 +46,13 @@ internal sealed class DeadlineProjection(ProjectDbContext db, IOptions<Correspon
 
     public string GroupId => "chess.deadlines";
 
-    public async Task ApplyAsync(string key, string json, CancellationToken ct)
+    public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {
         if (!EventJson.TryDeserialize(json, out EventEnvelope<JsonElement>? e)
             || !e.Type.StartsWith("game.", StringComparison.Ordinal)
             || !Guid.TryParseExact(e.AggregateId, "N", out Guid gameId))
         {
-            return;
+            return ProjectionOutcome.Ignored;
         }
 
         GameDeadline? row = await db.GameDeadlines.SingleOrDefaultAsync(d => d.GameId == gameId, ct);
@@ -63,15 +63,16 @@ internal sealed class DeadlineProjection(ProjectDbContext db, IOptions<Correspon
             {
                 db.GameDeadlines.Add(new GameDeadline { GameId = gameId, DueAt = e.At + options.Value.MoveDeadline, LastSeq = e.Seq });
                 await db.SaveChangesAsync(ct);
+                return ProjectionOutcome.Applied;
             }
 
-            return; // a live game, or a later event of one
+            return ProjectionOutcome.Ignored; // a live game, or a later event of one
         }
 
         switch (IdempotencyGuard.Decide(row.LastSeq, e.Seq))
         {
             case SeqDecision.Skip:
-                return;
+                return ProjectionOutcome.Skipped;
             case SeqDecision.Gap:
                 Utils.Log.ProjectionGap(logger, GroupId, e.AggregateId, row.LastSeq, e.Seq);
                 throw new ProjectionGapException(GroupId, e.AggregateId, row.LastSeq, e.Seq);
@@ -88,6 +89,7 @@ internal sealed class DeadlineProjection(ProjectDbContext db, IOptions<Correspon
 
         row.LastSeq = e.Seq;
         await db.SaveChangesAsync(ct);
+        return ProjectionOutcome.Applied;
     }
 }
 

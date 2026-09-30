@@ -89,7 +89,7 @@ Actors & cluster dashboard MUST show these per node. No metric label MAY carry a
 ### Requirement: The event pipeline is visible
 
 The backend SHALL publish the journal publisher's lag and records published per topic, and each projection group's
-records by outcome (applied, skipped, retried, parked, gap), handling time and quarantined aggregates. Consumer lag
+records by outcome (applied, skipped, ignored, parked, gap), handling time and quarantined aggregates. Consumer lag
 per group MUST come from Redpanda's metrics. The Event pipeline dashboard MUST show all of these.
 
 #### Scenario: A stalled projection

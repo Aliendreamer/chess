@@ -17,8 +17,10 @@ internal interface IProjection
     /// same way <see cref="Events.EventJson.TryDeserialize{T}"/> does — since a poison message would otherwise
     /// spin the retry loop forever. The one deliberate exception is <see cref="ProjectionGapException"/>: a
     /// missing seq means an event was lost upstream, and stalling (retry with backoff, logged) is the point.
+    /// Returns what became of the record: <see cref="ProjectionOutcome.Applied"/>, <see cref="ProjectionOutcome.Skipped"/>
+    /// or <see cref="ProjectionOutcome.Ignored"/>.
     /// </summary>
-    Task ApplyAsync(string key, string json, CancellationToken ct);
+    Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct);
 }
 
 /// <summary>
@@ -37,11 +39,11 @@ internal abstract class PositionedProjection<TPayload>(ProjectDbContext db, ILog
     /// <summary>The envelope <c>type</c> this consumer handles; everything else on the topic is ignored.</summary>
     protected abstract string EventType { get; }
 
-    public async Task ApplyAsync(string key, string json, CancellationToken ct)
+    public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {
         if (!EventJson.TryDeserialize(json, out EventEnvelope<TPayload>? e) || e.Type != EventType)
         {
-            return;
+            return ProjectionOutcome.Ignored;
         }
 
         ConsumerPosition? position = await Db.ConsumerPositions.SingleOrDefaultAsync(p => p.GroupId == GroupId && p.AggregateId == e.AggregateId, ct);
@@ -49,7 +51,7 @@ internal abstract class PositionedProjection<TPayload>(ProjectDbContext db, ILog
         {
             case SeqDecision.Skip:
                 Log.ProjectionSkippedReplay(logger, e.AggregateId, e.Seq);
-                return;
+                return ProjectionOutcome.Skipped;
             case SeqDecision.Gap:
                 Log.ProjectionGap(logger, GroupId, e.AggregateId, position?.LastSeq ?? 0, e.Seq);
                 throw new ProjectionGapException(GroupId, e.AggregateId, position?.LastSeq ?? 0, e.Seq);
@@ -65,6 +67,7 @@ internal abstract class PositionedProjection<TPayload>(ProjectDbContext db, ILog
         position.LastSeq = e.Seq;
         position.UpdatedAt = e.At;
         await Db.SaveChangesAsync(ct);
+        return ProjectionOutcome.Applied;
     }
 
     /// <summary>Stage the effect of <paramref name="e"/> on <see cref="Db"/>; do NOT call SaveChanges.</summary>

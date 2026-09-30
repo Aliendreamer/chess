@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using Chess.Backend.Akka;
 using Chess.Backend.Projections;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,20 +30,19 @@ public sealed class ProjectionRunnerTests
 
         public string GroupId => Group;
 
-        public Task ApplyAsync(string key, string json, CancellationToken ct)
+        public Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
         {
             script.Calls++;
-            if (script.Decide is { } d)
-            {
-                IdempotencyGuard.Decide(d.Last, d.Seq);
-            }
+            ProjectionOutcome outcome = script.Decide is { } d && IdempotencyGuard.Decide(d.Last, d.Seq) == SeqDecision.Skip
+                ? ProjectionOutcome.Skipped
+                : ProjectionOutcome.Applied;
 
             if (script.Always is { } always)
             {
                 throw always;
             }
 
-            return script.Failures.TryDequeue(out Exception? e) ? Task.FromException(e) : Task.CompletedTask;
+            return script.Failures.TryDequeue(out Exception? e) ? Task.FromException<ProjectionOutcome>(e) : Task.FromResult(outcome);
         }
     }
 
@@ -248,6 +248,36 @@ public sealed class ProjectionRunnerTests
         await h.RunAsync(Event("a", 3), traceParent: spans.Parent);
 
         Assert.Equal("skipped", spans.Consume.GetTagItem("projection.outcome"));
+    }
+
+    [Fact]
+    public async Task A_redelivered_record_is_counted_skipped_with_tracing_off()
+    {
+        const string group = "test.runner.untraced";
+        List<string?> outcomes = [];
+        using MeterListener listener = new();
+        listener.InstrumentPublished = (instrument, l) =>
+        {
+            if (instrument.Meter.Name == PipelineMetrics.MeterName && instrument.Name == "chess.projection.records")
+            {
+                l.EnableMeasurementEvents(instrument);
+            }
+        };
+        listener.SetMeasurementEventCallback<long>((_, _, tags, _) =>
+        {
+            Dictionary<string, object?> t = tags.ToArray().ToDictionary(k => k.Key, k => k.Value);
+            if (Equals(t["group"], group))
+            {
+                outcomes.Add(t["outcome"] as string);
+            }
+        });
+        listener.Start();
+        Harness h = new();
+        h.Script.Decide = (5, 3);
+
+        await h.RunAsync(Event("a", 3), group: group);
+
+        Assert.Equal(["skipped"], outcomes);
     }
 
     [Fact]

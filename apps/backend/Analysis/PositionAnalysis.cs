@@ -238,7 +238,7 @@ internal sealed class AnalysisResultConsumer(ProjectDbContext db, TimeProvider c
 
     public string GroupId => "chess.analysis-results";
 
-    public async Task ApplyAsync(string key, string json, CancellationToken ct)
+    public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {
         AnalysisResultMessage? result;
         try
@@ -247,12 +247,12 @@ internal sealed class AnalysisResultConsumer(ProjectDbContext db, TimeProvider c
         }
         catch (JsonException)
         {
-            return;
+            return ProjectionOutcome.Ignored;
         }
 
         if (result is null || string.IsNullOrEmpty(result.Key) || result.Lines is null)
         {
-            return;
+            return ProjectionOutcome.Ignored;
         }
 
         PositionEvaluation? row = await db.PositionEvaluations.SingleOrDefaultAsync(e => e.PositionKey == result.Key && e.ThinkMs == result.ThinkMs, ct);
@@ -263,7 +263,7 @@ internal sealed class AnalysisResultConsumer(ProjectDbContext db, TimeProvider c
         }
         else if (row.Status == PositionEvaluation.Done && row.Depth > result.Depth)
         {
-            return;
+            return ProjectionOutcome.Skipped; // a deeper answer is kept
         }
 
         row.Status = PositionEvaluation.Done;
@@ -271,5 +271,6 @@ internal sealed class AnalysisResultConsumer(ProjectDbContext db, TimeProvider c
         row.Lines = JsonSerializer.Serialize(result.Lines);
         row.EvaluatedAt = clock.GetUtcNow();
         await db.SaveChangesAsync(ct);
+        return ProjectionOutcome.Applied;
     }
 }

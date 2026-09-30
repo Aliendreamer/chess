@@ -125,13 +125,13 @@ internal sealed class NotificationConsumer(
 
     public string GroupId => "chess.notifications";
 
-    public async Task ApplyAsync(string key, string json, CancellationToken ct)
+    public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {
         if (!EventJson.TryDeserialize(json, out EventEnvelope<JsonElement>? e)
             || !e.Type.StartsWith("game.", StringComparison.Ordinal)
             || !Guid.TryParseExact(e.AggregateId, "N", out Guid gameId))
         {
-            return;
+            return ProjectionOutcome.Ignored;
         }
 
         NotificationGame? game = await db.NotificationGames.SingleOrDefaultAsync(g => g.GameId == gameId, ct);
@@ -141,15 +141,16 @@ internal sealed class NotificationConsumer(
                 && created.TimeControl == TimeControl.Correspondence7.ToString())
             {
                 await StartAsync(gameId, e, created, ct);
+                return ProjectionOutcome.Applied;
             }
 
-            return;
+            return ProjectionOutcome.Ignored;
         }
 
         switch (IdempotencyGuard.Decide(game.LastSeq, e.Seq))
         {
             case SeqDecision.Skip:
-                return;
+                return ProjectionOutcome.Skipped;
             case SeqDecision.Gap:
                 Utils.Log.ProjectionGap(logger, GroupId, e.AggregateId, game.LastSeq, e.Seq);
                 throw new ProjectionGapException(GroupId, e.AggregateId, game.LastSeq, e.Seq);
@@ -168,6 +169,7 @@ internal sealed class NotificationConsumer(
 
         game.LastSeq = e.Seq;
         await db.SaveChangesAsync(ct);
+        return ProjectionOutcome.Applied;
     }
 
     private async Task StartAsync(Guid gameId, EventEnvelope<JsonElement> e, GameCreated created, CancellationToken ct)

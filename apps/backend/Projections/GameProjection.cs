@@ -23,13 +23,13 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
 
     public string GroupId => "chess.rm-games";
 
-    public async Task ApplyAsync(string key, string json, CancellationToken ct)
+    public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {
         if (!EventJson.TryDeserialize(json, out EventEnvelope<JsonElement>? e)
             || !IsGameEvent(e.Type)
             || !Guid.TryParseExact(e.AggregateId, "N", out Guid gameId))
         {
-            return; // other aggregates share the topic; unreadable records are the runner's to park
+            return ProjectionOutcome.Ignored; // other aggregates share the topic; unreadable records are the runner's to park
         }
 
         RmGame? game = await db.RmGames.SingleOrDefaultAsync(g => g.GameId == gameId, ct);
@@ -38,7 +38,7 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
         {
             case SeqDecision.Skip:
                 Log.ProjectionSkippedReplay(logger, e.AggregateId, e.Seq);
-                return;
+                return ProjectionOutcome.Skipped;
             case SeqDecision.Gap:
                 Log.ProjectionGap(logger, GroupId, e.AggregateId, lastSeq, e.Seq);
                 throw new ProjectionGapException(GroupId, e.AggregateId, lastSeq, e.Seq);
@@ -49,7 +49,7 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
         if (game is null && e.Type != "game.created")
         {
             Log.ProjectionSkippedUncreated(logger, GroupId, e.AggregateId, e.Type);
-            return;
+            return ProjectionOutcome.Ignored;
         }
 
         game = e.Type switch
@@ -61,6 +61,7 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
         };
         game.LastSeq = e.Seq;
         await db.SaveChangesAsync(ct);
+        return ProjectionOutcome.Applied;
     }
 
     private static bool IsGameEvent(string type) =>

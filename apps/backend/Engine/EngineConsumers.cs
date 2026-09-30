@@ -22,26 +22,25 @@ internal sealed class EngineRequestConsumer(ProjectDbContext db, IEngineRequests
 
     public string GroupId => "chess.engine-requests";
 
-    public async Task ApplyAsync(string key, string json, CancellationToken ct)
+    public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {
         if (!EventJson.TryDeserialize(json, out EventEnvelope<JsonElement>? e)
             || !e.Type.StartsWith("game.", StringComparison.Ordinal)
             || !Guid.TryParseExact(e.AggregateId, "N", out Guid gameId))
         {
-            return; // pings share the topic; unreadable records are the runner's to park
+            return ProjectionOutcome.Ignored; // pings share the topic; unreadable records are the runner's to park
         }
 
         EngineGame? game = await db.EngineGames.SingleOrDefaultAsync(g => g.GameId == gameId, ct);
         if (game is null)
         {
-            await StartAsync(gameId, e, ct);
-            return;
+            return await StartAsync(gameId, e, ct);
         }
 
         switch (IdempotencyGuard.Decide(game.LastSeq, e.Seq))
         {
             case SeqDecision.Skip:
-                return;
+                return ProjectionOutcome.Skipped;
             case SeqDecision.Gap:
                 Utils.Log.ProjectionGap(logger, GroupId, e.AggregateId, game.LastSeq, e.Seq);
                 throw new ProjectionGapException(GroupId, e.AggregateId, game.LastSeq, e.Seq);
@@ -60,14 +59,15 @@ internal sealed class EngineRequestConsumer(ProjectDbContext db, IEngineRequests
 
         game.LastSeq = e.Seq;
         await db.SaveChangesAsync(ct);
+        return ProjectionOutcome.Applied;
     }
 
     /// <summary>A game this consumer has no row for: only the creation of a game against the engine matters.</summary>
-    private async Task StartAsync(Guid gameId, EventEnvelope<JsonElement> e, CancellationToken ct)
+    private async Task<ProjectionOutcome> StartAsync(Guid gameId, EventEnvelope<JsonElement> e, CancellationToken ct)
     {
         if (e.Type != "game.created" || e.Payload.Deserialize<GameCreated>() is not { Engine: { } engine })
         {
-            return; // a game between people, or a later event of one
+            return ProjectionOutcome.Ignored; // a game between people, or a later event of one
         }
 
         if (engine.Side == "white")
@@ -78,6 +78,7 @@ internal sealed class EngineRequestConsumer(ProjectDbContext db, IEngineRequests
 
         db.EngineGames.Add(new EngineGame { GameId = gameId, Side = engine.Side, Level = engine.Level, LastSeq = e.Seq });
         await db.SaveChangesAsync(ct);
+        return ProjectionOutcome.Applied;
     }
 
     /// <summary>The FEN's second field: <c>w</c> or <c>b</c>, as the side names games use.</summary>
@@ -96,7 +97,7 @@ internal sealed class EngineMoveConsumer(IRequiredActor<GameActor> games, IOptio
 
     public string GroupId => "chess.engine-moves-apply";
 
-    public async Task ApplyAsync(string key, string json, CancellationToken ct)
+    public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {
         EngineMoveResult? result;
         try
@@ -105,7 +106,7 @@ internal sealed class EngineMoveConsumer(IRequiredActor<GameActor> games, IOptio
         }
         catch (JsonException)
         {
-            return;
+            return ProjectionOutcome.Ignored;
         }
 
         if (result is null
@@ -113,13 +114,17 @@ internal sealed class EngineMoveConsumer(IRequiredActor<GameActor> games, IOptio
             || EngineLevel.Find(result.Level) is not { } level
             || string.IsNullOrEmpty(result.Uci))
         {
-            return;
+            return ProjectionOutcome.Ignored;
         }
 
         object reply = await games.ActorRef.Ask(ActorTracing.Wrap(new MakeMove(gameId, level.UserId, result.Uci, result.Ply)), api.Value.AskTimeout, ct);
         if (reply is GameRejected rejected)
         {
+            // Stale, duplicate or late: the game's own idempotency, so it counts as a skip.
             Utils.Log.EngineMoveDropped(logger, gameId, result.Ply, rejected.Reason);
+            return ProjectionOutcome.Skipped;
         }
+
+        return ProjectionOutcome.Applied;
     }
 }

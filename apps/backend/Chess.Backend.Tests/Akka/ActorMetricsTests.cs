@@ -6,6 +6,7 @@ using Akka.TestKit.Xunit2;
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Games;
+using Chess.Backend.Projections;
 
 namespace Chess.Backend.Tests.Akka;
 
@@ -91,7 +92,7 @@ public sealed partial class ActorMetricsTests : TestKit
     public void No_label_on_any_chess_instrument_is_an_id()
     {
         A_handled_move_is_counted_and_timed_and_its_persist_is_timed_by_event();
-        PipelineMetrics.Projected("chess.rm-games", "applied", TimeSpan.FromMilliseconds(3));
+        PipelineMetrics.Projected("chess.rm-games", ProjectionOutcome.Applied, TimeSpan.FromMilliseconds(3));
         PipelineMetrics.Produced("game.events", 2);
         PipelineMetrics.Lag("game.events", 0);
         PipelineMetrics.Quarantined(new Dictionary<string, int> { ["chess.rm-games"] = 1 });

@@ -46,8 +46,7 @@ internal sealed class ProjectionRunner(
 {
     /// <summary>
     /// Every attempt at the record runs inside one <c>consume {group}</c> span continuing <paramref name="traceParent"/>
-    /// (observability D5), tagged with the outcome: applied, skipped (the idempotency guard said so), parked, or gap;
-    /// each failed attempt is a <c>retry</c> event on it.
+    /// (observability D5), tagged with its <see cref="ProjectionOutcome"/>; each failed attempt is a <c>retry</c> event on it.
     /// </summary>
     public async Task RunAsync(Type projectionType, string groupId, string key, string value, string? traceParent, CancellationToken ct)
     {
@@ -59,14 +58,14 @@ internal sealed class ProjectionRunner(
         try
         {
             // Never inline the call into `consume?.SetTag(...)`: with tracing off the whole call, work included, would be skipped.
-            string outcome = await RunAttemptsAsync(projectionType, groupId, key, value, aggregateId, seq, ct);
-            consume?.SetTag(OutcomeTag, outcome);
+            ProjectionOutcome outcome = await RunAttemptsAsync(projectionType, groupId, key, value, aggregateId, seq, ct);
+            consume?.SetTag(OutcomeTag, outcome.Label());
             PipelineMetrics.Projected(groupId, outcome, Stopwatch.GetElapsedTime(started));
         }
         catch (ProjectionGapException e)
         {
-            PipelineMetrics.Projected(groupId, "gap", Stopwatch.GetElapsedTime(started));
-            consume?.SetTag(OutcomeTag, "gap");
+            PipelineMetrics.Projected(groupId, ProjectionOutcome.Gap, Stopwatch.GetElapsedTime(started));
+            consume?.SetTag(OutcomeTag, ProjectionOutcome.Gap.Label());
             consume?.SetStatus(ActivityStatusCode.Error, e.Message);
             throw;
         }
@@ -74,12 +73,12 @@ internal sealed class ProjectionRunner(
 
     private const string OutcomeTag = "projection.outcome";
 
-    private async Task<string> RunAttemptsAsync(Type projectionType, string groupId, string key, string value, string aggregateId, long seq, CancellationToken ct)
+    private async Task<ProjectionOutcome> RunAttemptsAsync(Type projectionType, string groupId, string key, string value, string aggregateId, long seq, CancellationToken ct)
     {
         if (await ParkedBehindQuarantineAsync(groupId, aggregateId, seq, key, value, ct))
         {
             Log.ProjectionParkedBehindQuarantine(logger, groupId, aggregateId, seq);
-            return "parked";
+            return ProjectionOutcome.Parked;
         }
 
         int attempts = 0;
@@ -91,8 +90,7 @@ internal sealed class ProjectionRunner(
             {
                 await using AsyncServiceScope scope = scopes.CreateAsyncScope();
                 IProjection projection = (IProjection)scope.ServiceProvider.GetRequiredService(projectionType);
-                await projection.ApplyAsync(key, value, ct);
-                return Activity.Current?.GetTagItem(IdempotencyGuard.DecisionTag) is SeqDecision.Skip ? "skipped" : "applied";
+                return await projection.ApplyAsync(key, value, ct);
             }
             catch (ProjectionGapException)
             {
@@ -115,7 +113,7 @@ internal sealed class ProjectionRunner(
                 {
                     await ParkAsync(new ParkRequest(groupId, aggregateId, seq, key, value, attempts, Describe(e), firstFailedAt.Value), ct);
                     Log.ProjectionParked(logger, e, groupId, aggregateId, seq, attempts);
-                    return "parked";
+                    return ProjectionOutcome.Parked;
                 }
 
                 Log.ProjectionAttemptFailed(logger, e, groupId, aggregateId, seq, attempts);
@@ -168,6 +166,42 @@ internal static class ConflictDetector
     };
 }
 
+/// <summary>
+/// What became of one record: the <c>projection.outcome</c> span tag and the <c>outcome</c> label of
+/// <c>chess.projection.records</c>. A projection answers the first three; the runner adds the last two.
+/// </summary>
+internal enum ProjectionOutcome
+{
+    /// <summary>The record changed the read model.</summary>
+    Applied,
+
+    /// <summary>The idempotency guard had seen it already.</summary>
+    Skipped,
+
+    /// <summary>Not this projection's (another aggregate or event type on the topic) or unreadable.</summary>
+    Ignored,
+
+    /// <summary>Dead-lettered: out of attempts, or behind a quarantined record of its aggregate.</summary>
+    Parked,
+
+    /// <summary>An earlier seq never arrived; the stream stalls and restarts.</summary>
+    Gap,
+}
+
+internal static class ProjectionOutcomes
+{
+    /// <summary>The lower-case label dashboards query (<c>outcome="gap"</c>), spelled once.</summary>
+    public static string Label(this ProjectionOutcome outcome) => outcome switch
+    {
+        ProjectionOutcome.Applied => "applied",
+        ProjectionOutcome.Skipped => "skipped",
+        ProjectionOutcome.Ignored => "ignored",
+        ProjectionOutcome.Parked => "parked",
+        ProjectionOutcome.Gap => "gap",
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, null),
+    };
+}
+
 internal enum SeqDecision
 {
     /// <summary>The next event for this aggregate: apply it.</summary>
@@ -188,17 +222,10 @@ internal enum SeqDecision
 /// </summary>
 internal static class IdempotencyGuard
 {
-    /// <summary>The span tag the decision is recorded under, so the consume span can say "skipped".</summary>
-    public const string DecisionTag = "projection.decision";
-
-    public static SeqDecision Decide(long lastSeq, long seq)
-    {
-        SeqDecision decision = seq <= lastSeq ? SeqDecision.Skip
-            : seq == lastSeq + 1 ? SeqDecision.Apply
-            : SeqDecision.Gap;
-        Activity.Current?.SetTag(DecisionTag, decision);
-        return decision;
-    }
+    public static SeqDecision Decide(long lastSeq, long seq) =>
+        seq <= lastSeq ? SeqDecision.Skip
+        : seq == lastSeq + 1 ? SeqDecision.Apply
+        : SeqDecision.Gap;
 }
 
 internal sealed class ProjectionGapException : Exception

@@ -10,11 +10,11 @@ internal sealed class PingProjection(ProjectDbContext db, ILogger<PingProjection
 
     public string GroupId => "chess.rm-pings";
 
-    public async Task ApplyAsync(string key, string json, CancellationToken ct)
+    public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {
         if (!EventJson.TryDeserialize(json, out EventEnvelope<Pinged>? e) || e.Type != EventTypes.Pinged)
         {
-            return; // other aggregates share the topic; not ours
+            return ProjectionOutcome.Ignored; // other aggregates share the topic; not ours
         }
 
         // Shape 1 of design D10: the read row carries its own high-water mark, saved with the update below.
@@ -24,7 +24,7 @@ internal sealed class PingProjection(ProjectDbContext db, ILogger<PingProjection
         {
             case SeqDecision.Skip:
                 Log.ProjectionSkippedReplay(logger, e.AggregateId, e.Seq);
-                return;
+                return ProjectionOutcome.Skipped;
             case SeqDecision.Gap:
                 Log.ProjectionGap(logger, GroupId, e.AggregateId, lastSeq, e.Seq);
                 throw new ProjectionGapException(GroupId, e.AggregateId, lastSeq, e.Seq);
@@ -42,5 +42,6 @@ internal sealed class PingProjection(ProjectDbContext db, ILogger<PingProjection
         row.LastSeq = e.Seq;
         row.UpdatedAt = e.At;
         await db.SaveChangesAsync(ct);
+        return ProjectionOutcome.Applied;
     }
 }

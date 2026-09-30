@@ -38,7 +38,7 @@ public sealed class ProjectionConflictTests(PostgresFixture pg) : IClassFixture<
 
         public string GroupId => _inner.GroupId;
 
-        public Task ApplyAsync(string key, string json, CancellationToken ct)
+        public Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
         {
             Calls++;
             return _inner.ApplyAsync(key, json, ct);

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using Akka.Cluster.Sharding;
 using Akka.Event;
+using Chess.Backend.Projections;
 
 namespace Chess.Backend.Akka;
 
@@ -33,9 +34,9 @@ internal static class PipelineMetrics
 
     public static void Produced(string topic, int count) => Published.Add(count, new TagList { { "topic", topic } });
 
-    public static void Projected(string group, string outcome, TimeSpan elapsed)
+    public static void Projected(string group, ProjectionOutcome outcome, TimeSpan elapsed)
     {
-        Records.Add(1, new TagList { { "group", group }, { "outcome", outcome } });
+        Records.Add(1, new TagList { { "group", group }, { "outcome", outcome.Label() } });
         RecordDuration.Record(elapsed.TotalSeconds, new TagList { { "group", group } });
     }
 

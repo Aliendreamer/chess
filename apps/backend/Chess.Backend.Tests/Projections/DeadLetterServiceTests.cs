@@ -119,7 +119,7 @@ public sealed class DeadLetterServiceTests
 
         public string GroupId => _inner.GroupId;
 
-        public Task ApplyAsync(string key, string json, CancellationToken ct) =>
+        public Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct) =>
             sw.Broken ? throw new InvalidOperationException("still broken") : _inner.ApplyAsync(key, json, ct);
     }
 
