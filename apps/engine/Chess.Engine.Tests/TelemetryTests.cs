@@ -64,7 +64,7 @@ public sealed class TelemetryTests : IDisposable
         ActivityTraceId traceId = ActivityTraceId.CreateRandom();
         string asker = $"00-{traceId.ToHexString()}-b7ad6b7169203331-01";
 
-        Message<string, string>? result = await EngineTelemetry.ProcessAsync("move", Request(asker), Answer, CancellationToken.None);
+        Message<string, string>? result = await EngineTelemetry.ProcessAsync(JobKind.Move, Request(asker), Answer, CancellationToken.None);
 
         Activity job = Assert.Single(_stopped, a => a.TraceId == traceId);
         Assert.Equal("engine move", job.OperationName);
@@ -77,7 +77,7 @@ public sealed class TelemetryTests : IDisposable
     [Fact]
     public async Task A_job_nobody_traced_starts_a_trace_of_its_own()
     {
-        Message<string, string>? result = await EngineTelemetry.ProcessAsync("analysis", Request(null), Answer, CancellationToken.None);
+        Message<string, string>? result = await EngineTelemetry.ProcessAsync(JobKind.Analysis, Request(null), Answer, CancellationToken.None);
 
         Activity job = Assert.Single(_stopped, a => a.Id == Header(result!));
         Assert.Equal("engine analysis", job.OperationName);
@@ -88,7 +88,7 @@ public sealed class TelemetryTests : IDisposable
     public async Task A_dropped_job_is_counted_and_answers_nothing()
     {
         Message<string, string>? result = await EngineTelemetry.ProcessAsync(
-            "analysis", Request(null), (_, _) => Task.FromResult<Message<string, string>?>(null), CancellationToken.None);
+            JobKind.Analysis, Request(null), (_, _) => Task.FromResult<Message<string, string>?>(null), CancellationToken.None);
 
         Assert.Null(result);
         Assert.Contains(_measured, m => m.Instrument == "chess.engine.jobs" && Equals(m.Tags["kind"], "analysis") && Equals(m.Tags["outcome"], "dropped"));

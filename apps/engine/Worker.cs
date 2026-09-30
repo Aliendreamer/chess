@@ -6,6 +6,8 @@ namespace Chess.Engine;
 /// <summary>
 /// The topics the worker serves: moves for games against the computer (engine-play D1) and position analysis
 /// (engine-analysis D3). Each has its own consumer group and processes, so analysis never delays a move.
+/// The backend cannot share this code: its <c>EngineTopics</c> and <c>AnalysisTopics</c> must spell them the same
+/// (pinned in its <c>WireNamesTests</c>).
 /// </summary>
 internal static class EngineTopics
 {
@@ -98,7 +100,7 @@ internal sealed class KafkaOptions
 /// One engine process and its lifecycle, shared by both kinds of job: started on first use, replaced when it hangs or
 /// exits, and a failed search tried once more on a fresh one; after that the job is dropped (the asker asks again).
 /// </summary>
-internal sealed class EngineSession(Func<CancellationToken, Task<UciEngine>> startEngine, ILogger logger) : IAsyncDisposable
+internal sealed class EngineSession(JobKind kind, Func<CancellationToken, Task<UciEngine>> startEngine, ILogger logger) : IAsyncDisposable
 {
     private UciEngine? _engine;
 
@@ -123,7 +125,7 @@ internal sealed class EngineSession(Func<CancellationToken, Task<UciEngine>> sta
                 }
 
                 Log.EngineRestarting(logger, e, job);
-                EngineTelemetry.Restarted(job);
+                EngineTelemetry.Restarted(kind);
             }
         }
     }
@@ -191,7 +193,7 @@ internal sealed class MoveHandler(
 {
     internal static readonly JsonSerializerOptions Json = Requests.Json;
 
-    private readonly EngineSession _session = new(startEngine, logger);
+    private readonly EngineSession _session = new(JobKind.Move, startEngine, logger);
 
     public async Task<MoveResult?> HandleAsync(string json, CancellationToken ct)
     {
@@ -199,7 +201,7 @@ internal sealed class MoveHandler(
         if (request is null || string.IsNullOrWhiteSpace(request.GameId) || string.IsNullOrWhiteSpace(request.Fen))
         {
             Log.RequestUnreadable(logger);
-            EngineTelemetry.DroppedRequest("move", "unreadable");
+            EngineTelemetry.DroppedRequest(JobKind.Move, DropReason.Unreadable);
             return null;
         }
 
@@ -207,14 +209,14 @@ internal sealed class MoveHandler(
         if (!EngineLevel.TryParse(request.Level, out EngineLevel level) || request.ThinkMs <= 0 || request.ThinkMs > options.MaxThinkMs)
         {
             Log.RequestRefused(logger, job, request.Level, request.ThinkMs);
-            EngineTelemetry.DroppedRequest("move", "refused");
+            EngineTelemetry.DroppedRequest(JobKind.Move, DropReason.Refused);
             return null;
         }
 
         if (Requests.Stale(request.RequestedAt, clock, options, out long ageSeconds))
         {
             Log.RequestStale(logger, job, ageSeconds);
-            EngineTelemetry.DroppedRequest("move", "stale");
+            EngineTelemetry.DroppedRequest(JobKind.Move, DropReason.Stale);
             return null;
         }
 
@@ -248,7 +250,7 @@ internal sealed class AnalysisHandler(
 {
     public const int MaxLines = 5;
 
-    private readonly EngineSession _session = new(startEngine, logger);
+    private readonly EngineSession _session = new(JobKind.Analysis, startEngine, logger);
 
     public async Task<AnalysisResult?> HandleAsync(string json, CancellationToken ct)
     {
@@ -256,7 +258,7 @@ internal sealed class AnalysisHandler(
         if (request is null || string.IsNullOrWhiteSpace(request.Key) || string.IsNullOrWhiteSpace(request.Fen))
         {
             Log.RequestUnreadable(logger);
-            EngineTelemetry.DroppedRequest("analysis", "unreadable");
+            EngineTelemetry.DroppedRequest(JobKind.Analysis, DropReason.Unreadable);
             return null;
         }
 
@@ -264,14 +266,14 @@ internal sealed class AnalysisHandler(
         if (request.ThinkMs <= 0 || request.ThinkMs > options.MaxThinkMs || request.MultiPv is < 1 or > MaxLines)
         {
             Log.RequestRefused(logger, job, $"{request.MultiPv} lines", request.ThinkMs);
-            EngineTelemetry.DroppedRequest("analysis", "refused");
+            EngineTelemetry.DroppedRequest(JobKind.Analysis, DropReason.Refused);
             return null;
         }
 
         if (Requests.Stale(request.RequestedAt, clock, options, out long ageSeconds))
         {
             Log.RequestStale(logger, job, ageSeconds);
-            EngineTelemetry.DroppedRequest("analysis", "stale");
+            EngineTelemetry.DroppedRequest(JobKind.Analysis, DropReason.Stale);
             return null;
         }
 
@@ -306,7 +308,7 @@ internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, Tim
         Log.WorkerStarted(logger, engine.Processes, EngineTopics.Requests);
         Log.WorkerStarted(logger, engine.AnalysisProcesses, EngineTopics.AnalysisRequests);
         IEnumerable<Task> moves = Enumerable.Range(0, engine.Processes).Select(n => Loop(
-            "move", $"chess-engine-move-{n}", EngineTopics.Requests, kafka.GroupId, producer, () =>
+            JobKind.Move, $"chess-engine-move-{n}", EngineTopics.Requests, kafka.GroupId, producer, () =>
             {
                 MoveHandler handler = new(StartEngineAsync, engine, clock, logger);
                 return (async (json, ct) => await handler.HandleAsync(json, ct).ConfigureAwait(false) is { } r
@@ -314,7 +316,7 @@ internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, Tim
                     : null, handler, EngineTopics.Results);
             }, stoppingToken));
         IEnumerable<Task> analysis = Enumerable.Range(0, engine.AnalysisProcesses).Select(n => Loop(
-            "analysis", $"chess-engine-analysis-{n}", EngineTopics.AnalysisRequests, kafka.AnalysisGroupId, producer, () =>
+            JobKind.Analysis, $"chess-engine-analysis-{n}", EngineTopics.AnalysisRequests, kafka.AnalysisGroupId, producer, () =>
             {
                 AnalysisHandler handler = new(StartEngineAsync, engine, clock, logger);
                 return (async (json, ct) => await handler.HandleAsync(json, ct).ConfigureAwait(false) is { } r
@@ -326,7 +328,7 @@ internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, Tim
     }
 
     private Task Loop(
-        string kind,
+        JobKind kind,
         string clientId,
         string topic,
         string groupId,
@@ -370,7 +372,7 @@ internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, Tim
             TaskScheduler.Default).Unwrap();
 
     private async Task StepAsync(
-        string kind,
+        JobKind kind,
         IConsumer<string, string> consumer,
         IProducer<string, string> producer,
         Func<string, CancellationToken, Task<Message<string, string>?>> handle,
