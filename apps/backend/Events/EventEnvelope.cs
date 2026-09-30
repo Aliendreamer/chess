@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -15,6 +16,28 @@ internal sealed record EventEnvelope<T>(
 internal static class EventTypes
 {
     public const string Pinged = "ping.pinged";
+}
+
+/// <summary>
+/// The envelope <c>type</c> of every game event on <see cref="Akka.Outbox.GameTopics.Kafka"/>. Written by the mappers and
+/// matched by every consumer; the values are on the wire and in replays, so they never change.
+/// </summary>
+internal static class GameEventTypes
+{
+    /// <summary>What every game event type starts with.</summary>
+    public const string Prefix = "game.";
+
+    public const string Created = "game.created";
+    public const string MoveMade = "game.move-made";
+    public const string DrawOffered = "game.draw-offered";
+    public const string DrawDeclined = "game.draw-declined";
+    public const string Ended = "game.ended";
+    public const string PlayerLeft = "game.player-left";
+    public const string PlayerReturned = "game.player-returned";
+    public const string AbandonmentOffered = "game.abandonment-offered";
+
+    public static readonly FrozenSet<string> All = FrozenSet.ToFrozenSet(
+        [Created, MoveMade, DrawOffered, DrawDeclined, Ended, PlayerLeft, PlayerReturned, AbandonmentOffered], StringComparer.Ordinal);
 }
 
 internal static class EventJson

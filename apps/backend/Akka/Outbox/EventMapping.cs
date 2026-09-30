@@ -120,14 +120,14 @@ internal static class GameJournalMappers
 {
     public static IEnumerable<IJournalEventMapper> All() =>
     [
-        new GameJournalMapper<GameCreated>("game.created", e => e.At),
-        new GameJournalMapper<MoveMade>("game.move-made", e => e.At),
-        new GameJournalMapper<DrawOffered>("game.draw-offered", e => e.At),
-        new GameJournalMapper<DrawDeclined>("game.draw-declined", e => e.At),
-        new GameJournalMapper<GameEnded>("game.ended", e => e.At),
-        new GameJournalMapper<PlayerLeft>("game.player-left", e => e.At),
-        new GameJournalMapper<PlayerReturned>("game.player-returned", e => e.At),
-        new GameJournalMapper<AbandonmentOffered>("game.abandonment-offered", e => e.At),
+        new GameJournalMapper<GameCreated>(GameEventTypes.Created, e => e.At),
+        new GameJournalMapper<MoveMade>(GameEventTypes.MoveMade, e => e.At),
+        new GameJournalMapper<DrawOffered>(GameEventTypes.DrawOffered, e => e.At),
+        new GameJournalMapper<DrawDeclined>(GameEventTypes.DrawDeclined, e => e.At),
+        new GameJournalMapper<GameEnded>(GameEventTypes.Ended, e => e.At),
+        new GameJournalMapper<PlayerLeft>(GameEventTypes.PlayerLeft, e => e.At),
+        new GameJournalMapper<PlayerReturned>(GameEventTypes.PlayerReturned, e => e.At),
+        new GameJournalMapper<AbandonmentOffered>(GameEventTypes.AbandonmentOffered, e => e.At),
     ];
 }
 

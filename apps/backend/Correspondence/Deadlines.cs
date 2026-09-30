@@ -3,6 +3,7 @@ using Akka.Actor;
 using Akka.Event;
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
+using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Events;
 using Chess.Backend.Extensions;
 using Chess.Backend.Games;
@@ -42,14 +43,14 @@ internal sealed class CorrespondenceOptions : ISettings
 /// </summary>
 internal sealed class DeadlineProjection(ProjectDbContext db, IOptions<CorrespondenceOptions> options, ILogger<DeadlineProjection> logger) : IProjection
 {
-    public string Topic => "game.events";
+    public string Topic => GameTopics.Kafka;
 
-    public string GroupId => "chess.deadlines";
+    public string GroupId => ConsumerGroups.Deadlines;
 
     public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {
         if (!EventJson.TryDeserialize(json, out EventEnvelope<JsonElement>? e)
-            || !e.Type.StartsWith("game.", StringComparison.Ordinal)
+            || !e.Type.StartsWith(GameEventTypes.Prefix, StringComparison.Ordinal)
             || !Guid.TryParseExact(e.AggregateId, "N", out Guid gameId))
         {
             return ProjectionOutcome.Ignored;
@@ -58,7 +59,7 @@ internal sealed class DeadlineProjection(ProjectDbContext db, IOptions<Correspon
         GameDeadline? row = await db.GameDeadlines.SingleOrDefaultAsync(d => d.GameId == gameId, ct);
         if (row is null)
         {
-            if (e.Type == "game.created" && e.Payload.Deserialize<GameCreated>() is { } created
+            if (e.Type == GameEventTypes.Created && e.Payload.Deserialize<GameCreated>() is { } created
                 && created.TimeControl == TimeControl.Correspondence7.ToString())
             {
                 db.GameDeadlines.Add(new GameDeadline { GameId = gameId, DueAt = e.At + options.Value.MoveDeadline, LastSeq = e.Seq });
@@ -78,11 +79,11 @@ internal sealed class DeadlineProjection(ProjectDbContext db, IOptions<Correspon
                 throw new ProjectionGapException(GroupId, e.AggregateId, row.LastSeq, e.Seq);
         }
 
-        if (e.Type == "game.move-made" && row.DueAt is not null)
+        if (e.Type == GameEventTypes.MoveMade && row.DueAt is not null)
         {
             row.DueAt = e.At + options.Value.MoveDeadline;
         }
-        else if (e.Type == "game.ended")
+        else if (e.Type == GameEventTypes.Ended)
         {
             row.DueAt = null;
         }

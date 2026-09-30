@@ -2,6 +2,21 @@ using Chess.Backend.Events;
 
 namespace Chess.Backend.Projections;
 
+/// <summary>
+/// Every projection's Kafka consumer group. A group id is also its committed offsets, its dead-letter key and its
+/// <c>group</c> metric label: renaming one re-reads the topic from the start and orphans parked records.
+/// </summary>
+internal static class ConsumerGroups
+{
+    public const string RmGames = "chess.rm-games";
+    public const string RmPings = "chess.rm-pings";
+    public const string Deadlines = "chess.deadlines";
+    public const string Notifications = "chess.notifications";
+    public const string EngineRequests = "chess.engine-requests";
+    public const string EngineMovesApply = "chess.engine-moves-apply";
+    public const string AnalysisResults = "chess.analysis-results";
+}
+
 internal interface IProjection
 {
     string Topic { get; }

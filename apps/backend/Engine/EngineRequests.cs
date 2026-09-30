@@ -6,7 +6,10 @@ using Confluent.Kafka;
 
 namespace Chess.Backend.Engine;
 
-/// <summary>The play topics the engine worker (<c>apps/engine</c>) reads and answers on (engine-play D1).</summary>
+/// <summary>
+/// The play topics the engine worker (<c>apps/engine</c>) reads and answers on (engine-play D1). The worker cannot share
+/// this code: its own <c>EngineTopics</c> (apps/engine/Worker.cs) must spell them the same.
+/// </summary>
 internal static class EngineTopics
 {
     public const string Requests = "engine.moves.requests";

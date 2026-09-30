@@ -3,6 +3,7 @@ using Akka.Actor;
 using Akka.Hosting;
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
+using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Events;
 using Chess.Backend.Extensions;
 using Chess.Backend.Games;
@@ -18,14 +19,14 @@ namespace Chess.Backend.Engine;
 /// </summary>
 internal sealed class EngineRequestConsumer(ProjectDbContext db, IEngineRequests requests, ILogger<EngineRequestConsumer> logger) : IProjection
 {
-    public string Topic => "game.events";
+    public string Topic => GameTopics.Kafka;
 
-    public string GroupId => "chess.engine-requests";
+    public string GroupId => ConsumerGroups.EngineRequests;
 
     public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {
         if (!EventJson.TryDeserialize(json, out EventEnvelope<JsonElement>? e)
-            || !e.Type.StartsWith("game.", StringComparison.Ordinal)
+            || !e.Type.StartsWith(GameEventTypes.Prefix, StringComparison.Ordinal)
             || !Guid.TryParseExact(e.AggregateId, "N", out Guid gameId))
         {
             return ProjectionOutcome.Ignored; // pings share the topic; unreadable records are the runner's to park
@@ -46,13 +47,13 @@ internal sealed class EngineRequestConsumer(ProjectDbContext db, IEngineRequests
                 throw new ProjectionGapException(GroupId, e.AggregateId, game.LastSeq, e.Seq);
         }
 
-        if (e.Type == "game.move-made" && !game.Ended
+        if (e.Type == GameEventTypes.MoveMade && !game.Ended
             && e.Payload.Deserialize<MoveMade>() is { } move && SideToMove(move.FenAfter) == game.Side)
         {
             await requests.RequestAsync(gameId, move.Ply, move.FenAfter, game.Level, ct);
             Utils.Log.EngineRequested(logger, gameId, move.Ply, game.Level);
         }
-        else if (e.Type == "game.ended")
+        else if (e.Type == GameEventTypes.Ended)
         {
             game.Ended = true;
         }
@@ -65,7 +66,7 @@ internal sealed class EngineRequestConsumer(ProjectDbContext db, IEngineRequests
     /// <summary>A game this consumer has no row for: only the creation of a game against the engine matters.</summary>
     private async Task<ProjectionOutcome> StartAsync(Guid gameId, EventEnvelope<JsonElement> e, CancellationToken ct)
     {
-        if (e.Type != "game.created" || e.Payload.Deserialize<GameCreated>() is not { Engine: { } engine })
+        if (e.Type != GameEventTypes.Created || e.Payload.Deserialize<GameCreated>() is not { Engine: { } engine })
         {
             return ProjectionOutcome.Ignored; // a game between people, or a later event of one
         }
@@ -95,7 +96,7 @@ internal sealed class EngineMoveConsumer(IRequiredActor<GameActor> games, IOptio
 {
     public string Topic => EngineTopics.Results;
 
-    public string GroupId => "chess.engine-moves-apply";
+    public string GroupId => ConsumerGroups.EngineMovesApply;
 
     public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {

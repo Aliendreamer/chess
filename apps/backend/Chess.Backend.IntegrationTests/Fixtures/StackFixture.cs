@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
+using Chess.Backend.Analysis;
+using Chess.Backend.Engine;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using DotNet.Testcontainers.Builders;
@@ -135,10 +137,10 @@ public sealed class StackFixture : IAsyncLifetime
         using IAdminClient admin = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = BootstrapServers }).Build();
         await admin.CreateTopicsAsync(
         [
-            new TopicSpecification { Name = "engine.moves.requests", NumPartitions = 3, ReplicationFactor = 1 },
-            new TopicSpecification { Name = "engine.moves.results", NumPartitions = 3, ReplicationFactor = 1 },
-            new TopicSpecification { Name = "analysis.requests", NumPartitions = 3, ReplicationFactor = 1 },
-            new TopicSpecification { Name = "analysis.results", NumPartitions = 3, ReplicationFactor = 1 },
+            new TopicSpecification { Name = EngineTopics.Requests, NumPartitions = 3, ReplicationFactor = 1 },
+            new TopicSpecification { Name = EngineTopics.Results, NumPartitions = 3, ReplicationFactor = 1 },
+            new TopicSpecification { Name = AnalysisTopics.Requests, NumPartitions = 3, ReplicationFactor = 1 },
+            new TopicSpecification { Name = AnalysisTopics.Results, NumPartitions = 3, ReplicationFactor = 1 },
         ]);
     }
 

@@ -24,7 +24,7 @@ internal sealed record PingSnapshot(long Count, string? LastText, DateTimeOffset
 internal static class PingTopics
 {
     /// <summary>Reusing the game topic on purpose: the ping is a stand-in for a game aggregate.</summary>
-    public const string Kafka = "game.events";
+    public const string Kafka = Outbox.GameTopics.Kafka;
     public const string ShardTypeName = "pings";
 
     public static string Key(string pingId) => "ping:" + pingId;

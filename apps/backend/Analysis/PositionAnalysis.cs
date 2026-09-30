@@ -8,6 +8,16 @@ using Confluent.Kafka;
 
 namespace Chess.Backend.Analysis;
 
+/// <summary>
+/// The analysis topics (engine-analysis D3). The worker cannot share this code: its <c>EngineTopics</c>
+/// (apps/engine/Worker.cs) must spell them the same.
+/// </summary>
+internal static class AnalysisTopics
+{
+    public const string Requests = "analysis.requests";
+    public const string Results = "analysis.results";
+}
+
 /// <summary>Section <c>Analysis</c> (engine-analysis): the think times, the lines per position and the retry time.</summary>
 internal sealed class AnalysisOptions : ISettings
 {
@@ -140,8 +150,6 @@ internal interface IAnalysisRequests
 [ExcludeFromCodeCoverage(Justification = "A Kafka producer; exercised by the integration and live checks.")]
 internal sealed class KafkaAnalysisRequests(string bootstrapServers) : IAnalysisRequests, IDisposable
 {
-    public const string Topic = "analysis.requests";
-
     private readonly IProducer<string, string> _producer = new ProducerBuilder<string, string>(new ProducerConfig
     {
         BootstrapServers = bootstrapServers,
@@ -152,7 +160,7 @@ internal sealed class KafkaAnalysisRequests(string bootstrapServers) : IAnalysis
     public Task RequestAsync(AnalysisRequestMessage request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return _producer.ProduceAsync(Topic, new Message<string, string> { Key = request.Key, Value = JsonSerializer.Serialize(request), Headers = PipelineTracing.CurrentHeaders() }, ct);
+        return _producer.ProduceAsync(AnalysisTopics.Requests, new Message<string, string> { Key = request.Key, Value = JsonSerializer.Serialize(request), Headers = PipelineTracing.CurrentHeaders() }, ct);
     }
 
     public void Dispose()
@@ -234,9 +242,9 @@ internal sealed class AnalysisService(
 /// </summary>
 internal sealed class AnalysisResultConsumer(ProjectDbContext db, TimeProvider clock) : IProjection
 {
-    public string Topic => "analysis.results";
+    public string Topic => AnalysisTopics.Results;
 
-    public string GroupId => "chess.analysis-results";
+    public string GroupId => ConsumerGroups.AnalysisResults;
 
     public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {

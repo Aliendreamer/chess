@@ -48,7 +48,7 @@ public sealed class AnalysisFlowTests(StackFixture stack)
             GroupId = $"it-fake-analysis-{Guid.NewGuid():N}",
             AutoOffsetReset = AutoOffsetReset.Earliest,
         }).Build();
-        engine.Subscribe(KafkaAnalysisRequests.Topic);
+        engine.Subscribe(AnalysisTopics.Requests);
 
         AnalysisView first = await AnalyseAsync(client, subject, "normal", ct);
         Assert.Equal((Key, (EvaluationView?)null), (first.Key, first.Evaluation));
@@ -58,7 +58,7 @@ public sealed class AnalysisFlowTests(StackFixture stack)
         using (IProducer<string, string> producer = new ProducerBuilder<string, string>(new ProducerConfig { BootstrapServers = stack.BootstrapServers }).Build())
         {
             AnalysisResultMessage result = new(Key, Fen, 3_000, 24, [new EvaluationLine(250, null, ["e1d2", "e8d7"])]);
-            producer.Produce("analysis.results", new Message<string, string> { Key = Key, Value = JsonSerializer.Serialize(result) });
+            producer.Produce(AnalysisTopics.Results, new Message<string, string> { Key = Key, Value = JsonSerializer.Serialize(result) });
             producer.Flush(TimeSpan.FromSeconds(10));
         }
 

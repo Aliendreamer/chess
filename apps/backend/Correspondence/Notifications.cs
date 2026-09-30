@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Authentication;
 using Chess.Backend.Events;
 using Chess.Backend.Extensions;
@@ -121,14 +122,14 @@ internal sealed class NotificationConsumer(
     IOptions<KeycloakOptions> keycloak,
     ILogger<NotificationConsumer> logger) : IProjection
 {
-    public string Topic => "game.events";
+    public string Topic => GameTopics.Kafka;
 
-    public string GroupId => "chess.notifications";
+    public string GroupId => ConsumerGroups.Notifications;
 
     public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {
         if (!EventJson.TryDeserialize(json, out EventEnvelope<JsonElement>? e)
-            || !e.Type.StartsWith("game.", StringComparison.Ordinal)
+            || !e.Type.StartsWith(GameEventTypes.Prefix, StringComparison.Ordinal)
             || !Guid.TryParseExact(e.AggregateId, "N", out Guid gameId))
         {
             return ProjectionOutcome.Ignored;
@@ -137,7 +138,7 @@ internal sealed class NotificationConsumer(
         NotificationGame? game = await db.NotificationGames.SingleOrDefaultAsync(g => g.GameId == gameId, ct);
         if (game is null)
         {
-            if (e.Type == "game.created" && e.Payload.Deserialize<GameCreated>() is { } created
+            if (e.Type == GameEventTypes.Created && e.Payload.Deserialize<GameCreated>() is { } created
                 && created.TimeControl == TimeControl.Correspondence7.ToString())
             {
                 await StartAsync(gameId, e, created, ct);
@@ -156,12 +157,12 @@ internal sealed class NotificationConsumer(
                 throw new ProjectionGapException(GroupId, e.AggregateId, game.LastSeq, e.Seq);
         }
 
-        if (e.Type == "game.move-made" && e.Payload.Deserialize<MoveMade>() is { } move)
+        if (e.Type == GameEventTypes.MoveMade && e.Payload.Deserialize<MoveMade>() is { } move)
         {
             bool whiteToMove = move.FenAfter.Split(' ') is [_, "w", ..];
             await YourMoveAsync(game, whiteToMove, move.San, e.At, ct);
         }
-        else if (e.Type == "game.ended" && e.Payload.Deserialize<GameEnded>() is { } end)
+        else if (e.Type == GameEventTypes.Ended && e.Payload.Deserialize<GameEnded>() is { } end)
         {
             await MailAsync(game.WhiteId, NotificationMails.Ended(string.Empty, game.BlackName, NotificationMails.Outcome(end.Result, true), end.Reason, Url(game.GameId)), ct);
             await MailAsync(game.BlackId, NotificationMails.Ended(string.Empty, game.WhiteName, NotificationMails.Outcome(end.Result, false), end.Reason, Url(game.GameId)), ct);

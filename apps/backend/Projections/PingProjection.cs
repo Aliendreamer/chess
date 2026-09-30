@@ -8,7 +8,7 @@ internal sealed class PingProjection(ProjectDbContext db, ILogger<PingProjection
 {
     public string Topic => PingTopics.Kafka;
 
-    public string GroupId => "chess.rm-pings";
+    public string GroupId => ConsumerGroups.RmPings;
 
     public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {

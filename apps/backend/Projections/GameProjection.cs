@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Data.ReadModels;
 using Chess.Backend.Events;
 using Chess.Backend.Games;
@@ -19,14 +20,14 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
     /// <summary>The PGN <c>Site</c> tag.</summary>
     public const string Site = "chess";
 
-    public string Topic => "game.events";
+    public string Topic => GameTopics.Kafka;
 
-    public string GroupId => "chess.rm-games";
+    public string GroupId => ConsumerGroups.RmGames;
 
     public async Task<ProjectionOutcome> ApplyAsync(string key, string json, CancellationToken ct)
     {
         if (!EventJson.TryDeserialize(json, out EventEnvelope<JsonElement>? e)
-            || !IsGameEvent(e.Type)
+            || !GameEventTypes.All.Contains(e.Type)
             || !Guid.TryParseExact(e.AggregateId, "N", out Guid gameId))
         {
             return ProjectionOutcome.Ignored; // other aggregates share the topic; unreadable records are the runner's to park
@@ -46,7 +47,7 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
 
         // A game's stream starts with its creation. Anything else first is not a game: GameActor used to journal an
         // abort for ids that were never created, and there is no row to put it on.
-        if (game is null && e.Type != "game.created")
+        if (game is null && e.Type != GameEventTypes.Created)
         {
             Log.ProjectionSkippedUncreated(logger, GroupId, e.AggregateId, e.Type);
             return ProjectionOutcome.Ignored;
@@ -54,19 +55,15 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
 
         game = e.Type switch
         {
-            "game.created" => await CreateAsync(gameId, Payload<GameCreated>(e), ct),
-            "game.move-made" => Moved(game!, gameId, Payload<MoveMade>(e)),
-            "game.ended" => await EndedAsync(game!, Payload<GameEnded>(e), ct),
+            GameEventTypes.Created => await CreateAsync(gameId, Payload<GameCreated>(e), ct),
+            GameEventTypes.MoveMade => Moved(game!, gameId, Payload<MoveMade>(e)),
+            GameEventTypes.Ended => await EndedAsync(game!, Payload<GameEnded>(e), ct),
             _ => game!, // draw and presence events: nothing to show in lists, only the watermark moves
         };
         game.LastSeq = e.Seq;
         await db.SaveChangesAsync(ct);
         return ProjectionOutcome.Applied;
     }
-
-    private static bool IsGameEvent(string type) =>
-        type is "game.created" or "game.move-made" or "game.draw-offered" or "game.draw-declined" or "game.ended"
-            or "game.player-left" or "game.player-returned" or "game.abandonment-offered";
 
     private static T Payload<T>(EventEnvelope<JsonElement> e) =>
         e.Payload.Deserialize<T>(EventJson.Options)
