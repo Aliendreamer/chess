@@ -177,7 +177,7 @@ if [[ "$CLUSTER" == "1" ]]; then
     || fail "resign was refused"
   for i in $(seq 1 40); do
     game="$(as "$SID_P" "http://$API_HOST/api/games/$MOVED")"
-    if grep -q '"result":"0-1"' <<<"$game" && grep -q '"reason":"Resignation"' <<<"$game"; then echo "ok"; break; fi
+    if grep -q '"result":"0-1"' <<<"$game" && grep -q '"reason":"resignation"' <<<"$game"; then echo "ok"; break; fi
     [[ "$i" -eq 40 ]] && fail "read side did not show the resignation: $game"
     sleep 0.25
   done
