@@ -121,6 +121,39 @@ public sealed class MatchmakingFlowTests(StackFixture stack)
         Assert.Equal(HttpStatusCode.NotFound, (await Api.GetAsync(client, $"/api/invites/{Guid.NewGuid():N}", $"it-friend-{run}", ct)).StatusCode);
     }
 
+    [Fact]
+    public async Task Both_players_asking_for_a_rematch_start_it_with_the_colours_swapped()
+    {
+        using CancellationTokenSource cts = new(TestTimeout);
+        CancellationToken ct = cts.Token;
+        await using PingApiFactory app = new();
+        using HttpClient client = await app.CreateReadyClientAsync(ct);
+        string run = Guid.NewGuid().ToString("N")[..8];
+        long creator = await Api.ProvisionAsync(client, $"it-creator-{run}", ct);
+        long friend = await Api.ProvisionAsync(client, $"it-friend-{run}", ct);
+        await Api.ProvisionAsync(client, $"it-watcher-{run}", ct);
+
+        // A game the creator plays as White, aborted before any move.
+        Invite created = await ReadAsync<Invite>(
+            await SendAsync(client, HttpMethod.Post, "/api/invites", $"it-creator-{run}", new { timeControl = "3+2", color = "white" }, ct),
+            HttpStatusCode.Created,
+            ct);
+        Invite taken = await ReadAsync<Invite>(await SendAsync(client, HttpMethod.Post, $"/api/invites/{created.InviteId:N}/accept", $"it-friend-{run}", null, ct), HttpStatusCode.OK, ct);
+        string game = $"/api/games/{taken.GameId:N}";
+        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Post, $"{game}/rematch", $"it-creator-{run}", null, ct)).StatusCode);
+        (await SendAsync(client, HttpMethod.Post, $"{game}/abort", $"it-creator-{run}", null, ct)).EnsureSuccessStatusCode();
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, $"{game}/rematch", $"it-watcher-{run}", null, ct)).StatusCode);
+        Invite offered = await ReadAsync<Invite>(await SendAsync(client, HttpMethod.Post, $"{game}/rematch", $"it-creator-{run}", null, ct), HttpStatusCode.OK, ct);
+        Assert.Equal((taken.GameId, "open", "black"), (offered.InviteId, offered.Status, offered.Color));
+        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, $"/api/invites/{taken.GameId:N}/accept", $"it-watcher-{run}", null, ct)).StatusCode);
+
+        Invite agreed = await ReadAsync<Invite>(await SendAsync(client, HttpMethod.Post, $"{game}/rematch", $"it-friend-{run}", null, ct), HttpStatusCode.OK, ct);
+        Assert.Equal("accepted", agreed.Status);
+        Game rematch = await ReadAsync<Game>(await Api.GetAsync(client, $"/api/games/{agreed.GameId:N}/live", $"it-friend-{run}", ct), HttpStatusCode.OK, ct);
+        Assert.Equal((friend, creator, "3+2"), (rematch.WhiteId, rematch.BlackId, rematch.TimeControl));
+    }
+
     private static Task<HttpResponseMessage> SendAsync(HttpClient client, HttpMethod method, string url, string subject, object? body, CancellationToken ct)
     {
         HttpRequestMessage req = new(method, url) { Content = body is null ? null : JsonContent.Create(body, options: Api.Json) };

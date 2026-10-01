@@ -60,6 +60,14 @@ public sealed class JournalCompatibilityTests : IDisposable
     }
 
     [Fact]
+    public void A_rematch_invite_keeps_its_guest_and_game_in_the_journal()
+    {
+        InviteCreated rematch = new(4, "3+2", "white", At, ForId: 5, RematchOf: Guid.CreateVersion7());
+
+        Assert.Equal(rematch, RoundTrip(rematch));
+    }
+
+    [Fact]
     public void The_kafka_payload_never_shows_the_trace()
     {
         EventEnvelope<MoveMade> envelope = new("game.move", 1, "g1", 1, At, new MoveMade(1, "e2e4", "e4", "fen", 1_000, 1_000, At, Trace));

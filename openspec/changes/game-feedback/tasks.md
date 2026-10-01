@@ -4,19 +4,19 @@ check && pnpm test && pnpm build`. 🐳 marks steps that need Docker or the live
 
 ## 1. Reserved and rematch invites (backend)
 
-- [ ] 1.1 TestKit first: a reserved invite refuses a stranger's accept as Forbidden (it fails today because the
+- [x] 1.1 TestKit first: a reserved invite refuses a stranger's accept as Forbidden (it fails today because the
       stranger's accept starts a game). Add `ForId`/`RematchOf` to `InviteCreated` (optional) and the actor state,
       and the check in `HandleAccept`.
-- [ ] 1.2 A deserialisation test: an `InviteCreated` JSON without the new fields reads with nulls.
-- [ ] 1.3 TestKit: `OfferRematch` creates, then a second `OfferRematch` from the guest accepts with swapped colours, a
+- [x] 1.2 A deserialisation test: an `InviteCreated` JSON without the new fields reads with nulls.
+- [x] 1.3 TestKit: `OfferRematch` creates, then a second `OfferRematch` from the guest accepts with swapped colours, a
       repeat from the creator returns the same view, and concurrent offers give one game. Implement.
       Commit: `feat(backend): reserved invites and rematch offers`.
 
 ## 2. Rematch endpoint (backend)
 
-- [ ] 2.1 `WebApi/Games/Rematch/` (endpoint, request + validator, summary): 403 non-player, 409 playing, 400 engine,
-      200 with the `InviteView`. Unit-test the rules helper first.
-- [ ] 2.2 🐳 Integration test (`nx integration-test backend`): two players finish a game, both post rematch, and a new
+- [x] 2.1 `WebApi/Matchmaking/Rematch/` (endpoint + summary; the request is the invites' `InviteRouteRequest`): 403 non-player, 409
+      playing, 400 engine, 200 with the `InviteView`. Unit-test the rules helper (`Rematch.Offer`) first.
+- [ ] 2.2 🐳 (written: `MatchmakingFlowTests.Both_players_asking_for_a_rematch_…`; needs Docker) Integration test (`nx integration-test backend`): two players finish a game, both post rematch, and a new
       game exists with swapped colours. Commit: `feat(backend): rematch endpoint`.
 
 ## 3. Tab signals and favicons (frontend)

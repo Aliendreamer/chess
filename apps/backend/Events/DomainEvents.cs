@@ -112,11 +112,17 @@ internal sealed record AbandonmentOffered(
 // Invite domain events (game-matchmaking). Journal-only for now — not tagged for Kafka, no read model needs them —
 // but primitive and wire-named so they could be tagged later without a migration.
 
+/// <summary>
+/// <see cref="ForId"/> reserves the invite for one user and <see cref="RematchOf"/> names the finished game it
+/// rematches (game-feedback); both are absent from invites recorded before them.
+/// </summary>
 internal sealed record InviteCreated(
     [property: JsonPropertyName("creatorId")] long CreatorId,
     [property: JsonPropertyName("timeControl")] string TimeControl,
     [property: JsonPropertyName("color")] string Color,
     [property: JsonPropertyName("at")] DateTimeOffset At,
+    [property: JsonPropertyName("forId")] long? ForId = null,
+    [property: JsonPropertyName("rematchOf")] Guid? RematchOf = null,
     [property: JsonIgnore] string? Trace = null) : ITracedEvent
 {
     public ITracedEvent WithTrace(string? trace) => this with { Trace = trace };

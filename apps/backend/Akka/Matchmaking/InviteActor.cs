@@ -23,6 +23,40 @@ internal sealed record CancelInvite(Guid InviteId, long UserId) : IInviteCommand
 
 internal sealed record GetInvite(Guid InviteId) : IInviteCommand;
 
+/// <summary>
+/// A player of a finished game asks for a rematch (game-feedback). The invite's id is the game's id. The first offer
+/// creates it, reserved for <see cref="OpponentId"/>, with the caller on <see cref="Color"/>; the guest's offer accepts
+/// it; the creator's repeated offer returns it unchanged.
+/// </summary>
+internal sealed record OfferRematch(Guid InviteId, long UserId, long OpponentId, string TimeControl, string Color) : IInviteCommand;
+
+/// <summary>Who may ask for a rematch of a game, and the offer it becomes (game-feedback).</summary>
+internal static class Rematch
+{
+    /// <summary>The <see cref="OfferRematch"/> for <paramref name="userId"/> after <paramref name="game"/>, or an <see cref="InviteRejected"/>.</summary>
+    public static object Offer(GameView game, long userId)
+    {
+        ArgumentNullException.ThrowIfNull(game);
+        if (userId != game.WhiteId && userId != game.BlackId)
+        {
+            return new InviteRejected(game.GameId, RejectionCode.Forbidden, "Only the two players can ask for a rematch.");
+        }
+
+        if (game.EngineSide is not null)
+        {
+            return new InviteRejected(game.GameId, RejectionCode.Illegal, "Against the computer, start a new game instead.");
+        }
+
+        if (game.Status != GameStatus.Ended)
+        {
+            return new InviteRejected(game.GameId, RejectionCode.Conflict, "The game is still on.");
+        }
+
+        bool wasWhite = userId == game.WhiteId;
+        return new OfferRematch(game.GameId, userId, wasWhite ? game.BlackId : game.WhiteId, game.TimeControl, wasWhite ? SideNames.Black : SideNames.White);
+    }
+}
+
 /// <summary>Where an invite stands; lower-case on the wire.</summary>
 [System.Text.Json.Serialization.JsonConverter(typeof(WireEnumConverter<InviteStatus>))]
 internal enum InviteStatus
@@ -48,7 +82,8 @@ internal sealed record InviteView(
     Guid? GameId,
     DateTimeOffset CreatedAt,
     DateTimeOffset ExpiresAt,
-    long Seq);
+    long Seq,
+    long? ForId = null);
 
 /// <summary>
 /// One invite link (ROADMAP D17, game-matchmaking): sharded and persistent, keyed by a random v4 id because the link
@@ -86,6 +121,7 @@ internal sealed class InviteActor : ReceivePersistentActor
     private string _timeControl = string.Empty;
     private TimeControl _tc;
     private string _color = string.Empty;
+    private long? _forId;
     private DateTimeOffset _createdAt;
     private Guid? _gameId;
     private bool _cancelled;
@@ -109,6 +145,7 @@ internal sealed class InviteActor : ReceivePersistentActor
         Command<GetInvite>(_ => Sender.Tell(_created ? View() : NotFound()));
         Command<AcceptInvite>(HandleAccept);
         Command<CancelInvite>(HandleCancel);
+        Command<OfferRematch>(HandleOfferRematch);
     }
 
     public override string PersistenceId => PersistenceIdPrefix + _inviteId.ToString("N");
@@ -127,14 +164,39 @@ internal sealed class InviteActor : ReceivePersistentActor
             return;
         }
 
-        if (!TimeControl.TryParseInvite(cmd.TimeControl, out _) || !SideNames.IsChoice(cmd.Color))
+        Create(new InviteCreated(cmd.CreatorId, cmd.TimeControl, cmd.Color, _clock.GetUtcNow()));
+    }
+
+    private void HandleOfferRematch(OfferRematch cmd)
+    {
+        if (!_created)
+        {
+            Create(new InviteCreated(cmd.UserId, cmd.TimeControl, cmd.Color, _clock.GetUtcNow(), cmd.OpponentId, cmd.InviteId));
+        }
+        else if (cmd.UserId == _creator)
+        {
+            Sender.Tell(View());
+        }
+        else if (cmd.UserId == _forId)
+        {
+            HandleAccept(new AcceptInvite(cmd.InviteId, cmd.UserId));
+        }
+        else
+        {
+            Sender.Tell(Rejected(RejectionCode.Forbidden, "This rematch is between the two players."));
+        }
+    }
+
+    private void Create(InviteCreated created)
+    {
+        if (!TimeControl.TryParseInvite(created.TimeControl, out _) || !SideNames.IsChoice(created.Color))
         {
             Sender.Tell(Rejected(RejectionCode.Illegal, "An invite needs a preset time control or 7d, and a colour (white, black or random)."));
             return;
         }
 
         IActorRef replyTo = Sender;
-        Persist(ActorTracing.Stamp(new InviteCreated(cmd.CreatorId, cmd.TimeControl, cmd.Color, _clock.GetUtcNow())), ActorTracing.Persisting<InviteCreated>(ActorNames.Invite, 1, e =>
+        Persist(ActorTracing.Stamp(created), ActorTracing.Persisting<InviteCreated>(ActorNames.Invite, 1, e =>
         {
             Apply(e);
             Published(replyTo, e);
@@ -158,6 +220,12 @@ internal sealed class InviteActor : ReceivePersistentActor
         if (cmd.UserId == _creator)
         {
             Sender.Tell(Rejected(RejectionCode.Conflict, "You can't accept your own invite; share the link instead."));
+            return;
+        }
+
+        if (_forId is not null && cmd.UserId != _forId)
+        {
+            Sender.Tell(Rejected(RejectionCode.Forbidden, "This invite is for someone else."));
             return;
         }
 
@@ -236,6 +304,7 @@ internal sealed class InviteActor : ReceivePersistentActor
             : throw new InvalidOperationException($"Unknown time control {e.TimeControl} in invite {_inviteId:N}.");
         _color = e.Color;
         _createdAt = e.At;
+        _forId = e.ForId;
     }
 
     private void Apply(InviteAccepted e) => _gameId = e.GameId;
@@ -251,7 +320,7 @@ internal sealed class InviteActor : ReceivePersistentActor
     }
 
     private InviteView View() => new(
-        _inviteId, _creator, _timeControl, _color, Status, _gameId, _createdAt, _createdAt + Lifetime, LastSequenceNr);
+        _inviteId, _creator, _timeControl, _color, Status, _gameId, _createdAt, _createdAt + Lifetime, LastSequenceNr, _forId);
 
     private InviteRejected NotFound() => Rejected(RejectionCode.NotFound, "No such invite.");
 

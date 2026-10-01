@@ -26,7 +26,7 @@ notifications.
    idempotent and race-free: both players pressing at once produce one create and one accept.
 3. **`InviteCreated` gains `forId` and `rematchOf`**, both optional and nullable on the wire, so old journal rows
    deserialise with nulls. `AcceptInvite` checks `ForId` (Forbidden otherwise).
-4. **The endpoint** (`WebApi/Games/Rematch/`) reads the ended game from `rm_games` (players, time control, colours,
+4. **The endpoint** (`WebApi/Matchmaking/Rematch/`) reads the ended game from `rm_games` (players, time control, colours,
    engine flag), checks the caller, then asks the invite region. 409 while playing, 403 for non-players, 400 for an
    engine game. `ClearDefaultAccepts()` (body-less POST), `no-store`.
 5. **Engine rematch stays in the frontend.** The card calls the existing `POST /api/engine-games` with the same level

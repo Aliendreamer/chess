@@ -42,7 +42,7 @@ For a player:
 
 - **Backend:** `InviteActor` (optional `ForId` and `RematchOf` on `InviteCreated`, which are nullable so old journal
   rows still read; `OfferRematch` command; a reserved invite refuses other users), new endpoint
-  `WebApi/Games/Rematch/` (players of an ended, non-engine game only). Invite events are journal-only and not tagged
+  `WebApi/Matchmaking/Rematch/` (players of an ended, non-engine game only). Invite events are journal-only and not tagged
   for Kafka, so there is no outbox or mapper change.
 - **Frontend:** `lib/feedback.ts` (pure title and favicon decisions), `public/favicon.svg` + `favicon-turn.svg`,
   `components/games.tsx` (`GameOverCard`, `RematchOffer`), game page (subscribes to `invite:{gameId}` after the end),
