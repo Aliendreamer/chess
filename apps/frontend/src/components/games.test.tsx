@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { renderToString } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   Board,
@@ -24,37 +25,35 @@ afterEach(cleanup)
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
 describe('Board', () => {
-  it('names each square and its piece', () => {
-    render(<Board fen={START} orientation="white" />)
-    expect(screen.getByRole('gridcell', { name: 'e1 white king' })).toBeDefined()
-    expect(screen.getByRole('gridcell', { name: 'e4' })).toBeDefined()
+  it('renders an empty board on the server, every square named', () => {
+    const html = renderToString(<Board fen={START} orientation="white" />)
+    expect(html.match(/data-square="/g)?.length).toBe(64)
+    expect(html).not.toContain('<img')
   })
 
-  it('from Black, a1 is at the top right', () => {
-    render(<Board fen={START} orientation="black" />)
-    const cells = screen.getAllByRole('gridcell').map((c) => c.getAttribute('data-square'))
-    expect([cells[0], cells[7], cells[56], cells[63]]).toEqual(['h1', 'a1', 'h8', 'a8'])
+  it('draws the Cburnett pieces once mounted', () => {
+    const { container } = render(<Board fen={START} orientation="white" />)
+    const images = [...container.querySelectorAll('img')].map((i) => i.getAttribute('src'))
+    expect(images).toHaveLength(32)
+    expect(images).toContain('/pieces/cburnett/wK.svg')
+    expect(images).toContain('/pieces/cburnett/bN.svg')
   })
 
-  it('reports clicks when interactive, and is inert without a handler', () => {
+  it('from Black, h1 comes first', () => {
+    const { container } = render(<Board fen={START} orientation="black" />)
+    const squares = [...container.querySelectorAll('[data-square]')].map((c) =>
+      c.getAttribute('data-square'),
+    )
+    expect([squares[0], squares[7], squares[56], squares[63]]).toEqual(['h1', 'a1', 'h8', 'a8'])
+  })
+
+  it('reports clicks when interactive', () => {
     const onSquareClick = vi.fn()
-    const { rerender } = render(
+    const { container } = render(
       <Board fen={START} orientation="white" onSquareClick={onSquareClick} />,
     )
-    fireEvent.click(screen.getByRole('gridcell', { name: 'e2 white pawn' }))
+    fireEvent.click(container.querySelector('[data-square="e2"]')!)
     expect(onSquareClick).toHaveBeenCalledWith('e2')
-
-    rerender(<Board fen={START} orientation="white" />)
-    expect(screen.getByRole('gridcell', { name: 'e2 white pawn' }).hasAttribute('disabled')).toBe(
-      true,
-    )
-  })
-
-  it('marks the selection', () => {
-    render(<Board fen={START} orientation="white" selected="g1" targets={['f3', 'h3']} />)
-    expect(
-      screen.getByRole('gridcell', { name: 'g1 white knight' }).getAttribute('aria-selected'),
-    ).toBe('true')
   })
 })
 
@@ -64,6 +63,18 @@ describe('PromotionPicker', () => {
     render(<PromotionPicker color="white" onPick={onPick} onCancel={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: 'knight' }))
     expect(onPick).toHaveBeenCalledWith('n')
+  })
+
+  it('shows the pieces of the promoting side, queen first', () => {
+    const { container } = render(
+      <PromotionPicker color="black" onPick={() => {}} onCancel={() => {}} />,
+    )
+    expect([...container.querySelectorAll('img')].map((i) => i.getAttribute('src'))).toEqual([
+      '/pieces/cburnett/bQ.svg',
+      '/pieces/cburnett/bR.svg',
+      '/pieces/cburnett/bB.svg',
+      '/pieces/cburnett/bN.svg',
+    ])
   })
 })
 

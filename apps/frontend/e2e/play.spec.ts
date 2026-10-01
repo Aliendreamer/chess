@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { PLAYER, USER, move, sessionFile, signedIn } from './support'
+import { PLAYER, USER, drag, move, sessionFile, signedIn } from './support'
 import type { Browser, Page } from '@playwright/test'
 
 /**
@@ -89,4 +89,24 @@ test('a draw is offered and accepted', async ({ browser }) => {
   await black.getByRole('button', { name: 'Accept draw' }).click({ timeout: 15_000 })
 
   await bothEnded([white, black], '½', 'draw agreed')
+})
+
+test('pieces can be dragged, and a premove plays itself (board-look)', async ({ browser }) => {
+  test.setTimeout(120_000)
+  const { white, black } = await inviteGame(browser)
+
+  await drag(white, 'e2', 'e4')
+  await drag(black, 'e7', 'e5')
+  await expect(white.getByTestId('move-list')).toHaveText('1.e4e5', { timeout: 15_000 })
+
+  // White to move: Black queues Nc6 by dragging while it is not their turn.
+  await expect(black.locator('[data-my-turn]')).toHaveAttribute('data-my-turn', 'false')
+  await black.locator('[data-square="b8"] img').dragTo(black.locator('[data-square="c6"]'))
+  await move(white, 'g1', 'f3')
+  // Black never clicks again: the premove is sent when White's move arrives.
+  await expect(white.getByTestId('move-list')).toHaveText('1.e4e52.Nf3Nc6', { timeout: 15_000 })
+
+  await expect(white.getByRole('button', { name: 'Resign' })).toBeEnabled({ timeout: 15_000 })
+  await white.getByRole('button', { name: 'Resign' }).click()
+  await bothEnded([white, black], '0–1', 'resignation')
 })

@@ -110,6 +110,18 @@ function Study({ loaded }: { loaded: StudyView }) {
     play(result.move.from, result.move.to)
   }
 
+  /** A drag plays the same as two clicks: a legal move goes into the tree, a promotion asks first. */
+  function onDrop(from: string, to: string): boolean {
+    setSelected(null)
+    if (!legalTargets(fen, from).includes(to)) return false
+    if (needsPromotion(fen, from, to)) {
+      setPromotion({ from, to })
+      return false
+    }
+    play(from, to)
+    return true
+  }
+
   async function save() {
     const view = await saving.run(() =>
       putStudy({ data: { id: saved.id, title, tree: toInput(tree), version: saved.version } }),
@@ -141,7 +153,7 @@ function Study({ loaded }: { loaded: StudyView }) {
           lastMove={lastMove}
           selected={selected}
           targets={selected ? legalTargets(fen, selected) : []}
-          {...(editable ? { onSquareClick } : {})}
+          {...(editable ? { onSquareClick, onDrop } : {})}
         />
         {promotion ? (
           <PromotionPicker

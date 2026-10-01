@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { GameCommand, GameSummary, GameView, MoveItem } from '#/lib/games'
 import type { LiveFrame } from '#/lib/live'
 import type { Me } from '#/lib/auth'
+import type { SquarePair } from '#/lib/board'
 import {
   getGameMoves,
   getGamePage,
@@ -25,7 +26,14 @@ import {
   useLocalClocks,
 } from '#/lib/games'
 import { applyFrame, liveStatusText, liveTopic, useLiveTopic } from '#/lib/live'
-import { applyOptimistic, clickSquare, legalTargets, needsPromotion } from '#/lib/moveInput'
+import {
+  applyOptimistic,
+  clickSquare,
+  legalTargets,
+  needsPromotion,
+  pieceAt,
+} from '#/lib/moveInput'
+import { premoveClick, resolvePremove } from '#/lib/board'
 import {
   Board,
   ClaimPanel,
@@ -145,7 +153,21 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   const fen = pending?.fen ?? current.fen
   const lastUci = pending?.uci ?? current.lastUci
   const lastMove = lastUci ? { from: lastUci.slice(0, 2), to: lastUci.slice(2, 4) } : null
-  const targets = selected ? legalTargets(fen, selected) : []
+  const targets = selected && myTurn ? legalTargets(fen, selected) : []
+  const myLetter = mine === 'white' ? 'w' : 'b'
+  // Premoves only where waiting is short (board-look): timed games against a person.
+  const premoves =
+    mine !== null && playing && hasClock(current.timeControl) && current.engineSide == null
+  const [premove, setPremove] = useState<SquarePair | null>(null)
+
+  // The opponent's move made it my turn: play the queued premove if it is still legal, else drop it.
+  useEffect(() => {
+    if (!premove) return
+    if (!playing || current.sideToMove !== mine) return
+    setPremove(null)
+    const uci = resolvePremove(current.fen, premove)
+    if (uci) move(uci.slice(0, 2), uci.slice(2, 4), uci[4] as 'q' | undefined, current.fen)
+  }, [seq])
 
   async function send(action: GameCommand) {
     const view = await command.run(() => postGameCommand({ data: { id, command: action } }))
@@ -153,16 +175,23 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
     else setPending(null) // refused: the board snaps back to the last server view
   }
 
-  function move(from: string, to: string, promote?: 'q' | 'r' | 'b' | 'n') {
+  function move(from: string, to: string, promote?: 'q' | 'r' | 'b' | 'n', base = fen) {
     const uci = `${from}${to}${promote ?? ''}`
-    const after = applyOptimistic(fen, uci)
+    const after = applyOptimistic(base, uci)
     if (after) setPending({ fen: after, uci })
     void send({ kind: 'move', uci })
   }
 
   function onSquareClick(square: string) {
     if (!mine) return
-    const result = clickSquare(fen, mine === 'white' ? 'w' : 'b', selected, square)
+    if (!myTurn) {
+      if (!premoves) return
+      const queued = premoveClick(fen, myLetter, selected, square)
+      setSelected(queued.selected)
+      setPremove(queued.premove)
+      return
+    }
+    const result = clickSquare(fen, myLetter, selected, square)
     setSelected(result.selected)
     if (!result.move) return
     if (needsPromotion(fen, result.move.from, result.move.to)) {
@@ -171,6 +200,24 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
     }
     move(result.move.from, result.move.to)
   }
+
+  /** A drag: on my turn a legal move is played (a promotion asks first); otherwise it queues a premove. */
+  function onDrop(from: string, to: string): boolean {
+    setSelected(null)
+    if (!myTurn) {
+      if (premoves) setPremove({ from, to })
+      return false
+    }
+    if (!legalTargets(fen, from).includes(to)) return false
+    if (needsPromotion(fen, from, to)) {
+      setPromotion({ from, to })
+      return false
+    }
+    move(from, to)
+    return true
+  }
+
+  const canDrag = (square: string) => pieceAt(fen, square)?.color === myLetter
 
   const white = summary?.white ?? `Player ${current.whiteId}`
   const black = summary?.black ?? `Player ${current.blackId}`
@@ -197,14 +244,18 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
     <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-8">
       <div className="flex max-w-(--board-max) flex-col gap-3">
         {strip(top)}
-        <Board
-          fen={fen}
-          orientation={side}
-          lastMove={lastMove}
-          selected={selected}
-          targets={targets}
-          {...(myTurn ? { onSquareClick } : {})}
-        />
+        <div data-my-turn={myTurn}>
+          <Board
+            fen={fen}
+            orientation={side}
+            lastMove={lastMove}
+            selected={selected}
+            targets={targets}
+            premove={premove}
+            {...(myTurn || premoves ? { onSquareClick, onDrop, canDrag } : {})}
+            onRightClick={() => setPremove(null)}
+          />
+        </div>
         {strip(side)}
         {promotion && mine ? (
           <PromotionPicker

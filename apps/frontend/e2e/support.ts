@@ -28,10 +28,27 @@ export async function signedIn(browser: Browser, user: string): Promise<Page> {
   return page
 }
 
-/** A click on the board once the page is interactive and it is this side's turn. */
+/**
+ * Waits until the board can take this side's move: the live board has replaced the server placeholder (the origin
+ * square shows its piece) and, on a game page, the page says it is this side's turn (`data-my-turn`).
+ */
+export async function boardReady(page: Page, from: string) {
+  await expect(page.locator(`[data-square="${from}"] img`)).toBeVisible({ timeout: 15_000 })
+  const game = page.locator('[data-my-turn]')
+  if ((await game.count()) > 0) {
+    await expect(game).toHaveAttribute('data-my-turn', 'true', { timeout: 15_000 })
+  }
+}
+
+/** A click-click move on the board once it is this side's turn. */
 export async function move(page: Page, from: string, to: string) {
-  const origin = page.locator(`[data-square="${from}"]`)
-  await expect(origin).toBeEnabled({ timeout: 15_000 })
-  await origin.click()
+  await boardReady(page, from)
+  await page.locator(`[data-square="${from}"]`).click()
   await page.locator(`[data-square="${to}"]`).click()
+}
+
+/** A drag-and-drop move on the board once it is this side's turn. */
+export async function drag(page: Page, from: string, to: string) {
+  await boardReady(page, from)
+  await page.locator(`[data-square="${from}"] img`).dragTo(page.locator(`[data-square="${to}"]`))
 }

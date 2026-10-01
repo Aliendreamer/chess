@@ -179,7 +179,12 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   `styles.css`'s `@theme` (use `bg-surface-*`, `text-fg-*`, `border-line-*`, `font-display`, `rounded-card`; no zinc,
   dark only), fonts via `@fontsource` (no third-party requests). Screens: `/` (quick pairing, invite, recent
   games), `/invites/$id`, `/games/$id`, `/games`, and the `/pgn/$id` download route. **chess.js is feedback only**
-  (`lib/moveInput.ts`): the server's answer/frame always wins. Commands return `CommandOutcome` (4xx is shown, 401
+  (`lib/moveInput.ts`): the server's answer/frame always wins. **Board (board-look)**: `components/games.tsx#Board` wraps
+  `react-chessboard` (MIT), drawn in the browser only (`BoardPlaceholder` is the SSR stand-in, same size, every square
+  keeps `data-square`); pieces are Cburnett SVGs in `public/pieces/cburnett/` (Wikimedia, BSD-3, see
+  `apps/frontend/ATTRIBUTION.md`; never the lichess GPL copy, never Unicode glyphs); board themes are `--board-*`
+  variables picked by `data-board` (Brown default); highlights, premove rules and click-premove are pure in
+  `lib/board.ts`. Premoves only in timed games against a person; no sounds anywhere (owner decision). Commands return `CommandOutcome` (4xx is shown, 401
   redirects, 5xx throws); server functions validate path inputs. e2e signs each user in once (`e2e/auth.setup.ts` →
   gitignored `e2e/.auth/*.json`) and reuses the session: Keycloak's quick-login check locks a user logged in twice
   within a second, so specs never log in again except the signed-out ones in `auth.spec.ts`.

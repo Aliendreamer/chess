@@ -199,6 +199,9 @@ importers:
       react:
         specifier: 19.2.7
         version: 19.2.7
+      react-chessboard:
+        specifier: 5.12.1
+        version: 5.12.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react-dom:
         specifier: 19.2.7
         version: 19.2.7(react@19.2.7)
@@ -1021,6 +1024,28 @@ packages:
   '@datadog/pprof@5.14.4':
     resolution: {integrity: sha512-egEZDD9v98RBI8ijbHyaWQeY8rW0WEu004As5D7SUkdqSMORhrnh7ZdsM46PUzQgAc85IaEZoukWS9UhMvWn9w==}
     engines: {node: '>=16'}
+
+  '@dnd-kit/accessibility@3.1.1':
+    resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
+    peerDependencies:
+      react: '>=16.8.0'
+
+  '@dnd-kit/core@6.3.1':
+    resolution: {integrity: sha512-xkGBRQQab4RLwgXxoqETICr6S5JlogafbhNsidmrkVv2YRs5MLwpjoF2qpiGjQt8S9AoxtIV603s0GIUpY5eYQ==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  '@dnd-kit/modifiers@9.0.0':
+    resolution: {integrity: sha512-ybiLc66qRGuZoC20wdSSG6pDXFikui/dCNGthxv4Ndy8ylErY0N3KVxY2bgo7AWwIbxDmXDg3ylAFmnrjcbVvw==}
+    peerDependencies:
+      '@dnd-kit/core': ^6.3.0
+      react: '>=16.8.0'
+
+  '@dnd-kit/utilities@3.2.2':
+    resolution: {integrity: sha512-+MKAJEOfaBe5SmV6t34p80MMKhjvUz0vRrvVJbPT0WElzaOJ/1xs+D+KDv+tD/NE5ujfrChEcshd4fLn0wpiqg==}
+    peerDependencies:
+      react: '>=16.8.0'
 
   '@emnapi/core@1.10.0':
     resolution: {integrity: sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw==}
@@ -4967,6 +4992,13 @@ packages:
   rc9@3.1.0:
     resolution: {integrity: sha512-ufjkNVzbRHKcCOmTahZkmVsyc3W+MSk3jY03m+a7tGHkIsdVMG9l10/3HvFbWkkKzY5VFp3pkRsIo/UYgmFL7Q==}
 
+  react-chessboard@5.12.1:
+    resolution: {integrity: sha512-ZrIdtazeHobAhRpoqvePM8K+kiEehqixlVVY1+y83KkutIkZuest3bVzBPlPRWVra71QuNgHgvgrfIMbz1DpQA==}
+    engines: {node: '>=20.11.0', pnpm: '>=9.4.0'}
+    peerDependencies:
+      react: ^19.0.0
+      react-dom: ^19.0.0
+
   react-dom@19.2.7:
     resolution: {integrity: sha512-t0BRVXvbiE/o20Hfw669rLbMCDWtYZLvmJigy2f0MxsXF+71pxhR3xOkspmsO8h3ZlNzyibAmtCa3l4lYKk6gQ==}
     peerDependencies:
@@ -6821,6 +6853,31 @@ snapshots:
       node-gyp-build: 4.8.4
       pprof-format: 2.3.1
       source-map: 0.7.6
+
+  '@dnd-kit/accessibility@3.1.1(react@19.2.7)':
+    dependencies:
+      react: 19.2.7
+      tslib: 2.8.1
+
+  '@dnd-kit/core@6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@dnd-kit/accessibility': 3.1.1(react@19.2.7)
+      '@dnd-kit/utilities': 3.2.2(react@19.2.7)
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+      tslib: 2.8.1
+
+  '@dnd-kit/modifiers@9.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@dnd-kit/core': 6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@dnd-kit/utilities': 3.2.2(react@19.2.7)
+      react: 19.2.7
+      tslib: 2.8.1
+
+  '@dnd-kit/utilities@3.2.2(react@19.2.7)':
+    dependencies:
+      react: 19.2.7
+      tslib: 2.8.1
 
   '@emnapi/core@1.10.0':
     dependencies:
@@ -10900,6 +10957,13 @@ snapshots:
     dependencies:
       defu: 6.1.7
       destr: 2.0.5
+
+  react-chessboard@5.12.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
+    dependencies:
+      '@dnd-kit/core': 6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@dnd-kit/modifiers': 9.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
 
   react-dom@19.2.7(react@19.2.7):
     dependencies:

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { USER, sessionFile } from './support'
+import { USER, move, sessionFile } from './support'
 
 /**
  * Playing the computer (engine-play), against the real Stockfish in the engine container: pick a level and a colour
@@ -32,10 +32,7 @@ test('a game against the computer: it thinks, answers, and takes no draw offers'
   await expect(page.getByText('Untimed ·')).toBeVisible()
   await expect(page.getByTestId('strip-white')).not.toContainText(':') // no clock
 
-  const origin = page.locator('[data-square="e2"]')
-  await expect(origin).toBeEnabled({ timeout: 15_000 })
-  await origin.click()
-  await page.locator('[data-square="e4"]').click()
+  await move(page, 'e2', 'e4')
 
   await expect(page.getByTestId('engine-thinking')).toHaveText('Stockfish (Casual) is thinking…')
   // The answer arrives as a live frame; the board is White's again.
