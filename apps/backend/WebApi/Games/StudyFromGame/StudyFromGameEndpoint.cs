@@ -25,7 +25,7 @@ internal sealed class StudyFromGameEndpoint(IStudyService studies, ICurrentUser 
     public override async Task HandleAsync(GameRouteRequest req, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(req);
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         _ = GameReplyMapper.TryParseId(req.Id, out Guid id);
         StudyOutcome<StudyView> outcome = await studies.FromGameAsync(id, user.Id ?? 0, ct);
         if (outcome.Value is { } study)

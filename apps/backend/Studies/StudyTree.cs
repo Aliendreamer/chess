@@ -20,7 +20,6 @@ internal sealed record StudyTreeError(string Message, IReadOnlyList<int> Path);
 /// </summary>
 internal static class StudyTree
 {
-    public const string StandardStart = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     public const int MaxNodes = 2_000;
     public const int MaxDepth = 1_000;
 

@@ -24,7 +24,7 @@ internal sealed class AnalysePositionEndpoint(IAnalysisService analysis, IOption
     public override async Task HandleAsync(AnalysePositionRequest req, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(req);
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         int thinkMs = options.Value.ThinkMs(req.Think)!.Value; // the validator allows only the three
         PositionAnswer answer = await analysis.AnalyseAsync(req.Fen, thinkMs, ct);
         await Send.OkAsync(new AnalysePositionResponse(answer.Key, answer.Fen, req.Think, thinkMs, answer.Evaluation), ct);

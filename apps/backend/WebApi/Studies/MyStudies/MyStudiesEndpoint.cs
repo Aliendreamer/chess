@@ -25,7 +25,7 @@ internal sealed class MyStudiesEndpoint(IStudyService studies, ICurrentUser user
         ArgumentNullException.ThrowIfNull(req);
         GameCursor.TryDecode(req.Cursor, out (DateTimeOffset At, Guid Id)? after); // shape checked by the validator
         int limit = GameReadEndpointBase<object>.PageSize(req.Limit, options.Value);
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         await Send.OkAsync(await studies.MineAsync(user.Id ?? 0, after, limit, ct), ct);
     }
 }

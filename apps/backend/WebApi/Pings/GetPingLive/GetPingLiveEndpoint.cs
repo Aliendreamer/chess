@@ -25,7 +25,7 @@ internal sealed class GetPingLiveEndpoint(IRequiredActor<PingActor> region, IOpt
     public override async Task HandleAsync(GetPingLiveRequest req, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(req);
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         object reply;
         try
         {

@@ -25,7 +25,7 @@ internal sealed class StartEngineGameEndpoint(IRequiredActor<GameActor> region, 
     public override async Task HandleAsync(StartEngineGameRequest req, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(req);
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         (long whiteId, long blackId, Events.EnginePlayer engine) = EngineLevel.Find(req.Level)!.Seat(user.Id ?? 0, req.Color, () => Random.Shared.Next(2) == 0);
         object reply;
         try

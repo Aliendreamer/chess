@@ -124,9 +124,9 @@ internal sealed class DeadlineSweeper : ReceiveActor, IWithTimers
 {
     /// <summary>Each sweep is a trace of its own: the games it asks to check themselves continue it.</summary>
     protected override bool AroundReceive(Receive receive, object message) =>
-        ActorTracing.Receive("deadline-sweeper", message, m => base.AroundReceive(receive, m), m => m is Sweep);
+        ActorTracing.Receive(ActorNames.DeadlineSweeper, message, m => base.AroundReceive(receive, m), m => m is Sweep);
 
-    public const string SingletonName = "deadline-sweeper";
+    public const string SingletonName = ActorNames.DeadlineSweeper;
 
     /// <summary>At most this many checks per sweep; the rest wait for the next one.</summary>
     public const int MaxPerSweep = 100;

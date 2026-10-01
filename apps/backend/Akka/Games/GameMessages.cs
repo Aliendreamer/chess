@@ -85,7 +85,7 @@ internal sealed record GameView(
     DateTimeOffset ClockAt,
     long? DrawOfferedBy,
     string? Result,
-    string? Reason,
+    EndReason? Reason,
     long Seq,
     long? AbsentId = null,
     long? ClaimableBy = null,

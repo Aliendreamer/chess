@@ -92,7 +92,7 @@ public sealed class EngineRequestConsumerTests
         {
             await ApplyAll(consumer, Created(new EnginePlayer("white", "max")));
 
-            Assert.Equal([(Game, 0, GameProjection.StartFen, "max", false)], requests.Sent);
+            Assert.Equal([(Game, 0, ChessRules.StartFen, "max", false)], requests.Sent);
         }
     }
 

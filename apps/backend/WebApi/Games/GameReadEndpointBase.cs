@@ -13,7 +13,7 @@ namespace Chess.Backend.WebApi.Games;
 internal abstract class GameReadEndpointBase<TResponse>(ReadDbContext read) : Endpoint<GameRouteRequest, TResponse>
 {
     /// <summary>A finished game's reads are immutable: the browser (never a shared cache) may keep them for a day.</summary>
-    protected const string ImmutablePrivate = "private, max-age=86400, immutable";
+    protected const string ImmutablePrivate = Constants.CacheControl.ImmutablePrivate;
 
     protected ReadDbContext Read { get; } = read;
 
@@ -41,7 +41,7 @@ internal abstract class GameReadEndpointBase<TResponse>(ReadDbContext read) : En
     }
 
     protected void CacheFor(RmGame game) =>
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = game.Status == RmGame.Ended ? ImmutablePrivate : "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = game.Status == RmGame.Ended ? ImmutablePrivate : Constants.CacheControl.NoStore;
 
     protected void Standard(string route)
     {

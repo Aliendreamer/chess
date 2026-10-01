@@ -1,3 +1,5 @@
+using Chess.Backend.Games;
+
 namespace Chess.Backend.WebApi.Games;
 
 /// <summary>A game's summary from the read side (names snapshotted per game, D23).</summary>
@@ -10,7 +12,7 @@ internal sealed record GameSummary(
     string TimeControl,
     string Status,
     string? Result,
-    string? Reason,
+    EndReason? Reason,
     int Ply,
     string LastFen,
     DateTimeOffset CreatedAt,

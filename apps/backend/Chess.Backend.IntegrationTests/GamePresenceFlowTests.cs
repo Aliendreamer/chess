@@ -80,7 +80,7 @@ public sealed class GamePresenceFlowTests(StackFixture stack)
         using HttpResponseMessage claimed = await Claim(client, id, $"it-white-{run}", "win", ct);
         Assert.Equal(HttpStatusCode.OK, claimed.StatusCode);
         View ended = (await claimed.Content.ReadFromJsonAsync<View>(Api.Json, ct))!;
-        Assert.Equal(("ended", "1-0", "Abandonment"), (ended.Status, ended.Result, ended.Reason));
+        Assert.Equal(("ended", "1-0", "abandonment"), (ended.Status, ended.Result, ended.Reason));
 
         await Api.EventuallyAsync(
             async () =>

@@ -15,8 +15,6 @@ namespace Chess.Backend.Projections;
 /// </summary>
 internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection> logger) : IProjection
 {
-    public const string StartFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
     /// <summary>The PGN <c>Site</c> tag.</summary>
     public const string Site = "chess";
 
@@ -85,7 +83,7 @@ internal sealed class GameProjection(ProjectDbContext db, ILogger<GameProjection
             BlackName = black,
             TimeControl = c.TimeControl,
             Status = RmGame.Playing,
-            LastFen = StartFen,
+            LastFen = ChessRules.StartFen,
             WhiteMs = c.InitialMs,
             BlackMs = c.InitialMs,
             CreatedAt = c.At,

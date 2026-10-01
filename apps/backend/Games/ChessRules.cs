@@ -11,6 +11,9 @@ namespace Chess.Backend.Games;
 /// </summary>
 internal sealed partial class ChessRules
 {
+    /// <summary>The standard start position: games start here, and so does a study unless it names another.</summary>
+    public const string StartFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
     private readonly Gera.ChessBoard _board;
     private readonly List<string> _moves = [];
     private char? _pendingPromotion;

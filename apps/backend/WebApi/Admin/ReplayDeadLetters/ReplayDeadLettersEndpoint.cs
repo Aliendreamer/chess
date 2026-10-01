@@ -23,7 +23,7 @@ internal sealed class ReplayDeadLettersEndpoint(IDeadLetterService deadLetters) 
     public override async Task HandleAsync(ReplayDeadLettersRequest req, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(req);
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         ReplayResult result = await deadLetters.ReplayAsync(req.GroupId, req.AggregateId, ct);
         ReplayDeadLettersResponse response = new(req.GroupId, req.AggregateId, result.Status.ToString(), result.Applied, result.Error);
         switch (result.Status)

@@ -59,19 +59,17 @@ internal sealed record InviteView(
 internal sealed class InviteActor : ReceivePersistentActor
 {
     protected override bool AroundReceive(Receive receive, object message) =>
-        ActorTracing.Receive("invite", message, m => base.AroundReceive(receive, m), entity: new(TelemetryTags.InviteId, _inviteId.ToString("N")));
+        ActorTracing.Receive(ActorNames.Invite, message, m => base.AroundReceive(receive, m), entity: new(TelemetryTags.InviteId, _inviteId.ToString("N")));
 
     protected override void OnReplaySuccess()
     {
-        ActorMetrics.Recovered("invite", _startedAt);
+        ActorMetrics.Recovered(ActorNames.Invite, _startedAt);
         base.OnReplaySuccess();
     }
 
     public const string PersistenceIdPrefix = "invite-";
 
     public static readonly TimeSpan Lifetime = TimeSpan.FromHours(24);
-
-    private static readonly string[] Colors = ["white", "black", "random"];
 
     private readonly Guid _inviteId;
 
@@ -129,14 +127,14 @@ internal sealed class InviteActor : ReceivePersistentActor
             return;
         }
 
-        if (!TimeControl.TryParseInvite(cmd.TimeControl, out _) || !Colors.Contains(cmd.Color))
+        if (!TimeControl.TryParseInvite(cmd.TimeControl, out _) || !SideNames.IsChoice(cmd.Color))
         {
             Sender.Tell(Rejected(RejectionCode.Illegal, "An invite needs a preset time control or 7d, and a colour (white, black or random)."));
             return;
         }
 
         IActorRef replyTo = Sender;
-        Persist(ActorTracing.Stamp(new InviteCreated(cmd.CreatorId, cmd.TimeControl, cmd.Color, _clock.GetUtcNow())), ActorTracing.Persisting<InviteCreated>("invite", 1, e =>
+        Persist(ActorTracing.Stamp(new InviteCreated(cmd.CreatorId, cmd.TimeControl, cmd.Color, _clock.GetUtcNow())), ActorTracing.Persisting<InviteCreated>(ActorNames.Invite, 1, e =>
         {
             Apply(e);
             Published(replyTo, e);
@@ -166,8 +164,8 @@ internal sealed class InviteActor : ReceivePersistentActor
         // The random colour is resolved once, here, and never again.
         bool creatorIsWhite = _color switch
         {
-            "white" => true,
-            "black" => false,
+            SideNames.White => true,
+            SideNames.Black => false,
             _ => _random.Next(2) == 0,
         };
         long white = creatorIsWhite ? _creator : cmd.UserId;
@@ -183,7 +181,7 @@ internal sealed class InviteActor : ReceivePersistentActor
     /// <summary>While the game is being started: everything else waits, so no second accept can slip in.</summary>
     private void Starting()
     {
-        Command<Started>(s => Persist(ActorTracing.Stamp(new InviteAccepted(s.ById, s.GameId, _clock.GetUtcNow())), ActorTracing.Persisting<InviteAccepted>("invite", 1, e =>
+        Command<Started>(s => Persist(ActorTracing.Stamp(new InviteAccepted(s.ById, s.GameId, _clock.GetUtcNow())), ActorTracing.Persisting<InviteAccepted>(ActorNames.Invite, 1, e =>
         {
             Apply(e);
             Published(s.ReplyTo, e);
@@ -221,7 +219,7 @@ internal sealed class InviteActor : ReceivePersistentActor
         }
 
         IActorRef replyTo = Sender;
-        Persist(ActorTracing.Stamp(new InviteCancelled(_clock.GetUtcNow())), ActorTracing.Persisting<InviteCancelled>("invite", 1, e =>
+        Persist(ActorTracing.Stamp(new InviteCancelled(_clock.GetUtcNow())), ActorTracing.Persisting<InviteCancelled>(ActorNames.Invite, 1, e =>
         {
             Apply(e);
             Published(replyTo, e);

@@ -1,3 +1,5 @@
+using Chess.Backend.Games;
+
 namespace Chess.Backend.WebApi.Games;
 
 /// <summary>
@@ -13,7 +15,7 @@ internal sealed record MyGameItem(
     string TimeControl,
     string Status,
     string? Result,
-    string? Reason,
+    EndReason? Reason,
     DateTimeOffset CreatedAt,
     bool YourTurn = false,
     DateTimeOffset? DeadlineAt = null);

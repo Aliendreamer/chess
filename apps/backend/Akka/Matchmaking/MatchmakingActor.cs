@@ -45,9 +45,9 @@ internal sealed record QueueView(string TimeControl, int WaitingCount, Pairing? 
 internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
 {
     protected override bool AroundReceive(Receive receive, object message) =>
-        ActorTracing.Receive("matchmaking", message, m => base.AroundReceive(receive, m));
+        ActorTracing.Receive(ActorNames.Matchmaking, message, m => base.AroundReceive(receive, m));
 
-    public const string SingletonName = "matchmaking";
+    public const string SingletonName = ActorNames.Matchmaking;
 
     public static readonly TimeSpan EntryTtl = TimeSpan.FromSeconds(60);
 

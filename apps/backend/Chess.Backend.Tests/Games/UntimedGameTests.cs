@@ -41,7 +41,7 @@ public sealed class UntimedGameTests() : GameActorTestBase(virtualTime: true)
         Advance(GameActor.FirstMoveWindow + TimeSpan.FromSeconds(1));
 
         GameView view = View(actor, id);
-        Assert.Equal((GameStatus.Ended, "Aborted"), (view.Status, view.Reason));
+        Assert.Equal((GameStatus.Ended, EndReason.Aborted), (view.Status, view.Reason));
     }
 
     [Fact]

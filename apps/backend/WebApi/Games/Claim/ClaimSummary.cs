@@ -6,7 +6,7 @@ internal sealed class ClaimSummary : Summary<ClaimEndpoint>
     {
         Summary = "Claim an abandoned game";
         Description = "When the opponent has been away a minute, ends the game: claim the win or call it a draw (reason Abandonment).";
-        ExampleRequest = new ClaimRequest { Id = "0199f1c2a3b47c5d8e9f0a1b2c3d4e5f", Outcome = "win" };
+        ExampleRequest = new ClaimRequest { Id = "0199f1c2a3b47c5d8e9f0a1b2c3d4e5f", Outcome = ClaimOutcomes.Win };
         Responses[200] = "The ended game.";
         Responses[400] = "The game id or the body is malformed.";
         Responses[401] = "Not signed in.";

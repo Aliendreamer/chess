@@ -25,7 +25,7 @@ internal sealed class JoinQueueEndpoint(IRequiredActor<MatchmakingActor> matchma
     public override async Task HandleAsync(JoinQueueRequest req, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(req);
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         object reply;
         try
         {

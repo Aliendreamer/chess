@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Text;
+using Chess.Backend.Games;
+using Chess.Backend.Projections;
 
 namespace Chess.Backend.Studies;
 
@@ -16,16 +18,16 @@ internal static class StudyPgn
     {
         ArgumentNullException.ThrowIfNull(headers);
         ArgumentNullException.ThrowIfNull(tree);
-        string result = headers.Result is "1-0" or "0-1" or "1/2-1/2" ? headers.Result : "*";
+        string result = PgnResults.IsDecided(headers.Result) ? headers.Result! : PgnResults.None;
         StringBuilder pgn = new();
         Tag(pgn, "Event", title);
-        Tag(pgn, "Site", "chess");
+        Tag(pgn, "Site", GameProjection.Site);
         Tag(pgn, "Date", headers.Date ?? "????.??.??");
         Tag(pgn, "Round", "-");
         Tag(pgn, "White", headers.White ?? "?");
         Tag(pgn, "Black", headers.Black ?? "?");
         Tag(pgn, "Result", result);
-        if (startFen != StudyTree.StandardStart)
+        if (startFen != ChessRules.StartFen)
         {
             Tag(pgn, "SetUp", "1");
             Tag(pgn, "FEN", startFen);

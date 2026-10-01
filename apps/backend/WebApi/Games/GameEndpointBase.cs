@@ -27,7 +27,7 @@ internal abstract class GameEndpointBase<TRequest>(IRequiredActor<GameActor> reg
             ThrowError("Game id must be a lower-case Guid, with or without dashes.", StatusCodes.Status400BadRequest);
         }
 
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         object reply;
         try
         {

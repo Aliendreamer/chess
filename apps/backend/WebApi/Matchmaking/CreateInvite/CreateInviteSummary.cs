@@ -1,3 +1,5 @@
+using Chess.Backend.Games;
+
 namespace Chess.Backend.WebApi.Matchmaking;
 
 internal sealed class CreateInviteSummary : Summary<CreateInviteEndpoint>
@@ -6,7 +8,7 @@ internal sealed class CreateInviteSummary : Summary<CreateInviteEndpoint>
     {
         Summary = "Create an invite link";
         Description = "Creates an invite for a preset time control and your colour; anyone signed in with the link may accept it within 24 h.";
-        ExampleRequest = new CreateInviteRequest { TimeControl = "10+5", Color = "white" };
+        ExampleRequest = new CreateInviteRequest { TimeControl = "10+5", Color = SideNames.White };
         Responses[201] = "The open invite (its id makes the link).";
         Responses[400] = "Not a preset time control, or not a colour.";
         Responses[401] = "Not signed in.";

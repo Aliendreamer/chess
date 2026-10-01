@@ -102,9 +102,9 @@ internal static class NotificationMails
     /// <summary>"You won", "You lost" or "Draw" from the result and the reader's colour.</summary>
     public static string Outcome(string result, bool readerIsWhite) => result switch
     {
-        "1-0" => readerIsWhite ? "You won" : "You lost",
-        "0-1" => readerIsWhite ? "You lost" : "You won",
-        "1/2-1/2" => "Draw",
+        PgnResults.WhiteWins => readerIsWhite ? "You won" : "You lost",
+        PgnResults.BlackWins => readerIsWhite ? "You lost" : "You won",
+        PgnResults.Draw => "Draw",
         _ => "No result",
     };
 }

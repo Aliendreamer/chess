@@ -135,7 +135,7 @@ internal sealed class KeycloakRolesClaimsTransformation : IClaimsTransformation
         {
             using JsonDocument doc = JsonDocument.Parse(realmAccess);
             if (doc.RootElement.ValueKind != JsonValueKind.Object
-                || !doc.RootElement.TryGetProperty("roles", out JsonElement roles)
+                || !doc.RootElement.TryGetProperty(Constants.Claims.RealmRoles, out JsonElement roles)
                 || roles.ValueKind != JsonValueKind.Array)
             {
                 return [];

@@ -24,7 +24,7 @@ internal abstract class StudyEndpointBase<TRequest, TResponse> : Endpoint<TReque
 
     protected async Task SendAsync(StudyOutcome<TResponse> outcome, CancellationToken ct, int success = StatusCodes.Status200OK)
     {
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         if (outcome.Value is { } value)
         {
             await Send.ResponseAsync(value, success, ct);

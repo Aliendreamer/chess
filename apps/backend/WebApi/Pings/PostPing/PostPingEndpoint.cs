@@ -25,7 +25,7 @@ internal sealed class PostPingEndpoint(IRequiredActor<PingActor> region, ICurren
     public override async Task HandleAsync(PostPingRequest req, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(req);
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         object reply;
         try
         {

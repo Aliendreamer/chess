@@ -1,3 +1,5 @@
+using Chess.Backend.Games;
+
 namespace Chess.Backend.WebApi.Games;
 
 /// <summary>A row of <c>GET /api/games</c>: the response is a <c>CursorPage</c> of these.</summary>
@@ -10,7 +12,7 @@ internal sealed record GameListItem(
     string TimeControl,
     string Status,
     string? Result,
-    string? Reason,
+    EndReason? Reason,
     int Ply,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt);

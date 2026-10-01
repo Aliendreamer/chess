@@ -92,7 +92,7 @@ public sealed class GameLiveSourceTests : TestKit
     {
         TestProbe region = CreateTestProbe();
         Guid id = Guid.CreateVersion7();
-        GameView ended = new(id, 1, 2, "5+3", GameStatus.Ended, "fen", 4, Side.White, "d8h4", "Qh4#", 1, 2, DateTimeOffset.UnixEpoch, null, "0-1", "Checkmate", 6);
+        GameView ended = new(id, 1, 2, "5+3", GameStatus.Ended, "fen", 4, Side.White, "d8h4", "Qh4#", 1, 2, DateTimeOffset.UnixEpoch, null, "0-1", EndReason.Checkmate, 6);
 
         LiveFrame frame = (await new GameLiveSource(new FixedRegion<GameActor>(region.Ref), new EndedGames(ended), Options.Create(new ApiOptions())).SnapshotAsync(id.ToString("N"), CancellationToken.None))!;
 

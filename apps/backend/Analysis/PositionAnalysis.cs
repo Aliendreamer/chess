@@ -18,6 +18,16 @@ internal static class AnalysisTopics
     public const string Results = "analysis.results";
 }
 
+/// <summary>How long the engine looks at a position, as a request names it; the times are <see cref="AnalysisOptions"/>.</summary>
+internal static class ThinkLevels
+{
+    public const string Quick = "quick";
+    public const string Normal = "normal";
+    public const string Deep = "deep";
+
+    public static bool IsLevel(string? think) => think is Quick or Normal or Deep;
+}
+
 /// <summary>Section <c>Analysis</c> (engine-analysis): the think times, the lines per position and the retry time.</summary>
 internal sealed class AnalysisOptions : ISettings
 {
@@ -35,12 +45,12 @@ internal sealed class AnalysisOptions : ISettings
     /// <summary>A request unanswered for this long counts as lost and is sent again when someone asks.</summary>
     public int RetryAfterSeconds { get; set; } = 120;
 
-    /// <summary>The think time of <c>quick</c>, <c>normal</c> or <c>deep</c>; null for anything else.</summary>
+    /// <summary>The think time of a <see cref="ThinkLevels"/> name; null for anything else.</summary>
     public int? ThinkMs(string? think) => think switch
     {
-        "quick" => QuickMs,
-        "normal" => NormalMs,
-        "deep" => DeepMs,
+        ThinkLevels.Quick => QuickMs,
+        ThinkLevels.Normal => NormalMs,
+        ThinkLevels.Deep => DeepMs,
         _ => null,
     };
 

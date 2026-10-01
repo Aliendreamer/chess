@@ -61,7 +61,7 @@ internal static class ApplicationExtensions
             ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost,
             ForwardLimit = 1,
         };
-        IConfigurationSection section = configuration.GetSection("ForwardedHeaders");
+        IConfigurationSection section = configuration.GetSection(Constants.ConfigKeys.ForwardedHeaders);
         foreach (string cidr in section.GetSection("KnownNetworks").Get<string[]>() ?? [])
         {
             options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(cidr));
@@ -93,18 +93,18 @@ internal static class FastEndpointSetup
             o.ShortSchemaNames = true;
         });
 
-        string connectionString = builder.Configuration.GetConnectionString("Postgres") ?? string.Empty;
-        IHealthChecksBuilder health = builder.Services.AddHealthChecks().AddNpgSql(connectionString, name: "postgres");
-        string? redis = builder.Configuration.GetConnectionString("Redis");
+        string connectionString = builder.Configuration.GetConnectionString(Constants.ConnectionStrings.Postgres) ?? string.Empty;
+        IHealthChecksBuilder health = builder.Services.AddHealthChecks().AddNpgSql(connectionString, name: Constants.HealthChecks.Postgres);
+        string? redis = builder.Configuration.GetConnectionString(Constants.ConnectionStrings.Redis);
         if (!string.IsNullOrEmpty(redis))
         {
-            health.AddRedis(redis, name: "redis");
+            health.AddRedis(redis, name: Constants.HealthChecks.Redis);
         }
 
-        health.AddCheck<ClusterHealthCheck>("akka-cluster");
+        health.AddCheck<ClusterHealthCheck>(Constants.HealthChecks.AkkaCluster);
         // Always on: the table lives on the primary whether or not Kafka is configured, and Degraded (never
         // Unhealthy) keeps a quarantined game from pulling the API out of rotation.
-        health.AddCheck<DeadLetterService>("projection-dead-letters", failureStatus: HealthStatus.Degraded);
+        health.AddCheck<DeadLetterService>(Constants.HealthChecks.ProjectionDeadLetters, failureStatus: HealthStatus.Degraded);
 
         KafkaOptions kafka = builder.Configuration.GetSection(KafkaOptions.SectionName).Get<KafkaOptions>() ?? new KafkaOptions();
         health.AddKafkaHealthCheck(builder.Services, kafka, builder.Configuration);
@@ -125,14 +125,14 @@ internal static class FastEndpointSetup
         {
             // Singleton so the AdminClient (and its broker connection) is built once, not per health probe.
             services.AddSingleton<KafkaHealthCheck>();
-            health.AddCheck<KafkaHealthCheck>("kafka");
+            health.AddCheck<KafkaHealthCheck>(Constants.HealthChecks.Kafka);
             // Registered with the Kafka check because it only means something while the journal publisher runs.
             services.AddSettings<PublisherLagOptions>(configuration, PublisherLagOptions.SectionName);
             services.AddSingleton(sp => new PublisherLagHealthCheck(
-                sp.GetRequiredService<IConfiguration>().GetConnectionString("Postgres") ?? string.Empty,
+                sp.GetRequiredService<IConfiguration>().GetConnectionString(Constants.ConnectionStrings.Postgres) ?? string.Empty,
                 sp.GetRequiredService<TimeProvider>(),
                 sp.GetRequiredService<PublisherLagOptions>()));
-            health.AddCheck<PublisherLagHealthCheck>("journal-publisher", failureStatus: HealthStatus.Degraded);
+            health.AddCheck<PublisherLagHealthCheck>(Constants.HealthChecks.JournalPublisher, failureStatus: HealthStatus.Degraded);
         }
 
         return health;

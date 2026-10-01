@@ -59,4 +59,27 @@ public sealed class WireNamesTests
         Assert.Contains("\"status\":\"waiting\"", JsonSerializer.Serialize(queue, JsonSerializerOptions.Web), StringComparison.Ordinal);
         Assert.Equal("expired", InviteStatus.Expired.WireName());
     }
+
+    [Fact]
+    public void An_end_reason_is_stored_by_name_and_sent_camel_cased()
+    {
+        GameView game = new(Guid.Empty, 1, 2, "5+3", GameStatus.Ended, "fen", 9, Side.White, null, null, 1, 2, DateTimeOffset.UnixEpoch, null, PgnResults.Draw, EndReason.FiftyMoveRule, 2);
+
+        Assert.Contains("\"reason\":\"fiftyMoveRule\"", JsonSerializer.Serialize(game, JsonSerializerOptions.Web), StringComparison.Ordinal);
+        Assert.All(Enum.GetValues<EndReason>(), r => Assert.Equal(r, EndReasons.Parse(r.ToString())));
+        Assert.Null(EndReasons.Parse(null));
+        Assert.Null(EndReasons.Parse("fiftyMoveRule")); // stored names are the enum's own
+    }
+
+    [Fact]
+    public void Colours_and_results_keep_their_names()
+    {
+        Assert.Equal(("white", "black", "random"), (SideNames.White, SideNames.Black, SideNames.Random));
+        Assert.Equal(("1-0", "0-1", "1/2-1/2", "*"), (PgnResults.WhiteWins, PgnResults.BlackWins, PgnResults.Draw, PgnResults.None));
+        Assert.Equal(SideNames.Black, SideNames.Of(Side.Black));
+    }
+
+    [Fact]
+    public void Engine_levels_keep_their_ids() =>
+        Assert.Equal(["1320", "1600", "2000", "2400", "max"], EngineLevel.All.Select(l => l.Level));
 }

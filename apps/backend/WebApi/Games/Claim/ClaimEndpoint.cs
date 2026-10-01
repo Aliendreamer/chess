@@ -11,6 +11,6 @@ internal sealed class ClaimEndpoint(IRequiredActor<GameActor> region, ICurrentUs
     public override Task HandleAsync(ClaimRequest req, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(req);
-        return AskAsync(req, id => new ClaimAbandonment(id, user.Id ?? 0, req.Outcome == "win"), ct);
+        return AskAsync(req, id => new ClaimAbandonment(id, user.Id ?? 0, req.Outcome == ClaimOutcomes.Win), ct);
     }
 }

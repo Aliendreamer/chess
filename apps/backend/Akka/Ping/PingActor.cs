@@ -16,11 +16,11 @@ namespace Chess.Backend.Akka.Ping;
 internal sealed class PingActor : ReceivePersistentActor
 {
     protected override bool AroundReceive(Receive receive, object message) =>
-        ActorTracing.Receive("ping", message, m => base.AroundReceive(receive, m), entity: new(TelemetryTags.PingId, _pingId));
+        ActorTracing.Receive(ActorNames.Ping, message, m => base.AroundReceive(receive, m), entity: new(TelemetryTags.PingId, _pingId));
 
     protected override void OnReplaySuccess()
     {
-        ActorMetrics.Recovered("ping", _startedAt);
+        ActorMetrics.Recovered(ActorNames.Ping, _startedAt);
         base.OnReplaySuccess();
     }
 
@@ -80,7 +80,7 @@ internal sealed class PingActor : ReceivePersistentActor
 
         Pinged evt = new(cmd.Text.Trim(), cmd.UserId, DateTimeOffset.UtcNow);
         IActorRef replyTo = Sender;
-        Persist(ActorTracing.Stamp(evt), ActorTracing.Persisting<Pinged>("ping", 1, persisted =>
+        Persist(ActorTracing.Stamp(evt), ActorTracing.Persisting<Pinged>(ActorNames.Ping, 1, persisted =>
         {
             Apply(persisted);
             long seq = LastSequenceNr;

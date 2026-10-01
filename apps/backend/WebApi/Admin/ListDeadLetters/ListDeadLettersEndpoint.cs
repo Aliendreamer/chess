@@ -24,7 +24,7 @@ internal sealed class ListDeadLettersEndpoint(ProjectDbContext db, IOptions<ApiO
     public override async Task HandleAsync(ListDeadLettersRequest req, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(req);
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         (DateTimeOffset At, Guid Id)? after = req.Cursor is not null && KeysetCursor.TryDecodeGuid(req.Cursor, out KeysetCursor decoded, out Guid afterId)
             ? (decoded.At, afterId)
             : null;

@@ -79,7 +79,7 @@ public sealed class GameActorTests() : GameActorTestBase(virtualTime: false)
 
         GameView mate = PlayLine(actor, id, "f2f3 e7e5 g2g4 d8h4");
 
-        Assert.Equal((GameStatus.Ended, "0-1", "Checkmate", "Qh4#"), (mate.Status, mate.Result, mate.Reason, mate.LastSan));
+        Assert.Equal((GameStatus.Ended, "0-1", EndReason.Checkmate, "Qh4#"), (mate.Status, mate.Result, mate.Reason, mate.LastSan));
         AssertRejected(Send(actor, new MakeMove(id, White, "a2a3")), RejectionCode.Conflict);
         AssertRejected(Send(actor, new OfferDraw(id, White)), RejectionCode.Conflict);
         AssertRejected(Send(actor, new Resign(id, White)), RejectionCode.Conflict);
@@ -94,7 +94,7 @@ public sealed class GameActorTests() : GameActorTestBase(virtualTime: false)
         Move(actor, id, White, "e2e4");
         GameView resigned = Assert.IsType<GameView>(Send(actor, new Resign(id, White)));
 
-        Assert.Equal((GameStatus.Ended, "0-1", "Resignation"), (resigned.Status, resigned.Result, resigned.Reason));
+        Assert.Equal((GameStatus.Ended, "0-1", EndReason.Resignation), (resigned.Status, resigned.Result, resigned.Reason));
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public sealed class GameActorTests() : GameActorTestBase(virtualTime: false)
         AssertRejected(Send(actor, new AcceptDraw(id, White)), RejectionCode.Conflict); // can't accept your own
 
         GameView drawn = Assert.IsType<GameView>(Send(actor, new AcceptDraw(id, Black)));
-        Assert.Equal((GameStatus.Ended, "1/2-1/2", "Agreement"), (drawn.Status, drawn.Result, drawn.Reason));
+        Assert.Equal((GameStatus.Ended, "1/2-1/2", EndReason.Agreement), (drawn.Status, drawn.Result, drawn.Reason));
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public sealed class GameActorTests() : GameActorTestBase(virtualTime: false)
 
         GameView drawn = Assert.IsType<GameView>(Send(actor, new OfferDraw(id, Black)));
 
-        Assert.Equal((GameStatus.Ended, "Agreement"), (drawn.Status, drawn.Reason));
+        Assert.Equal((GameStatus.Ended, EndReason.Agreement), (drawn.Status, drawn.Reason));
     }
 
     [Fact]
@@ -199,6 +199,6 @@ public sealed class GameActorTests() : GameActorTestBase(virtualTime: false)
 
         // Occurrence 3 — only detectable if recovery rebuilt the history, not just the position.
         GameView end = PlayLine(recovered, id, "g1h3 g8h6 h3g1 h6g8");
-        Assert.Equal((GameStatus.Ended, "1/2-1/2", "ThreefoldRepetition"), (end.Status, end.Result, end.Reason));
+        Assert.Equal((GameStatus.Ended, "1/2-1/2", EndReason.ThreefoldRepetition), (end.Status, end.Result, end.Reason));
     }
 }

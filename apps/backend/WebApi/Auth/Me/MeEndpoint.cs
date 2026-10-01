@@ -15,7 +15,7 @@ internal sealed class MeEndpoint(ICurrentUser user) : EndpointWithoutRequest<MeR
 
     public override async Task HandleAsync(CancellationToken ct)
     {
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         if (!MeResponseFactory.TryCreate(user, out MeResponse? response))
         {
             await Send.UnauthorizedAsync(ct);

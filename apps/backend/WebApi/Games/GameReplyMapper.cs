@@ -4,6 +4,13 @@ using Microsoft.Net.Http.Headers;
 
 namespace Chess.Backend.WebApi.Games;
 
+/// <summary>What the remaining player claims when the opponent has gone (presence-and-abandonment D5).</summary>
+internal static class ClaimOutcomes
+{
+    public const string Win = "win";
+    public const string Draw = "draw";
+}
+
 /// <summary>Actor reply → HTTP: the one tested piece behind the thin game endpoints.</summary>
 internal static class GameReplyMapper
 {
@@ -20,11 +27,11 @@ internal static class GameReplyMapper
         _ => new(false, StatusCodes.Status502BadGateway, null, "Unexpected reply from the game."),
     };
 
-    /// <summary>A claim body's outcome: <c>win</c> or <c>draw</c> (lower case), nothing else.</summary>
+    /// <summary>A claim's outcome: <see cref="ClaimOutcomes.Win"/> or <see cref="ClaimOutcomes.Draw"/>, nothing else.</summary>
     public static bool TryParseClaim(string? outcome, out bool win)
     {
-        win = outcome == "win";
-        return outcome is "win" or "draw";
+        win = outcome == ClaimOutcomes.Win;
+        return outcome is ClaimOutcomes.Win or ClaimOutcomes.Draw;
     }
 
     /// <summary>

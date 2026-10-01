@@ -59,7 +59,7 @@ public sealed class GameClockTests() : GameActorTestBase(virtualTime: true)
         Advance(TimeSpan.FromSeconds(60));
 
         GameView ended = View(actor, id);
-        Assert.Equal((GameStatus.Ended, "0-1", "Timeout", 0L), (ended.Status, ended.Result, ended.Reason, ended.WhiteMs));
+        Assert.Equal((GameStatus.Ended, "0-1", EndReason.Timeout, 0L), (ended.Status, ended.Result, ended.Reason, ended.WhiteMs));
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class GameClockTests() : GameActorTestBase(virtualTime: true)
         Clock.Advance(TimeSpan.FromSeconds(61)); // the timer hasn't fired yet (scheduler not advanced)
         GameView reply = Move(actor, id, White, "g1f3");
 
-        Assert.Equal((GameStatus.Ended, "Timeout", 2), (reply.Status, reply.Reason, reply.Ply));
+        Assert.Equal((GameStatus.Ended, EndReason.Timeout, 2), (reply.Status, reply.Reason, reply.Ply));
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public sealed class GameClockTests() : GameActorTestBase(virtualTime: true)
         Advance(TimeSpan.FromSeconds(61));
 
         GameView aborted = View(actor, id);
-        Assert.Equal((GameStatus.Ended, "*", "Aborted"), (aborted.Status, aborted.Result, aborted.Reason));
+        Assert.Equal((GameStatus.Ended, "*", EndReason.Aborted), (aborted.Status, aborted.Result, aborted.Reason));
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public sealed class GameClockTests() : GameActorTestBase(virtualTime: true)
         Assert.Equal(GameStatus.Playing, View(actor, id).Status);
 
         Advance(TimeSpan.FromSeconds(11));
-        Assert.Equal("Aborted", View(actor, id).Reason);
+        Assert.Equal(EndReason.Aborted, View(actor, id).Reason);
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public sealed class GameClockTests() : GameActorTestBase(virtualTime: true)
 
         AssertRejected(Send(actor, new AbortGame(id, White)), RejectionCode.Conflict);
         GameView aborted = Assert.IsType<GameView>(Send(actor, new AbortGame(id, Black)));
-        Assert.Equal(("*", "Aborted"), (aborted.Result, aborted.Reason));
+        Assert.Equal(("*", EndReason.Aborted), (aborted.Result, aborted.Reason));
 
         (Guid id2, IActorRef actor2, _) = Started("5+3");
         Opened(actor2, id2);
@@ -146,7 +146,7 @@ public sealed class GameClockTests() : GameActorTestBase(virtualTime: true)
         Advance(TimeSpan.FromSeconds(59));
         Assert.Equal(GameStatus.Playing, View(recovered, id).Status);
         Advance(TimeSpan.FromSeconds(2));
-        Assert.Equal(("1-0", "Timeout"), (View(recovered, id).Result, View(recovered, id).Reason));
+        Assert.Equal(("1-0", EndReason.Timeout), (View(recovered, id).Result, View(recovered, id).Reason));
     }
 
     [Fact]

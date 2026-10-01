@@ -8,6 +8,43 @@ internal static class Constants
     public const string KeycloakHttpClient = "keycloak";
     public const string HealthPath = "/health";
 
+    /// <summary><c>Cache-Control</c> values: <see cref="NoStore"/> for live and command answers, the other for a finished game.</summary>
+    public static class CacheControl
+    {
+        public const string NoStore = "no-store";
+        public const string ImmutablePrivate = "private, max-age=86400, immutable";
+    }
+
+    /// <summary>The <c>ConnectionStrings</c> names (env: <c>ConnectionStrings__Postgres</c>).</summary>
+    public static class ConnectionStrings
+    {
+        public const string Postgres = "Postgres";
+        public const string PostgresReplica = "PostgresReplica";
+
+        /// <summary>Set = Redis is the cache's L2 and backplane and the rate limiter's store; unset = in-memory.</summary>
+        public const string Redis = "Redis";
+    }
+
+    /// <summary>Configuration read without an options class.</summary>
+    public static class ConfigKeys
+    {
+        public const string AllowedCorsOrigins = "AllowedCorsOrigins";
+        public const string ForwardedHeaders = "ForwardedHeaders";
+        public const string AkkaHostname = "Akka:Hostname";
+    }
+
+    /// <summary>The checks <c>/health</c> reports by name (the verify scripts read them).</summary>
+    public static class HealthChecks
+    {
+        public const string Postgres = "postgres";
+        public const string PostgresReplica = "postgres-replica";
+        public const string Redis = "redis";
+        public const string AkkaCluster = "akka-cluster";
+        public const string ProjectionDeadLetters = "projection-dead-letters";
+        public const string Kafka = "kafka";
+        public const string JournalPublisher = "journal-publisher";
+    }
+
     public static class Cookies
     {
         public const string DefaultSessionName = "mp_sid";
@@ -51,6 +88,9 @@ internal static class Constants
         public const string Name = "name";
         public const string PreferredUsername = "preferred_username";
         public const string RealmAccess = "realm_access";
+
+        /// <summary>The role list inside <see cref="RealmAccess"/>.</summary>
+        public const string RealmRoles = "roles";
     }
 
     public static class Cache

@@ -8,7 +8,7 @@ internal static class DatabaseExtensions
     public static WebApplicationBuilder AddDatabaseContext(this WebApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
-        string connectionString = builder.Configuration.GetConnectionString("Postgres")
+        string connectionString = builder.Configuration.GetConnectionString(Constants.ConnectionStrings.Postgres)
             ?? throw new InvalidOperationException("ConnectionStrings:Postgres is not configured.");
 
         builder.Services.AddSingleton<AuditInterceptor>();
@@ -37,14 +37,14 @@ internal static class DatabaseExtensions
     public static WebApplicationBuilder AddReadDatabaseContext(this WebApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
-        string replica = builder.Configuration.GetConnectionString("PostgresReplica")
+        string replica = builder.Configuration.GetConnectionString(Constants.ConnectionStrings.PostgresReplica)
             ?? throw new InvalidOperationException("ConnectionStrings:PostgresReplica is not configured.");
         NpgsqlDataSource source = new NpgsqlDataSourceBuilder(replica).Build();
         builder.Services.AddKeyedSingleton(ReplicaDataSourceKey, source);
         builder.Services.AddDbContext<ReadDbContext>(o => o
             .UseNpgsql(source, npgsql => npgsql.EnableRetryOnFailure())
             .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
-        builder.Services.AddHealthChecks().AddCheck<ReplicaHealthCheck>("postgres-replica");
+        builder.Services.AddHealthChecks().AddCheck<ReplicaHealthCheck>(Constants.HealthChecks.PostgresReplica);
         return builder;
     }
 }

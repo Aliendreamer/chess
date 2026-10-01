@@ -148,7 +148,7 @@ internal sealed class LiveHub(LiveTopicResolver topics, IRequiredActor<GameActor
 internal sealed class HubFanOutActor : ReceiveActor
 {
     protected override bool AroundReceive(Receive receive, object message) =>
-        ActorTracing.Receive("hub-fanout", message, m => base.AroundReceive(receive, m));
+        ActorTracing.Receive(ActorNames.HubFanOut, message, m => base.AroundReceive(receive, m));
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
 

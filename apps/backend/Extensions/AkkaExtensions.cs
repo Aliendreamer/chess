@@ -43,7 +43,7 @@ internal static class AkkaHostingExtensions
         AkkaOptions options = builder.Configuration.GetSection(AkkaOptions.SectionName).Get<AkkaOptions>() ?? new AkkaOptions();
         options.Validate();
         builder.Services.AddSingleton(options);
-        string connectionString = builder.Configuration.GetConnectionString("Postgres")
+        string connectionString = builder.Configuration.GetConnectionString(Constants.ConnectionStrings.Postgres)
             ?? throw new InvalidOperationException("ConnectionStrings:Postgres is not configured.");
 
         builder.Services.AddAkka(AkkaOptions.SystemName, (akka, sp) =>
@@ -66,7 +66,7 @@ internal static class AkkaHostingExtensions
                 .WithActors((system, registry, resolver) => registry.Register<HubFanOutActor>(
                     system.ActorOf(
                         Props.Create(() => new HubFanOutActor(resolver.GetService<IHubContext<LiveHub>>(), DistributedPubSub.Get(system).Mediator)),
-                        "hub-fanout")));
+                        ActorNames.HubFanOut)));
             configureEntities?.Invoke(akka, sp);
         });
         return builder;
@@ -276,6 +276,6 @@ internal static class ClusterMetricsRegistration
                 singletons.Add(JournalPublisher.SingletonName);
             }
 
-            system.ActorOf(Props.Create(() => new ClusterMetricsActor(regions, singletons, AkkaOptions.BackendRole, every)), "cluster-metrics");
+            system.ActorOf(Props.Create(() => new ClusterMetricsActor(regions, singletons, AkkaOptions.BackendRole, every)), ActorNames.ClusterMetrics);
         });
 }

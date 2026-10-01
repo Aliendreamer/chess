@@ -137,7 +137,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         Command<CheckDeadline>(_ => HandleCheckDeadline());
         Command<PassivateNow>(_ =>
         {
-            ActorMetrics.Passivated("game");
+            ActorMetrics.Passivated(ActorNames.Game);
             Context.Parent.Tell(new global::Akka.Cluster.Sharding.Passivate(PoisonPill.Instance));
         });
         Command<SaveSnapshotSuccess>(_ => { });
@@ -167,7 +167,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     /// </summary>
     protected override void OnReplaySuccess()
     {
-        ActorMetrics.Recovered("game", _startedAt);
+        ActorMetrics.Recovered(ActorNames.Game, _startedAt);
         DateTimeOffset now = _clock.GetUtcNow();
         if (ClocksRunning)
         {
@@ -481,7 +481,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        PersistAll(ActorTracing.StampAll(events), ActorTracing.Persisting<object>("game", events.Count, e =>
+        PersistAll(ActorTracing.StampAll(events), ActorTracing.Persisting<object>(ActorNames.Game, events.Count, e =>
         {
             ApplyLive(e);
             Publish(e);
@@ -504,7 +504,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        PersistAll(ActorTracing.StampAll<object>([TimedOut(now)]), ActorTracing.Persisting<object>("game", 1, e =>
+        PersistAll(ActorTracing.StampAll<object>([TimedOut(now)]), ActorTracing.Persisting<object>(ActorNames.Game, 1, e =>
         {
             ApplyLive(e);
             Publish(e);
@@ -527,7 +527,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        PersistAll(ActorTracing.StampAll<object>([Ended(GameResult.None, EndReason.Aborted, now)]), ActorTracing.Persisting<object>("game", 1, e =>
+        PersistAll(ActorTracing.StampAll<object>([Ended(GameResult.None, EndReason.Aborted, now)]), ActorTracing.Persisting<object>(ActorNames.Game, 1, e =>
         {
             ApplyLive(e);
             Publish(e);
@@ -545,7 +545,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        PersistAll(ActorTracing.StampAll<object>([MissedDeadline(now)]), ActorTracing.Persisting<object>("game", 1, e =>
+        PersistAll(ActorTracing.StampAll<object>([MissedDeadline(now)]), ActorTracing.Persisting<object>(ActorNames.Game, 1, e =>
         {
             ApplyLive(e);
             Publish(e);
@@ -577,7 +577,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private void PersistAndReply(List<object> events)
     {
         IActorRef replyTo = Sender;
-        PersistAll(ActorTracing.StampAll(events), ActorTracing.Persisting<object>("game", events.Count, e =>
+        PersistAll(ActorTracing.StampAll(events), ActorTracing.Persisting<object>(ActorNames.Game, events.Count, e =>
         {
             ApplyLive(e);
             Publish(e);
@@ -772,7 +772,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     /// <summary>A game against the engine, not over, with the engine's side to move.</summary>
     private bool EngineToMove =>
         _engine is { } engine && _status != GameStatus.Ended
-        && string.Equals(engine.Side, _rules.SideToMove.ToString(), StringComparison.OrdinalIgnoreCase);
+        && engine.Side == SideNames.Of(_rules.SideToMove);
 
     private DateTimeOffset FirstMoveDeadline => (Ply == 0 ? _createdAt : _lastMoveAt) + FirstMoveWindow;
 
@@ -939,14 +939,14 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _gameId, _white, _black, _timeControl.ToString(), _status, _rules.Fen, Ply, _rules.SideToMove,
         _rules.Moves.Count > 0 ? _rules.Moves[^1] : null, _lastSan,
         CurrentMs(Side.White, _clock.GetUtcNow()), CurrentMs(Side.Black, _clock.GetUtcNow()), _clock.GetUtcNow(),
-        _drawOfferedBy, _result, _reason, LastSequenceNr, AbsentId, ClaimableBy(_clock.GetUtcNow()), _engine?.Side, _engine?.Level, DeadlineAt);
+        _drawOfferedBy, _result, EndReasons.Parse(_reason), LastSequenceNr, AbsentId, ClaimableBy(_clock.GetUtcNow()), _engine?.Side, _engine?.Level, DeadlineAt);
 
     /// <summary>The engine's seat is valid when its side is white or black and that side's player is its level's user.</summary>
     private static bool IsEngineSeat(EnginePlayer engine, long whiteId, long blackId) =>
         EngineLevel.Find(engine.Level) is { } level && engine.Side switch
         {
-            "white" => whiteId == level.UserId,
-            "black" => blackId == level.UserId,
+            SideNames.White => whiteId == level.UserId,
+            SideNames.Black => blackId == level.UserId,
             _ => false,
         };
 

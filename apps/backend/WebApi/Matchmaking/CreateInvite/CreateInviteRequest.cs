@@ -1,3 +1,4 @@
+using Chess.Backend.Games;
 using FluentValidation;
 
 namespace Chess.Backend.WebApi.Matchmaking;
@@ -8,7 +9,7 @@ internal sealed class CreateInviteRequest
     public string TimeControl { get; init; } = string.Empty;
 
     /// <summary><c>white</c>, <c>black</c> or <c>random</c>: the creator's colour.</summary>
-    public string Color { get; init; } = "random";
+    public string Color { get; init; } = SideNames.Random;
 }
 
 internal sealed class CreateInviteRequestValidator : Validator<CreateInviteRequest>
@@ -16,6 +17,6 @@ internal sealed class CreateInviteRequestValidator : Validator<CreateInviteReque
     public CreateInviteRequestValidator()
     {
         RuleFor(r => r.TimeControl).MustBeInviteTimeControl();
-        RuleFor(r => r.Color).Must(c => c is "white" or "black" or "random").WithMessage("Colour must be white, black or random.");
+        RuleFor(r => r.Color).Must(SideNames.IsChoice).WithMessage("Colour must be white, black or random.");
     }
 }

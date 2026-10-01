@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Chess.Backend.Data.ReadModels;
+using Chess.Backend.Games;
 
 namespace Chess.Backend.Studies;
 
@@ -93,7 +94,7 @@ internal sealed class StudyService(ProjectDbContext context, ILogger<StudyServic
         for (int i = 0; i < studies.Count; i++)
         {
             StudyInput input = studies[i];
-            string startFen = string.IsNullOrWhiteSpace(input.StartFen) ? StudyTree.StandardStart : input.StartFen;
+            string startFen = string.IsNullOrWhiteSpace(input.StartFen) ? ChessRules.StartFen : input.StartFen;
             (IReadOnlyList<StudyMove>? tree, StudyTreeError? error) = StudyTree.Validate(startFen, input.Tree);
             if (error is not null || string.IsNullOrWhiteSpace(input.Title))
             {
@@ -110,7 +111,7 @@ internal sealed class StudyService(ProjectDbContext context, ILogger<StudyServic
                 Tree = JsonSerializer.Serialize(tree, Json),
                 White = Clip(input.White, 255),
                 Black = Clip(input.Black, 255),
-                Result = input.Result is "1-0" or "0-1" or "1/2-1/2" or "*" ? input.Result : null,
+                Result = PgnResults.IsDecided(input.Result) || input.Result == PgnResults.None ? input.Result : null,
                 Date = Clip(input.Date, 10),
             };
             Context.Studies.Add(study);

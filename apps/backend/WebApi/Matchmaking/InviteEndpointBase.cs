@@ -26,7 +26,7 @@ internal abstract class InviteEndpointBase<TRequest>(IRequiredActor<InviteActor>
 
     protected async Task AskAsync(object command, int successStatus, CancellationToken ct)
     {
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         object reply;
         try
         {

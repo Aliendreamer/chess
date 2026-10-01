@@ -2,6 +2,7 @@ using Akka.Actor;
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.TestKit;
 using Chess.Backend.Akka.Games;
+using Chess.Backend.Games;
 using Chess.Backend.Messaging;
 
 namespace Chess.Backend.Tests.Games;
@@ -114,7 +115,7 @@ public sealed class GamePresenceTests() : GameActorTestBase(virtualTime: true)
 
         GameView ended = Assert.IsType<GameView>(Send(actor, new ClaimAbandonment(id, White, Win: true)));
 
-        Assert.Equal((GameStatus.Ended, "1-0", "Abandonment"), (ended.Status, ended.Result, ended.Reason));
+        Assert.Equal((GameStatus.Ended, "1-0", EndReason.Abandonment), (ended.Status, ended.Result, ended.Reason));
         Assert.Null(ended.ClaimableBy);
     }
 
@@ -125,7 +126,7 @@ public sealed class GamePresenceTests() : GameActorTestBase(virtualTime: true)
 
         GameView ended = Assert.IsType<GameView>(Send(actor, new ClaimAbandonment(id, White, Win: false)));
 
-        Assert.Equal(("1/2-1/2", "Abandonment"), (ended.Result, ended.Reason));
+        Assert.Equal(("1/2-1/2", EndReason.Abandonment), (ended.Result, ended.Reason));
     }
 
     [Fact]

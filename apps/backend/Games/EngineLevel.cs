@@ -11,6 +11,10 @@ namespace Chess.Backend.Games;
 /// </summary>
 internal sealed record EngineLevel(string Level, long UserId, string Label)
 {
+    /// <summary>
+    /// The levels, defined once. <see cref="Level"/> is in the journal (<c>EnginePlayer.Level</c>) and is what the engine
+    /// worker parses: an Elo, or <c>max</c> (its <c>EngineLevel.MaxName</c>).
+    /// </summary>
     public static IReadOnlyList<EngineLevel> All { get; } =
     [
         new("1320", -1, "Casual"),
@@ -36,12 +40,12 @@ internal sealed record EngineLevel(string Level, long UserId, string Label)
         ArgumentNullException.ThrowIfNull(coin);
         bool humanWhite = color switch
         {
-            "white" => true,
-            "black" => false,
+            SideNames.White => true,
+            SideNames.Black => false,
             _ => coin(),
         };
         return humanWhite
-            ? (humanId, UserId, new EnginePlayer("black", Level))
-            : (UserId, humanId, new EnginePlayer("white", Level));
+            ? (humanId, UserId, new EnginePlayer(SideNames.Black, Level))
+            : (UserId, humanId, new EnginePlayer(SideNames.White, Level));
     }
 }

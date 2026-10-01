@@ -63,7 +63,7 @@ public sealed class CorrespondenceGameTests() : GameActorTestBase(virtualTime: t
         GameView ended = Check(actor, id);
 
         Assert.Equal(1, seq);
-        Assert.Equal((GameStatus.Ended, "*", "Aborted"), (ended.Status, ended.Result, ended.Reason));
+        Assert.Equal((GameStatus.Ended, "*", EndReason.Aborted), (ended.Status, ended.Result, ended.Reason));
         Assert.Null(ended.DeadlineAt);
     }
 
@@ -77,7 +77,7 @@ public sealed class CorrespondenceGameTests() : GameActorTestBase(virtualTime: t
         GameView ended = Check(actor, id);
         GameView again = Check(actor, id);
 
-        Assert.Equal((GameStatus.Ended, "1-0", "Timeout"), (ended.Status, ended.Result, ended.Reason));
+        Assert.Equal((GameStatus.Ended, "1-0", EndReason.Timeout), (ended.Status, ended.Result, ended.Reason));
         Assert.Equal(ended.Seq, again.Seq); // the second check persisted nothing
     }
 
@@ -91,7 +91,7 @@ public sealed class CorrespondenceGameTests() : GameActorTestBase(virtualTime: t
         object reply = Send(actor, new MakeMove(id, White, "g1f3"));
 
         GameView view = Assert.IsType<GameView>(reply);
-        Assert.Equal((GameStatus.Ended, "0-1", "Timeout", 2), (view.Status, view.Result, view.Reason, view.Ply));
+        Assert.Equal((GameStatus.Ended, "0-1", EndReason.Timeout, 2), (view.Status, view.Result, view.Reason, view.Ply));
     }
 
     [Fact]

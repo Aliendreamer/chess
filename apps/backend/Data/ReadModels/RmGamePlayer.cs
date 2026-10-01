@@ -1,10 +1,12 @@
+using Chess.Backend.Games;
+
 namespace Chess.Backend.Data.ReadModels;
 
 /// <summary>One row per player per game: "my games" is one index seek on (UserId, CreatedAt, GameId).</summary>
 internal sealed class RmGamePlayer
 {
-    public const string White = "white";
-    public const string Black = "black";
+    public const string White = SideNames.White;
+    public const string Black = SideNames.Black;
 
     public long UserId { get; set; }
 

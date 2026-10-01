@@ -16,6 +16,6 @@ internal sealed class ClaimRequestValidator : Validator<ClaimRequest>
     public ClaimRequestValidator()
     {
         RuleFor(r => r.Id).MustBeGameId();
-        RuleFor(r => r.Outcome).Must(o => GameReplyMapper.TryParseClaim(o, out _)).WithMessage("Outcome must be \"win\" or \"draw\".");
+        RuleFor(r => r.Outcome).Must(o => GameReplyMapper.TryParseClaim(o, out _)).WithMessage($"Outcome must be \"{ClaimOutcomes.Win}\" or \"{ClaimOutcomes.Draw}\".");
     }
 }

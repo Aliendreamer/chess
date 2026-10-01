@@ -66,7 +66,7 @@ public sealed class CorrespondenceFlowTests(StackFixture stack)
 
         // Black never answers 2.Nf3: the sweeper finds the deadline and the game ends without anyone opening it.
         View ended = await WaitEndedAsync(client, started.GameId, white, ct);
-        Assert.Equal(("1-0", "Timeout", 3), (ended.Result, ended.Reason, ended.Ply));
+        Assert.Equal(("1-0", "timeout", 3), (ended.Result, ended.Reason, ended.Ply));
 
         // White: the start, after 1…e5, the result. Black: after 1.e4, after 2.Nf3, the result. One mail each, no repeats.
         await Api.EventuallyAsync(
@@ -97,6 +97,6 @@ public sealed class CorrespondenceFlowTests(StackFixture stack)
         GameView started = await app.Services.GetRequiredService<IGameStarter>().StartAsync(whiteId, blackId, TimeControl.Correspondence7, ct);
 
         View ended = await WaitEndedAsync(client, started.GameId, white, ct);
-        Assert.Equal(("*", "Aborted"), (ended.Result, ended.Reason));
+        Assert.Equal(("*", "aborted"), (ended.Result, ended.Reason));
     }
 }

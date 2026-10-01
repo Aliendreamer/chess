@@ -46,7 +46,7 @@ internal sealed class ProjectDbContextFactory : IDesignTimeDbContextFactory<Proj
 {
     public ProjectDbContext CreateDbContext(string[] args)
     {
-        string connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__Postgres")
+        string connectionString = Environment.GetEnvironmentVariable($"ConnectionStrings__{Constants.ConnectionStrings.Postgres}")
             ?? "Host=localhost;Port=5432;Database=chess;Username=chess;Password=chess";
         DbContextOptionsBuilder<ProjectDbContext> builder = new();
         builder.UseNpgsql(connectionString);

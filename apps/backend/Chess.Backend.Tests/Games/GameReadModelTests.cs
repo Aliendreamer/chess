@@ -49,7 +49,7 @@ public sealed class GameReadModelTests
         GameView view = GameReads.ToView(Ended());
 
         Assert.Equal(
-            new GameView(Id, 1, 2, "5+3", GameStatus.Ended, "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3", 4, Side.White, "d8h4", "Qh4#", 290_000, 295_000, T0.AddSeconds(6), null, "0-1", "Checkmate", 6),
+            new GameView(Id, 1, 2, "5+3", GameStatus.Ended, "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3", 4, Side.White, "d8h4", "Qh4#", 290_000, 295_000, T0.AddSeconds(6), null, "0-1", EndReason.Checkmate, 6),
             view);
     }
 
@@ -58,7 +58,7 @@ public sealed class GameReadModelTests
     {
         GameListItem item = GameReads.ToListItem(Ended());
 
-        Assert.Equal(new GameListItem(Id, 1, "testuser", 2, "player", "5+3", "ended", "0-1", "Checkmate", 4, T0, T0.AddSeconds(6)), item);
+        Assert.Equal(new GameListItem(Id, 1, "testuser", 2, "player", "5+3", "ended", "0-1", EndReason.Checkmate, 4, T0, T0.AddSeconds(6)), item);
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class GameReadModelTests
 
         MyGameItem item = GameReads.ToMyGame(me, Ended(), Week);
 
-        Assert.Equal(new MyGameItem(Id, "black", 1, "testuser", "5+3", "ended", "0-1", "Checkmate", T0), item);
+        Assert.Equal(new MyGameItem(Id, "black", 1, "testuser", "5+3", "ended", "0-1", EndReason.Checkmate, T0), item);
     }
 
     private static readonly TimeSpan Week = TimeSpan.FromDays(7);

@@ -66,7 +66,7 @@ public sealed class GameFlowTests(StackFixture stack)
             last = await r.Content.ReadFromJsonAsync<View>(Api.Json, ct);
         }
 
-        Assert.Equal(("ended", "0-1", "Checkmate", "Qh4#", 4), (last!.Status, last.Result, last.Reason, last.LastSan, last.Ply));
+        Assert.Equal(("ended", "0-1", "checkmate", "Qh4#", 4), (last!.Status, last.Result, last.Reason, last.LastSan, last.Ply));
 
         // The hub pushed each move (and the ending) with rising seq, the last one being the final view.
         await Api.EventuallyAsync(() => Task.FromResult(Count(pushed) >= 5), "live frames for 4 moves + the ending", TimeSpan.FromSeconds(30), ct, TimeSpan.FromMilliseconds(200));

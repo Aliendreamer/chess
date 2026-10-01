@@ -1,3 +1,4 @@
+using Chess.Backend.Games;
 using Chess.Backend.Studies;
 
 namespace Chess.Backend.Tests.Studies;
@@ -15,7 +16,7 @@ public sealed class StudyTreeTests
     [Fact]
     public void A_legal_tree_comes_back_with_the_servers_san_and_fen()
     {
-        (IReadOnlyList<StudyMove>? tree, StudyTreeError? error) = StudyTree.Validate(StudyTree.StandardStart, Ruy);
+        (IReadOnlyList<StudyMove>? tree, StudyTreeError? error) = StudyTree.Validate(ChessRules.StartFen, Ruy);
 
         Assert.Null(error);
         Assert.Equal(["e4", "e5", "Nf3", "Nc6"], StudyTree.MainLine(tree!).Select(m => m.San));
@@ -29,7 +30,7 @@ public sealed class StudyTreeTests
     {
         StudyMoveInput[] bad = [M("e2e4", M("e7e5"), M("e8e6"))];
 
-        (IReadOnlyList<StudyMove>? tree, StudyTreeError? error) = StudyTree.Validate(StudyTree.StandardStart, bad);
+        (IReadOnlyList<StudyMove>? tree, StudyTreeError? error) = StudyTree.Validate(ChessRules.StartFen, bad);
 
         Assert.Null(tree);
         Assert.Equal([0, 1], error!.Path);
@@ -58,7 +59,7 @@ public sealed class StudyTreeTests
         // Threefold repetition ends a game, but not a line of study.
         StudyMoveInput knights = M("g1f3", M("g8f6", M("f3g1", M("f6g8", M("g1f3", M("g8f6", M("f3g1", M("f6g8", M("g1f3")))))))));
 
-        Assert.Null(StudyTree.Validate(StudyTree.StandardStart, [knights]).Error);
+        Assert.Null(StudyTree.Validate(ChessRules.StartFen, [knights]).Error);
     }
 
     [Fact]
@@ -66,12 +67,12 @@ public sealed class StudyTreeTests
     {
         StudyMoveInput[] wide = [.. Enumerable.Range(0, StudyTree.MaxNodes + 1).Select(_ => M("e2e4"))];
 
-        Assert.Contains("at most", StudyTree.Validate(StudyTree.StandardStart, wide).Error!.Message, StringComparison.Ordinal);
+        Assert.Contains("at most", StudyTree.Validate(ChessRules.StartFen, wide).Error!.Message, StringComparison.Ordinal);
     }
 
     [Fact]
     public void An_empty_study_is_fine() =>
-        Assert.Empty(StudyTree.Validate(StudyTree.StandardStart, []).Tree!);
+        Assert.Empty(StudyTree.Validate(ChessRules.StartFen, []).Tree!);
 }
 
 public sealed class StudyPgnTests
@@ -83,9 +84,9 @@ public sealed class StudyPgnTests
     [Fact]
     public void Variations_follow_the_move_they_replace_and_black_moves_are_numbered_after_them()
     {
-        IReadOnlyList<StudyMove> tree = Tree(StudyTree.StandardStart, M("e2e4", M("e7e5", M("g1f3", M("b8c6"), M("d7d6"))), M("c7c5", M("g1f3"))));
+        IReadOnlyList<StudyMove> tree = Tree(ChessRules.StartFen, M("e2e4", M("e7e5", M("g1f3", M("b8c6"), M("d7d6"))), M("c7c5", M("g1f3"))));
 
-        string pgn = StudyPgn.Build("Ruy ideas", new StudyHeaders("ann", "bob", "1-0", "2026.09.28"), StudyTree.StandardStart, tree);
+        string pgn = StudyPgn.Build("Ruy ideas", new StudyHeaders("ann", "bob", "1-0", "2026.09.28"), ChessRules.StartFen, tree);
 
         Assert.Equal(
             """

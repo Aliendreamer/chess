@@ -153,7 +153,7 @@ public sealed class EngineGameTests() : GameActorTestBase(virtualTime: true)
         Move(actor, id, Level.UserId, "e7e5");
         (Guid other, IActorRef fresh) = EngineGame();
         Advance(GameActor.FirstMoveWindow + TimeSpan.FromSeconds(1));
-        Assert.Equal("Aborted", View(fresh, other).Reason); // a human who never moves still aborts the game
+        Assert.Equal(EndReason.Aborted, View(fresh, other).Reason); // a human who never moves still aborts the game
     }
 
     [Fact]

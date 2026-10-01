@@ -67,7 +67,7 @@ public sealed class GameHistoryTests(StackFixture stack)
             ProjectionTimeout,
             ct,
             TimeSpan.FromMilliseconds(500));
-        Assert.Equal((white, black, "0-1", "Checkmate", 4, true), (summary!.White, summary.Black, summary.Result, summary.Reason, summary.Ply, summary.HasPgn));
+        Assert.Equal((white, black, "0-1", "checkmate", 4, true), (summary!.White, summary.Black, summary.Result, summary.Reason, summary.Ply, summary.HasPgn));
 
         // Moves, in ply order, with SAN and the position after each.
         using (HttpResponseMessage r = await Api.GetAsync(client, $"/api/games/{id:N}/moves", white, ct))

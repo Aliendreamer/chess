@@ -33,7 +33,7 @@ internal sealed class MyGamesEndpoint(ReadDbContext read, ICurrentUser user, IOp
             var joined = read.RmGamePlayers
                 .Where(p => p.UserId == me)
                 .Join(read.RmGames, p => p.GameId, g => g.GameId, (p, g) => new { P = p, G = g });
-            if (req.Turn == "mine")
+            if (req.Turn == MyGamesRequest.MineTurn)
             {
                 // Being played and my move: White on even plies, Black on odd ones.
                 joined = joined.Where(x => x.G.Status == RmGame.Playing

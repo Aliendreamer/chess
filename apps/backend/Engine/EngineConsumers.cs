@@ -71,9 +71,9 @@ internal sealed class EngineRequestConsumer(ProjectDbContext db, IEngineRequests
             return ProjectionOutcome.Ignored; // a game between people, or a later event of one
         }
 
-        if (engine.Side == "white")
+        if (engine.Side == SideNames.White)
         {
-            await requests.RequestAsync(gameId, 0, GameProjection.StartFen, engine.Level, ct);
+            await requests.RequestAsync(gameId, 0, ChessRules.StartFen, engine.Level, ct);
             Utils.Log.EngineRequested(logger, gameId, 0, engine.Level);
         }
 
@@ -84,7 +84,7 @@ internal sealed class EngineRequestConsumer(ProjectDbContext db, IEngineRequests
 
     /// <summary>The FEN's second field: <c>w</c> or <c>b</c>, as the side names games use.</summary>
     internal static string SideToMove(string fen) =>
-        fen.Split(' ') is [_, "b", ..] ? "black" : "white";
+        fen.Split(' ') is [_, "b", ..] ? SideNames.Black : SideNames.White;
 }
 
 /// <summary>

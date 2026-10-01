@@ -1,4 +1,5 @@
 using Chess.Backend.Data.ReadModels;
+using Chess.Backend.Games;
 using Chess.Backend.Studies;
 using Microsoft.AspNetCore.Http;
 
@@ -40,7 +41,7 @@ public sealed class StudyServiceTests
 
             Assert.Equal(["One", "Three"], result.Created.Select(s => s.Title));
             Assert.Equal(1, Assert.Single(result.Refused).Index);
-            Assert.Equal(StudyTree.StandardStart, (await db.Studies.SingleAsync(s => s.Title == "One")).StartFen);
+            Assert.Equal(ChessRules.StartFen, (await db.Studies.SingleAsync(s => s.Title == "One")).StartFen);
         }
     }
 

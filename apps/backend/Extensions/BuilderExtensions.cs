@@ -39,7 +39,7 @@ internal static class BuilderExtension
         services.AddSettings<DatabaseOptions>(configuration, DatabaseOptions.SectionName);
 
         services.AddSingleton(TimeProvider.System);
-        string? redis = configuration.GetConnectionString("Redis");
+        string? redis = configuration.GetConnectionString(Constants.ConnectionStrings.Redis);
         services.AddCaching(redis, cache);
         services.AddHttpClient(Constants.KeycloakHttpClient, client => client.Timeout = TimeSpan.FromSeconds(keycloak.HttpTimeoutSeconds));
         services.AddSingleton<IKeycloakOidcClient, KeycloakOidcClient>();
@@ -184,7 +184,7 @@ internal static class BuilderExtension
             }
             services.AddSingleton<JournalEventMappers>();
             services.AddSingleton<IPublisherLeaseProvider>(_ => new PostgresPublisherLeaseProvider(
-                configuration.GetConnectionString("Postgres") is { Length: > 0 } primary
+                configuration.GetConnectionString(Constants.ConnectionStrings.Postgres) is { Length: > 0 } primary
                     ? primary
                     : throw new InvalidOperationException("ConnectionStrings:Postgres is required for the journal publisher.")));
         }
@@ -227,7 +227,7 @@ internal static class BuilderExtension
 
     private static void AddCors(IServiceCollection services, ConfigurationManager configuration)
     {
-        string[] origins = configuration.GetSection("AllowedCorsOrigins").Get<string[]>() ?? [];
+        string[] origins = configuration.GetSection(Constants.ConfigKeys.AllowedCorsOrigins).Get<string[]>() ?? [];
         services.AddCors(options => options.AddPolicy(Constants.CorsPolicy, policy => policy
             .WithOrigins(origins)
             .AllowAnyHeader()
@@ -450,7 +450,7 @@ internal static class ObservabilityExtensions
 
     /// <summary>This node's name for telemetry: its Akka hostname in the cluster, else the machine name.</summary>
     public static string NodeName(IConfiguration configuration) =>
-        configuration["Akka:Hostname"] is { Length: > 0 } host ? host : System.Environment.MachineName;
+        configuration[Constants.ConfigKeys.AkkaHostname] is { Length: > 0 } host ? host : System.Environment.MachineName;
 
     /// <summary>Adds the OTLP sink to Serilog when export is on: every log reaches Loki with its trace and span ids.</summary>
     public static LoggerConfiguration ConfigureOtlpLogs(this LoggerConfiguration logger, IConfiguration configuration)

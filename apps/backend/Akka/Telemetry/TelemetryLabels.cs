@@ -42,6 +42,22 @@ internal static class TelemetryTags
     public const string MessagingGroup = "messaging.consumer.group.name";
 }
 
+/// <summary>
+/// Each actor type's name: the <c>actor</c> label on every <c>chess.actor.*</c> metric and span, and for singletons and
+/// top-level actors also their Akka name. One name per type, or its series split.
+/// </summary>
+internal static class ActorNames
+{
+    public const string Game = "game";
+    public const string Invite = "invite";
+    public const string Ping = "ping";
+    public const string Matchmaking = "matchmaking";
+    public const string JournalPublisher = "journal-publisher";
+    public const string DeadlineSweeper = "deadline-sweeper";
+    public const string HubFanOut = "hub-fanout";
+    public const string ClusterMetrics = "cluster-metrics";
+}
+
 /// <summary>How an actor's message went: the <c>outcome</c> label of <c>chess.actor.messages</c>.</summary>
 internal enum MessageOutcome
 {

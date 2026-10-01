@@ -21,7 +21,7 @@ internal sealed class DeleteStudyEndpoint(IStudyService studies, ICurrentUser us
     public override async Task HandleAsync(StudyRouteRequest req, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(req);
-        HttpContext.Response.Headers[HeaderNames.CacheControl] = "no-store";
+        HttpContext.Response.Headers[HeaderNames.CacheControl] = Constants.CacheControl.NoStore;
         _ = Chess.Backend.WebApi.Games.GameReplyMapper.TryParseId(req.Id, out Guid id);
         if (await studies.DeleteAsync(id, user.Id ?? 0, ct))
         {
