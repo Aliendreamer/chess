@@ -56,7 +56,7 @@ wait_reply() {
   local v
   for _ in $(seq 1 $((${3:-45} * 2))); do
     v="$(live "$1")"
-    if (( $(num ply <<<"$v") > $2 )) || grep -q '"status":"Ended"' <<<"$v"; then printf '%s' "$v"; return; fi
+    if (( $(num ply <<<"$v") > $2 )) || grep -q '"status":"ended"' <<<"$v"; then printf '%s' "$v"; return; fi
     sleep 0.5
   done
   fail "the engine did not answer ply $2 in game $1 within ${3:-45}s"
@@ -67,7 +67,7 @@ play() {
   local v fen uci ply
   v="$(live "$1")"
   for _ in $(seq 1 "$2"); do
-    grep -q '"status":"Ended"' <<<"$v" && break
+    grep -q '"status":"ended"' <<<"$v" && break
     fen="$(field fen <<<"$v")"; ply="$(num ply <<<"$v")"
     uci="$(our_move "$fen")"
     [[ -n "$uci" && "$uci" != "(none)" ]] || fail "no move for White in $fen"
@@ -104,7 +104,7 @@ if [[ "$QUICK" == "0" ]]; then
   step "a full game against 1320, to the end"
   G="$(start 1320)"
   v="$(play "$G" 150)"
-  grep -q '"status":"Ended"' <<<"$v" || fail "the game did not end within 150 moves: $v"
+  grep -q '"status":"ended"' <<<"$v" || fail "the game did not end within 150 moves: $v"
   result="$(field result <<<"$v")"; reason="$(field reason <<<"$v")"
   for _ in $(seq 1 40); do
     game="$(as "http://$API_HOST/api/games/$G")"
