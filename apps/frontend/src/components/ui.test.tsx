@@ -42,6 +42,17 @@ describe('Button', () => {
   })
 })
 
+describe('OptionTile bar (site-themes)', () => {
+  it('draws the coloured bar only when given one', () => {
+    const { container, rerender } = render(
+      <OptionTile figure="3+2" caption="Blitz" bar="bg-tc-blitz" />,
+    )
+    expect(container.querySelector('.bg-tc-blitz')).not.toBeNull()
+    rerender(<OptionTile figure="3+2" caption="Blitz" />)
+    expect(container.querySelector('[class*="bg-tc-"]')).toBeNull()
+  })
+})
+
 describe('Chip and OptionTile', () => {
   it('expose their selection as aria-pressed', () => {
     render(

@@ -100,6 +100,8 @@ export interface OptionTileProps {
   disabled?: boolean
   /** The accessible name, when figure + caption would not read well ("5+3Blitz"). */
   label?: string
+  /** A background class for a coloured bar along the top: the game type (site-themes). */
+  bar?: string
   onClick?: () => void
 }
 
@@ -110,6 +112,7 @@ export function OptionTile({
   align = 'start',
   disabled = false,
   label,
+  bar,
   onClick,
 }: OptionTileProps) {
   const center = align === 'center'
@@ -121,13 +124,14 @@ export function OptionTile({
       disabled={disabled}
       onClick={onClick}
       className={[
-        'flex cursor-pointer flex-col gap-1 rounded-card border text-left text-fg-primary transition-colors duration-[120ms] disabled:cursor-not-allowed disabled:opacity-45',
+        'relative flex cursor-pointer flex-col gap-1 overflow-hidden rounded-card border text-left text-fg-primary transition-colors duration-[120ms] disabled:cursor-not-allowed disabled:opacity-45',
         center ? 'items-center py-3.5' : 'items-start px-3.5 py-[18px]',
         selected
           ? 'border-line-accent bg-surface-accent-tint'
           : 'border-line-default bg-surface-raised enabled:hover:border-line-accent',
       ].join(' ')}
     >
+      {bar ? <span aria-hidden className={`absolute inset-x-0 top-0 h-[3px] ${bar}`} /> : null}
       <span className="font-display text-display-sm">{figure}</span>
       {caption ? (
         <span

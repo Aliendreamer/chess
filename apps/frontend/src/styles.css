@@ -73,6 +73,14 @@
   --color-status-turn: var(--color-brass-400);
   --color-status-waiting: var(--color-parchment-500);
 
+  /* Game types (site-themes): one colour each, always shown next to the type's name, never instead of it. */
+  --color-tc-bullet: oklch(0.7 0.17 28);
+  --color-tc-blitz: oklch(0.8 0.14 75);
+  --color-tc-rapid: oklch(0.76 0.14 150);
+  --color-tc-classical: oklch(0.72 0.12 245);
+  --color-tc-correspondence: oklch(0.72 0.13 300);
+  --color-tc-computer: oklch(0.72 0.03 250);
+
   /* Type */
   --font-display: 'Newsreader', Georgia, serif;
   --font-sans: 'IBM Plex Sans', system-ui, sans-serif;

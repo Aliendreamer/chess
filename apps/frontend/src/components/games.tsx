@@ -5,15 +5,49 @@ import type { ChessboardOptions, PieceRenderObject } from 'react-chessboard'
 import type { ReactNode } from 'react'
 import type { SideMaterial, SquarePair } from '#/lib/board'
 import type { RematchState } from '#/lib/feedback'
-import type { ClaimOutcome, Color, EndReason, GameCommand, GameView, PgnResult } from '#/lib/games'
+import type {
+  Category,
+  ClaimOutcome,
+  Color,
+  EndReason,
+  GameCommand,
+  GameView,
+  PgnResult,
+} from '#/lib/games'
 import type { Piece } from '#/lib/moveInput'
 import type { MyGameItem } from '#/lib/play'
 import { PreferencesContext, animationMs as animationMsOf } from '#/lib/auth'
 import { Button, Panel } from '#/components/ui'
 import { outcomeFor } from '#/lib/play'
-import { formatClock, pairMoves, reasonText, resultText, timeLeft } from '#/lib/games'
+import { categoryOf, formatClock, pairMoves, reasonText, resultText, timeLeft } from '#/lib/games'
 import { squaresFor } from '#/lib/moveInput'
 import { pieceSrc, squareStyles } from '#/lib/board'
+
+// Static class strings per game type (site-themes), so Tailwind sees every one.
+const TC_BG: Record<Category, string> = {
+  bullet: 'bg-tc-bullet',
+  blitz: 'bg-tc-blitz',
+  rapid: 'bg-tc-rapid',
+  classical: 'bg-tc-classical',
+  correspondence: 'bg-tc-correspondence',
+  computer: 'bg-tc-computer',
+}
+
+/** The game type's colour as a background class: the quick-pairing tiles' top bar. */
+export function categoryBar(timeControl: string): string {
+  return TC_BG[categoryOf(timeControl)]
+}
+
+/** A dot in the game type's colour, placed before the time control or the type's name. */
+export function CategoryMark({ timeControl }: { timeControl: string }) {
+  return (
+    <span
+      aria-hidden
+      data-category={categoryOf(timeControl)}
+      className={`inline-block size-2 shrink-0 rounded-full ${TC_BG[categoryOf(timeControl)]}`}
+    />
+  )
+}
 
 const NAME: Record<Piece['type'], string> = {
   k: 'king',
@@ -424,7 +458,10 @@ export function RecentGames({ games, pgn = false }: RecentGamesProps) {
             >
               vs {game.opponent}
             </Link>
-            <span className="font-mono text-fg-secondary">{game.timeControl}</span>
+            <span className="flex items-center gap-2 font-mono text-fg-secondary">
+              <CategoryMark timeControl={game.timeControl} />
+              {game.timeControl}
+            </span>
             <span className="truncate text-sm text-fg-secondary">
               {!finished ? 'in play' : game.reason ? reasonText(game.reason) : ''}
             </span>
@@ -698,7 +735,10 @@ export function YourTurnList({
           >
             vs {game.opponent}
           </Link>
-          <span className="font-mono text-fg-secondary">{game.timeControl}</span>
+          <span className="flex items-center gap-2 font-mono text-fg-secondary">
+            <CategoryMark timeControl={game.timeControl} />
+            {game.timeControl}
+          </span>
           <span className="text-sm text-fg-accent">
             {game.deadlineAt ? timeLeft(game.deadlineAt, nowMs) : 'your move'}
           </span>

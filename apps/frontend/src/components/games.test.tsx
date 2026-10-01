@@ -314,4 +314,30 @@ describe('YourTurnList', () => {
     expect(rows[0]?.textContent).toBe('vs bob7d6 days left')
     expect(rows[1]?.textContent).toBe('vs ann5+3your move')
   })
+
+  it('marks each game with its type colour (site-themes)', () => {
+    const { container } = render(
+      <YourTurnList
+        nowMs={0}
+        games={[
+          {
+            color: 'white',
+            opponentId: 2,
+            status: 'playing',
+            result: null,
+            reason: null,
+            createdAt: '2026-09-27T09:00:00Z',
+            yourTurn: true,
+            gameId: 'g1',
+            opponent: 'bob',
+            timeControl: '7d',
+            deadlineAt: null,
+          },
+        ]}
+      />,
+    )
+    const mark = container.querySelector('[data-category]')
+    expect(mark?.getAttribute('data-category')).toBe('correspondence')
+    expect(mark?.className).toContain('bg-tc-correspondence')
+  })
 })

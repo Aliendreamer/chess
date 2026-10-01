@@ -3,6 +3,7 @@ import {
   CORRESPONDENCE,
   UNTIMED,
   category,
+  categoryOf,
   engineToMove,
   formatClock,
   hasClock,
@@ -158,6 +159,19 @@ describe('topicId', () => {
   it('drops the dashes a JSON guid has', () => {
     expect(topicId('0199f1c2-a3b4-7c5d-8e9f-0a1b2c3d4e5f')).toBe('0199f1c2a3b47c5d8e9f0a1b2c3d4e5f')
     expect(topicId('0199f1c2a3b47c5d8e9f0a1b2c3d4e5f')).toBe('0199f1c2a3b47c5d8e9f0a1b2c3d4e5f')
+  })
+})
+
+describe('categoryOf (site-themes)', () => {
+  it.each([
+    ['1+0', 'bullet'],
+    ['3+2', 'blitz'],
+    ['10+0', 'rapid'],
+    ['30+20', 'classical'],
+    ['7d', 'correspondence'],
+    ['untimed', 'computer'],
+  ])('%s is %s', (tc, key) => {
+    expect(categoryOf(tc)).toBe(key)
   })
 })
 

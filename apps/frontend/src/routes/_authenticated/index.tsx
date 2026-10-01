@@ -24,7 +24,7 @@ import {
   buttonClass,
   useCommand,
 } from '#/components/ui'
-import { RecentGames, YourTurnList } from '#/components/games'
+import { RecentGames, YourTurnList, categoryBar } from '#/components/games'
 
 /** Home: quick pairing on a preset, an invite link for a friend, and your recent games. */
 /** `?seek=3+2` joins that queue on arrival: the game-over card's "New opponent" (game-feedback). */
@@ -107,6 +107,7 @@ function HomePage() {
               figure={tc}
               caption={category(tc)}
               label={`Play ${tc} (${category(tc)})`}
+              bar={categoryBar(tc)}
               selected={seek?.timeControl === tc}
               disabled={joining.busy}
               onClick={() => void join(tc)}

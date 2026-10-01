@@ -42,6 +42,7 @@ import { rematchState, tabState, useTabSignals } from '#/lib/feedback'
 import { isInviteView } from '#/lib/play'
 import {
   Board,
+  CategoryMark,
   ClaimPanel,
   GameControls,
   GameOverCard,
@@ -410,7 +411,8 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
 
       <div className="flex max-w-[380px] flex-col gap-5">
         <div>
-          <div className="text-xs text-fg-secondary">
+          <div className="flex items-center gap-2 text-xs text-fg-secondary">
+            <CategoryMark timeControl={current.timeControl} />
             {untimed
               ? 'Untimed · '
               : current.timeControl === CORRESPONDENCE

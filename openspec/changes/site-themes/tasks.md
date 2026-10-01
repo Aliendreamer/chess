@@ -4,9 +4,9 @@ Each group ends in one commit that passes the frontend gate (`pnpm typecheck && 
 
 ## 1. Game-type colours
 
-- [ ] 1.1 Failing test for `categoryOf`: `1+0` → bullet, `3+2` → blitz, `10+0` → rapid, `30+0` → classical,
+- [x] 1.1 Failing test for `categoryOf`: `1+0` → bullet, `3+2` → blitz, `10+0` → rapid, `30+0` → classical,
       `7d` → correspondence, `untimed` → computer. Implement, with `category()` built on it.
-- [ ] 1.2 `--color-tc-*` tokens, the `OptionTile` colour bar, and the markers on history, "Your turn" and the game header.
+- [x] 1.2 `--color-tc-*` tokens, the `OptionTile` colour bar, and the markers on history, "Your turn" and the game header.
       Commit: `feat(frontend): a colour per game type`.
 
 ## 2. Icons

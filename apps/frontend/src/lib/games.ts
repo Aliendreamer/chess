@@ -286,15 +286,42 @@ export const PRESETS = [
   '90+30',
 ] as const
 
-/** Bullet under 3 minutes, blitz under 10, rapid under 30, classical beyond (by the base time); or untimed. */
-export function category(timeControl: string): string {
-  if (timeControl === UNTIMED) return 'Untimed'
-  if (timeControl === CORRESPONDENCE) return 'Correspondence'
+export const CATEGORIES = [
+  'bullet',
+  'blitz',
+  'rapid',
+  'classical',
+  'correspondence',
+  'computer',
+] as const
+export type Category = (typeof CATEGORIES)[number]
+
+const CATEGORY_LABELS: Record<Category, string> = {
+  bullet: 'Bullet',
+  blitz: 'Blitz',
+  rapid: 'Rapid',
+  classical: 'Classical',
+  correspondence: 'Correspondence',
+  computer: 'Untimed',
+}
+
+/**
+ * Bullet under 3 minutes, blitz under 10, rapid under 30, classical beyond (by the base time); `7d` is
+ * correspondence and `untimed` is a game against the computer. The key picks the game type's colour (site-themes).
+ */
+export function categoryOf(timeControl: string): Category {
+  if (timeControl === UNTIMED) return 'computer'
+  if (timeControl === CORRESPONDENCE) return 'correspondence'
   const base = Number(timeControl.split('+')[0])
-  if (base < 3) return 'Bullet'
-  if (base < 10) return 'Blitz'
-  if (base < 30) return 'Rapid'
-  return 'Classical'
+  if (base < 3) return 'bullet'
+  if (base < 10) return 'blitz'
+  if (base < 30) return 'rapid'
+  return 'classical'
+}
+
+/** The category's name for people: "Blitz", "Untimed". */
+export function category(timeControl: string): string {
+  return CATEGORY_LABELS[categoryOf(timeControl)]
 }
 
 /** The clocks, counted down locally since the view arrived (D5); re-based on every new view. */
