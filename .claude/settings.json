@@ -13,7 +13,8 @@
         "github.com",
         "registry.npmjs.org",
         "registry.yarnpkg.com"
-      ]
+      ],
+      "allowUnixSockets": ["/tmp/.nx", "~/.nx"]
     },
     "filesystem": {
       "allowWrite": [
@@ -23,16 +24,15 @@
         "~/.local/share/NuGet",
         "~/.local/share/pnpm",
         "~/.npm",
-        "~/.nuget"
-      ]
+        "~/.nuget",
+        "/tmp/.nx",
+        "~/.nx"
+      ],
+      "allowRead": ["/tmp/.nx", "~/.nx"]
     }
   },
   "permissions": {
-    "allow": [
-      "Bash(git*)",
-      "SKILL(*)",
-      "mcp__plugin_serena_serena__*"
-    ],
+    "allow": ["Bash(git*)", "SKILL(*)", "mcp__plugin_serena_serena__*"],
     "deny": [
       "Bash(git branch --delete --force*)",
       "Bash(git branch -D*)",
@@ -95,6 +95,15 @@
     "qdrant-skills@claude-plugins-official": false,
     "security-guidance@claude-plugins-official": true,
     "serena@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": true
+    "superpowers@claude-plugins-official": true,
+    "nx@nx-claude-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "nx-claude-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "nrwl/nx-ai-agents-config"
+      }
+    }
   }
 }
