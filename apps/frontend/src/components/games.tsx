@@ -1,6 +1,19 @@
 import { Fragment, use, useEffect, useId, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Chessboard, defaultArrowOptions } from 'react-chessboard'
+import {
+  ArrowUpDown,
+  Cpu,
+  Flag,
+  Flame,
+  Handshake,
+  Hourglass,
+  Mail,
+  Microscope,
+  Repeat,
+  Timer,
+  Zap,
+} from 'lucide-react'
 import type { ChessboardOptions, PieceRenderObject } from 'react-chessboard'
 import type { ReactNode } from 'react'
 import type { SideMaterial, SquarePair } from '#/lib/board'
@@ -36,6 +49,36 @@ const TC_BG: Record<Category, string> = {
 /** The game type's colour as a background class: the quick-pairing tiles' top bar. */
 export function categoryBar(timeControl: string): string {
   return TC_BG[categoryOf(timeControl)]
+}
+
+const TC_TEXT: Record<Category, string> = {
+  bullet: 'text-tc-bullet',
+  blitz: 'text-tc-blitz',
+  rapid: 'text-tc-rapid',
+  classical: 'text-tc-classical',
+  correspondence: 'text-tc-correspondence',
+  computer: 'text-tc-computer',
+}
+
+const TC_ICON: Record<Category, typeof Zap> = {
+  bullet: Zap,
+  blitz: Flame,
+  rapid: Timer,
+  classical: Hourglass,
+  correspondence: Mail,
+  computer: Cpu,
+}
+
+/** The game type's icon in its colour (site-themes); decorative, always next to the type's name. */
+export function CategoryIcon({ timeControl }: { timeControl: string }) {
+  const category = categoryOf(timeControl)
+  const Icon = TC_ICON[category]
+  return <Icon aria-hidden size={14} className={TC_TEXT[category]} />
+}
+
+/** The flip-board icon for the game page's nav bar. */
+export function FlipIcon() {
+  return <ArrowUpDown aria-hidden size={16} />
 }
 
 /** A dot in the game type's colour, placed before the time control or the type's name. */
@@ -507,6 +550,7 @@ export function GameResultPanel({
       {reason ? <p className="m-0 text-sm text-fg-secondary">{reasonText(reason)}</p> : null}
       {onAnalyse ? (
         <Button variant="outline" disabled={analysing} onClick={onAnalyse}>
+          <Microscope aria-hidden size={15} />
           Analyse
         </Button>
       ) : null}
@@ -571,6 +615,7 @@ export function RematchOffer({ state, opponent, busy, onRematch }: RematchOfferP
   if (state.kind === 'none') {
     return (
       <Button block variant="primary" disabled={busy} onClick={onRematch}>
+        <Repeat aria-hidden size={15} />
         Rematch
       </Button>
     )
@@ -700,10 +745,12 @@ export function GameControls({
           disabled={disabled || view.drawOfferedBy === meId}
           onClick={() => onCommand({ kind: 'draw-offer' })}
         >
+          <Handshake aria-hidden size={15} />
           {view.drawOfferedBy === meId ? 'Draw offered' : 'Offer draw'}
         </Button>
       ) : null}
       <Button block disabled={disabled} onClick={() => onCommand({ kind: 'resign' })}>
+        <Flag aria-hidden size={15} />
         Resign
       </Button>
     </div>

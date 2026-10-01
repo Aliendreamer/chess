@@ -37,6 +37,6 @@ For a player:
 - **Frontend:** `styles.css` (a `[data-theme=light]` block that redefines the semantic tokens; `--color-tc-*` tokens),
   `lib/games.ts` (`categoryOf(timeControl)` returning a key, not just a label), `components/ui.tsx` (`OptionTile`
   colour bar and icon), `components/layout.tsx` (icons), `components/games.tsx` (markers), `/settings` (Light
-  option). Dependency `lucide-react` 1.49.0 (exact pin, ISC), imported per icon so only the icons used are bundled.
-- **Backend:** `Users/Preferences.cs` accepts `light`.
+  option). Dependency `lucide-react` 1.47.0 (exact pin, ISC), imported per icon so only the icons used are bundled.
+- **Backend:** `Authentication/Preferences.cs` accepts `light`.
 - **Docs:** CLAUDE.md UI note ("dark only" becomes "dark by default, light optional").

@@ -33,4 +33,18 @@ describe('Shell', () => {
     )
     expect(screen.getByTestId('shell').getAttribute('data-board')).toBe('brown')
   })
+
+  it('every rail icon is decorative and every link keeps its name (site-themes)', () => {
+    const { container } = render(
+      <Shell me={me}>
+        <p>page</p>
+      </Shell>,
+    )
+    for (const name of ['Home', 'History', 'Studies', 'Settings']) {
+      expect(screen.getByRole('link', { name })).toBeDefined()
+    }
+    const icons = [...container.querySelectorAll('svg')]
+    expect(icons.length).toBe(4)
+    expect(icons.every((svg) => svg.closest('[aria-hidden]') !== null)).toBe(true)
+  })
 })

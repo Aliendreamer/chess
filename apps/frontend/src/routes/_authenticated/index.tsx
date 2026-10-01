@@ -24,7 +24,7 @@ import {
   buttonClass,
   useCommand,
 } from '#/components/ui'
-import { RecentGames, YourTurnList, categoryBar } from '#/components/games'
+import { CategoryIcon, RecentGames, YourTurnList, categoryBar } from '#/components/games'
 
 /** Home: quick pairing on a preset, an invite link for a friend, and your recent games. */
 /** `?seek=3+2` joins that queue on arrival: the game-over card's "New opponent" (game-feedback). */
@@ -105,7 +105,12 @@ function HomePage() {
             <OptionTile
               key={tc}
               figure={tc}
-              caption={category(tc)}
+              caption={
+                <span className="flex items-center gap-1.5">
+                  <CategoryIcon timeControl={tc} />
+                  {category(tc)}
+                </span>
+              }
               label={`Play ${tc} (${category(tc)})`}
               bar={categoryBar(tc)}
               selected={seek?.timeControl === tc}

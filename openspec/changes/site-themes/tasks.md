@@ -11,7 +11,7 @@ Each group ends in one commit that passes the frontend gate (`pnpm typecheck && 
 
 ## 2. Icons
 
-- [ ] 2.1 Add `lucide-react` 1.49.0 (exact). Rail, tiles and game actions get icons. A component test checks that
+- [x] 2.1 Add `lucide-react` 1.47.0 (exact; 1.49.0 is younger than the workspace's `minimumReleaseAge`). Rail, tiles and game actions get icons. A component test checks that
       every icon-only button has an `aria-label`. Commit: `feat(frontend): icons on navigation and actions`.
 
 ## 3. Light theme

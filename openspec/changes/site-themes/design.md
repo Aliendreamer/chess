@@ -21,7 +21,7 @@ returns a label ("Blitz").
    redefined for light where needed. `lib/games.ts#categoryOf(tc)` returns a key (`'blitz'`) and the label comes from
    a map, so the colour class and the label never disagree. Static class map
    (`TC_BAR = { blitz: 'bg-tc-blitz', … }`) so Tailwind sees every class.
-3. **lucide-react 1.49.0**, imported per icon (`import { House } from 'lucide-react'`). Tree-shaking keeps the bundle
+3. **lucide-react 1.47.0** (1.49.0 is younger than the workspace's `minimumReleaseAge`), imported per icon (`import { House } from 'lucide-react'`). Tree-shaking keeps the bundle
    to the icons used. _Alternative:_ an inline SVG sprite. Rejected: hand-maintained paths for about a dozen icons.
 4. **Contrast is checked in a test**: a vitest computes the OKLCH → sRGB contrast of `fg-body` on `surface-page` and
    `surface-card` for both themes from the values in `styles.css`, and fails below 4.5.

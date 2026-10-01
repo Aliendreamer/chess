@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { BookOpen, History, House, Settings } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Me, Preferences } from '#/lib/auth'
 import type { LinkProps } from '@tanstack/react-router'
@@ -29,14 +30,14 @@ export function Shell({
         <aside className="flex flex-col gap-7 border-r border-line-divider bg-surface-rail px-4 py-6">
           <Wordmark />
           <NavGroup label="Play">
-            <NavItem to="/" label="Home" />
+            <NavItem to="/" label="Home" icon={<House size={16} />} />
           </NavGroup>
           <NavGroup label="Games">
-            <NavItem to="/games" label="History" />
-            <NavItem to="/studies" label="Studies" />
+            <NavItem to="/games" label="History" icon={<History size={16} />} />
+            <NavItem to="/studies" label="Studies" icon={<BookOpen size={16} />} />
           </NavGroup>
           <NavGroup label="You">
-            <NavItem to="/settings" label="Settings" />
+            <NavItem to="/settings" label="Settings" icon={<Settings size={16} />} />
           </NavGroup>
           <div className="mt-auto flex items-center gap-2.5 px-2">
             <div
@@ -88,16 +89,23 @@ function NavGroup({ label, children }: { label: string; children: ReactNode }) {
 interface NavItemProps {
   to: NonNullable<LinkProps['to']>
   label: string
+  /** A Lucide icon (site-themes), decorative: the label names the link. */
+  icon?: ReactNode
 }
 
 /** A router link; the router marks the current one (`data-status="active"`), styled as selected. */
-function NavItem({ to, label }: NavItemProps) {
+function NavItem({ to, label, icon }: NavItemProps) {
   return (
     <Link
       to={to}
       activeOptions={{ exact: true }}
       className="flex w-full items-center gap-2 rounded-control p-2 text-base text-fg-body no-underline transition-colors duration-[120ms] hover:bg-surface-hover hover:text-fg-body data-[status=active]:bg-surface-selected data-[status=active]:text-fg-primary"
     >
+      {icon ? (
+        <span aria-hidden className="text-fg-muted">
+          {icon}
+        </span>
+      ) : null}
       {label}
     </Link>
   )

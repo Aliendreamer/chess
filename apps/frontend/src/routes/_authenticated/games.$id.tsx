@@ -44,6 +44,7 @@ import {
   Board,
   CategoryMark,
   ClaimPanel,
+  FlipIcon,
   GameControls,
   GameOverCard,
   GameResultPanel,
@@ -389,7 +390,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
           onEnd={() => setViewPly(null)}
         >
           <Button aria-label="Flip board" onClick={() => setFlipped((f) => !f)}>
-            ⇅
+            <FlipIcon />
           </Button>
           {shown ? (
             <Button variant="outline" onClick={() => setViewPly(null)}>

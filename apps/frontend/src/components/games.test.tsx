@@ -197,6 +197,25 @@ describe('game-feedback', () => {
   })
 })
 
+describe('icons (site-themes)', () => {
+  it('sit beside the action names, hidden from assistive tech', () => {
+    const { container } = render(
+      <GameControls
+        view={{ ply: 4, drawOfferedBy: null } as GameView}
+        meId={1}
+        opponentId={2}
+        disabled={false}
+        onCommand={() => {}}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Resign' })).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Offer draw' })).toBeDefined()
+    const icons = [...container.querySelectorAll('svg')]
+    expect(icons.length).toBe(2)
+    expect(icons.every((svg) => svg.getAttribute('aria-hidden') === 'true')).toBe(true)
+  })
+})
+
 describe('ClaimPanel', () => {
   it('claims a win or a draw, or keeps waiting', () => {
     const onClaim = vi.fn()

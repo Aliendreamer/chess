@@ -45,6 +45,7 @@
     "chess.js": "1.4.0",
     "eventsource": "2.0.2",
     "fetch-cookie": "2.2.0",
+    "lucide-react": "1.47.0",
     "react": "19.2.7",
     "react-chessboard": "5.12.1",
     "react-dom": "19.2.7",
