@@ -19,7 +19,7 @@ internal sealed record Preferences(string BoardTheme, string PieceSet, string An
 
     public static readonly IReadOnlyList<string> Animations = ["off", "fast", "normal"];
 
-    public static readonly IReadOnlyList<string> SiteThemes = ["dark"];
+    public static readonly IReadOnlyList<string> SiteThemes = ["dark", "light"];
 
     /// <summary>What is wrong with these preferences, naming the field; null when every value is allowed.</summary>
     public string? Problem() =>

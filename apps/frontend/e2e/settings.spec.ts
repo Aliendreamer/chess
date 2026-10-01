@@ -28,3 +28,22 @@ test('a chosen board theme survives a reload', async ({ browser }) => {
   await page.getByRole('button', { name: 'Brown' }).click()
   await expect(page.getByTestId('shell')).toHaveAttribute('data-board', 'brown')
 })
+
+test('the light site theme applies from the first paint (site-themes)', async ({ browser }) => {
+  const page = await signedIn(browser, USER)
+  await page.goto('/settings')
+
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Light (Parchment)' }).click()
+    await expect(page.getByTestId('shell')).toHaveAttribute('data-theme', 'light', {
+      timeout: 2_000,
+    })
+  }).toPass({ timeout: 15_000 })
+
+  await page.reload()
+  await expect(page.getByTestId('shell')).toHaveAttribute('data-theme', 'light')
+  await expect(page.getByTestId('shell')).toHaveCSS('background-color', /oklch\(0\.97 /)
+
+  await page.getByRole('button', { name: 'Dark (Club)' }).click()
+  await expect(page.getByTestId('shell')).toHaveAttribute('data-theme', 'dark')
+})

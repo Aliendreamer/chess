@@ -52,6 +52,8 @@
   --color-surface-inset: var(--color-ink-950);
   --color-surface-accent-tint: var(--color-brass-900);
   --color-surface-accent-soft: var(--color-brass-950);
+  /* The move on the board, tinted in move lists and trees. */
+  --color-surface-current: var(--color-brass-800);
   /* Lines */
   --color-line-divider: var(--color-ink-650);
   --color-line-default: var(--color-ink-600);
@@ -141,6 +143,46 @@
   --rail-width: 248px;
   --content-max: 1120px;
   --board-max: 600px;
+}
+
+/*
+ * The light site theme, Parchment (site-themes): it redefines the semantic tokens only, so no component changes for it.
+ * Dark (the Club palette above) stays the default; `data-theme` on the Shell picks this one.
+ */
+[data-theme='light'] {
+  color-scheme: light;
+  --color-surface-page: oklch(0.97 0.008 80);
+  --color-surface-rail: oklch(0.94 0.012 80);
+  --color-surface-card: oklch(0.985 0.005 80);
+  --color-surface-raised: oklch(0.95 0.01 80);
+  --color-surface-hover: oklch(0.92 0.012 80);
+  --color-surface-selected: oklch(0.89 0.015 80);
+  --color-surface-inset: oklch(0.93 0.01 80);
+  --color-surface-accent-tint: oklch(0.9 0.05 85);
+  --color-surface-accent-soft: oklch(0.94 0.035 85);
+  --color-surface-current: oklch(0.88 0.06 85);
+  --color-line-divider: oklch(0.88 0.012 75);
+  --color-line-default: oklch(0.83 0.015 75);
+  --color-line-strong: oklch(0.75 0.015 75);
+  --color-line-accent: oklch(0.55 0.09 75);
+  --color-line-accent-soft: oklch(0.72 0.07 80);
+  --color-fg-primary: oklch(0.2 0.01 70);
+  --color-fg-body: oklch(0.3 0.012 70);
+  --color-fg-secondary: oklch(0.42 0.015 70);
+  --color-fg-muted: oklch(0.5 0.015 70);
+  --color-fg-accent: oklch(0.47 0.09 75);
+  --color-status-win: oklch(0.5 0.13 150);
+  --color-status-loss: oklch(0.52 0.16 30);
+  --color-status-draw: oklch(0.45 0.015 75);
+  --color-status-healthy: oklch(0.5 0.13 150);
+  --color-status-turn: oklch(0.47 0.09 75);
+  --color-status-waiting: oklch(0.5 0.015 75);
+  --color-tc-bullet: oklch(0.56 0.18 28);
+  --color-tc-blitz: oklch(0.62 0.14 70);
+  --color-tc-rapid: oklch(0.55 0.14 150);
+  --color-tc-classical: oklch(0.52 0.13 245);
+  --color-tc-correspondence: oklch(0.52 0.14 300);
+  --color-tc-computer: oklch(0.5 0.03 250);
 }
 
 [data-board='blue'] {

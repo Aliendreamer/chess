@@ -38,5 +38,6 @@ describe('preferences', () => {
     expect(isPreferences(DEFAULT_PREFERENCES)).toBe(true)
     expect(isPreferences({ ...DEFAULT_PREFERENCES, boardTheme: 'neon' })).toBe(false)
     expect(isPreferences({ ...DEFAULT_PREFERENCES, coordinates: 'yes' })).toBe(false)
+    expect(isPreferences({ ...DEFAULT_PREFERENCES, siteTheme: 'light' })).toBe(true)
   })
 })

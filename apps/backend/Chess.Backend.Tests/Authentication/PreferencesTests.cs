@@ -25,6 +25,9 @@ public sealed class PreferencesTests
     [Fact]
     public void The_defaults_are_allowed() => Assert.Null(Preferences.Default.Problem());
 
+    [Fact]
+    public void The_light_site_theme_is_allowed() => Assert.Null((Preferences.Default with { SiteTheme = "light" }).Problem());
+
     [Theory]
     [InlineData("neon", "cburnett", "normal", "dark", "boardTheme")]
     [InlineData("brown", "alpha", "normal", "dark", "pieceSet")]

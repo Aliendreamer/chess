@@ -16,13 +16,13 @@ Each group ends in one commit that passes the frontend gate (`pnpm typecheck && 
 
 ## 3. Light theme
 
-- [ ] 3.1 Failing contrast test (it fails because the light block does not exist yet). Then the
+- [x] 3.1 Failing contrast test (it fails because the light block does not exist yet). Then the
       `[data-theme=light]` block and `color-scheme`.
-- [ ] 3.2 Backend: `Preferences` accepts `light` (unit test first). Frontend: the Light option on `/settings`.
+- [x] 3.2 Backend: `Preferences` accepts `light` (unit test first). Frontend: the Light option on `/settings`.
       Commits: `feat(backend): light site theme preference`, `feat(frontend): light site theme`.
 
 ## 4. Verify
 
-- [ ] 4.1 🐳 Playwright: choose Light, reload, and the page background is the parchment value. `tools/e2e.sh`.
-- [ ] 4.2 CLAUDE.md UI note: "dark by default, light optional; game-type tokens; lucide icons". Commit:
+- [ ] 4.1 🐳 Playwright (written, `e2e/settings.spec.ts`; needs the stack): choose Light, reload, and the page background is the parchment value. `tools/e2e.sh`.
+- [x] 4.2 CLAUDE.md UI note: "dark by default, light optional; game-type tokens; lucide icons". Commit:
       `docs(repo): site-themes`.

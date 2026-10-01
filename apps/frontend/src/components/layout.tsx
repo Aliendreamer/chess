@@ -25,7 +25,8 @@ export function Shell({
         data-testid="shell"
         data-board={prefs.boardTheme}
         data-theme={prefs.siteTheme}
-        className="grid min-h-screen grid-cols-[var(--rail-width)_minmax(0,1fr)]"
+        // Its own ground: the site theme is set here, below <body>.
+        className="grid min-h-screen grid-cols-[var(--rail-width)_minmax(0,1fr)] bg-surface-page text-fg-primary"
       >
         <aside className="flex flex-col gap-7 border-r border-line-divider bg-surface-rail px-4 py-6">
           <Wordmark />

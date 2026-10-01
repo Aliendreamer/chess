@@ -177,7 +177,11 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   Pages use `useLiveTopic` from `lib/live.ts` (initial = the loader's state as a frame; it is the baseline at subscribe only).
 - **UI (frontend)** — the Club design (`Design/`, untracked, never committed) as TS: tokens are CSS variables in
   `styles.css`'s `@theme` (use `bg-surface-*`, `text-fg-*`, `border-line-*`, `font-display`, `rounded-card`; no zinc,
-  dark only), fonts via `@fontsource` (no third-party requests). Screens: `/` (quick pairing, invite, recent
+  never a raw ramp like `bg-brass-800` in a component), fonts via `@fontsource` (no third-party requests). **Site
+  themes (site-themes)**: dark (Club) is the default; light (Parchment) is a `[data-theme='light']` block that
+  redefines the semantic tokens only (`src/styles.test.ts` checks AA contrast for both). Each game type has a
+  `--color-tc-*` token (`categoryOf`, `CategoryMark`, `CategoryIcon`), always next to its name; icons are
+  `lucide-react`, decorative beside a label or inside a button with an `aria-label`. Screens: `/` (quick pairing, invite, recent
   games), `/invites/$id`, `/games/$id`, `/games`, and the `/pgn/$id` download route. **chess.js is feedback only**
   (`lib/moveInput.ts`): the server's answer/frame always wins. **Board (board-look)**: `components/games.tsx#Board` wraps
   `react-chessboard` (MIT), drawn in the browser only (`BoardPlaceholder` is the SSR stand-in, same size, every square

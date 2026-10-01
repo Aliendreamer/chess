@@ -30,6 +30,9 @@ describe('SettingsForm', () => {
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Coordinates' }))
     expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_PREFERENCES, coordinates: false })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Light (Parchment)' }))
+    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_PREFERENCES, siteTheme: 'light' })
   })
 
   it("shows the server's reason when a save is refused", () => {

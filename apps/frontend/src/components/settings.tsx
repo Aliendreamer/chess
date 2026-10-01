@@ -15,7 +15,10 @@ const THEME_NAMES: Record<BoardTheme, string> = {
 
 const ANIMATION_NAMES: Record<Animation, string> = { off: 'Off', fast: 'Fast', normal: 'Normal' }
 
-const SITE_NAMES: Record<(typeof SITE_THEMES)[number], string> = { dark: 'Dark' }
+const SITE_NAMES: Record<(typeof SITE_THEMES)[number], string> = {
+  dark: 'Dark (Club)',
+  light: 'Light (Parchment)',
+}
 
 /** A position with a capture, a check and both colours, so every highlight and theme shows in the preview. */
 const PREVIEW_FEN = 'r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4'
@@ -30,8 +33,6 @@ export interface SettingsFormProps {
 export function SettingsForm({ prefs, error, onChange }: SettingsFormProps) {
   const set = <TKey extends keyof Preferences>(key: TKey, value: Preferences[TKey]) =>
     onChange({ ...prefs, [key]: value })
-  // Widened: with one site theme offered, comparing the literal types would always be true.
-  const site: string = prefs.siteTheme
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] items-start gap-8">
       <div className="flex flex-col gap-5">
@@ -81,7 +82,7 @@ export function SettingsForm({ prefs, error, onChange }: SettingsFormProps) {
         <Panel title="Site theme" className="gap-3">
           <div className="flex flex-wrap gap-2" role="group" aria-label="Site theme">
             {SITE_THEMES.map((t) => (
-              <Chip key={t} selected={site === t} onClick={() => set('siteTheme', t)}>
+              <Chip key={t} selected={prefs.siteTheme === t} onClick={() => set('siteTheme', t)}>
                 {SITE_NAMES[t]}
               </Chip>
             ))}

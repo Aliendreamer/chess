@@ -395,7 +395,7 @@ export function MoveList({ sans, viewPly = null, onSelect }: MoveListProps) {
     return <p className="text-sm text-fg-muted">No moves yet.</p>
   }
   const cell = (san: string | undefined, index: number) => {
-    const tint = current === index ? 'bg-brass-800' : ''
+    const tint = current === index ? 'bg-surface-current' : ''
     if (san === undefined) return <li className="px-2.5 py-[7px]" />
     if (!onSelect) return <li className={`px-2.5 py-[7px] ${tint}`}>{san}</li>
     return (

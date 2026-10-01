@@ -22,7 +22,7 @@ export interface Me {
 
 export const ANIMATIONS = ['off', 'fast', 'normal'] as const
 export type Animation = (typeof ANIMATIONS)[number]
-export const SITE_THEMES = ['dark'] as const
+export const SITE_THEMES = ['dark', 'light'] as const
 export type SiteTheme = (typeof SITE_THEMES)[number]
 export const PIECE_SETS = ['cburnett'] as const
 

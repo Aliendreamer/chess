@@ -102,7 +102,7 @@ function MoveButton({
         type="button"
         aria-current={active ? 'step' : undefined}
         onClick={() => onSelect(path)}
-        className={`cursor-pointer rounded-control px-1 ${active ? 'bg-brass-800 text-fg-primary' : 'text-fg-body hover:bg-surface-hover'}`}
+        className={`cursor-pointer rounded-control px-1 ${active ? 'bg-surface-current text-fg-primary' : 'text-fg-body hover:bg-surface-hover'}`}
       >
         {move.san}
       </button>
