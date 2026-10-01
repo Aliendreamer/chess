@@ -432,7 +432,7 @@ internal static class ObservabilityExtensions
         return services;
     }
 
-    /// <summary>Pyroscope's native profiler is in this process (the stack's launch profile loads it); span profiles need it.</summary>
+    /// <summary>Pyroscope's native profiler is in this process (the stack's compose variables load it); span profiles need it.</summary>
     public static bool ProfilerLoaded => System.Environment.GetEnvironmentVariable("PYROSCOPE_PROFILING_ENABLED") == "1"
         && System.Environment.GetEnvironmentVariable("CORECLR_ENABLE_PROFILING") == "1";
 

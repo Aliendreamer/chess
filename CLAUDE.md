@@ -263,7 +263,7 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
 - **Observability (observability, tail-sampling)** — `tools/localdev/observability/`: every app sends OTLP to
   `otel-collector`, which writes traces to Tempo, metrics to Prometheus's OTLP receiver (7 d) and logs to Loki; it
   also reads every other container's Docker log file (not the backend's or the engine's: theirs come over OTLP, never
-  twice). Pyroscope holds profiles (the backend via the dev image's `stack` launch profile, the BFF via its Node agent;
+  twice). Pyroscope holds profiles (the backend via the `CORECLR_*` variables in compose, the BFF via its Node agent;
   the engine is not profiled). Grafana dashboards are JSON in `observability/grafana/dashboards/` (provisioned, not
   editable in the UI: export and commit). Switches: `Observability:Enabled` (backend, engine; off in appsettings, on in
   compose) and `OTEL_ENABLED` (BFF).

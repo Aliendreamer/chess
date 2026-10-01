@@ -35,9 +35,9 @@ RUN for i in 1 2 3; do \
   sleep 10; \
   done
 
-# Continuous profiling (observability D10): Pyroscope's native .NET profiler (musl, for Alpine). The `stack` launch
-# profile loads it into the app process only; dotnet watch and the build servers stay unprofiled.
+# Continuous profiling (observability D10): Pyroscope's native .NET profiler (musl, for Alpine), loaded by the CORECLR_*
+# and LD_PRELOAD variables the compose file sets on the backend services.
 COPY --from=pyroscope/pyroscope-dotnet:0.14.5-musl /Pyroscope.Profiler.Native.so /Pyroscope.Linux.ApiWrapper.x64.so /pyroscope/
 
 EXPOSE 8080
-CMD ["dotnet", "watch", "run", "--project", "Chess.Backend.csproj", "--launch-profile", "stack", "--urls", "http://0.0.0.0:8080", "--non-interactive"]
+CMD ["dotnet", "watch", "run", "--project", "Chess.Backend.csproj", "--no-launch-profile", "--urls", "http://0.0.0.0:8080", "--non-interactive"]

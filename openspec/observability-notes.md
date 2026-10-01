@@ -34,7 +34,9 @@ through a switch; one user action is one trace from the browser to the other pla
 - **`UnhandledMessage` is an `AllDeadLetters`** in Akka.NET 1.5: it must be matched first, or it counts as dead.
 - **The Pyroscope .NET profiler took the engine worker down** about 40 s into its first search (exit 0, no log), even
   CPU-only. The engine only drives Stockfish, so it is not profiled (owner decision). In the backend's dev image the
-  profiler loads through a launch profile, so `dotnet watch` and the build servers stay out of the profiles.
+  profiler first loaded through a launch profile, keeping `dotnet watch` and the build servers out of the profiles;
+  it now loads through compose variables (the CLR reads them at process start, so appsettings cannot), and they are
+  profiled too.
 - **Collector component names changed** (`otlp_grpc`, `otlp_http`, `file_log`), and Redpanda only reports consumer
   lag with `consumer_lag` in `enable_consumer_group_metrics`.
 - **The BFF writes no logs of its own**, so the planned logger had nothing to carry; its container output is

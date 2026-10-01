@@ -62,9 +62,18 @@ x-backend-env: &backend-env
   # Traces, metrics and logs over OTLP to the collector (observability D2); the node name comes from Akka__Hostname.
   Observability__Enabled: "true"
   Observability__OtlpEndpoint: http://otel-collector:4317
-  # Pyroscope (observability D10); the dev image's `stack` launch profile loads the profiler into the app.
+  # Pyroscope (observability D10): the CLR reads these at process start, so they must be environment variables (not
+  # appsettings). Every dotnet process in the dev container loads the profiler, dotnet watch and the build servers too.
   PYROSCOPE_SERVER_ADDRESS: http://pyroscope:4040
   PYROSCOPE_APPLICATION_NAME: chess-backend
+  CORECLR_ENABLE_PROFILING: "1"
+  CORECLR_PROFILER: "{BD1A650D-AC5D-4896-B64F-D6FA25D6B26A}"
+  CORECLR_PROFILER_PATH: /pyroscope/Pyroscope.Profiler.Native.so
+  LD_PRELOAD: /pyroscope/Pyroscope.Linux.ApiWrapper.x64.so
+  PYROSCOPE_PROFILING_ENABLED: "1"
+  PYROSCOPE_PROFILING_ALLOCATION_ENABLED: "true"
+  PYROSCOPE_PROFILING_CONTENTION_ENABLED: "true"
+  PYROSCOPE_PROFILING_EXCEPTION_ENABLED: "true"
 
 # Every service logs through json-file with its container name as the tag (chess-keycloak-1); the collector reads
 # these files and turns the tag into the service name in Loki (observability D9). Size-capped so logs never fill the disk.
