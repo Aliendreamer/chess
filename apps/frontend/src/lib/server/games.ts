@@ -1,5 +1,6 @@
 import { isGuid, pgnDownload, postCommand, readJson } from './upstream'
 import type {
+  ColourChoice,
   CommandOutcome,
   EngineLevel,
   GameCommand,
@@ -43,7 +44,7 @@ export async function loadGameMoves(fetchImpl: typeof fetch, id: string): Promis
 /** `POST /api/engine-games`: an untimed game against the computer (engine-play D7). Refusals are outcomes. */
 export function startEngineGame(
   fetchImpl: typeof fetch,
-  input: { level: string; color: 'white' | 'black' | 'random' },
+  input: { level: string; color: ColourChoice },
 ): Promise<CommandOutcome<GameView>> {
   return postCommand<GameView>(fetchImpl, '/api/engine-games', input)
 }

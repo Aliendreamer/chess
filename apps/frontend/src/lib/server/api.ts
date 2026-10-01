@@ -1,6 +1,8 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader } from '@tanstack/react-start/server'
-import { CORRESPONDENCE, PRESETS } from '../games'
+import { CLAIM_OUTCOMES, CORRESPONDENCE, PRESETS } from '../games'
+import { MY_TURN } from '../play'
+import { THINK_LEVELS } from '../analysis'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { apiUrl, isGuid } from './upstream'
 import { loadMe } from './auth'
@@ -34,7 +36,7 @@ import {
   loadMyGames,
 } from './play'
 import type { GameCommand } from '../games'
-import type { InviteView } from '../play'
+import type { InviteView, MyTurn } from '../play'
 import type { StudyInput, StudyMoveInput } from '../studies'
 import type { Think } from '../analysis'
 
@@ -89,7 +91,6 @@ function guid(id: string): string {
 }
 
 const UCI = /^[a-h][1-8][a-h][1-8][nbrq]?$/
-const CLAIM_OUTCOMES: ReadonlyArray<string> = ['win', 'draw']
 const COMMAND_KINDS: ReadonlyArray<GameCommand['kind']> = [
   'move',
   'resign',
@@ -108,7 +109,8 @@ function command(input: GameCommand): GameCommand {
   }
   if (input.kind === 'claim') {
     // The type says win | draw, but this arrives from the browser: check the value itself.
-    if (!CLAIM_OUTCOMES.includes(input.outcome)) throw new Error('not a claim')
+    if (!(CLAIM_OUTCOMES as ReadonlyArray<string>).includes(input.outcome))
+      throw new Error('not a claim')
     return { kind: 'claim', outcome: input.outcome }
   }
   return { kind: input.kind }
@@ -169,10 +171,10 @@ export const postCancelInvite = createServerFn({ method: 'POST' })
   .handler(({ data }) => cancelInvite(serverFetch(), data))
 
 export const getMyGames = createServerFn({ method: 'GET' })
-  .validator((input: { limit: number; cursor?: string; turn?: 'mine' }) => ({
+  .validator((input: { limit: number; cursor?: string; turn?: MyTurn }) => ({
     limit: Math.min(Math.max(Math.trunc(input.limit), 1), 50),
     cursor: input.cursor,
-    turn: input.turn === 'mine' ? ('mine' as const) : undefined,
+    turn: input.turn === MY_TURN ? MY_TURN : undefined,
   }))
   .handler(({ data }) => loadMyGames(serverFetch(), data))
 
@@ -243,11 +245,10 @@ export const postStudyFromGame = createServerFn({ method: 'POST' })
   .validator((gameId: string) => guid(gameId))
   .handler(({ data }) => studyFromGame(serverFetch(), data))
 
-const THINKS: ReadonlyArray<Think> = ['quick', 'normal', 'deep']
-
 export const postAnalysis = createServerFn({ method: 'POST' })
   .validator((input: { fen: string; think: Think }) => {
-    if (!THINKS.includes(input.think)) throw new Error('Not a think time.')
+    if (!(THINK_LEVELS as ReadonlyArray<string>).includes(input.think))
+      throw new Error('Not a think time.')
     return { fen: String(input.fen), think: input.think }
   })
   .handler(({ data }) => analysePosition(serverFetch(), data))

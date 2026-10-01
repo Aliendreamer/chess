@@ -6,6 +6,36 @@ import { useEffect, useState } from 'react'
 
 export type Color = 'white' | 'black'
 
+/** A colour someone may ask for: yours in an invite or a game against the computer. */
+export type ColourChoice = Color | 'random'
+
+/** A result as PGN writes it, which is how the API carries it. */
+export const PGN_RESULT = {
+  whiteWins: '1-0',
+  blackWins: '0-1',
+  draw: '1/2-1/2',
+  none: '*',
+} as const
+export type PgnResult = (typeof PGN_RESULT)[keyof typeof PGN_RESULT]
+
+/** What the remaining player may claim when the opponent has gone (presence-and-abandonment D5). */
+export const CLAIM_OUTCOMES = ['win', 'draw'] as const
+export type ClaimOutcome = (typeof CLAIM_OUTCOMES)[number]
+
+/** Why a game ended: the API's `EndReason`, camel-cased on the wire. */
+export type EndReason =
+  | 'checkmate'
+  | 'stalemate'
+  | 'insufficientMaterial'
+  | 'threefoldRepetition'
+  | 'fiftyMoveRule'
+  | 'resignation'
+  | 'agreement'
+  | 'timeout'
+  | 'timeoutVsInsufficientMaterial'
+  | 'aborted'
+  | 'abandonment'
+
 /** A live game's status (the API's `GameStatus`, lower-case on the wire). */
 export type GameStatus = 'created' | 'playing' | 'ended'
 
@@ -28,8 +58,8 @@ export interface GameView {
   blackMs: number
   clockAt: string
   drawOfferedBy: number | null
-  result: string | null
-  reason: string | null
+  result: PgnResult | null
+  reason: EndReason | null
   seq: number
   /** A player counted away (presence-and-abandonment); nobody's UI shows it, the claim panel keys off `claimableBy`. */
   absentId?: number | null
@@ -95,8 +125,8 @@ export interface GameSummary {
   black: string
   timeControl: string
   status: ListStatus
-  result: string | null
-  reason: string | null
+  result: PgnResult | null
+  reason: EndReason | null
   ply: number
   lastFen: string
   createdAt: string
@@ -121,7 +151,7 @@ export type CommandOutcome<T> = { ok: true; view: T } | { ok: false; status: num
 /** A command on a game, as the page sends it; `lib/server/api.ts` checks it again before it reaches the API. */
 export type GameCommand =
   | { kind: 'move'; uci: string }
-  | { kind: 'claim'; outcome: 'win' | 'draw' }
+  | { kind: 'claim'; outcome: ClaimOutcome }
   | { kind: 'resign' | 'draw-offer' | 'draw-accept' | 'draw-decline' | 'abort' }
 
 export function isGameView(value: unknown): value is GameView {
@@ -172,22 +202,37 @@ export function orientation(view: Pick<GameView, 'whiteId' | 'blackId'>, meId: n
   return myColor(view, meId) ?? 'white'
 }
 
-const RESULTS: Record<string, string> = { '1-0': '1–0', '0-1': '0–1', '1/2-1/2': '½', '*': '—' }
-
-export function resultText(result: string): string {
-  return RESULTS[result] ?? result
+const RESULTS: Record<PgnResult, string> = {
+  [PGN_RESULT.whiteWins]: '1–0',
+  [PGN_RESULT.blackWins]: '0–1',
+  [PGN_RESULT.draw]: '½',
+  [PGN_RESULT.none]: '—',
 }
 
-const REASONS: Record<string, string> = {
-  FiftyMoveRule: '50-move rule',
-  Agreement: 'draw agreed',
-  Timeout: 'time',
-  TimeoutVsInsufficientMaterial: 'time vs insufficient material',
+/** A value newer than this page (a later API) is shown as sent rather than as nothing. */
+const known = (texts: Record<string, string>, value: string): string => texts[value] ?? value
+
+export function resultText(result: PgnResult): string {
+  return known(RESULTS, result)
 }
 
-/** `ThreefoldRepetition` → `threefold repetition`; a few read better spelled out. */
-export function reasonText(reason: string): string {
-  return REASONS[reason] ?? reason.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()
+/** Every reason, spelled for people; the type makes a new reason need its text here. */
+const REASONS: Record<EndReason, string> = {
+  checkmate: 'checkmate',
+  stalemate: 'stalemate',
+  insufficientMaterial: 'insufficient material',
+  threefoldRepetition: 'threefold repetition',
+  fiftyMoveRule: '50-move rule',
+  resignation: 'resignation',
+  agreement: 'draw agreed',
+  timeout: 'time',
+  timeoutVsInsufficientMaterial: 'time vs insufficient material',
+  aborted: 'aborted',
+  abandonment: 'abandonment',
+}
+
+export function reasonText(reason: EndReason): string {
+  return known(REASONS, reason)
 }
 
 /**

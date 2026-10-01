@@ -2,7 +2,12 @@
  * Matchmaking, invites and "my games": the wire shapes and the pure rules Home and the invite page use.
  * Client-safe (no `lib/server` import).
  */
-import type { Color, ListStatus } from './games'
+import { PGN_RESULT } from './games'
+import type { Color, ColourChoice, EndReason, ListStatus, PgnResult } from './games'
+
+/** `GET /api/me/games?turn=` value that keeps only the games where it is my move. */
+export const MY_TURN = 'mine' as const
+export type MyTurn = typeof MY_TURN
 
 /** Mirrors `POST /api/matchmaking/{tc}`'s answer. */
 export interface QueueStatus {
@@ -31,7 +36,7 @@ export interface InviteView {
   creatorId: number
   timeControl: string
   /** The creator's colour: white, black or random. */
-  color: 'white' | 'black' | 'random'
+  color: ColourChoice
   status: 'open' | 'accepted' | 'cancelled' | 'expired'
   gameId: string | null
   createdAt: string
@@ -47,8 +52,8 @@ export interface MyGameItem {
   opponent: string
   timeControl: string
   status: ListStatus
-  result: string | null
-  reason: string | null
+  result: PgnResult | null
+  reason: EndReason | null
   createdAt: string
   /** Being played and it is my move. */
   yourTurn?: boolean
@@ -92,10 +97,10 @@ export function pairingGame(view: QueueView, meId: number, afterSeq: number): st
   return pairing && (pairing.whiteId === meId || pairing.blackId === meId) ? pairing.gameId : null
 }
 
-export function outcomeFor(result: string | null, color: Color): 'win' | 'loss' | 'draw' | null {
-  if (result === '1/2-1/2') return 'draw'
-  if (result === '1-0') return color === 'white' ? 'win' : 'loss'
-  if (result === '0-1') return color === 'black' ? 'win' : 'loss'
+export function outcomeFor(result: PgnResult | null, color: Color): 'win' | 'loss' | 'draw' | null {
+  if (result === PGN_RESULT.draw) return 'draw'
+  if (result === PGN_RESULT.whiteWins) return color === 'white' ? 'win' : 'loss'
+  if (result === PGN_RESULT.blackWins) return color === 'black' ? 'win' : 'loss'
   return null
 }
 

@@ -6,7 +6,10 @@
  * Inbound (browser → API): forward only the auth cookies, mapped back to their bare API names.
  */
 
-/** Cookies the API owns; nothing else ever crosses the BFF boundary. */
+/**
+ * Cookies the API owns; nothing else ever crosses the BFF boundary. Their names are the backend's
+ * `Constants.Cookies` defaults (`SessionCookies` options): a renamed cookie there must be renamed here.
+ */
 export const AUTH_COOKIES = ['mp_sid', 'mp_pkce'] as const
 export type AuthCookie = (typeof AUTH_COOKIES)[number]
 

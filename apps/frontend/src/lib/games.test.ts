@@ -17,7 +17,7 @@ import {
   timeLeft,
   topicId,
 } from './games'
-import type { GameView } from './games'
+import type { EndReason, GameView } from './games'
 
 const view: GameView = {
   gameId: '0199f1c2-a3b4-7c5d-8e9f-0a1b2c3d4e5f',
@@ -77,21 +77,25 @@ describe('resultText and reasonText', () => {
     ['0-1', '0–1'],
     ['1/2-1/2', '½'],
     ['*', '—'],
-  ])('%s → %s', (result, text) => {
+  ] as const)('%s → %s', (result, text) => {
     expect(resultText(result)).toBe(text)
   })
 
   it.each([
-    ['Checkmate', 'checkmate'],
-    ['ThreefoldRepetition', 'threefold repetition'],
-    ['FiftyMoveRule', '50-move rule'],
-    ['Agreement', 'draw agreed'],
-    ['Timeout', 'time'],
-    ['TimeoutVsInsufficientMaterial', 'time vs insufficient material'],
-    ['Aborted', 'aborted'],
-    ['SomethingNew', 'something new'],
-  ])('%s → %s', (reason, text) => {
+    ['checkmate', 'checkmate'],
+    ['threefoldRepetition', 'threefold repetition'],
+    ['fiftyMoveRule', '50-move rule'],
+    ['agreement', 'draw agreed'],
+    ['timeout', 'time'],
+    ['timeoutVsInsufficientMaterial', 'time vs insufficient material'],
+    ['aborted', 'aborted'],
+    ['abandonment', 'abandonment'],
+  ] as const)('%s → %s', (reason, text) => {
     expect(reasonText(reason)).toBe(text)
+  })
+
+  it('shows a reason newer than the page as sent', () => {
+    expect(reasonText('somethingNew' as EndReason)).toBe('somethingNew')
   })
 })
 

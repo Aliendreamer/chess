@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import { Link } from '@tanstack/react-router'
-import type { Color, GameCommand, GameView } from '#/lib/games'
+import type { ClaimOutcome, Color, EndReason, GameCommand, GameView, PgnResult } from '#/lib/games'
 import type { Piece } from '#/lib/moveInput'
 import type { MyGameItem } from '#/lib/play'
 import { Button, Panel } from '#/components/ui'
@@ -291,8 +291,8 @@ export function GameResultPanel({
   onAnalyse,
   analysing = false,
 }: {
-  result: string
-  reason: string | null
+  result: PgnResult
+  reason: EndReason | null
   pgnHref: string
   /** Opens the game as a new study (studies D5). */
   onAnalyse?: () => void
@@ -323,7 +323,7 @@ export function ClaimPanel({
   onWait,
 }: {
   disabled: boolean
-  onClaim: (outcome: 'win' | 'draw') => void
+  onClaim: (outcome: ClaimOutcome) => void
   onWait: () => void
 }) {
   return (

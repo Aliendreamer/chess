@@ -1,7 +1,7 @@
 import { redirect } from '@tanstack/react-router'
 import { LOGIN_REDIRECT, postCommand, readJson } from './upstream'
 import type { CommandOutcome } from '../games'
-import type { CursorPage, InviteView, MyGameItem, QueueStatus } from '../play'
+import type { CursorPage, InviteView, MyGameItem, MyTurn, QueueStatus } from '../play'
 
 /**
  * `POST /api/matchmaking/{tc}`. A plain join always seeks a new game; a heartbeat (`?heartbeat=true`, every 25 s
@@ -55,7 +55,7 @@ export function cancelInvite(
 /** `GET /api/me/games`: newest first, keyset paged. */
 export async function loadMyGames(
   fetchImpl: typeof fetch,
-  page: { limit: number; cursor?: string | undefined; turn?: 'mine' | undefined },
+  page: { limit: number; cursor?: string | undefined; turn?: MyTurn | undefined },
 ): Promise<CursorPage<MyGameItem>> {
   const query = new URLSearchParams({ limit: String(page.limit) })
   if (page.cursor) query.set('cursor', page.cursor)

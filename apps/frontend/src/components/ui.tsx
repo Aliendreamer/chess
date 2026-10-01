@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import type { CommandOutcome } from '#/lib/games'
+import type { ColourChoice, CommandOutcome } from '#/lib/games'
 
 export type ButtonVariant = 'primary' | 'outline' | 'secondary'
 export type ButtonSize = 'sm' | 'md' | 'lg'
@@ -251,9 +251,6 @@ export function useCommand(): Command {
   }
   return { busy, error, run }
 }
-
-/** A colour choice: yours in an invite or a game against the computer. */
-export type ColourChoice = 'white' | 'black' | 'random'
 
 const COLOURS: ReadonlyArray<{ value: ColourChoice; glyph: string; label: string }> = [
   { value: 'white', glyph: '♔', label: 'White' },

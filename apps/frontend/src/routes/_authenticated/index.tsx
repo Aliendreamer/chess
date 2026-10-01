@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { InviteView, QueueStatus } from '#/lib/play'
-import type { EngineLevel } from '#/lib/games'
-import type { ColourChoice } from '#/components/ui'
+import type { ColourChoice, EngineLevel } from '#/lib/games'
 import {
   getEngineLevels,
   getMyGames,
@@ -12,7 +11,7 @@ import {
   postStartEngineGame,
 } from '#/lib/server/api'
 import { CORRESPONDENCE, PRESETS, category } from '#/lib/games'
-import { isQueueView, pairingGame } from '#/lib/play'
+import { MY_TURN, isQueueView, pairingGame } from '#/lib/play'
 import { liveStatusText, useLiveTopic } from '#/lib/live'
 import {
   Button,
@@ -32,7 +31,7 @@ export const Route = createFileRoute('/_authenticated/')({
   loader: async () => {
     const [games, yourTurn, levels] = await Promise.all([
       getMyGames({ data: { limit: 8 } }),
-      getMyGames({ data: { limit: 20, turn: 'mine' } }),
+      getMyGames({ data: { limit: 20, turn: MY_TURN } }),
       getEngineLevels(),
     ])
     return { games, yourTurn, levels }

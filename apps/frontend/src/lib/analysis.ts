@@ -9,7 +9,9 @@ import type { StudyMove } from './studies'
  * Evaluations are shared by everyone (D1), so a position someone else analysed is answered at once.
  */
 
-export type Think = 'quick' | 'normal' | 'deep'
+/** The think times a request may name (the API's `ThinkLevels`). */
+export const THINK_LEVELS = ['quick', 'normal', 'deep'] as const
+export type Think = (typeof THINK_LEVELS)[number]
 
 export const THINKS: ReadonlyArray<{ value: Think; label: string }> = [
   { value: 'quick', label: 'Quick' },
