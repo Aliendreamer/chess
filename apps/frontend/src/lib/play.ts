@@ -42,6 +42,8 @@ export interface InviteView {
   createdAt: string
   expiresAt: string
   seq: number
+  /** The one user who may accept it (a rematch, game-feedback); absent or null for an ordinary invite. */
+  forId?: number | null
 }
 
 /** A row of `GET /api/me/games`. */

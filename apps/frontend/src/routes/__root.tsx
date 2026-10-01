@@ -16,7 +16,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { title: 'Chess' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appCss },
+      // Swapped for the dotted one while it is your move (game-feedback).
+      { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+    ],
   }),
   // Asked once per page load: whether telemetry is on does not change while the page is open.
   loader: () => getTelemetry(),

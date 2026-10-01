@@ -125,3 +125,33 @@ test('pieces can be dragged, a premove plays itself, and the game can be looked 
   await white.getByRole('button', { name: 'Resign' }).click()
   await bothEnded([white, black], '0–1', 'resignation')
 })
+
+test('after a game, both players agree to a rematch with the colours swapped (game-feedback)', async ({
+  browser,
+}) => {
+  test.setTimeout(120_000)
+  const { white, black } = await inviteGame(browser)
+  const first = white.url()
+
+  // White is to move, so the tab says so; then the game is aborted while both pages are open.
+  await expect(white).toHaveTitle(/^● Your move · vs /, { timeout: 15_000 })
+  await expect(white.getByRole('button', { name: 'Abort' })).toBeEnabled({ timeout: 15_000 })
+  await white.getByRole('button', { name: 'Abort' }).click()
+
+  // The game-over card appears over both boards; White offers the rematch and Black accepts it.
+  await expect(white.getByTestId('game-over')).toBeVisible({ timeout: 15_000 })
+  await expect(black.getByTestId('game-over')).toBeVisible({ timeout: 15_000 })
+  await white.getByTestId('game-over').getByRole('button', { name: 'Rematch' }).click()
+  await expect(white.getByTestId('rematch')).toContainText('Rematch offered')
+  await black.getByRole('button', { name: 'Accept rematch' }).click({ timeout: 15_000 })
+
+  // Both land on the same new game, and the former Black now moves first.
+  await expect(black).not.toHaveURL(first, { timeout: 15_000 })
+  await expect(white).toHaveURL(black.url(), { timeout: 15_000 })
+  await expect(black.locator('[data-my-turn]')).toHaveAttribute('data-my-turn', 'true', {
+    timeout: 15_000,
+  })
+  await expect(white.locator('[data-my-turn]')).toHaveAttribute('data-my-turn', 'false')
+  await expect(black.getByRole('button', { name: 'Abort' })).toBeEnabled({ timeout: 15_000 })
+  await black.getByRole('button', { name: 'Abort' }).click()
+})

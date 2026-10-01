@@ -5,10 +5,12 @@ import {
   Board,
   ClaimPanel,
   GameControls,
+  GameOverCard,
   MoveList,
   MoveNav,
   PlayerStrip,
   PromotionPicker,
+  RematchOffer,
   YourTurnList,
 } from './games'
 import type { ReactNode } from 'react'
@@ -148,6 +150,50 @@ describe('game-page-navigation', () => {
   })
 })
 
+describe('game-feedback', () => {
+  it('the game-over card shows the result, the reason and its actions, and closes', () => {
+    const onClose = vi.fn()
+    render(
+      <GameOverCard result="0-1" reason="checkmate" onClose={onClose}>
+        <button type="button">Analyse</button>
+      </GameOverCard>,
+    )
+    expect(screen.getByTestId('game-over').textContent).toContain('0–1')
+    expect(screen.getByTestId('game-over').textContent).toContain('Checkmate')
+    expect(screen.getByRole('button', { name: 'Analyse' })).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('nobody asked: a Rematch button', () => {
+    const onRematch = vi.fn()
+    render(
+      <RematchOffer state={{ kind: 'none' }} opponent="bob" busy={false} onRematch={onRematch} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Rematch' }))
+    expect(onRematch).toHaveBeenCalled()
+  })
+
+  it('I asked: waiting for them', () => {
+    render(
+      <RematchOffer state={{ kind: 'offered' }} opponent="bob" busy={false} onRematch={() => {}} />,
+    )
+    expect(screen.getByTestId('rematch').textContent).toBe('Rematch offered · waiting for bob')
+  })
+
+  it('they asked: accept or decline', () => {
+    const onRematch = vi.fn()
+    render(
+      <RematchOffer state={{ kind: 'asked' }} opponent="bob" busy={false} onRematch={onRematch} />,
+    )
+    expect(screen.getByTestId('rematch').textContent).toContain('bob wants a rematch')
+    fireEvent.click(screen.getByRole('button', { name: 'Accept rematch' }))
+    expect(onRematch).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Decline' }))
+    expect(screen.queryByRole('button', { name: 'Accept rematch' })).toBeNull()
+  })
+})
+
 describe('ClaimPanel', () => {
   it('claims a win or a draw, or keeps waiting', () => {
     const onClaim = vi.fn()
@@ -193,6 +239,8 @@ describe('GameControls', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Accept draw' }))
     expect(onCommand).toHaveBeenCalledWith({ kind: 'draw-accept' })
+    // game-feedback: the answer stands out (a pulse, unless reduced motion).
+    expect(screen.getByTestId('draw-offer').className).toContain('motion-safe:animate-[offer')
   })
 
   it('shows my own offer as pending, and resigns', () => {

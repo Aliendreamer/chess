@@ -34,6 +34,7 @@ import {
   leaveQueue,
   loadInvite,
   loadMyGames,
+  rematch,
 } from './play'
 import type { GameCommand } from '../games'
 import type { InviteView, MyTurn } from '../play'
@@ -169,6 +170,10 @@ export const postAcceptInvite = createServerFn({ method: 'POST' })
 export const postCancelInvite = createServerFn({ method: 'POST' })
   .validator((id: string) => guid(id))
   .handler(({ data }) => cancelInvite(serverFetch(), data))
+
+export const postRematch = createServerFn({ method: 'POST' })
+  .validator((gameId: string) => guid(gameId))
+  .handler(({ data }) => rematch(serverFetch(), data))
 
 export const getMyGames = createServerFn({ method: 'GET' })
   .validator((input: { limit: number; cursor?: string; turn?: MyTurn }) => ({

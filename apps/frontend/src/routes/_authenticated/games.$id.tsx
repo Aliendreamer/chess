@@ -1,18 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { GameCommand, GameSummary, GameView, MoveItem } from '#/lib/games'
 import type { LiveFrame } from '#/lib/live'
 import type { Me } from '#/lib/auth'
 import type { SquarePair } from '#/lib/board'
+import type { InviteView } from '#/lib/play'
 import {
   getGameMoves,
   getGamePage,
   getGameSummary,
   postGameCommand,
+  postRematch,
+  postStartEngineGame,
   postStudyFromGame,
 } from '#/lib/server/api'
 import {
   CORRESPONDENCE,
+  PRESETS,
   UNTIMED,
   category,
   engineToMove,
@@ -34,17 +38,21 @@ import {
   pieceAt,
 } from '#/lib/moveInput'
 import { material, premoveClick, replay, resolvePremove } from '#/lib/board'
+import { rematchState, tabState, useTabSignals } from '#/lib/feedback'
+import { isInviteView } from '#/lib/play'
 import {
   Board,
   ClaimPanel,
   GameControls,
+  GameOverCard,
   GameResultPanel,
   MoveList,
   MoveNav,
   PlayerStrip,
   PromotionPicker,
+  RematchOffer,
 } from '#/components/games'
-import { Button, ErrorText, useCommand } from '#/components/ui'
+import { Button, ErrorText, buttonClass, useCommand } from '#/components/ui'
 
 /**
  * A game (players and spectators). SSR renders the loader's state; the `game:{id}` frames then drive it. Moves
@@ -225,6 +233,67 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
 
   const white = summary?.white ?? `Player ${current.whiteId}`
   const black = summary?.black ?? `Player ${current.blackId}`
+  useTabSignals(tabState(current, me.id, { white, black }))
+  const goToGame = (gameId: string) => void navigate({ to: '/games/$id', params: { id: gameId } })
+
+  // The card over the board, only when the game ends while the page is open (game-feedback).
+  const [gameOver, setGameOver] = useState(false)
+  const seenStatus = useRef(current.status)
+  useEffect(() => {
+    if (seenStatus.current !== 'ended' && current.status === 'ended') setGameOver(true)
+    seenStatus.current = current.status
+  }, [current.status])
+
+  // The rematch is the invite with this game's id, watched by the players once the game is over. Against the
+  // computer it is simply a new engine game with the colours swapped.
+  const rematchable = mine !== null && current.status === 'ended' && current.engineSide == null
+  const rematchLive = useLiveTopic({
+    kind: 'invite',
+    id: topic,
+    initial: undefined,
+    isPayload: isInviteView,
+    enabled: rematchable,
+  })
+  const [myOffer, setMyOffer] = useState<InviteView | null>(null)
+  const rematching = useCommand()
+  const rematch = rematchState(rematchLive.frame?.payload ?? myOffer ?? undefined, me.id)
+  const rematchGame = rematch.kind === 'started' ? rematch.gameId : null
+  useEffect(() => {
+    if (rematchGame) goToGame(rematchGame)
+  }, [rematchGame])
+
+  async function askRematch() {
+    if (current.engineSide != null) {
+      const level = current.engineLevel ?? ''
+      const color = mine === 'white' ? 'black' : 'white'
+      const started = await rematching.run(() => postStartEngineGame({ data: { level, color } }))
+      if (started) goToGame(started.gameId)
+      return
+    }
+    const invite = await rematching.run(() => postRematch({ data: id }))
+    if (invite) setMyOffer(invite)
+  }
+
+  const endActions = mine ? (
+    <>
+      <RematchOffer
+        state={current.engineSide != null ? { kind: 'none' } : rematch}
+        opponent={mine === 'white' ? black : white}
+        busy={rematching.busy}
+        onRematch={() => void askRematch()}
+      />
+      {(PRESETS as ReadonlyArray<string>).includes(current.timeControl) ? (
+        <Link
+          to="/"
+          search={{ seek: current.timeControl }}
+          className={buttonClass('outline', 'md', true)}
+        >
+          New opponent
+        </Link>
+      ) : null}
+      {rematching.error ? <ErrorText>{rematching.error}</ErrorText> : null}
+    </>
+  ) : null
   const opponentId = mine === 'white' ? current.blackId : current.whiteId
   const againstEngine = current.engineSide != null
   const untimed = current.timeControl === UNTIMED
@@ -278,7 +347,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
     <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-8">
       <div className="flex max-w-(--board-max) flex-col gap-3">
         {strip(top)}
-        <div data-my-turn={myTurn}>
+        <div data-my-turn={myTurn} className="relative">
           <Board
             fen={shown?.fen ?? fen}
             orientation={side}
@@ -293,6 +362,23 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
                 : {})}
             onRightClick={() => setPremove(null)}
           />
+          {gameOver && current.result ? (
+            <GameOverCard
+              result={current.result}
+              reason={current.reason}
+              onClose={() => setGameOver(false)}
+            >
+              {endActions}
+              <Button
+                block
+                variant="outline"
+                disabled={analysing.busy}
+                onClick={() => void analyse()}
+              >
+                Analyse
+              </Button>
+            </GameOverCard>
+          ) : null}
         </div>
         {strip(side)}
         <MoveNav
@@ -348,6 +434,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
             analysing={analysing.busy}
           />
         ) : null}
+        {current.status === 'ended' && !gameOver ? endActions : null}
         {analysing.error ? <ErrorText>{analysing.error}</ErrorText> : null}
 
         {live.status === 'reconnecting' ? (

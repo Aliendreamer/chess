@@ -21,26 +21,26 @@ check && pnpm test && pnpm build`. 🐳 marks steps that need Docker or the live
 
 ## 3. Tab signals and favicons (frontend)
 
-- [ ] 3.1 Failing tests for `lib/feedback.ts#tabState`: my move, the opponent's move, a draw offered to me, a
+- [x] 3.1 Failing tests for `lib/feedback.ts#tabState`: my move, the opponent's move, a draw offered to me, a
       spectator, an ended game. Implement, add `useTabSignals`, the two favicons, and the `<link rel=icon>` in
       `__root.tsx`. Commit: `feat(frontend): your move in the tab title and favicon`.
 
 ## 4. Game-over card and rematch (frontend)
 
-- [ ] 4.1 `postRematch` in `lib/server/games.ts` + `api.ts`. `GameOverCard` and `RematchOffer` components
+- [x] 4.1 `postRematch` in `lib/server/games.ts` + `api.ts`. `GameOverCard` and `RematchOffer` components
       (tests first: the card's buttons per player or spectator, and an engine game's Rematch starting an engine
       game).
-- [ ] 4.2 Game page: the card on a live `playing → ended`, the `invite:{gameId}` subscription after the end,
+- [x] 4.2 Game page: the card on a live `playing → ended`, the `invite:{gameId}` subscription after the end,
       navigation when the frame names the new game. Commit: `feat(frontend): game-over card and rematch`.
 
 ## 5. Found flash and draw emphasis (frontend)
 
-- [ ] 5.1 The `Seek` tile's found state (600 ms, immediate under reduced motion) and the pulsing draw answer row.
+- [x] 5.1 The `Seek` tile's found state (600 ms, immediate under reduced motion) and the pulsing draw answer row.
       Component tests first. Commit: `feat(frontend): opponent found flash and draw offer emphasis`.
 
 ## 6. Verify
 
-- [ ] 6.1 🐳 Playwright (two browsers): finish a game by resignation, both press Rematch, and both land on the new
+- [ ] 6.1 🐳 Playwright (written in `play.spec.ts`; needs the stack) (two browsers): finish a game by resignation, both press Rematch, and both land on the new
       game with swapped colours. Run `tools/e2e.sh` and `tools/localdev/verify-part1.sh`.
-- [ ] 6.2 CLAUDE.md Games note (rematch = invite with the game's id) and Serena memory. Commit:
+- [x] 6.2 CLAUDE.md Games note (rematch = invite with the game's id) and Serena memory. Commit:
       `docs(repo): game-feedback`.

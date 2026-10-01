@@ -52,6 +52,14 @@ export function cancelInvite(
   return postCommand<InviteView>(fetchImpl, `/api/invites/${id}/cancel`)
 }
 
+/** `POST /api/games/{id}/rematch`: offers the rematch of a finished game, or accepts the opponent's (game-feedback). */
+export function rematch(
+  fetchImpl: typeof fetch,
+  gameId: string,
+): Promise<CommandOutcome<InviteView>> {
+  return postCommand<InviteView>(fetchImpl, `/api/games/${gameId}/rematch`)
+}
+
 /** `GET /api/me/games`: newest first, keyset paged. */
 export async function loadMyGames(
   fetchImpl: typeof fetch,

@@ -124,6 +124,20 @@ describe('useLiveTopic', () => {
     expect(onFrame).toHaveBeenCalledOnce()
   })
 
+  it('opens no socket until enabled', () => {
+    vi.stubGlobal('WebSocket', FakeSocket)
+    const before = FakeSocket.opened
+    const { rerender } = renderHook(
+      ({ enabled }) =>
+        useLiveTopic({ kind: 'invite', id: 'abc', initial: undefined, isPayload, enabled }),
+      { initialProps: { enabled: false } },
+    )
+    expect(FakeSocket.opened).toBe(before)
+
+    rerender({ enabled: true })
+    expect(FakeSocket.opened).toBe(before + 1)
+  })
+
   it('reconnects after 1, 2, 4, 8 and then 15 seconds, reporting that it is reconnecting', () => {
     vi.useFakeTimers()
     vi.stubGlobal('WebSocket', FakeSocket)

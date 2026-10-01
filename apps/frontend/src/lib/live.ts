@@ -107,6 +107,8 @@ export interface LiveTopicOptions<T> {
   isPayload: (value: unknown) => value is T
   /** Called once per applied frame, in order — for pages that keep a history, not just the latest. */
   onFrame?: (frame: LiveFrame<T>) => void
+  /** False opens no socket (yet): a topic that matters only from some point on, like a finished game's rematch. */
+  enabled?: boolean
 }
 
 export interface LiveTopic<T> {
@@ -126,6 +128,7 @@ export function useLiveTopic<T>({
   initial,
   isPayload,
   onFrame,
+  enabled = true,
 }: LiveTopicOptions<T>): LiveTopic<T> {
   const start: LiveFrame<T> | undefined = initial && { topic: liveTopic(kind, id), ...initial }
   const [frame, setFrame] = useState<LiveFrame<T> | undefined>(start)
@@ -140,6 +143,7 @@ export function useLiveTopic<T>({
   const baseline = useRef(start)
   baseline.current = start
   useEffect(() => {
+    if (!enabled) return
     shown.current = baseline.current
     setFrame(baseline.current)
     setStatus('connecting')
@@ -198,7 +202,7 @@ export function useLiveTopic<T>({
       if (retry !== null) clearTimeout(retry)
       socket?.close()
     }
-  }, [kind, id])
+  }, [kind, id, enabled])
 
   return { frame, status, error }
 }

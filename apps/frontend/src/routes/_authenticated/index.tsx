@@ -27,7 +27,16 @@ import {
 import { RecentGames, YourTurnList } from '#/components/games'
 
 /** Home: quick pairing on a preset, an invite link for a friend, and your recent games. */
+/** `?seek=3+2` joins that queue on arrival: the game-over card's "New opponent" (game-feedback). */
+function validateSearch(search: Record<string, unknown>): { seek?: string } {
+  const seek = search['seek']
+  return typeof seek === 'string' && (PRESETS as ReadonlyArray<string>).includes(seek)
+    ? { seek }
+    : {}
+}
+
 export const Route = createFileRoute('/_authenticated/')({
+  validateSearch,
   loader: async () => {
     const [games, yourTurn, levels] = await Promise.all([
       getMyGames({ data: { limit: 8 } }),
@@ -40,6 +49,8 @@ export const Route = createFileRoute('/_authenticated/')({
 })
 
 const HEARTBEAT_MS = 25_000
+/** How long "Opponent found" shows before the game opens (game-feedback). */
+const FOUND_MS = 600
 
 function HomePage() {
   const { me } = Route.useRouteContext()
@@ -55,9 +66,15 @@ function HomePage() {
     const status = await joining.run(() =>
       postJoinQueue({ data: { timeControl, heartbeat: false } }),
     )
-    if (status?.status === 'matched' && status.gameId) goToGame(status.gameId)
-    else if (status) setSeek(status)
+    if (status) setSeek(status) // a pairing at once still shows "Opponent found" first
   }
+
+  const { seek: seekOnArrival } = Route.useSearch()
+  useEffect(() => {
+    if (!seekOnArrival) return
+    void navigate({ to: '/', search: {}, replace: true })
+    void join(seekOnArrival)
+  }, [])
 
   return (
     <div className="flex flex-col gap-8">
@@ -129,6 +146,7 @@ function HomePage() {
 }
 
 interface SeekProps {
+  /** The join's answer; `matched` already names the game. */
   seek: QueueStatus
   meId: number
   onMatched: (gameId: string) => void
@@ -145,12 +163,21 @@ function Seek({ seek, meId, onMatched, onCancel }: SeekProps) {
   const joinSeq = seek.seq ?? 0
   const done = useRef(false)
   const [waiting, setWaiting] = useState(seek.waiting ?? 1)
+  const [found, setFound] = useState(false)
 
+  // "Opponent found" for a moment, then the game (at once when the user prefers reduced motion).
   const matched = (gameId: string) => {
     if (done.current) return
     done.current = true
-    onMatched(gameId)
+    setFound(true)
+    const reduced =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    setTimeout(() => onMatched(gameId), reduced ? 0 : FOUND_MS)
   }
+  useEffect(() => {
+    if (seek.status === 'matched' && seek.gameId) matched(seek.gameId)
+  }, [])
 
   const heartbeat = async () => {
     const outcome = await postJoinQueue({ data: { timeControl: tc, heartbeat: true } })
@@ -193,7 +220,16 @@ function Seek({ seek, meId, onMatched, onCancel }: SeekProps) {
       <div className="flex items-center justify-between gap-4" data-testid="seek">
         <div className="flex flex-col">
           <span className="font-display text-display-lg leading-none">{tc}</span>
-          <span className="text-sm text-fg-secondary">{`${category(tc)} · ${waiting} waiting`}</span>
+          {found ? (
+            <span
+              className="text-sm font-medium text-fg-accent motion-safe:animate-pulse"
+              data-testid="seek-found"
+            >
+              Opponent found
+            </span>
+          ) : (
+            <span className="text-sm text-fg-secondary">{`${category(tc)} · ${waiting} waiting`}</span>
+          )}
         </div>
         <Button onClick={onCancel}>Cancel</Button>
       </div>

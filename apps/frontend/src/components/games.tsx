@@ -4,6 +4,7 @@ import { Chessboard, defaultArrowOptions } from 'react-chessboard'
 import type { ChessboardOptions, PieceRenderObject } from 'react-chessboard'
 import type { ReactNode } from 'react'
 import type { SideMaterial, SquarePair } from '#/lib/board'
+import type { RematchState } from '#/lib/feedback'
 import type { ClaimOutcome, Color, EndReason, GameCommand, GameView, PgnResult } from '#/lib/games'
 import type { Piece } from '#/lib/moveInput'
 import type { MyGameItem } from '#/lib/play'
@@ -471,6 +472,105 @@ export function GameResultPanel({
   )
 }
 
+/**
+ * The card over the board when a game ends while it is watched (game-feedback): the result, how it ended, and the
+ * page's actions (rematch, new opponent, analyse). It can be closed; the result panel beside the board stays.
+ */
+export function GameOverCard({
+  result,
+  reason,
+  onClose,
+  children,
+}: {
+  result: PgnResult
+  reason: EndReason | null
+  onClose: () => void
+  children?: ReactNode
+}) {
+  const how = reason ? reasonText(reason) : ''
+  return (
+    <div className="absolute inset-0 z-10 grid place-items-center bg-surface-page/55 p-4">
+      <div
+        role="dialog"
+        aria-label="Game over"
+        data-testid="game-over"
+        className="motion-safe:animate-[pop_180ms_ease-out] flex w-full max-w-72 flex-col items-center gap-3 rounded-card border border-line-accent bg-surface-card p-5 text-center shadow-2xl"
+      >
+        <p className="m-0 font-display text-display-md">{resultText(result)}</p>
+        {how ? (
+          <p className="m-0 text-sm text-fg-secondary">
+            {how.charAt(0).toUpperCase() + how.slice(1)}
+          </p>
+        ) : null}
+        <div className="flex w-full flex-col gap-2">{children}</div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="cursor-pointer border-0 bg-transparent text-xs text-fg-muted hover:text-fg-body"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export interface RematchOfferProps {
+  state: RematchState
+  opponent: string
+  busy: boolean
+  /** Offers the rematch, or accepts the opponent's. */
+  onRematch: () => void
+}
+
+/** Where the rematch stands, with what I can do about it (game-feedback). */
+export function RematchOffer({ state, opponent, busy, onRematch }: RematchOfferProps) {
+  const [declined, setDeclined] = useState(false)
+  if (state.kind === 'none') {
+    return (
+      <Button block variant="primary" disabled={busy} onClick={onRematch}>
+        Rematch
+      </Button>
+    )
+  }
+  if (state.kind === 'offered') {
+    return (
+      <p className="m-0 text-sm text-fg-secondary" data-testid="rematch">
+        {`Rematch offered · waiting for ${opponent}`}
+      </p>
+    )
+  }
+  if (state.kind === 'asked' && !declined) {
+    return (
+      <div className="flex flex-col gap-2" data-testid="rematch">
+        <p className="m-0 text-sm text-fg-primary">{`${opponent} wants a rematch`}</p>
+        <div className="flex gap-2">
+          <Button
+            block
+            variant="primary"
+            disabled={busy}
+            onClick={onRematch}
+            aria-label="Accept rematch"
+          >
+            Accept
+          </Button>
+          <Button block onClick={() => setDeclined(true)}>
+            Decline
+          </Button>
+        </div>
+      </div>
+    )
+  }
+  if (state.kind === 'started') {
+    return (
+      <p className="m-0 text-sm text-fg-secondary" data-testid="rematch">
+        Starting the rematch…
+      </p>
+    )
+  }
+  return null
+}
+
 /** The abandonment offer (presence-and-abandonment): claim the win, call it a draw, or keep waiting. */
 export function ClaimPanel({
   disabled,
@@ -529,7 +629,10 @@ export function GameControls({
   }
   if (view.drawOfferedBy === opponentId) {
     return (
-      <div className="flex flex-col gap-2">
+      <div
+        data-testid="draw-offer"
+        className="flex flex-col gap-2 rounded-card p-2 motion-safe:animate-[offer_1.6s_ease-in-out_infinite]"
+      >
         <p className="m-0 text-sm text-fg-body">Your opponent offers a draw.</p>
         <div className="flex gap-2">
           <Button

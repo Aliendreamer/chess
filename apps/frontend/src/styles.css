@@ -159,6 +159,21 @@
   --board-selected: rgba(214, 170, 60, 0.7);
 }
 
+/* The game-over card's entrance (game-feedback); used as motion-safe:animate-[pop_…]. */
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+/* A pending draw offer to answer (game-feedback): a slow brass glow; used as motion-safe:animate-[offer_…]. */
+@keyframes offer {
+  50% {
+    box-shadow: 0 0 0 3px var(--color-line-accent-soft);
+  }
+}
+
 /* In the base layer, so any utility on an element (a Link styled as a button, say) wins. */
 @layer base {
   body {

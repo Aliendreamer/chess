@@ -209,7 +209,11 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   after the end. Games start only through `IGameStarter`: from matchmaking (`Akka/Matchmaking/MatchmakingActor`, a cluster singleton;
   `POST|DELETE /api/matchmaking/{tc}`; `?heartbeat=true` every ~25 s keeps your place, 60 s silence drops you) or an invite
   (`Akka/Matchmaking/InviteActor`, sharded `invites`, 24 h; `POST /api/invites`, `GET /api/invites/{id}`, `…/accept`,
-  `…/cancel`). Live kinds `queue:{tc}` and `invite:{id}`.
+  `…/cancel`). Live kinds `queue:{tc}` and `invite:{id}`. **Rematch (game-feedback)**: `POST /api/games/{id}/rematch`
+  (`Rematch.Offer` + `OfferRematch`) is an invite whose id IS the finished game's id, reserved for the other player
+  (`InviteCreated.ForId`, optional, so old rows read), colours swapped; first call offers, the guest's call accepts. The
+  game page watches `invite:{gameId}` once the game ends (`useLiveTopic({ enabled })`). The tab title/favicon signals
+  and the rematch state are pure in `lib/feedback.ts`.
   Commands: `POST /api/games/{id}/moves|resign|draw/offer|draw/accept|draw/decline|abort|claim`, `GET …/live`.
   Presence: the BFF multiplexer reports `Present`/`Absent` for `game:` topics (per-process instance id, 30 s refresh);
   the actor's 75 s lease and 60 s abandonment are `Akka:PresenceLeaseSeconds` / `Akka:AbandonAfterSeconds`

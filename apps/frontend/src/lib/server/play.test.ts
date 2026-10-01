@@ -8,6 +8,7 @@ import {
   leaveQueue,
   loadInvite,
   loadMyGames,
+  rematch,
 } from './play'
 
 const INVITE = '7c9e6679742540de944be07fc1f90ae7'
@@ -83,9 +84,11 @@ describe('invites', () => {
     const calls: Array<Call> = []
     await acceptInvite(fakeFetch(200, {}, calls), INVITE)
     await cancelInvite(fakeFetch(200, {}, calls), INVITE)
+    await rematch(fakeFetch(200, {}, calls), INVITE)
     expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual([
       `POST /api/invites/${INVITE}/accept`,
       `POST /api/invites/${INVITE}/cancel`,
+      `POST /api/games/${INVITE}/rematch`,
     ])
   })
 
