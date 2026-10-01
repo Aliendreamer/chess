@@ -72,14 +72,6 @@
   --color-status-healthy: var(--color-moss-400);
   --color-status-turn: var(--color-brass-400);
   --color-status-waiting: var(--color-parchment-500);
-  /* Board */
-  --color-board-light: oklch(0.84 0.035 85);
-  --color-board-dark: oklch(0.55 0.05 60);
-  --color-board-last-light: oklch(0.86 0.09 95);
-  --color-board-last-dark: oklch(0.66 0.09 85);
-  --color-piece-white: oklch(0.98 0.01 85);
-  --color-piece-white-stroke: oklch(0.25 0.01 70);
-  --color-piece-black: oklch(0.18 0.01 70);
 
   /* Type */
   --font-display: 'Newsreader', Georgia, serif;
@@ -116,11 +108,55 @@
   --radius-pill: 16px;
 }
 
+/*
+ * The active board theme's squares as utilities (bg-board-light, ...). `inline`, so the utility reads `--board-*` on
+ * the element itself and follows a `data-board` ancestor instead of the value resolved on :root.
+ */
+@theme inline {
+  --color-board-light: var(--board-light);
+  --color-board-dark: var(--board-dark);
+}
+
 :root {
   color-scheme: dark;
+  /*
+   * Board themes (board-look). Brown is the default; `data-board` on an ancestor picks another. Square colours follow
+   * lichess's flat themes; the highlights are translucent so they read on every theme.
+   */
+  --board-light: #f0d9b5;
+  --board-dark: #b58863;
+  --board-last: rgba(155, 199, 0, 0.41);
+  --board-selected: rgba(20, 85, 30, 0.5);
+  --board-target: rgba(20, 85, 30, 0.5);
+  --board-premove: rgba(20, 30, 85, 0.4);
+  --board-circle: rgba(21, 120, 27, 0.8);
   --rail-width: 248px;
   --content-max: 1120px;
   --board-max: 600px;
+}
+
+[data-board='blue'] {
+  --board-light: #dee3e6;
+  --board-dark: #8ca2ad;
+}
+
+[data-board='green'] {
+  --board-light: #ffffdd;
+  --board-dark: #86a666;
+}
+
+[data-board='slate'] {
+  --board-light: #c9cfd6;
+  --board-dark: #5d6b7a;
+  --board-last: rgba(120, 190, 255, 0.38);
+  --board-selected: rgba(40, 110, 190, 0.5);
+}
+
+[data-board='walnut'] {
+  --board-light: #ead6b0;
+  --board-dark: #9a6a44;
+  --board-last: rgba(214, 170, 60, 0.55);
+  --board-selected: rgba(214, 170, 60, 0.7);
 }
 
 /* In the base layer, so any utility on an element (a Link styled as a button, say) wins. */

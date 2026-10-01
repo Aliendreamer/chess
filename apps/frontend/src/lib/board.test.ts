@@ -1,0 +1,98 @@
+import { describe, expect, it } from 'vitest'
+import { checkSquare, pieceSrc, premoveClick, resolvePremove, squareStyles } from './board'
+
+const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+// 1.e4 e5 2.Qh5 Nc6 3.Bc4 Nf6 4.Qxf7+
+const SCHOLAR_CHECK = 'r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4'
+// 1.e4 d5: the e4 pawn can take on d5.
+const CAN_TAKE = 'rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2'
+
+describe('pieceSrc', () => {
+  it('names the Cburnett file', () => {
+    expect(pieceSrc('w', 'n')).toBe('/pieces/cburnett/wN.svg')
+    expect(pieceSrc('b', 'k')).toBe('/pieces/cburnett/bK.svg')
+  })
+})
+
+describe('checkSquare', () => {
+  it('is the king of the side to move when it is in check', () => {
+    expect(checkSquare(SCHOLAR_CHECK)).toBe('e8')
+  })
+
+  it('is null without check', () => {
+    expect(checkSquare(START)).toBeNull()
+  })
+})
+
+describe('squareStyles', () => {
+  it('tints the last move and the selection', () => {
+    const styles = squareStyles(START, { lastMove: { from: 'e2', to: 'e4' }, selected: 'g1' })
+    expect(styles.e2?.backgroundColor).toBe('var(--board-last)')
+    expect(styles.e4?.backgroundColor).toBe('var(--board-last)')
+    expect(styles.g1?.backgroundColor).toBe('var(--board-selected)')
+  })
+
+  it('draws a dot on an empty target and a ring on a capture', () => {
+    const styles = squareStyles(CAN_TAKE, { selected: 'e4', targets: ['e5', 'd5'] })
+    expect(styles.e5?.backgroundImage).toContain('var(--board-target) 19%')
+    expect(styles.d5?.backgroundImage).toContain('transparent 79%')
+  })
+
+  it('glows the king in check', () => {
+    expect(squareStyles(SCHOLAR_CHECK, {}).e8?.backgroundImage).toContain('rgba(255, 0, 0')
+  })
+
+  it('marks a premove and drawn circles', () => {
+    const styles = squareStyles(START, { premove: { from: 'e7', to: 'e5' }, circles: ['d4'] })
+    expect(styles.e7?.backgroundColor).toBe('var(--board-premove)')
+    expect(styles.e5?.backgroundColor).toBe('var(--board-premove)')
+    expect(styles.d4?.boxShadow).toContain('var(--board-circle)')
+  })
+
+  it('leaves untouched squares out', () => {
+    expect(Object.keys(squareStyles(START, {}))).toEqual([])
+  })
+})
+
+describe('resolvePremove', () => {
+  const AFTER_E4 = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'
+
+  it('plays a premove that is legal now', () => {
+    expect(resolvePremove(AFTER_E4, { from: 'e7', to: 'e5' })).toBe('e7e5')
+  })
+
+  it('drops one that is not', () => {
+    expect(resolvePremove(AFTER_E4, { from: 'e7', to: 'e4' })).toBeNull()
+  })
+
+  it('drops one when it is not our move after all', () => {
+    expect(resolvePremove(START, { from: 'e7', to: 'e5' })).toBeNull()
+  })
+
+  it('promotes to a queen', () => {
+    const PROMOTE = '8/4P3/8/8/8/8/k7/4K3 w - - 0 1'
+    expect(resolvePremove(PROMOTE, { from: 'e7', to: 'e8' })).toBe('e7e8q')
+  })
+})
+
+describe('premoveClick', () => {
+  const AFTER_E4 = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'
+
+  it('selects my piece, then queues the move to any other square', () => {
+    const first = premoveClick(AFTER_E4, 'w', null, 'g1')
+    expect(first).toEqual({ selected: 'g1', premove: null })
+    expect(premoveClick(AFTER_E4, 'w', 'g1', 'f3')).toEqual({
+      selected: null,
+      premove: { from: 'g1', to: 'f3' },
+    })
+  })
+
+  it('a click on an empty square or a foreign piece with nothing selected clears', () => {
+    expect(premoveClick(AFTER_E4, 'w', null, 'e5')).toEqual({ selected: null, premove: null })
+    expect(premoveClick(AFTER_E4, 'w', null, 'e7')).toEqual({ selected: null, premove: null })
+  })
+
+  it('a second click on the selected piece deselects it', () => {
+    expect(premoveClick(AFTER_E4, 'w', 'g1', 'g1')).toEqual({ selected: null, premove: null })
+  })
+})
