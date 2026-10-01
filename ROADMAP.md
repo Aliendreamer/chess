@@ -179,6 +179,31 @@ Goal: the architecture exists end to end with a trivial domain, so every later p
   everyone, the board polls until they arrive. Verify: `tools/localdev/verify-part4b.sh`.
 - Later: the openings explorer from imported games.
 
+### Part 5 — Look and feel (lichess-inspired)
+
+Owner review of lichess.org on 2026-10-01 (proposals P1–P10). Six OpenSpec changes, built in this order:
+
+- **`board-look`** (P1–P3) **[decided]**: the board becomes `react-chessboard` (MIT, React 19, maintained), rendered in
+  the browser only. Pieces are Cburnett SVGs from Wikimedia Commons under their 3-clause BSD option (not lichess's GPL
+  copy). Lichess **Brown** is the default board; Blue, Green, Slate and Club walnut are the other themes. Lichess
+  highlights: last move, check glow, target dots and capture rings. Pieces slide, drag or click-click, premove, and
+  right-drag arrows and circles. chessground is out (GPL-3.0 would conflict with the planned MIT licence).
+- **`game-page-navigation`** (P5) **[decided]**: captured pieces and the material difference under each player, a
+  clickable move list with ← → navigation through earlier positions, and a flip-board button. The clocks stay as
+  they are (no tenths, no low-time colour).
+- **`game-feedback`** (P8) **[decided]**: "Your turn" in the tab title and a dot on the favicon, a game-over card with
+  Rematch, an opponent-found flash, and a draw offer that stands out.
+- **`user-preferences`** (P9) **[decided]**: a settings page and a preferences row on the account (board theme,
+  piece set, animation, coordinates, site theme), read with `getMe()` so the server renders them without a flash.
+- **`site-themes`** (P7) **[decided]**: other site themes are allowed; **dark stays the default**. A colour per game
+  type and an icon set (Lucide, ISC).
+- **`responsive-layout`** (P10) **[decided]**: its own spec; every page works from phone width up.
+- **No sound** (P4) **[decided]**: the site plays no sounds.
+- **Live home** (P6) **[open — for discussion]**: counters (games in play, players online, queue sizes), "Club TV"
+  mini boards of live games, mini boards for "Your turn". Spectating is already allowed (D20). To settle: counters only
+  or live mini boards too, how Club TV picks games (there are no ratings yet), whether players can opt out of being
+  shown, and whether engine and correspondence games appear.
+
 ## 7. Cross-cutting
 
 - **Testing**: unit (xUnit + Akka TestKit; vitest), integration (Testcontainers), e2e (Playwright);
