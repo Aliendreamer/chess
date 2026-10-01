@@ -101,6 +101,7 @@ internal sealed class LiveHub(LiveTopicResolver topics, IRequiredActor<GameActor
 {
     private const int MaxInstanceLength = 64;
 
+    /// <summary>The BFF calls this hub by its path and method names, spelled in its <c>HUB</c> (lib/server/live-hub.ts).</summary>
     public const string Path = "/hub/live";
 
     public async Task<LiveFrame?> Subscribe(string topic)

@@ -185,7 +185,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         Rearm();
     }
 
-    private string Topic => LiveTopics.Format("game", _gameId.ToString("N"));
+    private string Topic => LiveTopics.Format(GameLiveSource.KindName, _gameId.ToString("N"));
 
     private int Ply => _rules.Moves.Count;
 
@@ -936,7 +936,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private long Opponent(long userId) => userId == _white ? _black : _white;
 
     private GameView View() => new(
-        _gameId, _white, _black, _timeControl.ToString(), _status, _rules.Fen, Ply, _rules.SideToMove.ToString(),
+        _gameId, _white, _black, _timeControl.ToString(), _status, _rules.Fen, Ply, _rules.SideToMove,
         _rules.Moves.Count > 0 ? _rules.Moves[^1] : null, _lastSan,
         CurrentMs(Side.White, _clock.GetUtcNow()), CurrentMs(Side.Black, _clock.GetUtcNow()), _clock.GetUtcNow(),
         _drawOfferedBy, _result, _reason, LastSequenceNr, AbsentId, ClaimableBy(_clock.GetUtcNow()), _engine?.Side, _engine?.Level, DeadlineAt);

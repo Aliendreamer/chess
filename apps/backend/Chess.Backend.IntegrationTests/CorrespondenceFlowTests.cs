@@ -27,7 +27,7 @@ public sealed class CorrespondenceFlowTests(StackFixture stack)
             {
                 using HttpResponseMessage r = await Api.GetAsync(client, $"/api/games/{id:N}/live", subject, ct);
                 view = await r.Content.ReadFromJsonAsync<View>(Api.Json, ct);
-                return view?.Status == "Ended";
+                return view?.Status == "ended";
             },
             "the deadline ends the game",
             TimeSpan.FromSeconds(60),

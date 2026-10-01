@@ -31,7 +31,7 @@ public sealed class MatchmakingActorTests() : TestKit(AkkaConfig.InMemoryPersist
             }
 
             Guid id = Guid.CreateVersion7();
-            return Task.FromResult(new GameView(id, whiteId, blackId, timeControl.ToString(), GameStatus.Created, "fen", 0, "White", null, null, 0, 0, DateTimeOffset.UnixEpoch, null, null, null, 1));
+            return Task.FromResult(new GameView(id, whiteId, blackId, timeControl.ToString(), GameStatus.Created, "fen", 0, Side.White, null, null, 0, 0, DateTimeOffset.UnixEpoch, null, null, null, 1));
         }
     }
 

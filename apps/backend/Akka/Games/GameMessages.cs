@@ -43,8 +43,8 @@ internal sealed record ReportPresence(Guid GameId, long UserId, string Instance,
 /// <summary>The remaining player ends a game whose opponent has been away a minute: a win, or a draw (D5).</summary>
 internal sealed record ClaimAbandonment(Guid GameId, long UserId, bool Win) : IGameCommand;
 
-/// <summary>Written as its name (<c>"Playing"</c>) on the wire, over HTTP and the live relay alike.</summary>
-[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<GameStatus>))]
+/// <summary>Written lower-case (<c>"playing"</c>) on the wire, over HTTP and the live relay alike.</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(WireEnumConverter<GameStatus>))]
 internal enum GameStatus
 {
     /// <summary>Both players known, no move yet.</summary>
@@ -77,7 +77,7 @@ internal sealed record GameView(
     GameStatus Status,
     string Fen,
     int Ply,
-    string SideToMove,
+    Side SideToMove,
     string? LastUci,
     string? LastSan,
     long WhiteMs,

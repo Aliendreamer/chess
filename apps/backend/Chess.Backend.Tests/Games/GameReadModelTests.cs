@@ -1,4 +1,5 @@
 using Chess.Backend.Akka.Games;
+using Chess.Backend.Games;
 using Chess.Backend.Data.ReadModels;
 using Chess.Backend.WebApi.Games;
 
@@ -48,7 +49,7 @@ public sealed class GameReadModelTests
         GameView view = GameReads.ToView(Ended());
 
         Assert.Equal(
-            new GameView(Id, 1, 2, "5+3", GameStatus.Ended, "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3", 4, "White", "d8h4", "Qh4#", 290_000, 295_000, T0.AddSeconds(6), null, "0-1", "Checkmate", 6),
+            new GameView(Id, 1, 2, "5+3", GameStatus.Ended, "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3", 4, Side.White, "d8h4", "Qh4#", 290_000, 295_000, T0.AddSeconds(6), null, "0-1", "Checkmate", 6),
             view);
     }
 

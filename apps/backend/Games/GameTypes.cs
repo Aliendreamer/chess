@@ -1,5 +1,22 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace Chess.Backend.Games;
 
+/// <summary>
+/// An enum on the wire (HTTP and the live relay) is its lower-case name, <c>"playing"</c>, like every other value the
+/// API sends; <see cref="WireNames.WireName{T}"/> spells it the same way for messages.
+/// </summary>
+internal sealed class WireEnumConverter<T>() : JsonStringEnumConverter<T>(JsonNamingPolicy.CamelCase, allowIntegerValues: false)
+    where T : struct, Enum;
+
+internal static class WireNames
+{
+    public static string WireName<T>(this T value)
+        where T : struct, Enum => JsonNamingPolicy.CamelCase.ConvertName(value.ToString());
+}
+
+[JsonConverter(typeof(WireEnumConverter<Side>))]
 internal enum Side
 {
     White,

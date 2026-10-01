@@ -132,7 +132,7 @@ public sealed class EngineFlowTests(StackFixture stack)
 
         Assert.Equal(HttpStatusCode.OK, (await Api.MoveAsync(client, started.GameId, human, "e2e4", ct)).StatusCode);
         View answered = await WaitForPlyAsync(client, started.GameId, human, 2, ct);
-        Assert.Equal(("Playing", "e5"), (answered.Status, answered.LastSan));
+        Assert.Equal(("playing", "e5"), (answered.Status, answered.LastSan));
         Assert.Equal("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1", engine.Seen[0].Fen);
 
         // At-least-once: the same answer again is refused by the game (the ply has moved on) and changes nothing.

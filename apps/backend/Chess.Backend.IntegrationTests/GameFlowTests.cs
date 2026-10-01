@@ -52,7 +52,7 @@ public sealed class GameFlowTests(StackFixture stack)
         });
         await hub.StartAsync(ct);
         Frame? snapshot = await hub.InvokeAsync<Frame?>("Subscribe", $"game:{id:N}", ct);
-        Assert.Equal(("Created", 0), (snapshot!.Payload.Status, snapshot.Payload.Ply));
+        Assert.Equal(("created", 0), (snapshot!.Payload.Status, snapshot.Payload.Ply));
 
         Assert.Equal(HttpStatusCode.Forbidden, (await Api.MoveAsync(client, id, $"it-watch-{run}", "e2e4", ct)).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await Api.MoveAsync(client, id, $"it-black-{run}", "e7e5", ct)).StatusCode);
@@ -66,7 +66,7 @@ public sealed class GameFlowTests(StackFixture stack)
             last = await r.Content.ReadFromJsonAsync<View>(Api.Json, ct);
         }
 
-        Assert.Equal(("Ended", "0-1", "Checkmate", "Qh4#", 4), (last!.Status, last.Result, last.Reason, last.LastSan, last.Ply));
+        Assert.Equal(("ended", "0-1", "Checkmate", "Qh4#", 4), (last!.Status, last.Result, last.Reason, last.LastSan, last.Ply));
 
         // The hub pushed each move (and the ending) with rising seq, the last one being the final view.
         await Api.EventuallyAsync(() => Task.FromResult(Count(pushed) >= 5), "live frames for 4 moves + the ending", TimeSpan.FromSeconds(30), ct, TimeSpan.FromMilliseconds(200));
@@ -77,7 +77,7 @@ public sealed class GameFlowTests(StackFixture stack)
         }
 
         Assert.Equal(frames.Select(f => f.Seq).Order(), frames.Select(f => f.Seq));
-        Assert.Equal(("Ended", last.Seq), (frames[^1].Payload.Status, frames[^1].Seq));
+        Assert.Equal(("ended", last.Seq), (frames[^1].Payload.Status, frames[^1].Seq));
 
         // Kafka: GameCreated, 4× MoveMade, GameEnded — keyed by the game, in seq order.
         List<(string Type, long Seq)> onKafka = await ReadGameEventsAsync(id, expected: 6, ct);
@@ -116,7 +116,7 @@ public sealed class GameFlowTests(StackFixture stack)
         View view = (await live.Content.ReadFromJsonAsync<View>(Api.Json, ct))!;
 
         // Forgiven: only the time since recovery counts, not the 2 s of thinking nor the several seconds of restart.
-        Assert.Equal("Playing", view.Status);
+        Assert.Equal("playing", view.Status);
         Assert.InRange(300_000 - view.BlackMs, 0, 1_500);
     }
 

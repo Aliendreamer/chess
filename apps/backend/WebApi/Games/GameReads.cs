@@ -29,6 +29,6 @@ internal static class GameReads
 
     /// <summary>An ended game's live view straight from its row, the same shape the actor answers with (D5).</summary>
     public static GameView ToView(RmGame g) => new(
-        g.GameId, g.WhiteId, g.BlackId, g.TimeControl, GameStatus.Ended, g.LastFen, g.Ply, g.Ply % 2 == 0 ? "White" : "Black",
+        g.GameId, g.WhiteId, g.BlackId, g.TimeControl, GameStatus.Ended, g.LastFen, g.Ply, g.Ply % 2 == 0 ? Side.White : Side.Black,
         g.LastUci, g.LastSan, g.WhiteMs, g.BlackMs, g.EndedAt ?? g.UpdatedAt, null, g.Result, g.Reason, g.LastSeq);
 }

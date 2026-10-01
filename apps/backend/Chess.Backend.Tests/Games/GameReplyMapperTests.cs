@@ -1,4 +1,5 @@
 using Chess.Backend.Akka.Games;
+using Chess.Backend.Games;
 using Chess.Backend.WebApi.Games;
 
 namespace Chess.Backend.Tests.Games;
@@ -10,7 +11,7 @@ public sealed class GameReplyMapperTests
     [Fact]
     public void A_view_is_200()
     {
-        GameView view = new(Id, 1, 2, "5+3", GameStatus.Playing, "fen", 1, "Black", "e2e4", "e4", 1, 2, DateTimeOffset.UnixEpoch, null, null, null, 2);
+        GameView view = new(Id, 1, 2, "5+3", GameStatus.Playing, "fen", 1, Side.Black, "e2e4", "e4", 1, 2, DateTimeOffset.UnixEpoch, null, null, null, 2);
 
         GameReplyOutcome outcome = GameReplyMapper.Map(view);
 

@@ -30,7 +30,7 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
                 Started.Add((whiteId, blackId, timeControl.ToString(), id));
             }
 
-            return Task.FromResult(new GameView(id, whiteId, blackId, timeControl.ToString(), GameStatus.Created, "fen", 0, "White", null, null, 0, 0, DateTimeOffset.UnixEpoch, null, null, null, 1));
+            return Task.FromResult(new GameView(id, whiteId, blackId, timeControl.ToString(), GameStatus.Created, "fen", 0, Side.White, null, null, 0, 0, DateTimeOffset.UnixEpoch, null, null, null, 1));
         }
     }
 
@@ -44,7 +44,7 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
         Guid id = Guid.NewGuid();
         IActorRef actor = Sys.ActorOf(InviteProps(id, mediator));
         InviteView view = Assert.IsType<InviteView>(Send(actor, new CreateInvite(id, Creator, tc, color)));
-        Assert.Equal("open", view.Status);
+        Assert.Equal(InviteStatus.Open, view.Status);
         return (id, actor);
     }
 
@@ -64,7 +64,7 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
 
         InviteView view = Assert.IsType<InviteView>(Send(actor, new GetInvite(id)));
 
-        Assert.Equal((Creator, "10+5", "black", "open", (Guid?)null), (view.CreatorId, view.TimeControl, view.Color, view.Status, view.GameId));
+        Assert.Equal((Creator, "10+5", "black", InviteStatus.Open, (Guid?)null), (view.CreatorId, view.TimeControl, view.Color, view.Status, view.GameId));
         Assert.Equal(Time.Utc("2026-09-27T10:00:00Z"), view.ExpiresAt);
     }
 
@@ -77,7 +77,7 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
 
         (long white, long black, string tc, Guid gameId) = Assert.Single(Starter.Started);
         Assert.Equal((Friend, Creator, "10+5"), (white, black, tc)); // creator chose black, so the friend is White
-        Assert.Equal(("accepted", (Guid?)gameId), (accepted.Status, accepted.GameId));
+        Assert.Equal((InviteStatus.Accepted, (Guid?)gameId), (accepted.Status, accepted.GameId));
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
         (Guid id, IActorRef actor) = Created();
 
         AssertRejected(Send(actor, new CancelInvite(id, Stranger)), "Forbidden");
-        Assert.Equal("cancelled", Assert.IsType<InviteView>(Send(actor, new CancelInvite(id, Creator))).Status);
+        Assert.Equal(InviteStatus.Cancelled, Assert.IsType<InviteView>(Send(actor, new CancelInvite(id, Creator))).Status);
         AssertRejected(Send(actor, new AcceptInvite(id, Friend)), "Conflict");
     }
 
@@ -153,7 +153,7 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
         (Guid id, IActorRef actor) = Created();
         Clock.Advance(TimeSpan.FromHours(24));
 
-        Assert.Equal("expired", Assert.IsType<InviteView>(Send(actor, new GetInvite(id))).Status);
+        Assert.Equal(InviteStatus.Expired, Assert.IsType<InviteView>(Send(actor, new GetInvite(id))).Status);
         AssertRejected(Send(actor, new AcceptInvite(id, Friend)), "Conflict");
         Assert.Empty(Starter.Started);
     }
@@ -186,7 +186,7 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
         ExpectTerminated(actor);
         InviteView recovered = Assert.IsType<InviteView>(Send(Sys.ActorOf(InviteProps(id)), new GetInvite(id)));
 
-        Assert.Equal(("accepted", gameId), (recovered.Status, recovered.GameId));
+        Assert.Equal((InviteStatus.Accepted, gameId), (recovered.Status, recovered.GameId));
     }
 
     [Fact]
@@ -200,6 +200,6 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
 
         LiveFrame frame = Assert.IsType<LiveFrame>(mediator.ExpectMsg<Publish>().Message);
         Assert.Equal($"invite:{id:N}", frame.Topic);
-        Assert.Equal(("accepted", accepted.GameId), (((InviteView)frame.Payload).Status, ((InviteView)frame.Payload).GameId));
+        Assert.Equal((InviteStatus.Accepted, accepted.GameId), (((InviteView)frame.Payload).Status, ((InviteView)frame.Payload).GameId));
     }
 }

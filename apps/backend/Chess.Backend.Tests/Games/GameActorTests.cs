@@ -20,7 +20,7 @@ public sealed class GameActorTests() : GameActorTestBase(virtualTime: false)
         GameView first = Assert.IsType<GameView>(Send(actor, new CreateGame(id, White, Black, Blitz)));
         GameView again = Assert.IsType<GameView>(Send(actor, new CreateGame(id, White, Black, Blitz)));
 
-        Assert.Equal((GameStatus.Created, White, Black, "5+3", "White"), (first.Status, first.WhiteId, first.BlackId, first.TimeControl, first.SideToMove));
+        Assert.Equal((GameStatus.Created, White, Black, "5+3", Side.White), (first.Status, first.WhiteId, first.BlackId, first.TimeControl, first.SideToMove));
         Assert.Equal((300_000L, 300_000L), (first.WhiteMs, first.BlackMs));
         Assert.Equal(first.Seq, again.Seq); // nothing persisted the second time
         AssertRejected(Send(actor, new CreateGame(id, White, Stranger, Blitz)), RejectionCode.Conflict);
@@ -64,7 +64,7 @@ public sealed class GameActorTests() : GameActorTestBase(virtualTime: false)
 
         GameView after = Move(actor, id, White, "e2e4");
 
-        Assert.Equal((1, "e2e4", "e4", "Black", GameStatus.Playing), (after.Ply, after.LastUci, after.LastSan, after.SideToMove, after.Status));
+        Assert.Equal((1, "e2e4", "e4", Side.Black, GameStatus.Playing), (after.Ply, after.LastUci, after.LastSan, after.SideToMove, after.Status));
         Assert.StartsWith("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b", after.Fen, StringComparison.Ordinal);
 
         StopAndWait(actor);

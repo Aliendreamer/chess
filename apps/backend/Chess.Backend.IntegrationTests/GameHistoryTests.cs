@@ -118,7 +118,7 @@ public sealed class GameHistoryTests(StackFixture stack)
         await using HubConnection hub = app.ConnectHub("Relay");
         await hub.StartAsync(ct);
         Frame? snapshot = await hub.InvokeAsync<Frame?>("Subscribe", $"game:{id:N}", ct);
-        Assert.Equal(("Ended", "0-1", "Qh4#", 4), (snapshot!.Payload.Status, snapshot.Payload.Result, snapshot.Payload.LastSan, snapshot.Payload.Ply));
+        Assert.Equal(("ended", "0-1", "Qh4#", 4), (snapshot!.Payload.Status, snapshot.Payload.Result, snapshot.Payload.LastSan, snapshot.Payload.Ply));
 
         // Unknown games and an unfinished game's PGN are 404.
         using (HttpResponseMessage r = await Api.GetAsync(client, $"/api/games/{Guid.CreateVersion7():N}", white, ct))

@@ -2,6 +2,7 @@ using Akka.Persistence.Journal;
 using Akka.TestKit;
 using Akka.TestKit.Xunit2;
 using Chess.Backend.Akka.Games;
+using Chess.Backend.Games;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Events;
 using Chess.Backend.Extensions;
@@ -91,7 +92,7 @@ public sealed class GameLiveSourceTests : TestKit
     {
         TestProbe region = CreateTestProbe();
         Guid id = Guid.CreateVersion7();
-        GameView ended = new(id, 1, 2, "5+3", GameStatus.Ended, "fen", 4, "White", "d8h4", "Qh4#", 1, 2, DateTimeOffset.UnixEpoch, null, "0-1", "Checkmate", 6);
+        GameView ended = new(id, 1, 2, "5+3", GameStatus.Ended, "fen", 4, Side.White, "d8h4", "Qh4#", 1, 2, DateTimeOffset.UnixEpoch, null, "0-1", "Checkmate", 6);
 
         LiveFrame frame = (await new GameLiveSource(new FixedRegion<GameActor>(region.Ref), new EndedGames(ended), Options.Create(new ApiOptions())).SnapshotAsync(id.ToString("N"), CancellationToken.None))!;
 
@@ -127,7 +128,7 @@ public sealed class GameLiveSourceTests : TestKit
     {
         TestProbe region = CreateTestProbe();
         Guid id = Guid.CreateVersion7();
-        GameView view = new(id, 1, 2, "5+3", GameStatus.Playing, "fen", 3, "Black", "g1f3", "Nf3", 1, 2, DateTimeOffset.UnixEpoch, null, null, null, 9);
+        GameView view = new(id, 1, 2, "5+3", GameStatus.Playing, "fen", 3, Side.Black, "g1f3", "Nf3", 1, 2, DateTimeOffset.UnixEpoch, null, null, null, 9);
 
         Task<LiveFrame?> snapshot = new GameLiveSource(new FixedRegion<GameActor>(region.Ref), NoEndedGames, Options.Create(new ApiOptions())).SnapshotAsync(id.ToString("N"), CancellationToken.None);
         Assert.Equal(id, region.ExpectMsg<GetGameView>().GameId);

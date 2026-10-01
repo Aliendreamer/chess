@@ -23,18 +23,28 @@ internal sealed record CancelInvite(Guid InviteId, long UserId) : IInviteCommand
 
 internal sealed record GetInvite(Guid InviteId) : IInviteCommand;
 
+/// <summary>Where an invite stands; lower-case on the wire.</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(WireEnumConverter<InviteStatus>))]
+internal enum InviteStatus
+{
+    Open,
+    Accepted,
+    Cancelled,
+    Expired,
+}
+
 internal sealed record InviteRejected(Guid InviteId, RejectionCode Code, string Reason);
 
 /// <summary>
-/// An invite as the creator, the friend and the <c>invite:{id}</c> live topic see it. <see cref="Status"/> is
-/// <c>open</c>, <c>accepted</c> (with <see cref="GameId"/>), <c>cancelled</c> or <c>expired</c>.
+/// An invite as the creator, the friend and the <c>invite:{id}</c> live topic see it; <see cref="GameId"/> once
+/// <see cref="InviteStatus.Accepted"/>.
 /// </summary>
 internal sealed record InviteView(
     Guid InviteId,
     long CreatorId,
     string TimeControl,
     string Color,
-    string Status,
+    InviteStatus Status,
     Guid? GameId,
     DateTimeOffset CreatedAt,
     DateTimeOffset ExpiresAt,
@@ -105,11 +115,11 @@ internal sealed class InviteActor : ReceivePersistentActor
 
     public override string PersistenceId => PersistenceIdPrefix + _inviteId.ToString("N");
 
-    private string Status =>
-        _gameId is not null ? "accepted"
-        : _cancelled ? "cancelled"
-        : _clock.GetUtcNow() >= _createdAt + Lifetime ? "expired"
-        : "open";
+    private InviteStatus Status =>
+        _gameId is not null ? InviteStatus.Accepted
+        : _cancelled ? InviteStatus.Cancelled
+        : _clock.GetUtcNow() >= _createdAt + Lifetime ? InviteStatus.Expired
+        : InviteStatus.Open;
 
     private void HandleCreate(CreateInvite cmd)
     {
@@ -141,9 +151,9 @@ internal sealed class InviteActor : ReceivePersistentActor
             return;
         }
 
-        if (Status != "open")
+        if (Status != InviteStatus.Open)
         {
-            Sender.Tell(Rejected(RejectionCode.Conflict, $"This invite is {Status}."));
+            Sender.Tell(Rejected(RejectionCode.Conflict, $"This invite is {Status.WireName()}."));
             return;
         }
 
@@ -204,9 +214,9 @@ internal sealed class InviteActor : ReceivePersistentActor
             return;
         }
 
-        if (Status != "open")
+        if (Status != InviteStatus.Open)
         {
-            Sender.Tell(Rejected(RejectionCode.Conflict, $"This invite is {Status}."));
+            Sender.Tell(Rejected(RejectionCode.Conflict, $"This invite is {Status.WireName()}."));
             return;
         }
 

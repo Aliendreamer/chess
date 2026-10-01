@@ -11,8 +11,8 @@ internal static class MatchmakingHttp
 {
     public static (int Status, JoinQueueResponse? Body) Map(object reply) => reply switch
     {
-        Waiting w => (StatusCodes.Status200OK, new JoinQueueResponse("waiting", w.TimeControl, w.Position, w.WaitingCount, null, null, null, w.Seq)),
-        Matched m => (StatusCodes.Status200OK, new JoinQueueResponse("matched", m.TimeControl, null, null, m.GameId, m.WhiteId, m.BlackId, null)),
+        Waiting w => (StatusCodes.Status200OK, new JoinQueueResponse(QueueStatus.Waiting, w.TimeControl, w.Position, w.WaitingCount, null, null, null, w.Seq)),
+        Matched m => (StatusCodes.Status200OK, new JoinQueueResponse(QueueStatus.Matched, m.TimeControl, null, null, m.GameId, m.WhiteId, m.BlackId, null)),
         QueueRejected => (StatusCodes.Status400BadRequest, null),
         Left => (StatusCodes.Status204NoContent, null),
         _ => (StatusCodes.Status502BadGateway, null),
