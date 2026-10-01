@@ -11,8 +11,8 @@ Part 5 (look and feel), second change. Depends on `board-look` (piece images and
 
 For a player or spectator:
 
-- **Captured pieces** are shown under each player's name (the opponent's pieces they have taken, as small images) with
-  the material difference (`+3`) on the side that is ahead.
+- **Material** is shown under each player's name as lichess does: the pieces that side is up, as small images, and
+  `+3` on the side ahead in points.
 - **The move list is clickable.** Clicking a move, or using ← → Home End, shows that position. A bar under the board
   has start / back / forward / end buttons. While you look at an earlier position the board is read-only and a "Back
   to the game" button returns to the live position. A new move from the opponent does not pull you away. You return
@@ -32,9 +32,9 @@ None.
 
 ## Impact
 
-- **Frontend:** `lib/games.ts` (pure `material(fen)`, `fensAfter(sans)`), `components/games.tsx` (`PlayerStrip` with
-  captured pieces, `MoveList` with selection and clicks, `MoveNav` bar), `routes/_authenticated/games.$id.tsx`
+- **Frontend:** `lib/board.ts` (pure `material(fen)`, `replay(sans)`), `components/games.tsx` (`PlayerStrip` with the
+  material surplus, `MoveList` with selection and clicks, `MoveNav` bar), `routes/_authenticated/games.$id.tsx`
   (viewed ply, keyboard handler, flip state).
 - **Backend:** none. Positions are replayed from the SAN list the page already has, with chess.js.
-- **Tests:** vitest for `material` and `fensAfter`, and component tests for the list and the bar; one Playwright
+- **Tests:** vitest for `material` and `replay`, and component tests for the list and the bar; one Playwright
   check that ← shows the previous position.

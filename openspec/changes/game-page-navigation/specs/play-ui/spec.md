@@ -1,22 +1,21 @@
 ## ADDED Requirements
 
-### Requirement: Each player's captures and the material difference are shown
+### Requirement: Each player's material surplus is shown
 
-Under each player's name the game page SHALL show the opponent's pieces that player has captured, grouped by type
-(pawns, knights, bishops, rooks, queens), and on the side that is ahead the difference in material counted as
-pawn 1, knight 3, bishop 3, rook 5, queen 9. Captures SHALL be derived from the position shown, comparing it with a
-full set and counting promoted pieces as material.
+Under each player's name the game page SHALL show the material imbalance as lichess does: for each piece type
+(pawns, knights, bishops, rooks, queens) the side with more of that type shows the surplus as the opponent's piece
+images, and the side ahead in points (pawn 1, knight 3, bishop 3, rook 5, queen 9) shows `+N`. The imbalance SHALL be
+derived from the position shown, so a promotion counts as the promoted piece.
 
 #### Scenario: A side is ahead
 
 - **WHEN** White has taken a knight and a pawn and Black has taken a pawn
-- **THEN** White's strip shows a black knight and a black pawn with `+3`, and Black's strip shows a white pawn and no
-  number
+- **THEN** White's strip shows a black knight and `+3`, and Black's strip shows nothing
 
-#### Scenario: Equal material
+#### Scenario: An uneven trade
 
-- **WHEN** both sides have taken one pawn
-- **THEN** each strip shows one pawn and neither shows a number
+- **WHEN** Black has won a rook for a bishop and a pawn
+- **THEN** White's strip shows a black pawn and a black bishop, and Black's strip shows a white rook and `+1`
 
 ### Requirement: Earlier positions can be viewed without leaving the game
 

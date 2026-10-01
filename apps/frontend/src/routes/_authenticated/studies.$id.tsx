@@ -16,7 +16,7 @@ import {
 } from '#/lib/studies'
 import { scoreText, useAnalysis } from '#/lib/analysis'
 import { clickSquare, legalTargets, needsPromotion } from '#/lib/moveInput'
-import { Board, PromotionPicker } from '#/components/games'
+import { Board, MoveNav, PromotionPicker } from '#/components/games'
 import { AnalysisPanel, MoveTree } from '#/components/studies'
 import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
 
@@ -165,20 +165,12 @@ function Study({ loaded }: { loaded: StudyView }) {
             onCancel={() => setPromotion(null)}
           />
         ) : null}
-        <div className="flex gap-2" role="group" aria-label="Navigation">
-          <Button aria-label="Start" onClick={() => setPath([])}>
-            |◀
-          </Button>
-          <Button aria-label="Back" onClick={() => setPath(path.slice(0, -1))}>
-            ◀
-          </Button>
-          <Button aria-label="Forward" onClick={() => setPath(nextPath(tree, path) ?? path)}>
-            ▶
-          </Button>
-          <Button aria-label="End" onClick={() => setPath(lineEnd(tree, path))}>
-            ▶|
-          </Button>
-        </div>
+        <MoveNav
+          onStart={() => setPath([])}
+          onBack={() => setPath(path.slice(0, -1))}
+          onForward={() => setPath(nextPath(tree, path) ?? path)}
+          onEnd={() => setPath(lineEnd(tree, path))}
+        />
       </div>
 
       <div className="flex max-w-[420px] flex-col gap-4">

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { GameCommand, GameSummary, GameView, MoveItem } from '#/lib/games'
 import type { LiveFrame } from '#/lib/live'
@@ -33,17 +33,18 @@ import {
   needsPromotion,
   pieceAt,
 } from '#/lib/moveInput'
-import { premoveClick, resolvePremove } from '#/lib/board'
+import { material, premoveClick, replay, resolvePremove } from '#/lib/board'
 import {
   Board,
   ClaimPanel,
   GameControls,
   GameResultPanel,
   MoveList,
+  MoveNav,
   PlayerStrip,
   PromotionPicker,
 } from '#/components/games'
-import { ErrorText, useCommand } from '#/components/ui'
+import { Button, ErrorText, useCommand } from '#/components/ui'
 
 /**
  * A game (players and spectators). SSR renders the loader's state; the `game:{id}` frames then drive it. Moves
@@ -146,7 +147,10 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   }, [offered])
 
   const mine = myColor(current, me.id)
-  const side = orientation(current, me.id)
+  // Flip (game-page-navigation): this page view only, on top of the viewer's own side.
+  const [flipped, setFlipped] = useState(false)
+  const ownSide = orientation(current, me.id)
+  const side = flipped ? (ownSide === 'white' ? 'black' : 'white') : ownSide
   const playing = current.status !== 'ended'
   const myTurn =
     mine !== null && playing && current.sideToMove === mine && !pending && !command.busy
@@ -225,6 +229,34 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   const againstEngine = current.engineSide != null
   const untimed = current.timeControl === UNTIMED
   const clockless = !hasClock(current.timeControl)
+  // Looking back (game-page-navigation): null follows the game; a number is the ply on the board. A new move never
+  // moves the view; reaching the last ply follows the game again.
+  const positions = useMemo(() => replay(sans), [sans])
+  const [viewPly, setViewPly] = useState<number | null>(null)
+  const viewing = viewPly !== null && viewPly < positions.length - 1 ? viewPly : null
+  const shown = viewing !== null ? positions[viewing] : undefined
+  const go = (ply: number) => setViewPly(ply >= sans.length ? null : Math.max(0, ply))
+  const step = (by: number) => go((viewing ?? sans.length) + by)
+  const keys = useRef({ step, go })
+  keys.current = { step, go }
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
+      const nav = keys.current
+      if (event.key === 'ArrowLeft') nav.step(-1)
+      else if (event.key === 'ArrowRight') nav.step(1)
+      else if (event.key === 'Home') nav.go(0)
+      else if (event.key === 'End') nav.go(Number.MAX_SAFE_INTEGER)
+      else if (event.key === 'f') setFlipped((f) => !f)
+      else return
+      event.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+  const balance = material(shown?.fen ?? fen)
+
   const top = side === 'white' ? 'black' : 'white'
   const strip = (color: 'white' | 'black') => {
     const toMove = playing && current.sideToMove.toLowerCase() === color
@@ -236,6 +268,8 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
         detail={[color, you && toMove ? 'your move' : null].filter(Boolean).join(' · ')}
         {...(clockless ? {} : { ms: color === 'white' ? clocks.whiteMs : clocks.blackMs })}
         active={toMove && current.ply >= 2}
+        material={balance[color]}
+        opponentColor={color === 'white' ? 'b' : 'w'}
       />
     )
   }
@@ -246,17 +280,36 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
         {strip(top)}
         <div data-my-turn={myTurn}>
           <Board
-            fen={fen}
+            fen={shown?.fen ?? fen}
             orientation={side}
-            lastMove={lastMove}
-            selected={selected}
-            targets={targets}
-            premove={premove}
-            {...(myTurn || premoves ? { onSquareClick, onDrop, canDrag } : {})}
+            lastMove={shown ? shown.lastMove : lastMove}
+            selected={shown ? null : selected}
+            targets={shown ? [] : targets}
+            premove={shown ? null : premove}
+            {...(shown
+              ? { onSquareClick: () => setViewPly(null) }
+              : myTurn || premoves
+                ? { onSquareClick, onDrop, canDrag }
+                : {})}
             onRightClick={() => setPremove(null)}
           />
         </div>
         {strip(side)}
+        <MoveNav
+          onStart={() => go(0)}
+          onBack={() => step(-1)}
+          onForward={() => step(1)}
+          onEnd={() => setViewPly(null)}
+        >
+          <Button aria-label="Flip board" onClick={() => setFlipped((f) => !f)}>
+            ⇅
+          </Button>
+          {shown ? (
+            <Button variant="outline" onClick={() => setViewPly(null)}>
+              Back to the game
+            </Button>
+          ) : null}
+        </MoveNav>
         {promotion && mine ? (
           <PromotionPicker
             color={mine}
@@ -333,7 +386,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
           </p>
         ) : null}
 
-        <MoveList sans={sans} />
+        <MoveList sans={sans} viewPly={viewing} onSelect={go} />
 
         {command.error ? <ErrorText testId="game-error">{command.error}</ErrorText> : null}
 

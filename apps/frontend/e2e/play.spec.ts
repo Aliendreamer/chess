@@ -91,7 +91,9 @@ test('a draw is offered and accepted', async ({ browser }) => {
   await bothEnded([white, black], '½', 'draw agreed')
 })
 
-test('pieces can be dragged, and a premove plays itself (board-look)', async ({ browser }) => {
+test('pieces can be dragged, a premove plays itself, and the game can be looked back on', async ({
+  browser,
+}) => {
   test.setTimeout(120_000)
   const { white, black } = await inviteGame(browser)
 
@@ -105,6 +107,19 @@ test('pieces can be dragged, and a premove plays itself (board-look)', async ({ 
   await move(white, 'g1', 'f3')
   // Black never clicks again: the premove is sent when White's move arrives.
   await expect(white.getByTestId('move-list')).toHaveText('1.e4e52.Nf3Nc6', { timeout: 15_000 })
+
+  // game-page-navigation: ← shows the position before Nc6 (the knight back on b8), `f` turns the board around,
+  // and "Back to the game" returns to the live position.
+  await white.keyboard.press('ArrowLeft')
+  await expect(white.locator('[data-square="b8"] img')).toBeVisible()
+  await expect(white.getByRole('button', { name: 'Nf3' })).toHaveAttribute('aria-current', 'true')
+  await white.keyboard.press('f')
+  await expect(white.locator('[data-my-turn] [data-square]').first()).toHaveAttribute(
+    'data-square',
+    'h1',
+  )
+  await white.getByRole('button', { name: 'Back to the game' }).click()
+  await expect(white.locator('[data-square="c6"] img')).toBeVisible()
 
   await expect(white.getByRole('button', { name: 'Resign' })).toBeEnabled({ timeout: 15_000 })
   await white.getByRole('button', { name: 'Resign' }).click()

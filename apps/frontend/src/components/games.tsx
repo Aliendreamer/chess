@@ -2,7 +2,8 @@ import { Fragment, useEffect, useId, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Chessboard, defaultArrowOptions } from 'react-chessboard'
 import type { ChessboardOptions, PieceRenderObject } from 'react-chessboard'
-import type { SquarePair } from '#/lib/board'
+import type { ReactNode } from 'react'
+import type { SideMaterial, SquarePair } from '#/lib/board'
 import type { ClaimOutcome, Color, EndReason, GameCommand, GameView, PgnResult } from '#/lib/games'
 import type { Piece } from '#/lib/moveInput'
 import type { MyGameItem } from '#/lib/play'
@@ -251,27 +252,81 @@ export interface PlayerStripProps {
   ms?: number
   /** The side to move: its clock is the brass one. */
   active?: boolean
+  /** This side's material surplus (game-page-navigation), drawn in the opponent's colour. */
+  material?: SideMaterial
+  opponentColor?: Piece['color']
   testId?: string
 }
 
-export function PlayerStrip({ name, detail, ms, active = false, testId }: PlayerStripProps) {
+export function PlayerStrip({
+  name,
+  detail,
+  ms,
+  active = false,
+  material,
+  opponentColor = 'b',
+  testId,
+}: PlayerStripProps) {
   return (
     <div className="flex items-center justify-between gap-3" data-testid={testId}>
-      <div className="flex flex-col">
+      <div className="flex min-w-0 flex-col">
         <span className="font-medium text-fg-primary">{name}</span>
-        <span className="text-xs text-fg-secondary">{detail}</span>
+        <span className="flex items-center gap-2 text-xs text-fg-secondary">
+          {detail}
+          {material && material.pieces.length + material.plus > 0 ? (
+            <span className="flex items-center" aria-label="Material">
+              {material.pieces.map((type, i) => (
+                <PieceImage
+                  key={i}
+                  piece={{ color: opponentColor, type }}
+                  className="-mr-1.5 size-4 first:ml-0"
+                />
+              ))}
+              {material.plus > 0 ? (
+                <span className="ml-2.5 font-mono" data-testid="material-plus">
+                  +{material.plus}
+                </span>
+              ) : null}
+            </span>
+          ) : null}
+        </span>
       </div>
       {ms !== undefined ? <Clock ms={ms} active={active} /> : null}
     </div>
   )
 }
 
-/** SAN in numbered rows; the latest move is tinted. */
-export function MoveList({ sans }: { sans: ReadonlyArray<string> }) {
+export interface MoveListProps {
+  sans: ReadonlyArray<string>
+  /** The ply on the board when looking back (1 = after White's first move); null or absent follows the game. */
+  viewPly?: number | null
+  /** Makes each move a button that shows the position after it. */
+  onSelect?: (ply: number) => void
+}
+
+/** SAN in numbered rows; the move on the board is tinted. */
+export function MoveList({ sans, viewPly = null, onSelect }: MoveListProps) {
   const rows = pairMoves(sans)
-  const current = sans.length - 1
+  const current = (viewPly ?? sans.length) - 1
   if (rows.length === 0) {
     return <p className="text-sm text-fg-muted">No moves yet.</p>
+  }
+  const cell = (san: string | undefined, index: number) => {
+    const tint = current === index ? 'bg-brass-800' : ''
+    if (san === undefined) return <li className="px-2.5 py-[7px]" />
+    if (!onSelect) return <li className={`px-2.5 py-[7px] ${tint}`}>{san}</li>
+    return (
+      <li className="flex">
+        <button
+          type="button"
+          aria-current={current === index}
+          onClick={() => onSelect(index + 1)}
+          className={`w-full cursor-pointer border-0 bg-transparent px-2.5 py-[7px] text-left font-mono text-sm text-fg-primary hover:bg-surface-hover ${tint}`}
+        >
+          {san}
+        </button>
+      </li>
+    )
   }
   return (
     <ol
@@ -282,13 +337,41 @@ export function MoveList({ sans }: { sans: ReadonlyArray<string> }) {
       {rows.map(([white, black], i) => (
         <Fragment key={i}>
           <li className="bg-surface-card px-2.5 py-[7px] text-fg-muted">{i + 1}.</li>
-          <li className={`px-2.5 py-[7px] ${current === i * 2 ? 'bg-brass-800' : ''}`}>{white}</li>
-          <li className={`px-2.5 py-[7px] ${current === i * 2 + 1 ? 'bg-brass-800' : ''}`}>
-            {black ?? ''}
-          </li>
+          {cell(white, i * 2)}
+          {cell(black, i * 2 + 1)}
         </Fragment>
       ))}
     </ol>
+  )
+}
+
+export interface MoveNavProps {
+  onStart: () => void
+  onBack: () => void
+  onForward: () => void
+  onEnd: () => void
+  /** Extra controls at the end of the bar (the game page's flip button). */
+  children?: ReactNode
+}
+
+/** Start / back / forward / end through a game or a study line. */
+export function MoveNav({ onStart, onBack, onForward, onEnd, children }: MoveNavProps) {
+  return (
+    <div className="flex gap-2" role="group" aria-label="Navigation">
+      <Button aria-label="Start" onClick={onStart}>
+        |◀
+      </Button>
+      <Button aria-label="Back" onClick={onBack}>
+        ◀
+      </Button>
+      <Button aria-label="Forward" onClick={onForward}>
+        ▶
+      </Button>
+      <Button aria-label="End" onClick={onEnd}>
+        ▶|
+      </Button>
+      {children}
+    </div>
   )
 }
 

@@ -104,3 +104,55 @@ export function premoveClick(
   if (selected) return { selected: null, premove: { from: selected, to: square } }
   return { selected: null, premove: null }
 }
+
+const VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 } as const
+const ORDER = ['p', 'n', 'b', 'r', 'q'] as const
+type Captured = (typeof ORDER)[number]
+
+export interface SideMaterial {
+  /** The opponent's piece types this side is up, one entry per piece, pawns first. */
+  pieces: Array<Captured>
+  /** Points ahead (pawn 1, knight and bishop 3, rook 5, queen 9); 0 for the side behind or level. */
+  plus: number
+}
+
+/** The material imbalance as lichess shows it: per piece type, the surplus goes under the side that has it. */
+export function material(fen: string): { white: SideMaterial; black: SideMaterial } {
+  const count = {
+    w: { p: 0, n: 0, b: 0, r: 0, q: 0, k: 0 },
+    b: { p: 0, n: 0, b: 0, r: 0, q: 0, k: 0 },
+  }
+  for (const piece of Object.values(placement(fen))) count[piece.color][piece.type] += 1
+  const white: SideMaterial = { pieces: [], plus: 0 }
+  const black: SideMaterial = { pieces: [], plus: 0 }
+  let points = 0
+  for (const type of ORDER) {
+    const diff = count.w[type] - count.b[type]
+    const side = diff > 0 ? white : black
+    for (let i = 0; i < Math.abs(diff); i++) side.pieces.push(type)
+    points += diff * VALUE[type]
+  }
+  if (points > 0) white.plus = points
+  if (points < 0) black.plus = -points
+  return { white, black }
+}
+
+export interface Position {
+  fen: string
+  lastMove: SquarePair | null
+}
+
+/** Every position of a game from the standard start, one per ply, by replaying its SAN; stops at an unreadable move. */
+export function replay(sans: ReadonlyArray<string>): Array<Position> {
+  const game = new Chess()
+  const positions: Array<Position> = [{ fen: game.fen(), lastMove: null }]
+  for (const san of sans) {
+    try {
+      const move = game.move(san)
+      positions.push({ fen: game.fen(), lastMove: { from: move.from, to: move.to } })
+    } catch {
+      break
+    }
+  }
+  return positions
+}

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { checkSquare, pieceSrc, premoveClick, resolvePremove, squareStyles } from './board'
+import {
+  checkSquare,
+  material,
+  pieceSrc,
+  premoveClick,
+  replay,
+  resolvePremove,
+  squareStyles,
+} from './board'
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 // 1.e4 e5 2.Qh5 Nc6 3.Bc4 Nf6 4.Qxf7+
@@ -94,5 +102,57 @@ describe('premoveClick', () => {
 
   it('a second click on the selected piece deselects it', () => {
     expect(premoveClick(AFTER_E4, 'w', 'g1', 'g1')).toEqual({ selected: null, premove: null })
+  })
+})
+
+describe('material', () => {
+  it('is even at the start', () => {
+    expect(material(START)).toEqual({
+      white: { pieces: [], plus: 0 },
+      black: { pieces: [], plus: 0 },
+    })
+  })
+
+  it('shows what each side is up, like lichess', () => {
+    // White has taken a knight and a pawn; Black has taken a pawn: White is a knight up.
+    const fen = 'r1bqkbnr/ppp2ppp/8/3p4/4P3/8/PPP2PPP/RNBQKBNR w KQkq - 0 5'
+    expect(material(fen)).toEqual({
+      white: { pieces: ['n'], plus: 3 },
+      black: { pieces: [], plus: 0 },
+    })
+  })
+
+  it('lists the surplus on each side when the trade is uneven', () => {
+    // Black won a rook for a bishop and a pawn.
+    const fen = 'rn1qkbnr/ppppppp1/8/8/8/8/PPPPPPPP/1NBQKBNR w Kkq - 0 9'
+    expect(material(fen)).toEqual({
+      white: { pieces: ['p', 'b'], plus: 0 },
+      black: { pieces: ['r'], plus: 1 },
+    })
+  })
+
+  it('counts a promoted queen', () => {
+    // White promoted the h-pawn and took Black's: two queens against one, pawns even.
+    const fen = 'rnbqkbnr/ppppppp1/8/Q7/8/8/PPPPPPP1/RNBQKBNR b - - 0 9'
+    expect(material(fen).white).toEqual({ pieces: ['q'], plus: 9 })
+  })
+})
+
+describe('replay', () => {
+  it('starts with the initial position', () => {
+    expect(replay([])).toEqual([{ fen: START, lastMove: null }])
+  })
+
+  it('gives the position and move squares after every ply', () => {
+    const positions = replay(['e4', 'e5', 'Nf3'])
+    expect(positions).toHaveLength(4)
+    expect(positions[1]?.lastMove).toEqual({ from: 'e2', to: 'e4' })
+    expect(positions[3]?.fen.split(' ')[0]).toBe(
+      'rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R',
+    )
+  })
+
+  it('stops at a move it cannot read', () => {
+    expect(replay(['e4', 'Ke7??', 'Nf3'])).toHaveLength(2)
   })
 })

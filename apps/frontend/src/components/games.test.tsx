@@ -6,6 +6,7 @@ import {
   ClaimPanel,
   GameControls,
   MoveList,
+  MoveNav,
   PlayerStrip,
   PromotionPicker,
   YourTurnList,
@@ -87,6 +88,63 @@ describe('MoveList and PlayerStrip', () => {
   it('shows the clock text for the player', () => {
     render(<PlayerStrip name="ann" detail="white" ms={183000} active />)
     expect(screen.getByText('3:03')).toBeDefined()
+  })
+})
+
+describe('game-page-navigation', () => {
+  it("shows the surplus as the opponent's pieces and the points ahead", () => {
+    const { container } = render(
+      <PlayerStrip
+        name="ann"
+        detail="white"
+        opponentColor="b"
+        material={{ pieces: ['p', 'n'], plus: 4 }}
+      />,
+    )
+    expect([...container.querySelectorAll('img')].map((i) => i.getAttribute('src'))).toEqual([
+      '/pieces/cburnett/bP.svg',
+      '/pieces/cburnett/bN.svg',
+    ])
+    expect(screen.getByTestId('material-plus').textContent).toBe('+4')
+  })
+
+  it('shows no number for the side that is not ahead', () => {
+    render(
+      <PlayerStrip
+        name="bob"
+        detail="black"
+        opponentColor="w"
+        material={{ pieces: [], plus: 0 }}
+      />,
+    )
+    expect(screen.queryByTestId('material-plus')).toBeNull()
+  })
+
+  it('a clicked move reports its ply and the viewed move is marked', () => {
+    const onSelect = vi.fn()
+    render(<MoveList sans={['e4', 'e5', 'Nf3']} viewPly={2} onSelect={onSelect} />)
+    expect(screen.getByRole('button', { name: 'e5' }).getAttribute('aria-current')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: 'e4' }))
+    expect(onSelect).toHaveBeenCalledWith(1)
+  })
+
+  it('without a viewed ply the latest move is marked', () => {
+    render(<MoveList sans={['e4', 'e5', 'Nf3']} onSelect={() => {}} />)
+    expect(screen.getByRole('button', { name: 'Nf3' }).getAttribute('aria-current')).toBe('true')
+  })
+
+  it('the nav bar calls each step', () => {
+    const steps = { onStart: vi.fn(), onBack: vi.fn(), onForward: vi.fn(), onEnd: vi.fn() }
+    render(<MoveNav {...steps} />)
+    for (const [name, fn] of [
+      ['Start', steps.onStart],
+      ['Back', steps.onBack],
+      ['Forward', steps.onForward],
+      ['End', steps.onEnd],
+    ] as const) {
+      fireEvent.click(screen.getByRole('button', { name }))
+      expect(fn).toHaveBeenCalledTimes(1)
+    }
   })
 })
 
