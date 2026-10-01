@@ -1,6 +1,6 @@
 using Chess.Backend.Akka.Games;
-using Chess.Backend.Games;
 using Chess.Backend.Data.ReadModels;
+using Chess.Backend.Games;
 using Chess.Backend.WebApi.Games;
 
 namespace Chess.Backend.Tests.Games;

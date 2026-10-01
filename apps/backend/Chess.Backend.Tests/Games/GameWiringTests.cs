@@ -2,10 +2,10 @@ using Akka.Persistence.Journal;
 using Akka.TestKit;
 using Akka.TestKit.Xunit2;
 using Chess.Backend.Akka.Games;
-using Chess.Backend.Games;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Events;
 using Chess.Backend.Extensions;
+using Chess.Backend.Games;
 using Chess.Backend.Messaging;
 
 namespace Chess.Backend.Tests.Games;
