@@ -32,6 +32,9 @@ describe('Board', () => {
     const html = renderToString(<Board fen={START} orientation="white" />)
     expect(html.match(/data-square="/g)?.length).toBe(64)
     expect(html).not.toContain('<img')
+    // a1 is a dark square and h1 a light one.
+    expect(html).toMatch(/data-square="a1" class="[^"]*bg-board-dark/)
+    expect(html).toMatch(/data-square="h1" class="[^"]*bg-board-light/)
   })
 
   it('draws the Cburnett pieces once mounted', () => {

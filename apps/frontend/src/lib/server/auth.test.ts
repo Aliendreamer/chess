@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { isRedirect } from '@tanstack/react-router'
-import { loadMe, proxyAuth } from './auth'
+import { DEFAULT_PREFERENCES } from '../auth'
+import { loadMe, loadPreferences, proxyAuth, savePreferences } from './auth'
 import type { Me } from '../auth'
 
 const env = { API_URL: 'http://chess-backend:8080/' }
@@ -128,5 +129,31 @@ describe('loadMe', () => {
   })
   it('throws on other failures', async () => {
     await expect(loadMe(fetchWith(500, 'boom'))).rejects.toThrow(/500/)
+  })
+})
+
+describe('preferences', () => {
+  const blue = { ...DEFAULT_PREFERENCES, boardTheme: 'blue' as const }
+
+  it('reads the saved preferences', async () => {
+    await expect(loadPreferences(fetchWith(200, JSON.stringify(blue)))).resolves.toEqual(blue)
+  })
+
+  it('falls back to the defaults when signed out or the answer is not usable', async () => {
+    await expect(loadPreferences(fetchWith(401, ''))).resolves.toEqual(DEFAULT_PREFERENCES)
+    await expect(loadPreferences(fetchWith(200, '{"boardTheme":"neon"}'))).resolves.toEqual(
+      DEFAULT_PREFERENCES,
+    )
+  })
+
+  it('saves with a PUT of the whole set', async () => {
+    let seen: { method?: string | undefined; body?: unknown } = {}
+    const fetchImpl: typeof fetch = (_url, init) => {
+      seen = { method: init?.method, body: init?.body }
+      return Promise.resolve(new Response(JSON.stringify(blue), { status: 200 }))
+    }
+    await expect(savePreferences(fetchImpl, blue)).resolves.toEqual({ ok: true, view: blue })
+    expect(seen.method).toBe('PUT')
+    expect(JSON.parse(String(seen.body))).toEqual(blue)
   })
 })

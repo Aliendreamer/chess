@@ -42,7 +42,7 @@ None.
   (`./build_migration.sh "AddUserPreferences"`), `WebApi/Me/{Get,Put}Preferences/` (endpoints, validator),
   `Authentication/Preferences.cs` (the record, its allowed values, and `PreferencesService`: read through the cache,
   write, evict).
-- **Frontend:** `lib/preferences.ts` (types, defaults), `lib/server/preferences.ts` + `api.ts`, `_authenticated.tsx`,
+- **Frontend:** `lib/auth.ts` (types, defaults, `PreferencesContext`), `lib/server/auth.ts` + `api.ts`, `_authenticated.tsx`,
   `components/layout.tsx` (attributes, Settings link), new route `routes/_authenticated/settings.tsx`, and
   `components/settings.tsx`.
 - **Tests:** validator and service unit tests, an integration round-trip, vitest for the settings form, and one

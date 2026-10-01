@@ -3,9 +3,10 @@ import { getRequestHeader } from '@tanstack/react-start/server'
 import { CLAIM_OUTCOMES, CORRESPONDENCE, PRESETS } from '../games'
 import { MY_TURN } from '../play'
 import { THINK_LEVELS } from '../analysis'
-import { cookiesAreSecure, forwardCookieHeader } from './cookies'
+import { isPreferences } from '../auth'
+import { loadMe, loadPreferences, savePreferences } from './auth'
 import { apiUrl, isGuid } from './upstream'
-import { loadMe } from './auth'
+import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { telemetryEnabled } from './telemetry'
 import { loadPingLive, sendPing } from './pings'
 import {
@@ -36,6 +37,7 @@ import {
   loadMyGames,
   rematch,
 } from './play'
+import type { Preferences } from '../auth'
 import type { GameCommand } from '../games'
 import type { InviteView, MyTurn } from '../play'
 import type { StudyInput, StudyMoveInput } from '../studies'
@@ -58,6 +60,18 @@ function serverFetch(): typeof fetch {
 // These run on the SSR server during SSR and via RPC to the same server on client navigation,
 // so the browser never learns the API host.
 export const getMe = createServerFn({ method: 'GET' }).handler(() => loadMe(serverFetch()))
+
+/** The signed-in user's display preferences (user-preferences), read with `getMe()` on every page. */
+export const getPreferences = createServerFn({ method: 'GET' }).handler(() =>
+  loadPreferences(serverFetch()),
+)
+
+export const putPreferences = createServerFn({ method: 'POST' })
+  .validator((input: Preferences) => {
+    if (!isPreferences(input)) throw new Error('not a set of preferences')
+    return input
+  })
+  .handler(({ data }) => savePreferences(serverFetch(), data))
 
 /** Whether the page should load its tracer (observability D7); the client bundle never reads the environment. */
 export const getTelemetry = createServerFn({ method: 'GET' }).handler(() => ({

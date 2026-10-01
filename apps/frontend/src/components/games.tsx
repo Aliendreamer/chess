@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useId, useState } from 'react'
+import { Fragment, use, useEffect, useId, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Chessboard, defaultArrowOptions } from 'react-chessboard'
 import type { ChessboardOptions, PieceRenderObject } from 'react-chessboard'
@@ -8,6 +8,7 @@ import type { RematchState } from '#/lib/feedback'
 import type { ClaimOutcome, Color, EndReason, GameCommand, GameView, PgnResult } from '#/lib/games'
 import type { Piece } from '#/lib/moveInput'
 import type { MyGameItem } from '#/lib/play'
+import { PreferencesContext, animationMs as animationMsOf } from '#/lib/auth'
 import { Button, Panel } from '#/components/ui'
 import { outcomeFor } from '#/lib/play'
 import { formatClock, pairMoves, reasonText, resultText, timeLeft } from '#/lib/games'
@@ -73,7 +74,7 @@ export interface BoardProps {
   canDrag?: (square: string) => boolean
   /** A right-click: circles the square, and lets the page drop a premove. */
   onRightClick?: () => void
-  /** Piece slide time; 0 under prefers-reduced-motion whatever is passed. */
+  /** Piece slide time (default: the user's preference); 0 under prefers-reduced-motion whatever is set. */
   animationMs?: number
 }
 
@@ -96,9 +97,11 @@ export function Board({
   onDrop,
   canDrag,
   onRightClick,
-  animationMs = 200,
+  animationMs,
 }: BoardProps) {
   const id = `board${useId().replace(/[^a-zA-Z0-9]/g, '')}`
+  const prefs = use(PreferencesContext)
+  const slide = animationMs ?? animationMsOf(prefs.animation)
   const mounted = useMounted()
   const reducedMotion = useReducedMotion()
   const [circles, setCircles] = useState<ReadonlyArray<string>>([])
@@ -131,8 +134,9 @@ export function Board({
       left: 3,
     },
     squareStyles: squareStyles(fen, { lastMove, selected, targets, premove, circles }),
-    animationDurationInMs: reducedMotion ? 0 : animationMs,
-    showAnimations: !reducedMotion && animationMs > 0,
+    animationDurationInMs: reducedMotion ? 0 : slide,
+    showAnimations: !reducedMotion && slide > 0,
+    showNotation: prefs.coordinates,
     allowDragging: onDrop !== undefined,
     allowDragOffBoard: false,
     allowDrawingArrows: true,
@@ -167,7 +171,8 @@ export function BoardPlaceholder({ orientation }: { orientation: Color }) {
   return (
     <div aria-label="Chess board" className={`grid grid-cols-8 ${FRAME}`}>
       {squaresFor(orientation).map((square) => {
-        const light = (square.charCodeAt(0) - 97 + Number(square[1])) % 2 === 1
+        // a1 is dark, h1 light: file index + rank is odd on the dark squares.
+        const light = (square.charCodeAt(0) - 97 + Number(square[1])) % 2 === 0
         return (
           <div
             key={square}

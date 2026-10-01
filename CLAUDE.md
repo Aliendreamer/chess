@@ -184,7 +184,11 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   keeps `data-square`); pieces are Cburnett SVGs in `public/pieces/cburnett/` (Wikimedia, BSD-3, see
   `apps/frontend/ATTRIBUTION.md`; never the lichess GPL copy, never Unicode glyphs); board themes are `--board-*`
   variables picked by `data-board` (Brown default); highlights, premove rules and click-premove are pure in
-  `lib/board.ts`. Premoves only in timed games against a person; no sounds anywhere (owner decision). Commands return `CommandOutcome` (4xx is shown, 401
+  `lib/board.ts`. Premoves only in timed games against a person; no sounds anywhere (owner decision). **Preferences
+  (user-preferences)**: `users.preferences` jsonb (null = defaults) behind `GET|PUT /api/me/preferences`
+  (`Authentication/Preferences.cs`, cached `Cache:PreferencesMinutes`, evicted on save); `_authenticated.beforeLoad`
+  loads them with `getMe()`, the Shell root carries `data-board`/`data-theme` and `PreferencesContext` (the board
+  reads animation and coordinates from it), and `/settings` saves each change then `router.invalidate()`s. Commands return `CommandOutcome` (4xx is shown, 401
   redirects, 5xx throws); server functions validate path inputs. e2e signs each user in once (`e2e/auth.setup.ts` →
   gitignored `e2e/.auth/*.json`) and reuses the session: Keycloak's quick-login check locks a user logged in twice
   within a second, so specs never log in again except the signed-out ones in `auth.spec.ts`.

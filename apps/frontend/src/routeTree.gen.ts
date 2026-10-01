@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as PgnIdRouteImport } from './routes/pgn/$id'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedStudiesIndexRouteImport } from './routes/_authenticated/studies.index'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
 import { Route as PgnStudyIdRouteImport } from './routes/pgn/study.$id'
@@ -35,6 +36,11 @@ const PgnIdRoute = PgnIdRouteImport.update({
   id: '/pgn/$id',
   path: '/pgn/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedStudiesIndexRoute =
   AuthenticatedStudiesIndexRouteImport.update({
@@ -85,6 +91,7 @@ const AuthenticatedGamesIdRoute = AuthenticatedGamesIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/pgn/$id': typeof PgnIdRoute
   '/games/$id': typeof AuthenticatedGamesIdRoute
   '/invites/$id': typeof AuthenticatedInvitesIdRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/studies/': typeof AuthenticatedStudiesIndexRoute
 }
 export interface FileRoutesByTo {
+  '/settings': typeof AuthenticatedSettingsRoute
   '/pgn/$id': typeof PgnIdRoute
   '/': typeof AuthenticatedIndexRoute
   '/games/$id': typeof AuthenticatedGamesIdRoute
@@ -112,6 +120,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/pgn/$id': typeof PgnIdRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/games/$id': typeof AuthenticatedGamesIdRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/settings'
     | '/pgn/$id'
     | '/games/$id'
     | '/invites/$id'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/studies/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/settings'
     | '/pgn/$id'
     | '/'
     | '/games/$id'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authenticated'
+    | '/_authenticated/settings'
     | '/pgn/$id'
     | '/_authenticated/'
     | '/_authenticated/games/$id'
@@ -197,6 +209,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pgn/$id'
       preLoaderRoute: typeof PgnIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/studies/': {
       id: '/_authenticated/studies/'
@@ -265,6 +284,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedGamesIdRoute: typeof AuthenticatedGamesIdRoute
   AuthenticatedInvitesIdRoute: typeof AuthenticatedInvitesIdRoute
@@ -275,6 +295,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedGamesIdRoute: AuthenticatedGamesIdRoute,
   AuthenticatedInvitesIdRoute: AuthenticatedInvitesIdRoute,

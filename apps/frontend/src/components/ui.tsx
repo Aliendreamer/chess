@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import type { ColourChoice, CommandOutcome } from '#/lib/games'
+import { pieceSrc } from '#/lib/board'
 
 export type ButtonVariant = 'primary' | 'outline' | 'secondary'
 export type ButtonSize = 'sm' | 'md' | 'lg'
@@ -252,10 +253,19 @@ export function useCommand(): Command {
   return { busy, error, run }
 }
 
-const COLOURS: ReadonlyArray<{ value: ColourChoice; glyph: string; label: string }> = [
-  { value: 'white', glyph: '♔', label: 'White' },
-  { value: 'random', glyph: '⚄', label: 'Random' },
-  { value: 'black', glyph: '♚', label: 'Black' },
+// The two kings are the board's Cburnett pieces (board-look); random keeps its die.
+const COLOURS: ReadonlyArray<{ value: ColourChoice; icon: ReactNode; label: string }> = [
+  {
+    value: 'white',
+    icon: <img src={pieceSrc('w', 'k')} alt="" className="size-7" />,
+    label: 'White',
+  },
+  { value: 'random', icon: <span className="text-[28px] leading-none">⚄</span>, label: 'Random' },
+  {
+    value: 'black',
+    icon: <img src={pieceSrc('b', 'k')} alt="" className="size-7" />,
+    label: 'Black',
+  },
 ]
 
 /** White, Random or Black; `aria-pressed` carries the choice. */
@@ -276,8 +286,8 @@ export function ColourPicker({
           onClick={() => onChange(c.value)}
           className={`flex cursor-pointer items-center gap-3 rounded-card border px-4 py-3 text-fg-primary ${value === c.value ? 'border-line-accent bg-surface-accent-tint' : 'border-line-default bg-surface-raised hover:border-line-accent'}`}
         >
-          <span aria-hidden className="text-[28px] leading-none">
-            {`${c.glyph}︎`}
+          <span aria-hidden className="grid size-7 place-items-center">
+            {c.icon}
           </span>
           {c.label}
         </button>
