@@ -7,7 +7,7 @@ export type ButtonVariant = 'primary' | 'outline' | 'secondary'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control font-sans transition-colors duration-[120ms] disabled:cursor-not-allowed disabled:opacity-45'
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control font-sans transition-colors duration-[120ms] disabled:cursor-not-allowed disabled:opacity-45 pointer-coarse:min-h-11'
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
   primary: 'bg-brass-400 font-medium text-fg-on-accent enabled:hover:bg-brass-300',
@@ -78,7 +78,7 @@ export function Chip({
       aria-pressed={selected}
       onClick={onClick}
       className={[
-        'cursor-pointer border text-sm transition-colors duration-[120ms]',
+        'cursor-pointer border text-sm transition-colors duration-[120ms] pointer-coarse:min-h-11',
         shape === 'pill' ? 'rounded-pill px-3 py-1.5' : 'rounded-control px-3.5 py-2',
         selected
           ? 'border-line-accent bg-surface-accent-tint text-fg-primary'

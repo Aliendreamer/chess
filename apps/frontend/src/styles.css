@@ -110,6 +110,9 @@
   --text-clock--line-height: 1.2;
   --tracking-eyebrow: 0.08em;
 
+  /* Layout (responsive-layout): the rail beside the content from here up, a top bar below (`shell:` variants). */
+  --breakpoint-shell: 56.25rem;
+
   /* Shape */
   --radius-board: 4px;
   --radius-control: 6px;

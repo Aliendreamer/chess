@@ -145,7 +145,7 @@ function Study({ loaded }: { loaded: StudyView }) {
   }
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-8">
+    <div className="grid grid-cols-1 items-start gap-6 shell:grid-cols-[minmax(0,var(--board-max))_minmax(0,420px)] shell:gap-8">
       <div className="flex max-w-(--board-max) flex-col gap-3">
         <Board
           fen={fen}
@@ -173,7 +173,7 @@ function Study({ loaded }: { loaded: StudyView }) {
         />
       </div>
 
-      <div className="flex max-w-[420px] flex-col gap-4">
+      <div className="flex min-w-0 flex-col gap-4 shell:max-w-[420px]">
         <header className="flex flex-col gap-1">
           {editable ? (
             <input

@@ -17,13 +17,14 @@ mobile-first with `@media` variants. There is no viewport-specific e2e project y
    the plain logout link). _Alternative:_ a drawer with JS. Rejected: SSR-first.
 2. **Page grids are explicit.** The game and study pages use `grid-cols-1 shell:grid-cols-[minmax(0,var(--board-max))_minmax(0,380px)]`,
    so the board takes the full width until the breakpoint instead of waiting for `auto-fit` to wrap.
-3. **Move list variant.** `MoveList` takes `layout: 'grid' | 'line'`. The page picks `line` below the breakpoint
-   with a container query, which keeps the component pure. `scrollIntoView({ inline: 'end' })` keeps the latest move
-   in view.
+3. **Move list variant, in CSS only.** Below the breakpoint the list is a flex line that scrolls sideways
+   (`max-shell:` classes), from it up the numbered grid. No prop, so the component stays the same everywhere. While
+   following the game it scrolls to the end on every new move, sideways on a phone and down on a desktop.
 4. **Touch sizes** through `@media (pointer: coarse)` in `styles.css` on the shared `buttonClass`, `Chip` and form
    controls, so the rule is in one place.
-5. **A Playwright `mobile` project** (390×844, `hasTouch`, `isMobile`) runs the play, invite and history specs, plus a
-   generic "no horizontal scroll" check over every route.
+5. **A Playwright `mobile` project** (390×844, `hasTouch`, `isMobile`) runs `e2e/responsive.spec.ts`: no horizontal
+   scroll on every page, the menu, and a game against the computer at phone size. The two-browser play specs cannot
+   run there: they open their own browser contexts, which never take a project's viewport.
 
 ## Risks / Trade-offs
 

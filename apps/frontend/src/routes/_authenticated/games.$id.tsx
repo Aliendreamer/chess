@@ -346,7 +346,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   }
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-8">
+    <div className="grid grid-cols-1 items-start gap-6 shell:grid-cols-[minmax(0,var(--board-max))_minmax(0,380px)] shell:gap-8">
       <div className="flex max-w-(--board-max) flex-col gap-3">
         {strip(top)}
         <div data-my-turn={myTurn} className="relative">
@@ -410,7 +410,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
         ) : null}
       </div>
 
-      <div className="flex max-w-[380px] flex-col gap-5">
+      <div className="flex min-w-0 flex-col gap-5 shell:max-w-[380px]">
         <div>
           <div className="flex items-center gap-2 text-xs text-fg-secondary">
             <CategoryMark timeControl={current.timeControl} />
@@ -476,7 +476,10 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
           </p>
         ) : null}
 
-        <MoveList sans={sans} viewPly={viewing} onSelect={go} />
+        {/* On a phone the controls come before the move list (responsive-layout). */}
+        <div className="max-shell:order-last">
+          <MoveList sans={sans} viewPly={viewing} onSelect={go} />
+        </div>
 
         {command.error ? <ErrorText testId="game-error">{command.error}</ErrorText> : null}
 

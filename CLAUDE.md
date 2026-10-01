@@ -181,7 +181,12 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   themes (site-themes)**: dark (Club) is the default; light (Parchment) is a `[data-theme='light']` block that
   redefines the semantic tokens only (`src/styles.test.ts` checks AA contrast for both). Each game type has a
   `--color-tc-*` token (`categoryOf`, `CategoryMark`, `CategoryIcon`), always next to its name; icons are
-  `lucide-react`, decorative beside a label or inside a button with an `aria-label`. Screens: `/` (quick pairing, invite, recent
+  `lucide-react`, decorative beside a label or inside a button with an `aria-label`. **Responsive (responsive-layout)**: one
+  breakpoint, `--breakpoint-shell` (900px, `shell:`/`max-shell:` variants): the rail from there up, a top bar with a
+  `<details>` menu below (works without JS; the rail keeps the only `identity-name`); game and study pages stack, the
+  move list becomes one scrolling line, history rows take two lines, grids use `minmax(min(Npx,100%),1fr)`, and
+  buttons/chips are 44px tall under `pointer-coarse`. The Playwright `mobile` project (390×844) runs
+  `e2e/responsive.spec.ts` only: two-browser specs open their own contexts, which ignore a project's viewport. Screens: `/` (quick pairing, invite, recent
   games), `/invites/$id`, `/games/$id`, `/games`, and the `/pgn/$id` download route. **chess.js is feedback only**
   (`lib/moveInput.ts`): the server's answer/frame always wins. **Board (board-look)**: `components/games.tsx#Board` wraps
   `react-chessboard` (MIT), drawn in the browser only (`BoardPlaceholder` is the SSR stand-in, same size, every square

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Shell } from './layout'
 import type { ReactNode } from 'react'
@@ -22,7 +22,8 @@ describe('Shell', () => {
     const shell = screen.getByTestId('shell')
     expect(shell.getAttribute('data-board')).toBe('green')
     expect(shell.getAttribute('data-theme')).toBe('dark')
-    expect(screen.getByRole('link', { name: 'Settings' }).getAttribute('href')).toBe('/settings')
+    const rail = within(screen.getByRole('complementary'))
+    expect(rail.getByRole('link', { name: 'Settings' }).getAttribute('href')).toBe('/settings')
   })
 
   it('uses the defaults without preferences', () => {
@@ -35,16 +36,35 @@ describe('Shell', () => {
   })
 
   it('every rail icon is decorative and every link keeps its name (site-themes)', () => {
-    const { container } = render(
+    render(
       <Shell me={me}>
         <p>page</p>
       </Shell>,
     )
+    const rail = screen.getByRole('complementary')
     for (const name of ['Home', 'History', 'Studies', 'Settings']) {
-      expect(screen.getByRole('link', { name })).toBeDefined()
+      expect(within(rail).getByRole('link', { name })).toBeDefined()
     }
-    const icons = [...container.querySelectorAll('svg')]
+    const icons = [...rail.querySelectorAll('svg')]
     expect(icons.length).toBe(4)
     expect(icons.every((svg) => svg.closest('[aria-hidden]') !== null)).toBe(true)
+  })
+
+  it('narrow screens get a top bar whose menu holds the same links and the logout (responsive-layout)', () => {
+    render(
+      <Shell me={me}>
+        <p>page</p>
+      </Shell>,
+    )
+    const bar = screen.getByRole('banner')
+    expect(bar.className).toContain('shell:hidden')
+    expect(bar.querySelector('details summary')?.textContent).toBe('Menu')
+    const menu = within(bar)
+    for (const name of ['Home', 'History', 'Studies', 'Settings', 'Log out']) {
+      expect(menu.getByRole('link', { name })).toBeDefined()
+    }
+    expect(screen.getByRole('complementary').className).toContain('hidden')
+    // One identity for e2e to find: the rail's.
+    expect(screen.getAllByTestId('identity-name')).toHaveLength(1)
   })
 })

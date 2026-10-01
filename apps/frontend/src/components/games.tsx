@@ -1,4 +1,4 @@
-import { Fragment, use, useEffect, useId, useState } from 'react'
+import { Fragment, use, useEffect, useId, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Chessboard, defaultArrowOptions } from 'react-chessboard'
 import {
@@ -387,19 +387,30 @@ export interface MoveListProps {
   onSelect?: (ply: number) => void
 }
 
-/** SAN in numbered rows; the move on the board is tinted. */
+/**
+ * SAN in numbered rows; the move on the board is tinted. On a phone it is one line that scrolls sideways
+ * (responsive-layout); either way, while following the game the latest move is kept in view.
+ */
 export function MoveList({ sans, viewPly = null, onSelect }: MoveListProps) {
   const rows = pairMoves(sans)
   const current = (viewPly ?? sans.length) - 1
+  const list = useRef<HTMLOListElement>(null)
+  const following = viewPly === null
+  useEffect(() => {
+    const el = list.current
+    if (!el || !following) return
+    el.scrollTop = el.scrollHeight
+    el.scrollLeft = el.scrollWidth
+  }, [sans.length, following])
   if (rows.length === 0) {
     return <p className="text-sm text-fg-muted">No moves yet.</p>
   }
   const cell = (san: string | undefined, index: number) => {
     const tint = current === index ? 'bg-surface-current' : ''
-    if (san === undefined) return <li className="px-2.5 py-[7px]" />
-    if (!onSelect) return <li className={`px-2.5 py-[7px] ${tint}`}>{san}</li>
+    if (san === undefined) return <li className="px-2.5 py-[7px] max-shell:hidden" />
+    if (!onSelect) return <li className={`shrink-0 px-2.5 py-[7px] ${tint}`}>{san}</li>
     return (
-      <li className="flex">
+      <li className="flex shrink-0">
         <button
           type="button"
           aria-current={current === index}
@@ -415,11 +426,12 @@ export function MoveList({ sans, viewPly = null, onSelect }: MoveListProps) {
     <ol
       aria-label="Moves"
       data-testid="move-list"
-      className="m-0 grid max-h-80 list-none grid-cols-[36px_1fr_1fr] overflow-y-auto rounded-card border border-line-default p-0 font-mono text-sm text-fg-primary"
+      ref={list}
+      className="m-0 flex list-none overflow-x-auto rounded-card border border-line-default p-0 font-mono text-sm text-fg-primary shell:grid shell:max-h-80 shell:grid-cols-[36px_1fr_1fr] shell:overflow-x-hidden shell:overflow-y-auto"
     >
       {rows.map(([white, black], i) => (
         <Fragment key={i}>
-          <li className="bg-surface-card px-2.5 py-[7px] text-fg-muted">{i + 1}.</li>
+          <li className="shrink-0 px-2.5 py-[7px] text-fg-muted shell:bg-surface-card">{i + 1}.</li>
           {cell(white, i * 2)}
           {cell(black, i * 2 + 1)}
         </Fragment>
@@ -465,8 +477,11 @@ const OUTCOME_TONE = {
 } as const
 
 // Static class strings, so Tailwind sees them.
-const COLUMNS = 'grid-cols-[40px_minmax(0,1fr)_80px_minmax(0,160px)]'
-const COLUMNS_WITH_PGN = 'grid-cols-[40px_minmax(0,1fr)_80px_minmax(0,160px)_40px]'
+// On a phone a row takes two lines: result, opponent and time control, then how it ended (responsive-layout).
+const COLUMNS =
+  'grid-cols-[40px_minmax(0,1fr)_auto] gap-x-4 gap-y-1 shell:grid-cols-[40px_minmax(0,1fr)_80px_minmax(0,160px)] shell:gap-4'
+const COLUMNS_WITH_PGN =
+  'grid-cols-[40px_minmax(0,1fr)_auto] gap-x-4 gap-y-1 shell:grid-cols-[40px_minmax(0,1fr)_80px_minmax(0,160px)_40px] shell:gap-4'
 
 export interface RecentGamesProps {
   games: ReadonlyArray<MyGameItem>
@@ -487,7 +502,7 @@ export function RecentGames({ games, pgn = false }: RecentGamesProps) {
         return (
           <li
             key={game.gameId}
-            className={`grid ${pgn ? COLUMNS_WITH_PGN : COLUMNS} items-baseline gap-4 border-b border-line-divider py-2.5`}
+            className={`grid ${pgn ? COLUMNS_WITH_PGN : COLUMNS} items-baseline border-b border-line-divider py-2.5`}
           >
             <span
               className={`font-mono font-medium ${outcome ? OUTCOME_TONE[outcome] : 'text-fg-muted'}`}
@@ -505,7 +520,7 @@ export function RecentGames({ games, pgn = false }: RecentGamesProps) {
               <CategoryMark timeControl={game.timeControl} />
               {game.timeControl}
             </span>
-            <span className="truncate text-sm text-fg-secondary">
+            <span className="truncate text-sm text-fg-secondary max-shell:col-start-2">
               {!finished ? 'in play' : game.reason ? reasonText(game.reason) : ''}
             </span>
             {pgn ? (

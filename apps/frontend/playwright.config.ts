@@ -19,7 +19,22 @@ export default defineConfig({
     {
       name: 'chromium',
       dependencies: ['setup'],
+      testIgnore: /responsive\.spec\.ts/,
       use: { browserName: 'chromium', storageState: 'e2e/.auth/testuser.json' },
+    },
+    // responsive-layout: a phone (iPhone 14 size). Only the specs written for it: the two-browser specs open their
+    // own contexts, which do not take a project's viewport.
+    {
+      name: 'mobile',
+      dependencies: ['setup'],
+      testMatch: /responsive\.spec\.ts/,
+      use: {
+        browserName: 'chromium',
+        storageState: 'e2e/.auth/testuser.json',
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+      },
     },
   ],
 })

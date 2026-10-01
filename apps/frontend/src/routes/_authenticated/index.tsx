@@ -127,7 +127,7 @@ function HomePage() {
         <EngineForm levels={levels} onStarted={goToGame} />
       </section>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-6">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))] gap-6">
         <section className="flex flex-col gap-3.5">
           <SectionHeading>Play a friend</SectionHeading>
           <InviteForm

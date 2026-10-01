@@ -34,7 +34,7 @@ export function SettingsForm({ prefs, error, onChange }: SettingsFormProps) {
   const set = <TKey extends keyof Preferences>(key: TKey, value: Preferences[TKey]) =>
     onChange({ ...prefs, [key]: value })
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] items-start gap-8">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] items-start gap-8">
       <div className="flex flex-col gap-5">
         <Panel title="Board" className="gap-3">
           <div className="flex flex-wrap gap-2" role="group" aria-label="Board theme">
