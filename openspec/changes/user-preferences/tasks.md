@@ -4,16 +4,17 @@ pnpm check && pnpm test && pnpm build`). 🐳 marks Docker or live-stack steps. 
 
 ## 1. Model and storage (backend)
 
-- [ ] 1.1 Failing unit tests for `Users/Preferences.cs`: the defaults, and `Preferences.Allowed` rejecting `neon`
+- [x] 1.1 Failing unit tests for `Users/Preferences.cs`: the defaults, and `Preferences.Allowed` rejecting `neon`
       (they fail because the type does not exist). Implement the record, the allowed sets and the defaults.
-- [ ] 1.2 `User.Preferences` (jsonb, nullable), its configuration, and the migration `AddUserPreferences`
+- [x] 1.2 `User.Preferences` (jsonb, nullable), its configuration, and the migration `AddUserPreferences`
       (`./build_migration.sh`). Commit: `feat(backend): user preferences model`.
 
 ## 2. Endpoints (backend)
 
-- [ ] 2.1 `PreferencesService` (read through FusionCache, write, evict) with unit tests first. A
-      `PreferencesOptions : ISettings` (`CacheMinutes`) in `appsettings.json`, with `SettingsTests` updated.
-- [ ] 2.2 `WebApi/Me/Preferences/` GET and PUT (`SignedIn`, validator, `no-store`). 🐳 Integration test: PUT then GET
+- [x] 2.1 `PreferencesService` (read through FusionCache, write, evict) with unit tests first. The TTL is
+      `Cache:PreferencesMinutes` on the existing `CacheOptions` (in `appsettings.json`, `SettingsTests` updated).
+- [x] 2.2 `WebApi/Me/{Get,Put}Preferences/` (`SignedIn`, validator, `no-store`). 🐳 Integration test (written,
+      `PreferencesFlowTests`; needs Docker): PUT then GET
       round-trips, and a bad value is 400 and leaves the stored value unchanged. Commit:
       `feat(backend): preferences endpoints`.
 

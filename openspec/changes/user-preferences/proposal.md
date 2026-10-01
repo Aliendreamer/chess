@@ -39,8 +39,9 @@ None.
 ## Impact
 
 - **Backend:** `Data/Models/User.cs` (+ `Preferences`), its configuration, an EF migration
-  (`./build_migration.sh "AddUserPreferences"`), `WebApi/Me/Preferences/` (get and put endpoints, validator),
-  `Users/PreferencesService` (read through the cache, write, evict).
+  (`./build_migration.sh "AddUserPreferences"`), `WebApi/Me/{Get,Put}Preferences/` (endpoints, validator),
+  `Authentication/Preferences.cs` (the record, its allowed values, and `PreferencesService`: read through the cache,
+  write, evict).
 - **Frontend:** `lib/preferences.ts` (types, defaults), `lib/server/preferences.ts` + `api.ts`, `_authenticated.tsx`,
   `components/layout.tsx` (attributes, Settings link), new route `routes/_authenticated/settings.tsx`, and
   `components/settings.tsx`.

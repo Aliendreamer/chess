@@ -504,11 +504,14 @@ internal sealed class CacheOptions : ISettings
     /// <summary>How long Keycloak's OIDC discovery document is kept.</summary>
     public int OidcDiscoveryMinutes { get; set; } = 60;
 
+    /// <summary>How long a user's display preferences are kept (evicted on save).</summary>
+    public int PreferencesMinutes { get; set; } = 60;
+
     public void Validate()
     {
-        if (DefaultMinutes <= 0 || UserIdMinutes <= 0 || OidcDiscoveryMinutes <= 0)
+        if (DefaultMinutes <= 0 || UserIdMinutes <= 0 || OidcDiscoveryMinutes <= 0 || PreferencesMinutes <= 0)
         {
-            throw new InvalidOperationException("Cache:DefaultMinutes, Cache:UserIdMinutes and Cache:OidcDiscoveryMinutes must be positive.");
+            throw new InvalidOperationException("Cache:DefaultMinutes, Cache:UserIdMinutes, Cache:OidcDiscoveryMinutes and Cache:PreferencesMinutes must be positive.");
         }
     }
 }

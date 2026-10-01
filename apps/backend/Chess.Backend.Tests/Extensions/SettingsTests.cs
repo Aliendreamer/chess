@@ -79,6 +79,7 @@ public sealed class SettingsTests
         { "Api:AskTimeoutSeconds", () => new ApiOptions { AskTimeoutSeconds = 0 }.Validate() },
         { "Api:MaxPageSize < DefaultPageSize", () => new ApiOptions { DefaultPageSize = 300, MaxPageSize = 200 }.Validate() },
         { "Cache:UserIdMinutes", () => new CacheOptions { UserIdMinutes = 0 }.Validate() },
+        { "Cache:PreferencesMinutes", () => new CacheOptions { PreferencesMinutes = 0 }.Validate() },
         { "Database:ReplicaMaxLagSeconds", () => new DatabaseOptions { ReplicaMaxLagSeconds = 0 }.Validate() },
         { "Kafka:HealthTimeoutSeconds", () => new KafkaOptions { HealthTimeoutSeconds = 0 }.Validate() },
         { "Akka:MatchmakingSweepSeconds", () => new AkkaOptions { MatchmakingSweepSeconds = 0 }.Validate() },

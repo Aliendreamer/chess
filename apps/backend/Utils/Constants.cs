@@ -97,5 +97,6 @@ internal static class Constants
     {
         public const string UserIdBySubject = "user-id:";
         public const string OidcDiscovery = "oidc:discovery";
+        public const string PreferencesByUser = "prefs:";
     }
 }

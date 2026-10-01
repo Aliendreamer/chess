@@ -16,4 +16,7 @@ internal sealed class User : AuditableEntity
     /// full name. Snapshotted onto each game when it is created, so a later change never rewrites past games.
     /// </summary>
     public string? Username { get; set; }
+
+    /// <summary>Display preferences as JSON (user-preferences); null means the defaults.</summary>
+    public string? Preferences { get; set; }
 }

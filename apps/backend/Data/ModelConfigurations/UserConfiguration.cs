@@ -14,6 +14,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Email).HasMaxLength(320);
         builder.Property(u => u.FullName).HasMaxLength(255);
         builder.Property(u => u.Username).HasMaxLength(255);
+        builder.Property(u => u.Preferences).HasColumnType("jsonb");
         builder.Property(u => u.Version).IsConcurrencyToken();
 
         // The engine's players (engine-play D2): fixed negative ids, so games can name them without a lookup.
