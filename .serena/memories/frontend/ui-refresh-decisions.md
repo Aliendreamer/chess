@@ -18,3 +18,14 @@ site-themes, responsive-layout (openspec/changes/). Proposals page: https://clau
 - P8 feedback moments (tab title, game-over card, rematch): YES.
 - P9 preferences saved to the account (SSR, no flash): YES.
 - P10 phone: YES, as its own OpenSpec change; responsive design throughout.
+
+## Status (2026-10-01, end of day)
+
+All six changes implemented on main (commits b43d92b … ede3074); every task done except the 🐳 ones: Playwright
+(`play.spec.ts` drag/premove/navigation/rematch, `settings.spec.ts`, `responsive.spec.ts` + the `mobile` project) and
+the backend integration tests (`MatchmakingFlowTests` rematch, `PreferencesFlowTests`) are written but were never run
+— no Docker in that session. Run `tools/e2e.sh` and `pnpm exec nx integration-test backend`, then archive the six
+changes. Deviations from the first proposals: material is lichess's surplus rule (not captured pieces);
+lucide-react pinned to 1.47.0 (workspace `minimumReleaseAge`); rematch endpoint lives in `WebApi/Matchmaking/Rematch/`;
+preferences code in `Authentication/Preferences.cs` + `lib/auth.ts` (no tiny files). Found and fixed on the way: the
+old board coloured a1 light.
