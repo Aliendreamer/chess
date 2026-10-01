@@ -75,13 +75,16 @@ internal readonly record struct EngineLevel(int? Elo)
     public const int MinElo = 1320;
     public const int MaxElo = 3190;
 
+    /// <summary>Full strength's name in requests; the backend's <c>EngineLevel</c> ids spell it the same.</summary>
+    public const string MaxName = "max";
+
     public static EngineLevel Max => new(null);
 
     /// <summary><c>max</c>, or an Elo in the engine's range.</summary>
     public static bool TryParse(string? text, out EngineLevel level)
     {
         level = Max;
-        if (string.Equals(text, "max", StringComparison.Ordinal))
+        if (string.Equals(text, MaxName, StringComparison.Ordinal))
         {
             return true;
         }
@@ -100,7 +103,7 @@ internal readonly record struct EngineLevel(int? Elo)
         ? ["setoption name UCI_LimitStrength value true", $"setoption name UCI_Elo value {elo.ToString(CultureInfo.InvariantCulture)}"]
         : ["setoption name UCI_LimitStrength value false", "setoption name Skill Level value 20"];
 
-    public override string ToString() => Elo?.ToString(CultureInfo.InvariantCulture) ?? "max";
+    public override string ToString() => Elo?.ToString(CultureInfo.InvariantCulture) ?? MaxName;
 }
 
 /// <summary>
