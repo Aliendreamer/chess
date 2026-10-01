@@ -24,10 +24,10 @@ const view: GameView = {
   whiteId: 1,
   blackId: 2,
   timeControl: '5+3',
-  status: 'Playing',
+  status: 'playing',
   fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2',
   ply: 2,
-  sideToMove: 'White',
+  sideToMove: 'white',
   lastUci: 'e7e5',
   lastSan: 'e5',
   whiteMs: 300000,
@@ -98,7 +98,7 @@ describe('resultText and reasonText', () => {
 describe('liveClocks', () => {
   it('counts down only the side to move', () => {
     expect(liveClocks(view, 1500)).toEqual({ whiteMs: 298500, blackMs: 297000 })
-    expect(liveClocks({ ...view, sideToMove: 'Black' }, 1500)).toEqual({
+    expect(liveClocks({ ...view, sideToMove: 'black' }, 1500)).toEqual({
       whiteMs: 300000,
       blackMs: 295500,
     })
@@ -109,15 +109,15 @@ describe('liveClocks', () => {
   })
 
   it('does not run before both first moves or after the end', () => {
-    expect(liveClocks({ ...view, ply: 1, sideToMove: 'Black' }, 5000)).toEqual({
+    expect(liveClocks({ ...view, ply: 1, sideToMove: 'black' }, 5000)).toEqual({
       whiteMs: 300000,
       blackMs: 297000,
     })
-    expect(liveClocks({ ...view, status: 'Created', ply: 0 }, 5000)).toEqual({
+    expect(liveClocks({ ...view, status: 'created', ply: 0 }, 5000)).toEqual({
       whiteMs: 300000,
       blackMs: 297000,
     })
-    expect(liveClocks({ ...view, status: 'Ended' }, 5000)).toEqual({
+    expect(liveClocks({ ...view, status: 'ended' }, 5000)).toEqual({
       whiteMs: 300000,
       blackMs: 297000,
     })
@@ -179,13 +179,13 @@ describe('games against the computer', () => {
   })
 
   it("is the computer's turn only in its game, on its side, while playing", () => {
-    expect(engineToMove({ engineSide: 'black', status: 'Playing', sideToMove: 'Black' })).toBe(true)
-    expect(engineToMove({ engineSide: 'black', status: 'Playing', sideToMove: 'White' })).toBe(
+    expect(engineToMove({ engineSide: 'black', status: 'playing', sideToMove: 'black' })).toBe(true)
+    expect(engineToMove({ engineSide: 'black', status: 'playing', sideToMove: 'white' })).toBe(
       false,
     )
-    expect(engineToMove({ engineSide: 'white', status: 'Created', sideToMove: 'White' })).toBe(true)
-    expect(engineToMove({ engineSide: 'white', status: 'Ended', sideToMove: 'White' })).toBe(false)
-    expect(engineToMove({ engineSide: null, status: 'Playing', sideToMove: 'White' })).toBe(false)
+    expect(engineToMove({ engineSide: 'white', status: 'created', sideToMove: 'white' })).toBe(true)
+    expect(engineToMove({ engineSide: 'white', status: 'ended', sideToMove: 'white' })).toBe(false)
+    expect(engineToMove({ engineSide: null, status: 'playing', sideToMove: 'white' })).toBe(false)
   })
 })
 

@@ -6,16 +6,22 @@ import { useEffect, useState } from 'react'
 
 export type Color = 'white' | 'black'
 
+/** A live game's status (the API's `GameStatus`, lower-case on the wire). */
+export type GameStatus = 'created' | 'playing' | 'ended'
+
+/** A listed game's status (`rm_games`): a game is listed from its first event, so never `created`. */
+export type ListStatus = Exclude<GameStatus, 'created'>
+
 /** Mirrors the API's `GameView`: a command's answer and the `game` live kind's payload. */
 export interface GameView {
   gameId: string
   whiteId: number
   blackId: number
   timeControl: string
-  status: 'Created' | 'Playing' | 'Ended'
+  status: GameStatus
   fen: string
   ply: number
-  sideToMove: 'White' | 'Black'
+  sideToMove: Color
   lastUci: string | null
   lastSan: string | null
   whiteMs: number
@@ -75,7 +81,7 @@ export function engineToMove(
 ): boolean {
   return (
     view.engineSide != null &&
-    view.status !== 'Ended' &&
+    view.status !== 'ended' &&
     view.sideToMove.toLowerCase() === view.engineSide
   )
 }
@@ -88,7 +94,7 @@ export interface GameSummary {
   blackId: number
   black: string
   timeControl: string
-  status: string
+  status: ListStatus
   result: string | null
   reason: string | null
   ply: number
@@ -192,9 +198,9 @@ export function liveClocks(
   view: Pick<GameView, 'status' | 'ply' | 'sideToMove' | 'whiteMs' | 'blackMs'>,
   elapsedMs: number,
 ): { whiteMs: number; blackMs: number } {
-  if (view.status !== 'Playing' || view.ply < 2)
+  if (view.status !== 'playing' || view.ply < 2)
     return { whiteMs: view.whiteMs, blackMs: view.blackMs }
-  return view.sideToMove === 'White'
+  return view.sideToMove === 'white'
     ? { whiteMs: Math.max(0, view.whiteMs - elapsedMs), blackMs: view.blackMs }
     : { whiteMs: view.whiteMs, blackMs: Math.max(0, view.blackMs - elapsedMs) }
 }
@@ -251,7 +257,7 @@ export function useLocalClocks(view: GameView): { whiteMs: number; blackMs: numb
   const [elapsed, setElapsed] = useState(0)
   useEffect(() => {
     setElapsed(0)
-    if (view.status !== 'Playing' || view.ply < 2) return
+    if (view.status !== 'playing' || view.ply < 2) return
     const arrived = performance.now()
     const timer = setInterval(() => setElapsed(performance.now() - arrived), 100)
     return () => clearInterval(timer)

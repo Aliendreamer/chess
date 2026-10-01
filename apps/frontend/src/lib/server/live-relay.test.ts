@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { BAD_TOPIC, UNAUTHENTICATED, openRelay, parseLiveUrl } from './live-relay'
 import { HUB_UNAVAILABLE } from './live-hub'
-import type { RelayDeps } from './live-relay'
+import type { LiveTarget, RelayDeps } from './live-relay'
 import type { HubMultiplexer } from './live-hub'
 import { fakeSocket as socket } from '#/testing'
 
@@ -77,7 +77,7 @@ function harness(session: Array<boolean | Error>) {
   return { deps, mux, tick: () => tick!() }
 }
 
-const target = { kind: 'ping', id: 'p1', topic: 'ping:p1' }
+const target: LiveTarget = { kind: 'ping', id: 'p1', topic: 'ping:p1' }
 
 describe('openRelay', () => {
   it('closes 4401 without subscribing when there is no session cookie', async () => {

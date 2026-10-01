@@ -1,5 +1,5 @@
 import { HttpTransportType, HubConnectionBuilder } from '@microsoft/signalr'
-import { isLiveFrame } from '../live'
+import { isLiveFrame, liveTopic } from '../live'
 import { apiUrl, keycloakTokenUrl, relayClient } from './upstream'
 import { bffMetrics, pushFrame, withoutTrace } from './telemetry'
 import type { LiveFrame, SocketMessage } from '../live'
@@ -48,7 +48,21 @@ export interface PresenceOptions {
 /** 1011: the hub is unavailable (protocol "internal error"). */
 export const HUB_UNAVAILABLE = 1011
 
-const PRESENCE_KIND = 'game:'
+/**
+ * The backend's `LiveHub` (Messaging/LiveRelay.cs): its path, the methods the BFF invokes (C# method names) and the
+ * one it pushes frames with (`LiveTopics.FrameMethod`). Spelled once here; a mismatch fails at runtime only.
+ */
+export const HUB = {
+  path: '/hub/live',
+  subscribe: 'Subscribe',
+  unsubscribe: 'Unsubscribe',
+  present: 'Present',
+  absent: 'Absent',
+  frame: 'frame',
+} as const
+
+/** Only game topics carry presence. */
+const PRESENCE_PREFIX = liveTopic('game', '')
 
 const send = (socket: LocalSocket, message: SocketMessage) =>
   socket.send(
@@ -78,23 +92,23 @@ export function createHubMultiplexer(
   let refreshTimer: ReturnType<typeof setInterval> | null = null
   const { instance } = presenceOptions
 
-  function report(method: 'Present' | 'Absent', topic: string, userId: number) {
+  function report(method: typeof HUB.present | typeof HUB.absent, topic: string, userId: number) {
     void port?.invoke(method, topic, userId, instance).catch(() => {})
   }
 
   function refreshAll() {
     for (const [topic, users] of presence) {
-      for (const userId of users.keys()) report('Present', topic, userId)
+      for (const userId of users.keys()) report(HUB.present, topic, userId)
     }
   }
 
   function present(topic: string, userId: number | undefined) {
-    if (userId === undefined || !topic.startsWith(PRESENCE_KIND)) return
+    if (userId === undefined || !topic.startsWith(PRESENCE_PREFIX)) return
     let users = presence.get(topic)
     if (!users) presence.set(topic, (users = new Map()))
     const count = (users.get(userId) ?? 0) + 1
     users.set(userId, count)
-    if (count === 1) report('Present', topic, userId)
+    if (count === 1) report(HUB.present, topic, userId)
   }
 
   function absent(topic: string, userId: number | undefined) {
@@ -107,7 +121,7 @@ export function createHubMultiplexer(
     }
     users.delete(userId)
     if (users.size === 0) presence.delete(topic)
-    report('Absent', topic, userId)
+    report(HUB.absent, topic, userId)
   }
 
   function drop(topic: string, socket: LocalSocket): boolean {
@@ -132,7 +146,7 @@ export function createHubMultiplexer(
       // Group membership lives on the connection: rejoin every live topic and refresh its sockets.
       for (const topic of topics.keys()) {
         void p
-          .invoke<LiveFrame | null>('Subscribe', topic)
+          .invoke<LiveFrame | null>(HUB.subscribe, topic)
           .then((frame) => {
             if (!frame) return
             for (const s of topics.get(topic) ?? []) send(s, { kind: 'frame', frame })
@@ -177,13 +191,13 @@ export function createHubMultiplexer(
       sockets.add(socket)
       try {
         const hub = await started()
-        const snapshot = await hub.invoke<LiveFrame | null>('Subscribe', topic)
+        const snapshot = await hub.invoke<LiveFrame | null>(HUB.subscribe, topic)
         if (topics.get(topic)?.has(socket)) {
           if (snapshot) send(socket, { kind: 'frame', frame: snapshot })
           present(topic, userId)
         } else if (!topics.has(topic)) {
           // Everyone left while Subscribe was in flight, so the join landed after the last unsubscribe: undo it.
-          await hub.invoke('Unsubscribe', topic).catch(() => {})
+          await hub.invoke(HUB.unsubscribe, topic).catch(() => {})
         }
       } catch (e) {
         if (!drop(topic, socket)) return
@@ -196,7 +210,7 @@ export function createHubMultiplexer(
       if (!drop(topic, socket)) return
       absent(topic, userId)
       if (topics.has(topic) || !port) return
-      await port.invoke('Unsubscribe', topic).catch(() => {})
+      await port.invoke(HUB.unsubscribe, topic).catch(() => {})
     },
 
     topicCount: () => topics.size,
@@ -217,7 +231,7 @@ export function signalRPort(url: string, accessToken: () => Promise<string>): Hu
     start: () => hub.start(),
     invoke: (method, ...args) => hub.invoke(method, ...args),
     onFrame: (handler) =>
-      hub.on('frame', (frame: unknown) => {
+      hub.on(HUB.frame, (frame: unknown) => {
         if (isLiveFrame(frame)) handler(frame)
       }),
     onReconnected: (handler) => hub.onreconnected(() => handler()),
@@ -239,7 +253,7 @@ export function liveMultiplexer(): HubMultiplexer {
       clientId: client.id,
       clientSecret: client.secret,
     })
-    const url = `${apiUrl()}/hub/live`
+    const url = `${apiUrl()}${HUB.path}`
     shared = createHubMultiplexer(() => signalRPort(url, token))
   }
   return shared

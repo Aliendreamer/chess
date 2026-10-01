@@ -2,7 +2,7 @@
  * Matchmaking, invites and "my games": the wire shapes and the pure rules Home and the invite page use.
  * Client-safe (no `lib/server` import).
  */
-import type { Color } from './games'
+import type { Color, ListStatus } from './games'
 
 /** Mirrors `POST /api/matchmaking/{tc}`'s answer. */
 export interface QueueStatus {
@@ -46,7 +46,7 @@ export interface MyGameItem {
   opponentId: number
   opponent: string
   timeControl: string
-  status: string
+  status: ListStatus
   result: string | null
   reason: string | null
   createdAt: string

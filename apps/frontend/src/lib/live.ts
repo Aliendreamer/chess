@@ -8,6 +8,20 @@ import { useEffect, useRef, useState } from 'react'
  * reach the browser.
  */
 
+/** The live kinds, each a backend `ILiveTopicSource` (its `KindName`); the relay allows exactly these. */
+export const LIVE_KINDS = ['ping', 'game', 'queue', 'invite'] as const
+export type LiveKind = (typeof LIVE_KINDS)[number]
+
+/** A topic as the backend spells it (`LiveTopics.Format`): `kind:id`. */
+export function liveTopic(kind: LiveKind, id: string): string {
+  return `${kind}:${id}`
+}
+
+/** The relay refused the topic: an unknown kind or an id that fails the kind's rule. */
+export const CLOSE_BAD_TOPIC = 4400
+/** No session, or the session ended while watching. (1000–1015 are reserved by the protocol.) */
+export const CLOSE_UNAUTHENTICATED = 4401
+
 /** Mirrors the API's `LiveFrame` (System.Text.Json camel-cases the members). */
 export interface LiveFrame<TPayload = unknown> {
   topic: string
@@ -71,21 +85,21 @@ export function liveStatusText(status: LiveStatus): string {
 /** Delays before each reconnect attempt; the last one repeats (presence-and-abandonment D7). */
 export const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 15000] as const
 
-/** Closes that no retry can fix: the relay refused the topic (4400) or the session is over (4401). */
+/** Closes that no retry can fix. */
 const FINAL_CLOSES: Record<number, string> = {
-  4400: 'This live feed does not exist.',
-  4401: 'Your session has ended. Reload to sign in again.',
+  [CLOSE_BAD_TOPIC]: 'This live feed does not exist.',
+  [CLOSE_UNAUTHENTICATED]: 'Your session has ended. Reload to sign in again.',
 }
 
 /** Same origin as the page, always — the relay is the only thing that knows the API host. */
-export function liveUrl(host: string, protocol: string, kind: string, id: string): string {
+export function liveUrl(host: string, protocol: string, kind: LiveKind, id: string): string {
   const scheme = protocol === 'https:' ? 'wss' : 'ws'
   // `+` is literal in a path and the relay's queue rule expects it raw (`5+3`, not `5%2B3`).
   return `${scheme}://${host}/api/ws/live/${kind}/${encodeURIComponent(id).replaceAll('%2B', '+')}`
 }
 
 export interface LiveTopicOptions<T> {
-  kind: string
+  kind: LiveKind
   /** The id as the topic spells it (for guids: 32 hex, no dashes). */
   id: string
   /** What the page shows when subscribing (the loader's state and its seq): a frame applies only if newer. */
@@ -113,7 +127,7 @@ export function useLiveTopic<T>({
   isPayload,
   onFrame,
 }: LiveTopicOptions<T>): LiveTopic<T> {
-  const start: LiveFrame<T> | undefined = initial && { topic: `${kind}:${id}`, ...initial }
+  const start: LiveFrame<T> | undefined = initial && { topic: liveTopic(kind, id), ...initial }
   const [frame, setFrame] = useState<LiveFrame<T> | undefined>(start)
   const [status, setStatus] = useState<LiveStatus>('connecting')
   const [error, setError] = useState<string | null>(null)
@@ -130,7 +144,7 @@ export function useLiveTopic<T>({
     setFrame(baseline.current)
     setStatus('connecting')
     setError(null)
-    const topic = `${kind}:${id}`
+    const topic = liveTopic(kind, id)
     let socket: WebSocket | null = null
     let retry: ReturnType<typeof setTimeout> | null = null
     let attempt = 0

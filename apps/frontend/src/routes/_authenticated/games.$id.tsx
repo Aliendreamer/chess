@@ -24,7 +24,7 @@ import {
   topicId,
   useLocalClocks,
 } from '#/lib/games'
-import { applyFrame, liveStatusText, useLiveTopic } from '#/lib/live'
+import { applyFrame, liveStatusText, liveTopic, useLiveTopic } from '#/lib/live'
 import { applyOptimistic, clickSquare, legalTargets, needsPromotion } from '#/lib/moveInput'
 import {
   Board,
@@ -132,20 +132,16 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
 
   const clocks = useLocalClocks(current)
 
-  const offered = current.claimableBy === me.id && current.status !== 'Ended'
+  const offered = current.claimableBy === me.id && current.status !== 'ended'
   useEffect(() => {
     if (!offered) setWaiting(false)
   }, [offered])
 
   const mine = myColor(current, me.id)
   const side = orientation(current, me.id)
-  const playing = current.status !== 'Ended'
+  const playing = current.status !== 'ended'
   const myTurn =
-    mine !== null &&
-    playing &&
-    current.sideToMove.toLowerCase() === mine &&
-    !pending &&
-    !command.busy
+    mine !== null && playing && current.sideToMove === mine && !pending && !command.busy
   const fen = pending?.fen ?? current.fen
   const lastUci = pending?.uci ?? current.lastUci
   const lastMove = lastUci ? { from: lastUci.slice(0, 2), to: lastUci.slice(2, 4) } : null
@@ -153,7 +149,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
 
   async function send(action: GameCommand) {
     const view = await command.run(() => postGameCommand({ data: { id, command: action } }))
-    if (view) setAnswered({ topic: `game:${topic}`, seq: view.seq, payload: view })
+    if (view) setAnswered({ topic: liveTopic('game', topic), seq: view.seq, payload: view })
     else setPending(null) // refused: the board snaps back to the last server view
   }
 
@@ -239,7 +235,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
           </h1>
         </div>
 
-        {current.status === 'Ended' && current.result ? (
+        {current.status === 'ended' && current.result ? (
           <GameResultPanel
             result={current.result}
             reason={current.reason}
@@ -272,7 +268,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
 
         {playing && current.deadlineAt ? (
           <p className="m-0 text-sm text-fg-secondary" data-testid="deadline">
-            {`${mine !== null && current.sideToMove.toLowerCase() === mine ? 'Your move' : `Waiting for ${current.sideToMove === 'White' ? white : black}`} · ${timeLeft(current.deadlineAt, Date.parse(current.clockAt))}`}
+            {`${mine !== null && current.sideToMove === mine ? 'Your move' : `Waiting for ${current.sideToMove === 'white' ? white : black}`} · ${timeLeft(current.deadlineAt, Date.parse(current.clockAt))}`}
           </p>
         ) : null}
 

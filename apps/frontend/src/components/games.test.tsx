@@ -169,7 +169,7 @@ describe('YourTurnList', () => {
     const base = {
       color: 'white' as const,
       opponentId: 2,
-      status: 'playing',
+      status: 'playing' as const,
       result: null,
       reason: null,
       createdAt: '2026-09-27T09:00:00Z',

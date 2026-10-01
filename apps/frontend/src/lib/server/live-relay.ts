@@ -1,9 +1,11 @@
 import WebSocket from 'ws'
+import { CLOSE_BAD_TOPIC, CLOSE_UNAUTHENTICATED, LIVE_KINDS, liveTopic } from '../live'
 import { loadMe } from './auth'
 import { apiUrl, relayRevalidateMs } from './upstream'
 import { liveMultiplexer } from './live-hub'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { bffMetrics } from './telemetry'
+import type { LiveKind } from '../live'
 import type { HubMultiplexer, LocalSocket } from './live-hub'
 import type { IncomingMessage } from 'node:http'
 import type { Socket } from 'node:net'
@@ -17,21 +19,22 @@ import type { Plugin } from 'vite'
 
 export const LIVE_PREFIX = '/api/ws/live/'
 
-/** Unknown kind or an id that fails the kind's rule. */
-export const BAD_TOPIC = 4400
-/** No session, or the session ended while watching. (1000–1015 are reserved by the protocol.) */
-export const UNAUTHENTICATED = 4401
+export const BAD_TOPIC = CLOSE_BAD_TOPIC
+export const UNAUTHENTICATED = CLOSE_UNAUTHENTICATED
 
-/** The kinds the BFF relays, each with its backend id rule (kept in sync by tests, not imports). */
-const KINDS: Record<string, RegExp> = {
+/** Each live kind's backend id rule (kept in sync by tests, not imports); the type makes every kind have one. */
+const KINDS: Record<LiveKind, RegExp> = {
   ping: /^[a-z0-9-]{1,64}$/, // PingIds.Pattern
   game: /^[0-9a-f]{32}$/, // GameLiveSource: a Guid v7 in N form (ROADMAP D11)
   queue: /^\d{1,2}\+\d{1,2}$/, // QueueLiveSource: a time control; the backend checks it is a preset
   invite: /^[0-9a-f]{32}$/, // InviteLiveSource: a random Guid v4 in N form
 }
 
+const isLiveKind = (kind: string): kind is LiveKind =>
+  (LIVE_KINDS as ReadonlyArray<string>).includes(kind)
+
 export interface LiveTarget {
-  kind: string
+  kind: LiveKind
   id: string
   topic: string
 }
@@ -49,8 +52,8 @@ export function parseLiveUrl(url: string | null | undefined): LiveTarget | null 
   const parts = pathname.slice(LIVE_PREFIX.length).split('/')
   if (parts.length !== 2) return null
   const [kind, id] = parts as [string, string]
-  const rule = Object.hasOwn(KINDS, kind) ? KINDS[kind] : undefined
-  return rule?.test(id) ? { kind, id, topic: `${kind}:${id}` } : null
+  if (!isLiveKind(kind)) return null
+  return KINDS[kind].test(id) ? { kind, id, topic: liveTopic(kind, id) } : null
 }
 
 export interface RelayDeps {
