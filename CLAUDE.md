@@ -123,7 +123,7 @@ to each app's own lint target). Keep `--no-stash`.
   Production; empty only under the IntegrationTest env). Both `chess_api` and `chess_bff` carry an audience
   mapper in the realm export — a new client that calls the API needs one too, or every call is a 401.
 - **Redis (backend)** — `ConnectionStrings:Redis` is the single switch: set (compose: `redis:6379`) ⇒ FusionCache
-  gets Redis as L2 + backplane, the global rate limiter (300 req/min per client IP) becomes Redis-backed
+  gets Redis as L2 + backplane, the global rate limiter (300 req/min per signed-in user, per client IP when anonymous; keyed after authentication) becomes Redis-backed
   (shared across replicas), and `/health` includes Redis; unset ⇒ L1-only cache, in-memory limiter, no Redis
   health check. Unit tests run without Redis.
 - **Forwarded headers (backend)** — `X-Forwarded-*` is trusted only from `ForwardedHeaders:KnownNetworks`

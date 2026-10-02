@@ -20,9 +20,10 @@ internal static class ApplicationExtensions
         app.UseSecurityHeaders();
         app.UseExceptionHandler(static _ => { });
         app.UseSerilogRequestLogging();
-        app.UseRateLimiter();
         app.UseCors(Constants.CorsPolicy);
+        // Before the limiter: it keys on the validated user (BuilderExtension.ClientKey).
         app.UseAuthentication();
+        app.UseRateLimiter();
         app.UseAuthorization();
 
         app.MapHealthChecks(Constants.HealthPath);

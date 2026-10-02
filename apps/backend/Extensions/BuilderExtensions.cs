@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
@@ -236,8 +237,8 @@ internal static class BuilderExtension
     }
 
     /// <summary>
-    /// <see cref="RateLimitOptions.PermitLimit"/> requests per <see cref="RateLimitOptions.WindowSeconds"/> per client IP
-    /// (section <c>RateLimit</c>). With Redis the counters are shared across instances (one limit per client, however
+    /// <see cref="RateLimitOptions.PermitLimit"/> requests per <see cref="RateLimitOptions.WindowSeconds"/> per signed-in
+    /// user, or per client IP for anonymous calls (<see cref="ClientKey"/>; section <c>RateLimit</c>). With Redis the counters are shared across instances (one limit per client, however
     /// many replicas run); without it each instance counts on its own.
     /// </summary>
     internal static IServiceCollection AddRateLimiting(this IServiceCollection services, string? redisConnectionString, RateLimitOptions? limits = null)
@@ -273,10 +274,22 @@ internal static class BuilderExtension
         return services;
     }
 
+    /// <summary>
+    /// The signed-in user when authentication vouched for one, otherwise the client address: everyone the BFF serves
+    /// arrives from the BFF's address (the real one only in <c>X-Forwarded-For</c>), and many people share one address
+    /// behind CGNAT. Runs after <c>UseAuthentication</c>; a forged or expired cookie leaves an unauthenticated user and
+    /// so counts against its address, never against a fresh bucket of its own.
+    /// </summary>
     internal static string ClientKey(HttpContext http)
     {
         ArgumentNullException.ThrowIfNull(http);
-        return http.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+        if (http.User.Identity?.IsAuthenticated == true
+            && http.User.FindFirstValue(Constants.Claims.Subject) is { Length: > 0 } subject)
+        {
+            return $"user:{subject}";
+        }
+
+        return http.Connection.RemoteIpAddress is { } address ? $"ip:{address}" : "anonymous";
     }
 
     /// <summary>Registers every <c>Xxx : BaseService, IXxx</c> as scoped under each of its <see cref="IService"/> interfaces.</summary>

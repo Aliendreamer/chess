@@ -1,5 +1,8 @@
 using System.Net;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Chess.Backend.Extensions;
+using Chess.Backend.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Distributed;
@@ -62,14 +65,58 @@ public sealed class CachingAndRateLimitingTests
         Assert.NotNull(options.GlobalLimiter);
     }
 
+    private static DefaultHttpContext SignedIn(string subject, string ip = "10.1.2.3")
+    {
+        DefaultHttpContext http = new()
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(Constants.Claims.Subject, subject)], "Bearer")),
+        };
+        http.Connection.RemoteIpAddress = IPAddress.Parse(ip);
+        return http;
+    }
+
     [Fact]
-    public void Client_key_is_the_remote_ip_or_anonymous()
+    public void Client_key_is_the_signed_in_user()
+    {
+        Assert.Equal("user:kc-sub-1", BuilderExtension.ClientKey(SignedIn("kc-sub-1")));
+    }
+
+    [Fact]
+    public void Client_key_is_the_remote_ip_or_anonymous_without_a_validated_user()
     {
         DefaultHttpContext http = new();
         Assert.Equal("anonymous", BuilderExtension.ClientKey(http));
         http.Connection.RemoteIpAddress = IPAddress.Parse("10.1.2.3");
-        Assert.Equal("10.1.2.3", BuilderExtension.ClientKey(http));
+        Assert.Equal("ip:10.1.2.3", BuilderExtension.ClientKey(http));
+
+        // A sub claim on an identity authentication did not vouch for (a forged or expired cookie) counts for nothing.
+        http.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(Constants.Claims.Subject, "forged")]));
+        Assert.Equal("ip:10.1.2.3", BuilderExtension.ClientKey(http));
         Assert.Throws<ArgumentNullException>(() => BuilderExtension.ClientKey(null!));
+    }
+
+    [Fact]
+    public async Task Signed_in_users_behind_one_address_each_have_their_own_limit()
+    {
+        ServiceCollection services = Base();
+        services.AddRateLimiting(null, new RateLimitOptions { PermitLimit = 3, WindowSeconds = 60 });
+        using ServiceProvider provider = services.BuildServiceProvider();
+        PartitionedRateLimiter<HttpContext> limiter = provider.GetRequiredService<IOptions<RateLimiterOptions>>().Value.GlobalLimiter!;
+        DefaultHttpContext alice = SignedIn("alice");
+        alice.RequestServices = provider;
+        DefaultHttpContext bob = SignedIn("bob");
+        bob.RequestServices = provider;
+
+        for (int i = 0; i < 3; i++)
+        {
+            using RateLimitLease ok = await limiter.AcquireAsync(alice);
+            Assert.True(ok.IsAcquired);
+        }
+
+        using RateLimitLease aliceOver = await limiter.AcquireAsync(alice);
+        Assert.False(aliceOver.IsAcquired);
+        using RateLimitLease bobFirst = await limiter.AcquireAsync(bob);
+        Assert.True(bobFirst.IsAcquired);
     }
 
     [Fact]
