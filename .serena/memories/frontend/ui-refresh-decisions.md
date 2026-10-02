@@ -47,8 +47,12 @@ verified (unit gates, 36/36 Playwright, integration tests):
 - `ui-polish`: `pageTitle` on every route, router pending/error/not-found screens, catch-all `_authenticated/$.tsx`,
   `useLoadMore`/`LoadMore`, audit fixes (Maximum tile, study `*`, reason capitalised, file picker, a11y bits).
 
-Round 3 (2026-10-02): owner approved the design for an open analysis board, a famous-games library (WC + classics,
-search by details/opening/position) and chess news. Written as OpenSpec changes `analysis-board`, `game-library`,
-`chess-news` (ROADMAP Part 6), not implemented yet; build in that order. Source research (licences, working feeds)
-is in `game-library`/`chess-news` design.md. "Events now" (lichess broadcasts) is IN `chess-news` (owner, 2026-10-02).
-Owner will check PGN Mentor and Caissabase licences later (1993–2004 gap waits on Caissabase).
+Round 3 (2026-10-02): built, owner said "build them": `analysis-board` (/analysis; shared AnalysisBoard +
+useMoveTree; Analyse opens the board for FINISHED games only — judged by the live view, the replica lags),
+`game-library` (library_games/positions/openings; openings = lichess chess-openings CC0 embedded and seeded; admin
+import on /admin; /library search with pg_trgm; "In the library" + opening name on the board), `chess-news`
+(news-fetcher singleton: 5 feeds every 30 min, lichess broadcasts every 10 min for Events now; News__Enabled=false in
+tests). All verified on the stack (e2e 40/40, observability green). OPEN, owner's, left "for the end": PGN Mentor terms
+and Caissabase CC0 check → then the first real library imports (game-library task 5.2; tools/library/SOURCES.md).
+Lessons: python str.replace without assert silently skipped an edit; gate commits on the gate's exit code
+(scratchpad fe-commit.sh); in-memory EF test stores need one name per test, not per scope.
