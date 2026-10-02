@@ -1,6 +1,6 @@
 ## 1. Extract the study board (no behaviour change)
 
-- [ ] 1.1 Move the board + tree + engine panel + navigation of `routes/_authenticated/studies.$id.tsx` into
+- [x] 1.1 Move the board + tree + engine panel + navigation of `routes/_authenticated/studies.$id.tsx` into
       `components/studies.tsx#AnalysisBoard`; the study page wraps it. Failing first: a component test rendering
       `AnalysisBoard` with a two-move tree (fails: no such export). `nx run-many -t lint test -p frontend` green.
       Commit: `refactor(frontend): the study board as AnalysisBoard`.

@@ -1,25 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import type { StudyMove, StudyView, TreePath } from '#/lib/studies'
+import type { StudyView } from '#/lib/studies'
 import { getStudy, postAnalysis, postShareStudy, putStudy } from '#/lib/server/api'
-import {
-  addMove,
-  childrenAt,
-  fenAt,
-  lineEnd,
-  nextPath,
-  nodeAt,
-  playMove,
-  promote,
-  remove,
-  studyByline,
-  toInput,
-} from '#/lib/studies'
-import { scoreText, useAnalysis } from '#/lib/analysis'
-import { clickSquare, legalTargets, needsPromotion } from '#/lib/moveInput'
-import { uciSquares } from '#/lib/board'
-import { Board, MoveNav, PromotionPicker } from '#/components/games'
-import { AnalysisPanel, MoveTree } from '#/components/studies'
+import { childrenAt, promote, remove, studyByline, toInput, useMoveTree } from '#/lib/studies'
+import { useAnalysis } from '#/lib/analysis'
+import { AnalysisBoard } from '#/components/studies'
 import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
 import { pageTitle } from '#/lib/feedback'
 
@@ -51,12 +36,10 @@ function StudyPage() {
 
 function Study({ loaded }: { loaded: StudyView }) {
   const [saved, setSaved] = useState(loaded)
-  const [tree, setTree] = useState<Array<StudyMove>>(loaded.tree)
   const [title, setTitle] = useState(loaded.title)
-  const [path, setPath] = useState<TreePath>([])
-  const [selected, setSelected] = useState<string | null>(null)
-  const [promotion, setPromotion] = useState<{ from: string; to: string } | null>(null)
   const [link, setLink] = useState<string | null>(null)
+  const editor = useMoveTree(loaded.startFen, loaded.tree)
+  const { tree, path, current } = editor
   const saving = useCommand()
   const sharing = useCommand()
   const analysis = useAnalysis((input) => postAnalysis({ data: input }))
@@ -64,67 +47,8 @@ function Study({ loaded }: { loaded: StudyView }) {
   const dirty =
     title !== saved.title || JSON.stringify(toInput(tree)) !== JSON.stringify(toInput(saved.tree))
 
-  const fen = fenAt(saved.startFen, tree, path)
-  const current = nodeAt(tree, path)
-  const side = fen.split(' ')[1] === 'b' ? 'b' : 'w'
-
   // The shareable URL needs the page's origin, which only the browser knows.
   useEffect(() => setLink(`${window.location.origin}/studies/${saved.id}`), [saved.id])
-
-  // Arrow keys walk the line: back to the previous move, forward along the first continuation, Home and End.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (e.key === 'ArrowLeft') setPath((p) => p.slice(0, -1))
-      else if (e.key === 'ArrowRight') setPath((p) => nextPath(tree, p) ?? p)
-      else if (e.key === 'Home') setPath([])
-      else if (e.key === 'End') setPath((p) => lineEnd(tree, p))
-      else return
-      e.preventDefault()
-      setSelected(null)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [tree])
-
-  function play(from: string, to: string, piece?: string) {
-    const move = playMove(fen, `${from}${to}${piece ?? ''}`)
-    if (!move) return
-    const next = addMove(tree, path, move)
-    setTree(next.tree)
-    setPath(next.path)
-  }
-
-  /** Plays an engine line from the current position into the tree: existing moves are followed, the rest added. */
-  function playLine(moves: ReadonlyArray<StudyMove>) {
-    let next = { tree, path }
-    for (const move of moves) next = addMove(next.tree, next.path, move)
-    setTree(next.tree)
-    setPath(next.path)
-  }
-
-  function onSquareClick(square: string) {
-    const result = clickSquare(fen, side, selected, square)
-    setSelected(result.selected)
-    if (!result.move) return
-    if (needsPromotion(fen, result.move.from, result.move.to)) {
-      setPromotion(result.move)
-      return
-    }
-    play(result.move.from, result.move.to)
-  }
-
-  /** A drag plays the same as two clicks: a legal move goes into the tree, a promotion asks first. */
-  function onDrop(from: string, to: string): boolean {
-    setSelected(null)
-    if (!legalTargets(fen, from).includes(to)) return false
-    if (needsPromotion(fen, from, to)) {
-      setPromotion({ from, to })
-      return false
-    }
-    play(from, to)
-    return true
-  }
 
   async function save() {
     const view = await saving.run(() =>
@@ -132,7 +56,7 @@ function Study({ loaded }: { loaded: StudyView }) {
     )
     if (view) {
       setSaved(view)
-      setTree(view.tree) // the server's SAN and FEN replace ours
+      editor.setTree(view.tree) // the server's SAN and FEN replace ours
     }
   }
 
@@ -141,43 +65,14 @@ function Study({ loaded }: { loaded: StudyView }) {
     if (view) setSaved({ ...saved, shared: view.shared, version: view.version })
   }
 
-  const lastMove = uciSquares(current?.uci)
   const hasVariations = childrenAt(tree, path.slice(0, -1)).length > 1
-  const scoreOf = (at: string) => {
-    const best = analysis.evaluationOf(at)?.lines[0]
-    return best ? scoreText(best) : null
-  }
 
   return (
-    <div className="grid grid-cols-1 items-start gap-6 shell:grid-cols-[minmax(0,var(--board-max))_minmax(0,420px)] shell:gap-8">
-      <div className="flex max-w-(--board-max) flex-col gap-3">
-        <Board
-          fen={fen}
-          orientation="white"
-          lastMove={lastMove}
-          selected={selected}
-          targets={selected ? legalTargets(fen, selected) : []}
-          {...(editable ? { onSquareClick, onDrop } : {})}
-        />
-        {promotion ? (
-          <PromotionPicker
-            color={side === 'w' ? 'white' : 'black'}
-            onPick={(piece) => {
-              setPromotion(null)
-              play(promotion.from, promotion.to, piece)
-            }}
-            onCancel={() => setPromotion(null)}
-          />
-        ) : null}
-        <MoveNav
-          onStart={() => setPath([])}
-          onBack={() => setPath(path.slice(0, -1))}
-          onForward={() => setPath(nextPath(tree, path) ?? path)}
-          onEnd={() => setPath(lineEnd(tree, path))}
-        />
-      </div>
-
-      <div className="flex min-w-0 flex-col gap-4 shell:max-w-[420px]">
+    <AnalysisBoard
+      editor={editor}
+      analysis={analysis}
+      editable={editable}
+      header={
         <header className="flex flex-col gap-1">
           {editable ? (
             <input
@@ -192,68 +87,53 @@ function Study({ loaded }: { loaded: StudyView }) {
           )}
           <span className="text-sm text-fg-secondary">{studyByline(saved, editable)}</span>
         </header>
+      }
+    >
+      {editable ? (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            disabled={!current || !hasVariations}
+            onClick={() => editor.setTree(promote(tree, path))}
+          >
+            Make main line
+          </Button>
+          <Button
+            disabled={!current}
+            onClick={() => {
+              editor.setTree(remove(tree, path))
+              editor.setPath(path.slice(0, -1))
+            }}
+          >
+            Delete move
+          </Button>
+          <Button variant="primary" disabled={!dirty || saving.busy} onClick={() => void save()}>
+            {dirty ? 'Save' : 'Saved'}
+          </Button>
+        </div>
+      ) : null}
+      {saving.error ? <ErrorText testId="study-error">{saving.error}</ErrorText> : null}
 
-        <MoveTree
-          tree={tree}
-          startFen={saved.startFen}
-          current={path}
-          onSelect={setPath}
-          scoreOf={scoreOf}
-        />
-
-        <AnalysisPanel
-          analysis={analysis}
-          fen={fen}
-          evaluation={analysis.evaluationOf(fen)}
-          onPlayLine={editable ? playLine : undefined}
-        />
-
-        {editable ? (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              disabled={!current || !hasVariations}
-              onClick={() => setTree(promote(tree, path))}
-            >
-              Make main line
+      <Panel variant="outlined" className="gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <a href={`/pgn/study/${saved.id}`} download className="text-sm" data-testid="study-pgn">
+            Download PGN
+          </a>
+          {editable ? (
+            <Button disabled={sharing.busy} onClick={() => void share(!saved.shared)}>
+              {saved.shared ? 'Stop sharing' : 'Share'}
             </Button>
-            <Button
-              disabled={!current}
-              onClick={() => {
-                setTree(remove(tree, path))
-                setPath(path.slice(0, -1))
-              }}
-            >
-              Delete move
-            </Button>
-            <Button variant="primary" disabled={!dirty || saving.busy} onClick={() => void save()}>
-              {dirty ? 'Save' : 'Saved'}
-            </Button>
-          </div>
-        ) : null}
-        {saving.error ? <ErrorText testId="study-error">{saving.error}</ErrorText> : null}
-
-        <Panel variant="outlined" className="gap-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <a href={`/pgn/study/${saved.id}`} download className="text-sm" data-testid="study-pgn">
-              Download PGN
-            </a>
-            {editable ? (
-              <Button disabled={sharing.busy} onClick={() => void share(!saved.shared)}>
-                {saved.shared ? 'Stop sharing' : 'Share'}
-              </Button>
-            ) : null}
-          </div>
-          {editable && saved.shared ? (
-            <code
-              className="truncate rounded-control bg-surface-inset px-3 py-2 font-mono text-sm text-fg-primary"
-              data-testid="study-link"
-            >
-              {link ?? `/studies/${saved.id}`}
-            </code>
           ) : null}
-          {sharing.error ? <ErrorText>{sharing.error}</ErrorText> : null}
-        </Panel>
-      </div>
-    </div>
+        </div>
+        {editable && saved.shared ? (
+          <code
+            className="truncate rounded-control bg-surface-inset px-3 py-2 font-mono text-sm text-fg-primary"
+            data-testid="study-link"
+          >
+            {link ?? `/studies/${saved.id}`}
+          </code>
+        ) : null}
+        {sharing.error ? <ErrorText>{sharing.error}</ErrorText> : null}
+      </Panel>
+    </AnalysisBoard>
   )
 }

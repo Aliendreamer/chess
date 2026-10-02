@@ -1,11 +1,14 @@
 import { Fragment } from 'react'
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
-import type { StudyListItem, StudyMove, TreePath } from '#/lib/studies'
+import type { MoveTreeEditor, StudyListItem, StudyMove, TreePath } from '#/lib/studies'
 import type { Analysis, Evaluation } from '#/lib/analysis'
-import { moveNumber } from '#/lib/studies'
+import { lineEnd, moveNumber, nextPath } from '#/lib/studies'
+import { legalTargets } from '#/lib/moveInput'
+import { uciSquares } from '#/lib/board'
 import { THINKS, lineMoves, scoreText } from '#/lib/analysis'
 import { Button, ErrorText, Panel } from '#/components/ui'
+import { Board, FlipIcon, MoveNav, PromotionPicker } from '#/components/games'
 
 /**
  * A study's moves (studies D7): the main line inline, each variation in parentheses right after the move it replaces,
@@ -221,5 +224,82 @@ export function AnalysisPanel({
       )}
       {error ? <ErrorText testId="analysis-error">{error}</ErrorText> : null}
     </Panel>
+  )
+}
+
+/**
+ * A board with its move tree and the engine (analysis-board): the study page and the analysis page both draw this and
+ * add their own header (title, starting point) and tools (save, share). `editable` lets moves be played; a read-only
+ * shared study only navigates. `aside` sits under the engine (the library's games at this position).
+ */
+export function AnalysisBoard({
+  editor,
+  analysis,
+  editable,
+  header,
+  aside,
+  children,
+}: {
+  editor: MoveTreeEditor
+  analysis: Analysis
+  editable: boolean
+  header: ReactNode
+  aside?: ReactNode
+  children?: ReactNode
+}) {
+  const { fen, selected, promotion, tree, path } = editor
+  const scoreOf = (at: string) => {
+    const best = analysis.evaluationOf(at)?.lines[0]
+    return best ? scoreText(best) : null
+  }
+  return (
+    <div className="grid grid-cols-1 items-start gap-6 shell:grid-cols-[minmax(0,var(--board-max))_minmax(0,420px)] shell:gap-8">
+      <div className="flex max-w-(--board-max) flex-col gap-3">
+        <Board
+          fen={fen}
+          orientation={editor.orientation}
+          lastMove={uciSquares(editor.current?.uci)}
+          selected={selected}
+          targets={selected ? legalTargets(fen, selected) : []}
+          {...(editable ? { onSquareClick: editor.onSquareClick, onDrop: editor.onDrop } : {})}
+        />
+        {promotion ? (
+          <PromotionPicker
+            color={fen.split(' ')[1] === 'b' ? 'black' : 'white'}
+            onPick={editor.pickPromotion}
+            onCancel={editor.cancelPromotion}
+          />
+        ) : null}
+        <MoveNav
+          onStart={() => editor.setPath([])}
+          onBack={() => editor.setPath(path.slice(0, -1))}
+          onForward={() => editor.setPath(nextPath(tree, path) ?? path)}
+          onEnd={() => editor.setPath(lineEnd(tree, path))}
+        >
+          <Button aria-label="Flip board" onClick={editor.flip}>
+            <FlipIcon />
+          </Button>
+        </MoveNav>
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-4 shell:max-w-[420px]">
+        {header}
+        <MoveTree
+          tree={tree}
+          startFen={editor.startFen}
+          current={path}
+          onSelect={editor.setPath}
+          scoreOf={scoreOf}
+        />
+        <AnalysisPanel
+          analysis={analysis}
+          fen={fen}
+          evaluation={analysis.evaluationOf(fen)}
+          onPlayLine={editable ? editor.playLine : undefined}
+        />
+        {aside}
+        {children}
+      </div>
+    </div>
   )
 }

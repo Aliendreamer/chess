@@ -1,9 +1,11 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { MoveTree, StudyList } from './studies'
+import { AnalysisBoard, MoveTree, StudyList } from './studies'
 import type { ReactNode } from 'react'
 import type { StudyMove } from '#/lib/studies'
-import { STANDARD_START, playMove } from '#/lib/studies'
+import type { Analysis } from '#/lib/analysis'
+import { STANDARD_START, playMove, useMoveTree } from '#/lib/studies'
+import { DEFAULT_PREFERENCES, PreferencesContext } from '#/lib/auth'
 
 // The router's <Link> needs a router; the list only needs an anchor to its study.
 vi.mock('@tanstack/react-router', () => ({
@@ -84,5 +86,51 @@ describe('StudyList', () => {
     expect(rows[0]?.textContent).toBe('Ruyann – bob · shared')
     expect(rows[1]?.textContent).toBe('Blank')
     expect(screen.getByRole('link', { name: 'Ruy' }).getAttribute('href')).toBe('/studies/s1')
+  })
+})
+
+describe('AnalysisBoard (analysis-board)', () => {
+  const analysis: Analysis = {
+    think: 'normal',
+    setThink: vi.fn(),
+    evaluationOf: () => null,
+    analyse: vi.fn(),
+    thinking: false,
+    error: null,
+  }
+
+  function Harness({ editable }: { editable: boolean }) {
+    const e4 = playMove(STANDARD_START, 'e2e4')!
+    const editor = useMoveTree(STANDARD_START, [
+      { ...e4, children: [{ ...playMove(e4.fen, 'e7e5')!, children: [] }] },
+    ])
+    // No slide: jsdom cannot measure squares for react-chessboard's animation.
+    return (
+      <PreferencesContext value={{ ...DEFAULT_PREFERENCES, animation: 'off' }}>
+        <AnalysisBoard
+          editor={editor}
+          analysis={analysis}
+          editable={editable}
+          header={<h1>Heading</h1>}
+        >
+          <p>tools</p>
+        </AnalysisBoard>
+      </PreferencesContext>
+    )
+  }
+
+  it('lays out the board, the header, the tree, the engine and the page tools', () => {
+    render(<Harness editable />)
+    expect(screen.getByRole('heading', { name: 'Heading' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /e4/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /e5/ })).toBeTruthy()
+    expect(screen.getByText('tools')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Flip board' })).toBeTruthy()
+  })
+
+  it('selects a move from the tree', () => {
+    render(<Harness editable={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /e4/ }))
+    expect(screen.getByRole('button', { name: /e4/ }).getAttribute('aria-current')).toBe('step')
   })
 })
