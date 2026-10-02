@@ -67,4 +67,20 @@ describe('Shell', () => {
     // One identity for e2e to find: the rail's.
     expect(screen.getAllByTestId('identity-name')).toHaveLength(1)
   })
+
+  it('shows Admin only to admins (admin-screens)', () => {
+    const { rerender } = render(
+      <Shell me={me}>
+        <p>page</p>
+      </Shell>,
+    )
+    const rail = () => screen.getByRole('complementary')
+    expect(within(rail()).queryByRole('link', { name: 'Admin' })).toBeNull()
+    rerender(
+      <Shell me={{ ...me, roles: ['User', 'Admin'] }}>
+        <p>page</p>
+      </Shell>,
+    )
+    expect(within(rail()).getByRole('link', { name: 'Admin' })).toBeDefined()
+  })
 })

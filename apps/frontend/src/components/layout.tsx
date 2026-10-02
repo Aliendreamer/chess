@@ -1,9 +1,10 @@
 import { Link } from '@tanstack/react-router'
-import { BookOpen, History, House, Menu, Settings, Tv, UserRound } from 'lucide-react'
+import { BookOpen, History, House, Menu, Settings, Shield, Tv, UserRound } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Me, Preferences } from '#/lib/auth'
 import type { LinkProps } from '@tanstack/react-router'
 import { DEFAULT_PREFERENCES, LOGOUT_HREF, PreferencesContext } from '#/lib/auth'
+import { isAdmin } from '#/lib/admin'
 
 /**
  * The Club layout: a 248px rail (wordmark, navigation, who you are) and the content column; a top bar on narrow screens. The user's preferences
@@ -89,6 +90,7 @@ function Navigation({ me }: { me: Me }) {
           icon={<UserRound size={16} />}
         />
         <NavItem to="/settings" label="Settings" icon={<Settings size={16} />} />
+        {isAdmin(me) ? <NavItem to="/admin" label="Admin" icon={<Shield size={16} />} /> : null}
       </NavGroup>
     </>
   )

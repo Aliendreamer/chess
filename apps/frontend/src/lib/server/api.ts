@@ -4,11 +4,13 @@ import { CLAIM_OUTCOMES, CORRESPONDENCE, PRESETS } from '../games'
 import { MY_TURN } from '../play'
 import { THINK_LEVELS } from '../analysis'
 import { isPreferences } from '../auth'
+import { isAggregateId, isProjectionGroup } from '../admin'
 import { loadMe, loadPreferences, savePreferences } from './auth'
 import { apiUrl, clientIp, forwardClientIp, isGuid } from './upstream'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { telemetryEnabled } from './telemetry'
 import { loadPingLive, sendPing } from './pings'
+import { loadDeadLetters, replayDeadLetters } from './admin'
 import { loadPlayer, loadPlayerGames } from './players'
 import {
   loadEngineLevels,
@@ -196,6 +198,29 @@ export const postCancelInvite = createServerFn({ method: 'POST' })
 export const postRematch = createServerFn({ method: 'POST' })
   .validator((gameId: string) => guid(gameId))
   .handler(({ data }) => rematch(serverFetch(), data))
+
+/** Parked projection records (admin-screens); the API answers 403 to anyone without the Admin role. */
+export const getDeadLetters = createServerFn({ method: 'GET' })
+  .validator((input: { limit: number; cursor?: string; groupId?: string }) => {
+    if (input.groupId !== undefined && !isProjectionGroup(input.groupId)) {
+      throw new Error('Not a projection.')
+    }
+    return {
+      limit: Math.min(Math.max(Math.trunc(input.limit), 1), 100),
+      cursor: input.cursor,
+      groupId: input.groupId,
+    }
+  })
+  .handler(({ data }) => loadDeadLetters(serverFetch(), data))
+
+export const postReplayDeadLetters = createServerFn({ method: 'POST' })
+  .validator((input: { groupId: string; aggregateId: string }) => {
+    if (!isProjectionGroup(input.groupId) || !isAggregateId(input.aggregateId)) {
+      throw new Error('Not a parked aggregate.')
+    }
+    return input
+  })
+  .handler(({ data }) => replayDeadLetters(serverFetch(), data.groupId, data.aggregateId))
 
 /** A player id: a `users` id, negative for the computer players. */
 function playerId(id: number): number {
