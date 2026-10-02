@@ -257,7 +257,7 @@ export const getOpening = createServerFn({ method: 'GET' })
 /** One import batch (Admin; the API checks the role). */
 export const postImportLibrary = createServerFn({ method: 'POST' })
   .validator((batch: ImportBatch) => {
-    if (!batch.source?.trim() || !batch.licence?.trim())
+    if (!batch.source.trim() || !batch.licence.trim())
       throw new Error('Name the source and the licence.')
     if (
       !Array.isArray(batch.games) ||

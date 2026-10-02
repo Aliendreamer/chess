@@ -202,13 +202,13 @@ export function parsePgn(text: string): Array<ParsedGame> {
       // A header kept as written unless it is wholly unknown ("?", "????.??.??").
       const raw = (name: string): string | null => {
         const value = tags[name]
-        const text =
+        const written =
           typeof value === 'object' && value !== null && 'value' in value
             ? String(value.value)
             : typeof value === 'string'
               ? value
               : null
-        return text && /[^?.\s]/.test(text) ? text : null
+        return written && /[^?.\s]/.test(written) ? written : null
       }
       const white = tag('White')
       const black = tag('Black')

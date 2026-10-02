@@ -296,6 +296,12 @@ describe('parsePgn headers (game-library)', () => {
 
   it('leaves out unknown headers', () => {
     const [game] = parsePgn('[Event "?"]\n[Date "????.??.??"]\n\n1. e4 *')
-    expect(game?.ok && game.headers).toEqual({ event: null, site: null, round: null, date: null, eco: null })
+    expect(game?.ok && game.headers).toEqual({
+      event: null,
+      site: null,
+      round: null,
+      date: null,
+      eco: null,
+    })
   })
 })
