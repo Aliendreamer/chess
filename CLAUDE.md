@@ -190,7 +190,11 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   move list becomes one scrolling line, history rows take two lines, grids use `minmax(min(Npx,100%),1fr)`, and
   buttons/chips are 44px tall under `pointer-coarse`. The Playwright `mobile` project (390×844) runs
   `e2e/responsive.spec.ts` only: two-browser specs open their own contexts, which ignore a project's viewport. Screens: `/` (quick pairing, invite, recent
-  games), `/invites/$id`, `/games/$id`, `/games`, and the `/pgn/$id` download route. **chess.js is feedback only**
+  games, Club TV), `/watch`, `/invites/$id`, `/games/$id`, `/games`, and the `/pgn/$id` download route. **Lobby
+  (live-home)**: `GET /api/lobby` (`WebApi/Lobby/`, one FusionCache answer for `Lobby:CacheSeconds`; queue sizes from
+  `GetQueues` on the matchmaking singleton, null on a timeout) is polled by home every 10 s while visible (`useLobby`);
+  Club TV and `/watch` draw `components/games.tsx#MiniBoard`, a static server-rendered board (never react-chessboard,
+  never a socket per board). Paged lists use `useLoadMore` + `<LoadMore>`. **chess.js is feedback only**
   (`lib/moveInput.ts`): the server's answer/frame always wins. **Board (board-look)**: `components/games.tsx#Board` wraps
   `react-chessboard` (MIT), drawn in the browser only (`BoardPlaceholder` is the SSR stand-in, same size, every square
   keeps `data-square`); pieces are Cburnett SVGs in `public/pieces/cburnett/` (Wikimedia, BSD-3, see

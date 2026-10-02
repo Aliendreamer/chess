@@ -864,7 +864,7 @@ export function TvGrid({
   if (games.length === 0) return <p className="m-0 text-sm text-fg-secondary">{empty}</p>
   return (
     <ul
-      className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(180px,100%),1fr))] gap-4 p-0"
+      className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(150px,100%),1fr))] gap-4 p-0"
       data-testid="tv"
     >
       {games.map((game) => (

@@ -50,3 +50,11 @@ socket per call.
 - [A busy club makes `games in play` a COUNT over `rm_games`] → it uses the `(Status, UpdatedAt, GameId)` index and is
   cached for 2 s.
 - [Polling from many open homes] → the 2 s shared cache bounds the backend cost; the BFF passes the poll through.
+
+## Open Questions
+
+- **Abandoned untimed games stay "in play".** A game against the computer has no clock and no abandonment (engine-play),
+  so a player who walks away leaves it playing forever: it is counted in `gamesInPlay` and, until newer games push it
+  down, shown on Club TV. Seen on 2026-10-02 with leftover e2e games (55 "in play"). Options for the owner: end idle
+  untimed games after `Akka:UntimedIdleMinutes` × n, or let the lobby count and show only games moved in the last N
+  minutes. Not decided here.

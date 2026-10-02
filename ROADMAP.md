@@ -199,10 +199,11 @@ Owner review of lichess.org on 2026-10-01 (proposals P1–P10). Six OpenSpec cha
   type and an icon set (Lucide, ISC).
 - **`responsive-layout`** (P10) **[decided]**: its own spec; every page works from phone width up.
 - **No sound** (P4) **[decided]**: the site plays no sounds.
-- **Live home** (P6) **[open — for discussion]**: counters (games in play, players online, queue sizes), "Club TV"
-  mini boards of live games, mini boards for "Your turn". Spectating is already allowed (D20). To settle: counters only
-  or live mini boards too, how Club TV picks games (there are no ratings yet), whether players can opt out of being
-  shown, and whether engine and correspondence games appear.
+- **`live-home`** (P6) **[default — built 2026-10-02, owner to confirm]**: games in play and "n waiting" per preset on
+  home, Club TV (the six games moved most recently, correspondence left out, engine games in, nobody can opt out) as
+  static mini boards, and a Watch page of every game in play. Polled `GET /api/lobby` (cached 2 s), not a live kind.
+  Not built: players online (no global presence), mini boards in "Your turn". Open: untimed games abandoned against the
+  computer stay "in play" forever (see the change's design).
 
 ## 7. Cross-cutting
 
