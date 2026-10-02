@@ -159,16 +159,27 @@ function request(cookie?: string): Request {
 
 describe('downloadPgn', () => {
   it('fetches the PGN server-side with the session and hands it over as a file', async () => {
-    const seen: Array<{ url: string; cookie: string | null }> = []
+    const seen: Array<{ url: string; cookie: string | null; ip: string | null }> = []
     const fetchImpl: typeof fetch = (input, init) => {
-      seen.push({ url: String(input), cookie: new Headers(init?.headers).get('cookie') })
+      const headers = new Headers(init?.headers)
+      seen.push({
+        url: String(input),
+        cookie: headers.get('cookie'),
+        ip: headers.get('x-forwarded-for'),
+      })
       return Promise.resolve(new Response(PGN, { status: 200 }))
     }
 
-    const res = await downloadPgn(request('mp_sid=abc; other=x'), PGN_ID, fetchImpl, env)
+    const req = request('mp_sid=abc; other=x')
+    req.headers.set('x-forwarded-for', '203.0.113.7')
+    const res = await downloadPgn(req, PGN_ID, fetchImpl, env)
 
     expect(seen).toEqual([
-      { url: `http://backend:8080/api/games/${PGN_ID}/pgn`, cookie: 'mp_sid=abc' },
+      {
+        url: `http://backend:8080/api/games/${PGN_ID}/pgn`,
+        cookie: 'mp_sid=abc',
+        ip: '203.0.113.7',
+      },
     ])
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toBe('application/x-chess-pgn; charset=utf-8')

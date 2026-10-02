@@ -1,7 +1,7 @@
 import WebSocket from 'ws'
 import { CLOSE_BAD_TOPIC, CLOSE_UNAUTHENTICATED, LIVE_KINDS, liveTopic } from '../live'
 import { loadMe } from './auth'
-import { apiUrl, relayRevalidateMs } from './upstream'
+import { apiUrl, clientIp, forwardClientIp, relayRevalidateMs } from './upstream'
 import { liveMultiplexer } from './live-hub'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { bffMetrics } from './telemetry'
@@ -60,7 +60,7 @@ export interface RelayDeps {
   mux: HubMultiplexer
   revalidateMs: number
   /** The session's user id, or null for none/revoked; throws when the backend can't be asked. */
-  sessionUser: (cookie: string) => Promise<number | null>
+  sessionUser: (cookie: string, ip: string | null) => Promise<number | null>
   setInterval: (fn: () => Promise<void>, ms: number) => ReturnType<typeof setInterval>
   clearInterval: (handle: ReturnType<typeof setInterval>) => void
 }
@@ -82,6 +82,7 @@ export function openRelay(
   cookie: string | null,
   socket: LocalSocket,
   deps: RelayDeps,
+  ip: string | null = null,
 ): RelayHandle {
   let closed = false
   let subscribed = false
@@ -104,7 +105,7 @@ export function openRelay(
       socket.close(UNAUTHENTICATED, 'unauthenticated')
       return
     }
-    const user = await deps.sessionUser(cookie)
+    const user = await deps.sessionUser(cookie, ip)
     if (closed) return
     if (user === null) {
       bffMetrics.refused(UNAUTHENTICATED)
@@ -116,7 +117,7 @@ export function openRelay(
     userId = user
     timer = deps.setInterval(async () => {
       const stillValid = await deps
-        .sessionUser(cookie)
+        .sessionUser(cookie, ip)
         .then((u) => u !== null)
         .catch(() => true)
       if (stillValid || closed) return
@@ -144,12 +145,13 @@ export function relayDeps(): RelayDeps {
   return {
     mux: liveMultiplexer(),
     revalidateMs: relayRevalidateMs(),
-    sessionUser: async (cookie) =>
+    sessionUser: async (cookie, ip) =>
       (
         await loadMe((input, init) => {
           const headers = new Headers(init?.headers)
           headers.set('cookie', cookie)
           headers.set('accept', 'application/json')
+          forwardClientIp(headers, ip)
           const url = typeof input === 'string' ? `${base}${input}` : input
           return fetch(url, { ...init, headers })
         })
@@ -193,6 +195,10 @@ export function devLiveRelay(): Plugin {
             cookie,
             { send: (data) => ws.send(data), close: (code, reason) => ws.close(code, reason) },
             relayDeps(),
+            clientIp(
+              [request.headers['x-forwarded-for']].flat().join(','),
+              request.socket.remoteAddress,
+            ),
           )
           ws.on('close', () => void relay.close())
           ws.on('error', () => void relay.close())

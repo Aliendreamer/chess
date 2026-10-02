@@ -1,11 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getRequestHeader } from '@tanstack/react-start/server'
+import { getRequestHeader, getRequestIP } from '@tanstack/react-start/server'
 import { CLAIM_OUTCOMES, CORRESPONDENCE, PRESETS } from '../games'
 import { MY_TURN } from '../play'
 import { THINK_LEVELS } from '../analysis'
 import { isPreferences } from '../auth'
 import { loadMe, loadPreferences, savePreferences } from './auth'
-import { apiUrl, isGuid } from './upstream'
+import { apiUrl, clientIp, forwardClientIp, isGuid } from './upstream'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { telemetryEnabled } from './telemetry'
 import { loadPingLive, sendPing } from './pings'
@@ -43,14 +43,19 @@ import type { InviteView, MyTurn } from '../play'
 import type { StudyInput, StudyMoveInput } from '../studies'
 import type { Think } from '../analysis'
 
-/** A `fetch` bound to the internal API that re-attaches the caller's session cookie under its API name. */
+/**
+ * A `fetch` bound to the internal API that re-attaches the caller's session cookie under its API name and tells the API
+ * the caller's address.
+ */
 function serverFetch(): typeof fetch {
   const secure = cookiesAreSecure()
   const cookie = forwardCookieHeader(getRequestHeader('cookie'), secure)
   const base = apiUrl()
+  const ip = clientIp(getRequestHeader('x-forwarded-for'), getRequestIP())
   return (input, init) => {
     const headers = new Headers(init?.headers)
     if (cookie) headers.set('cookie', cookie)
+    forwardClientIp(headers, ip)
     headers.set('accept', 'application/json, text/plain;q=0.9')
     const url = typeof input === 'string' && input.startsWith('/') ? `${base}${input}` : input
     return fetch(url, { ...init, headers })

@@ -1,7 +1,45 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { apiUrl, keycloakTokenUrl, relayClient, relayRevalidateMs } from './upstream'
+import {
+  apiUrl,
+  clientIp,
+  forwardClientIp,
+  keycloakTokenUrl,
+  relayClient,
+  relayRevalidateMs,
+} from './upstream'
+
+describe('clientIp', () => {
+  it('takes the rightmost X-Forwarded-For entry: the one our edge appended', () => {
+    expect(clientIp('203.0.113.7')).toBe('203.0.113.7')
+    expect(clientIp(' 203.0.113.7 ')).toBe('203.0.113.7')
+    // What a client wrote sits to the left of what the edge saw.
+    expect(clientIp('1.2.3.4, 6.6.6.6,203.0.113.7')).toBe('203.0.113.7')
+    expect(clientIp('2001:db8::1')).toBe('2001:db8::1')
+  })
+
+  it('falls back to the socket address, and knows none without either', () => {
+    expect(clientIp(null, '172.30.0.9')).toBe('172.30.0.9')
+    expect(clientIp('', '::ffff:172.30.0.9')).toBe('::ffff:172.30.0.9')
+    expect(clientIp(' , ', undefined)).toBeNull()
+    expect(clientIp(undefined)).toBeNull()
+  })
+
+  it('refuses anything that is not an address, so no header text reaches the API', () => {
+    expect(clientIp('evil\r\nx-injected: 1')).toBeNull()
+    expect(clientIp('unknown', '10.0.0.1')).toBe('10.0.0.1')
+  })
+
+  it('sets X-Forwarded-For only for a known address', () => {
+    const headers = new Headers({ 'x-forwarded-for': 'stale' })
+    forwardClientIp(headers, '203.0.113.7')
+    expect(headers.get('x-forwarded-for')).toBe('203.0.113.7')
+    const none = new Headers()
+    forwardClientIp(none, null)
+    expect(none.has('x-forwarded-for')).toBe(false)
+  })
+})
 
 describe('server config', () => {
   it('reads the relay settings', () => {

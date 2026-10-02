@@ -129,7 +129,10 @@ to each app's own lint target). Keep `--no-stash`.
 - **Forwarded headers (backend)** — `X-Forwarded-*` is trusted only from `ForwardedHeaders:KnownNetworks`
   (CIDRs) / `KnownProxies`; default is ASP.NET's loopback-only, `ForwardLimit = 1`. The compose network is
   pinned to `172.30.0.0/24` and passed as `ForwardedHeaders__KnownNetworks__0`. **Every deployment must set
-  this to the edge's network**, otherwise the per-client rate limiter keys on the proxy's IP.
+  this to the edge's network**, otherwise the per-client rate limiter keys on the proxy's IP. The BFF tells the API
+  who calls: every upstream request (server functions, the auth proxy, PGN downloads, the relay's session check)
+  carries `X-Forwarded-For: <client>` from `upstream.ts#clientIp` — the rightmost entry its edge appended, so exactly
+  one proxy hop may sit in front of the BFF — and the BFF's network must be in `KnownNetworks` too.
 - **Backend layout** — two rules: no tiny files (interfaces with their implementations, options with the code that
   reads them, small related types in one file) and code grouped by functionality (no one-file folders). Exception: domain models
   (`Data/Models`, `Data/ReadModels`) and their EF configurations (`Data/ModelConfigurations`) are one class per file.

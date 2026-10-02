@@ -50,6 +50,31 @@ export function relayRevalidateMs(env: Env = process.env): number {
   return ms
 }
 
+const IPV4 = /^(\d{1,3}\.){3}\d{1,3}$/
+const IPV6 = /^[0-9a-f:.]*:[0-9a-f:.]*$/i
+
+/**
+ * The caller's address as our one edge saw it (Traefik locally, `apps/proxy`'s nginx deployed): the rightmost
+ * `X-Forwarded-For` entry, which the edge appended — anything a client wrote itself sits to its left. Without that
+ * header, the socket's address. Null when neither is an address. The API rate-limits anonymous calls by it and logs it.
+ */
+export function clientIp(
+  forwardedFor: string | null | undefined,
+  socketAddress?: string | null,
+): string | null {
+  const edge = forwardedFor?.split(',').at(-1)?.trim()
+  for (const candidate of [edge, socketAddress?.trim()]) {
+    if (candidate && (IPV4.test(candidate) || IPV6.test(candidate))) return candidate
+  }
+  return null
+}
+
+/** Tells the API who the caller is: the backend trusts `X-Forwarded-For` from the BFF's network only. */
+export function forwardClientIp(headers: Headers, ip: string | null): void {
+  if (ip) headers.set('x-forwarded-for', ip)
+  else headers.delete('x-forwarded-for')
+}
+
 /** Where a lost session goes: sign in again, then back to the home page. */
 export const LOGIN_REDIRECT = loginHref('/')
 
@@ -137,6 +162,7 @@ export async function pgnDownload(
   const cookie = forwardCookieHeader(request.headers.get('cookie'), cookiesAreSecure(env))
   const headers = new Headers({ accept: 'text/plain' })
   if (cookie) headers.set('cookie', cookie)
+  forwardClientIp(headers, clientIp(request.headers.get('x-forwarded-for')))
 
   const upstream = await fetchImpl(`${apiUrl(env)}${apiPath}`, { headers })
   if (upstream.status === 401) {

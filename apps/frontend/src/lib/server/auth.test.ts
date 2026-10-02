@@ -34,7 +34,7 @@ describe('proxyAuth', () => {
       ),
     )
     const req = new Request('http://app.chess.localhost/api/auth/login?returnTo=%2Fgames', {
-      headers: { cookie: 'theme=dark; mp_sid=abc' },
+      headers: { cookie: 'theme=dark; mp_sid=abc', 'x-forwarded-for': '1.2.3.4, 203.0.113.7' },
     })
 
     const res = await proxyAuth(req, 'login', fetchImpl, env)
@@ -48,6 +48,7 @@ describe('proxyAuth', () => {
     expect(sent.get('cookie')).toBe('mp_sid=abc')
     expect(sent.get('x-forwarded-host')).toBe('app.chess.localhost')
     expect(sent.get('x-forwarded-proto')).toBe('http')
+    expect(sent.get('x-forwarded-for')).toBe('203.0.113.7')
 
     expect(res.status).toBe(302)
     expect(res.headers.get('location')).toBe(

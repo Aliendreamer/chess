@@ -7,6 +7,7 @@ import {
   relayDeps,
 } from '../../../../../../src/lib/server/live-relay'
 import { bffMetrics } from '../../../../../../src/lib/server/telemetry'
+import { clientIp } from '../../../../../../src/lib/server/upstream'
 import type { RelayHandle } from '../../../../../../src/lib/server/live-relay'
 
 /**
@@ -32,6 +33,7 @@ export default defineWebSocketHandler({
       cookie,
       { send: (data) => peer.send(data), close: (code, reason) => peer.close(code, reason) },
       relayDeps(),
+      clientIp(peer.request.headers.get('x-forwarded-for'), peer.remoteAddress),
     )
   },
 

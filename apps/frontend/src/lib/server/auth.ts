@@ -1,6 +1,6 @@
 import { DEFAULT_PREFERENCES, isPreferences } from '../auth'
 import { cookiesAreSecure, forwardCookieHeader, rehomeSetCookie } from './cookies'
-import { apiUrl, sendCommand } from './upstream'
+import { apiUrl, clientIp, forwardClientIp, sendCommand } from './upstream'
 import type { CommandOutcome } from '../games'
 import type { Me, Preferences } from '../auth'
 
@@ -25,6 +25,7 @@ export async function proxyAuth(
     request.headers.get('x-forwarded-proto') ?? incoming.protocol.replace(':', '')
   headers.set('x-forwarded-proto', forwardedProto)
   headers.set('x-forwarded-host', request.headers.get('x-forwarded-host') ?? incoming.host)
+  forwardClientIp(headers, clientIp(request.headers.get('x-forwarded-for')))
 
   const upstream = await fetchImpl(target, {
     method: request.method,

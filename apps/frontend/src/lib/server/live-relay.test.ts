@@ -105,8 +105,9 @@ describe('openRelay', () => {
     const { deps, mux } = harness([true])
     const s = socket()
 
-    await openRelay(target, 'mp_sid=x', s, deps).ready
+    await openRelay(target, 'mp_sid=x', s, deps, '203.0.113.7').ready
 
+    expect(deps.sessionUser).toHaveBeenCalledWith('mp_sid=x', '203.0.113.7')
     expect(mux.subscribe).toHaveBeenCalledWith('ping:p1', s, 7)
     expect(deps.setInterval).toHaveBeenCalledWith(expect.any(Function), 1000)
     expect(s.closed).toBeUndefined()
