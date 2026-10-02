@@ -17,9 +17,10 @@
 - [x] 2.3 `/players/$id` route (not found → the router's not-found screen), Profile nav entry, names linked in
       `RecentGames`, `PlayerStrip` and `TvGrid`. `pnpm generate-routes`; `nx run-many -t lint test -p frontend`. Commit:
       `feat(frontend): player profiles`.
-- [ ] 2.4 🐳 Playwright `e2e/profile.spec.ts`: after a resignation, the winner opens the loser's profile from the game
-      page and sees the loss and the game. `tools/e2e.sh`.
+- [x] 2.4 🐳 Playwright `e2e/profile.spec.ts`: after a resignation against the computer, the player opens the
+      computer's profile from the game page and finds the record and the game, then their own from the navigation.
+      `tools/e2e.sh`.
 
 ## 3. Docs
 
-- [ ] 3.1 CLAUDE.md (players endpoints, PlayerLink) and Serena memory. Commit: `docs(repo): player-profiles`.
+- [x] 3.1 CLAUDE.md (players endpoints, PlayerLink) and Serena memory. Commit: `docs(repo): player-profiles`.

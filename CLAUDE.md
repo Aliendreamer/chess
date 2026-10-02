@@ -194,7 +194,11 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   (live-home)**: `GET /api/lobby` (`WebApi/Lobby/`, one FusionCache answer for `Lobby:CacheSeconds`; queue sizes from
   `GetQueues` on the matchmaking singleton, null on a timeout) is polled by home every 10 s while visible (`useLobby`);
   Club TV and `/watch` draw `components/games.tsx#MiniBoard`, a static server-rendered board (never react-chessboard,
-  never a socket per board). Paged lists use `useLoadMore` + `<LoadMore>`. **chess.js is feedback only**
+  never a socket per board). Paged lists use `useLoadMore` + `<LoadMore>`. **Profiles
+  (player-profiles)**: `GET /api/players/{id}` (name, member since, record per time control; aborted games do not count)
+  and `…/games` (`WebApi/Players/`, replica). The replica reads `users` only as `Data/ReadModels/PlayerIdentity` (id,
+  username, created at), which `ProjectDbContext`'s configuration scan skips; never add private columns to it. Names
+  render through `components/games.tsx#PlayerLink`; `/players/$id` groups the record into game types (`lib/players.ts`). **chess.js is feedback only**
   (`lib/moveInput.ts`): the server's answer/frame always wins. **Board (board-look)**: `components/games.tsx#Board` wraps
   `react-chessboard` (MIT), drawn in the browser only (`BoardPlaceholder` is the SSR stand-in, same size, every square
   keeps `data-square`); pieces are Cburnett SVGs in `public/pieces/cburnett/` (Wikimedia, BSD-3, see
