@@ -5,7 +5,20 @@ import type { ReactNode } from 'react'
 import { DEFAULT_PREFERENCES } from '#/lib/auth'
 
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, to }: { children: ReactNode; to: string }) => <a href={to}>{children}</a>,
+  Link: ({
+    children,
+    to,
+    activeOptions,
+  }: {
+    children: ReactNode
+    to: string
+    activeOptions?: { exact?: boolean }
+  }) => (
+    <a href={to} data-exact={String(activeOptions?.exact ?? false)}>
+      {children}
+    </a>
+  ),
+  useRouter: () => ({ invalidate: vi.fn() }),
 }))
 
 afterEach(cleanup)
@@ -105,5 +118,46 @@ describe('router screens (ui-polish)', () => {
   it('PendingBar is a labelled progress bar', () => {
     render(<PendingBar />)
     expect(screen.getByRole('progressbar', { name: 'Loading' })).toBeDefined()
+  })
+})
+
+describe('shell details (ui-polish)', () => {
+  it('Home and History match only themselves; other sections light up on their sub-pages', () => {
+    render(
+      <Shell me={me}>
+        <p>page</p>
+      </Shell>,
+    )
+    const rail = screen.getByRole('complementary')
+    const exact = (name: string) =>
+      within(rail).getByRole('link', { name }).getAttribute('data-exact')
+    expect([exact('Home'), exact('History')]).toEqual(['true', 'true'])
+    expect([exact('Studies'), exact('Watch'), exact('Settings')]).toEqual([
+      'false',
+      'false',
+      'false',
+    ])
+  })
+
+  it('Escape closes the phone menu', () => {
+    const { container } = render(
+      <Shell me={me}>
+        <p>page</p>
+      </Shell>,
+    )
+    const menu = container.querySelector('details')!
+    menu.setAttribute('open', '')
+    fireEvent.keyDown(menu, { key: 'Escape' })
+    expect(menu.hasAttribute('open')).toBe(false)
+  })
+
+  it('the avatar uses site colours, not the board theme', () => {
+    render(
+      <Shell me={me}>
+        <p>page</p>
+      </Shell>,
+    )
+    const avatar = within(screen.getByRole('complementary')).getByText('A')
+    expect(avatar.className).not.toContain('bg-board')
   })
 })

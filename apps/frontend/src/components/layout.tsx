@@ -55,7 +55,14 @@ function TopBar({ me }: { me: Me }) {
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line-divider bg-surface-rail px-4 py-2.5 shell:hidden">
       <Wordmark />
-      <details className="relative">
+      <details
+        className="relative"
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') return
+          event.currentTarget.removeAttribute('open')
+          event.currentTarget.querySelector('summary')?.focus()
+        }}
+      >
         <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-control px-3 text-sm text-fg-body hover:bg-surface-hover [&::-webkit-details-marker]:hidden">
           <Menu aria-hidden size={18} />
           Menu
@@ -76,11 +83,11 @@ function Navigation({ me }: { me: Me }) {
   return (
     <>
       <NavGroup label="Play">
-        <NavItem to="/" label="Home" icon={<House size={16} />} />
+        <NavItem to="/" exact label="Home" icon={<House size={16} />} />
         <NavItem to="/watch" label="Watch" icon={<Tv size={16} />} />
       </NavGroup>
       <NavGroup label="Games">
-        <NavItem to="/games" label="History" icon={<History size={16} />} />
+        <NavItem to="/games" exact label="History" icon={<History size={16} />} />
         <NavItem to="/studies" label="Studies" icon={<BookOpen size={16} />} />
       </NavGroup>
       <NavGroup label="You">
@@ -103,7 +110,7 @@ function Account({ me, testId }: { me: Me; testId?: string }) {
     <div className="flex items-center gap-2.5 px-2">
       <div
         aria-hidden
-        className="grid size-8 shrink-0 place-items-center rounded-full bg-board-dark font-semibold text-fg-primary"
+        className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-selected font-semibold text-fg-accent"
       >
         {me.username.charAt(0).toUpperCase()}
       </div>
@@ -141,18 +148,20 @@ function NavGroup({ label, children }: { label: string; children: ReactNode }) {
 interface NavItemProps {
   to: NonNullable<LinkProps['to']>
   params?: LinkProps['params']
+  /** Only this page, not its sub-pages: Home (everything is under /) and History (a game may come from Watch). */
+  exact?: boolean
   label: string
   /** A Lucide icon (site-themes), decorative: the label names the link. */
   icon?: ReactNode
 }
 
 /** A router link; the router marks the current one (`data-status="active"`), styled as selected. */
-function NavItem({ to, params, label, icon }: NavItemProps) {
+function NavItem({ to, params, exact = false, label, icon }: NavItemProps) {
   return (
     <Link
       to={to}
       {...(params ? { params } : {})}
-      activeOptions={{ exact: true }}
+      activeOptions={{ exact }}
       className="flex min-h-9 w-full items-center gap-2 rounded-control p-2 text-base pointer-coarse:min-h-11 text-fg-body no-underline transition-colors duration-[120ms] hover:bg-surface-hover hover:text-fg-body data-[status=active]:bg-surface-selected data-[status=active]:text-fg-primary"
     >
       {icon ? (

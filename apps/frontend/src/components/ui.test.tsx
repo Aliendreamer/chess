@@ -154,9 +154,9 @@ describe('useCommand', () => {
 })
 
 describe('ErrorText', () => {
-  it('is announced as a status', () => {
+  it('is announced as an alert', () => {
     render(<ErrorText testId="e">Not your turn.</ErrorText>)
-    expect(screen.getByRole('status').textContent).toBe('Not your turn.')
+    expect(screen.getByRole('alert').textContent).toBe('Not your turn.')
   })
 })
 
@@ -197,5 +197,14 @@ describe('LoadMore', () => {
     expect(screen.getByText('The next page could not be loaded.')).toBeTruthy()
     rerender(<LoadMore pager={pager({ hasMore: false })} />)
     expect(screen.queryByRole('button')).toBeNull()
+  })
+})
+
+describe('OptionTile figure size (ui-polish)', () => {
+  it('draws a long word smaller so it fits', () => {
+    render(<OptionTile figure="Maximum" figureSize="sm" label="Level Maximum" />)
+    const figure = screen.getByText('Maximum')
+    expect(figure.className).toContain('text-display-xs')
+    expect(figure.className).toContain('break-words')
   })
 })

@@ -347,6 +347,7 @@ function EngineForm({
           <OptionTile
             key={l.level}
             figure={l.label}
+            figureSize="sm"
             label={`Level ${l.label}`}
             align="center"
             selected={l.level === level}

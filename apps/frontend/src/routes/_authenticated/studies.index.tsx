@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import type { ImportResult } from '#/lib/studies'
 import { getMyStudies, postCreateStudies } from '#/lib/server/api'
 import { STANDARD_START, parsePgn } from '#/lib/studies'
-import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
+import { Button, ErrorText, Panel, SectionHeading, buttonClass, useCommand } from '#/components/ui'
 import { StudyList } from '#/components/studies'
 import { pageTitle } from '#/lib/feedback'
 
@@ -101,12 +101,16 @@ function ImportForm() {
         className="w-full rounded-control border border-line-default bg-surface-inset p-3 font-mono text-sm text-fg-primary"
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="text-sm text-fg-secondary">
-          Or a file:{' '}
+        {/* A real file input, visually hidden inside a button-styled label: keyboard and pre-hydration clicks work. */}
+        <label
+          className={`${buttonClass('outline', 'sm')} cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-line-accent`}
+        >
+          Choose a .pgn file
           <input
             type="file"
             accept=".pgn,text/plain"
             aria-label="PGN file"
+            className="sr-only"
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (file) void file.text().then(importPgn)

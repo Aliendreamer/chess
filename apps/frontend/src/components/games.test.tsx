@@ -3,9 +3,11 @@ import { renderToString } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   Board,
+  BoardPlaceholder,
   ClaimPanel,
   GameControls,
   GameOverCard,
+  GameResultPanel,
   MiniBoard,
   MoveList,
   MoveNav,
@@ -462,5 +464,19 @@ describe('RecentGames when empty', () => {
       <RecentGames games={[]} empty="No games yet: pick a time control under Quick pairing." />,
     )
     expect(screen.getByText('No games yet: pick a time control under Quick pairing.')).toBeTruthy()
+  })
+})
+
+describe('GameResultPanel (ui-polish)', () => {
+  it('writes the reason as the game-over card does', () => {
+    render(<GameResultPanel result="0-1" reason="checkmate" pgnHref="/pgn/g1" />)
+    expect(screen.getByTestId('result-panel').textContent).toContain('Checkmate')
+  })
+})
+
+describe('BoardPlaceholder (ui-polish)', () => {
+  it('is a named group like the live board', () => {
+    render(<BoardPlaceholder orientation="white" />)
+    expect(screen.getByRole('group', { name: 'Chess board' })).toBeTruthy()
   })
 })

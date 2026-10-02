@@ -12,6 +12,7 @@ import {
   playMove,
   promote,
   remove,
+  studyByline,
   toInput,
 } from './studies'
 import type { StudyMove } from './studies'
@@ -144,5 +145,19 @@ describe('playing on the study board', () => {
     const afterE4 = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1'
     expect(moveNumber(afterE4, true)).toBe('1...')
     expect(moveNumber(afterE4, false)).toBeNull()
+  })
+})
+
+describe('studyByline (ui-polish)', () => {
+  const study = { white: 'Anna', black: 'Bob', result: '1-0', ownerName: 'testuser' }
+
+  it('names the players, the result and, for others, the owner', () => {
+    expect(studyByline(study, true)).toBe('Anna – Bob · 1-0')
+    expect(studyByline(study, false)).toBe('Anna – Bob · 1-0 · by testuser · read-only')
+  })
+
+  it('leaves out an unknown result and missing players', () => {
+    expect(studyByline({ ...study, result: '*' }, true)).toBe('Anna – Bob')
+    expect(studyByline({ white: null, black: null, result: null, ownerName: 'x' }, true)).toBe('')
   })
 })

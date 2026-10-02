@@ -12,6 +12,7 @@ import {
   playMove,
   promote,
   remove,
+  studyByline,
   toInput,
 } from '#/lib/studies'
 import { scoreText, useAnalysis } from '#/lib/analysis'
@@ -189,15 +190,7 @@ function Study({ loaded }: { loaded: StudyView }) {
           ) : (
             <SectionHeading size="xl">{saved.title}</SectionHeading>
           )}
-          <span className="text-sm text-fg-secondary">
-            {[
-              saved.white && saved.black ? `${saved.white} – ${saved.black}` : null,
-              saved.result,
-              editable ? null : `by ${saved.ownerName} · read-only`,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </span>
+          <span className="text-sm text-fg-secondary">{studyByline(saved, editable)}</span>
         </header>
 
         <MoveTree

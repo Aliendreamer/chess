@@ -46,7 +46,7 @@ async function inviteGame(browser: Browser): Promise<{ white: Page; black: Page 
 async function bothEnded(pages: Array<Page>, result: string, reason: string) {
   for (const page of pages) {
     await expect(page.getByTestId('game-result')).toHaveText(result)
-    await expect(page.getByText(reason, { exact: true })).toBeVisible()
+    await expect(page.getByTestId('result-panel')).toContainText(reason)
     await expect(page.getByTestId('game-pgn')).toBeVisible()
   }
 }
@@ -60,7 +60,7 @@ test('two players meet through an invite and play the fool’s mate', async ({ b
   await move(white, 'g2', 'g4')
   await move(black, 'd8', 'h4')
 
-  await bothEnded([white, black], '0–1', 'checkmate')
+  await bothEnded([white, black], '0–1', 'Checkmate')
   await expect(white.getByTestId('move-list')).toHaveText('1.f3e52.g4Qh4#')
 })
 
@@ -73,7 +73,7 @@ test('a player resigns after the opening moves', async ({ browser }) => {
   await expect(white.getByRole('button', { name: 'Resign' })).toBeEnabled({ timeout: 15_000 })
   await white.getByRole('button', { name: 'Resign' }).click()
 
-  await bothEnded([white, black], '0–1', 'resignation')
+  await bothEnded([white, black], '0–1', 'Resignation')
 })
 
 test('a draw is offered and accepted', async ({ browser }) => {
@@ -88,7 +88,7 @@ test('a draw is offered and accepted', async ({ browser }) => {
   // Black learns of the offer from the game's live frame.
   await black.getByRole('button', { name: 'Accept draw' }).click({ timeout: 15_000 })
 
-  await bothEnded([white, black], '½', 'draw agreed')
+  await bothEnded([white, black], '½', 'Draw agreed')
 })
 
 test('pieces can be dragged, a premove plays itself, and the game can be looked back on', async ({
@@ -125,7 +125,7 @@ test('pieces can be dragged, a premove plays itself, and the game can be looked 
 
   await expect(white.getByRole('button', { name: 'Resign' })).toBeEnabled({ timeout: 15_000 })
   await white.getByRole('button', { name: 'Resign' }).click()
-  await bothEnded([white, black], '0–1', 'resignation')
+  await bothEnded([white, black], '0–1', 'Resignation')
 })
 
 test('after a game, both players agree to a rematch with the colours swapped (game-feedback)', async ({

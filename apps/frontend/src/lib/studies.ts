@@ -249,3 +249,17 @@ export function moveNumber(fenBefore: string, startsLine: boolean): string | nul
   if (side === 'w') return `${number ?? '1'}.`
   return startsLine ? `${number ?? '1'}...` : null
 }
+
+/** The line under a study's title (ui-polish): the players, a known result, and the owner when it is not yours. */
+export function studyByline(
+  study: Pick<StudyView, 'white' | 'black' | 'result' | 'ownerName'>,
+  editable: boolean,
+): string {
+  return [
+    study.white && study.black ? `${study.white} – ${study.black}` : null,
+    study.result && study.result !== '*' ? study.result : null,
+    editable ? null : `by ${study.ownerName} · read-only`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+}

@@ -15,7 +15,7 @@
 
 ## 3. Defects from the audit
 
-- [ ] 3.1 Component tests then fixes: OptionTile `figureSize`; study header drops `*`; reason capitalised in
+- [x] 3.1 Component tests then fixes: OptionTile `figureSize`; study header drops `*`; reason capitalised in
       `GameResultPanel` (shared `reasonLabel`); styled PGN file picker; `ErrorText` `role="alert"`; `BoardPlaceholder`
       `role="group"`; Escape closes the TopBar menu; avatar on site tokens; `NavItem exact`. Commit:
       `fix(frontend): audit fixes`.

@@ -235,6 +235,12 @@ export function reasonText(reason: EndReason): string {
   return known(REASONS, reason)
 }
 
+/** The reason on its own line, capitalised: "Checkmate", "Draw agreed" (ui-polish). */
+export function reasonLabel(reason: EndReason): string {
+  const text = reasonText(reason)
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
 /**
  * The clocks `elapsedMs` after the view arrived (D5): only the side to move runs, only while playing and after
  * both first moves (D13), and never below zero. Flag fall is the server's call, not this function's.

@@ -32,7 +32,15 @@ import type { MyGameItem, TvGame } from '#/lib/play'
 import { PreferencesContext, animationMs as animationMsOf } from '#/lib/auth'
 import { Button, Panel } from '#/components/ui'
 import { outcomeFor } from '#/lib/play'
-import { categoryOf, formatClock, pairMoves, reasonText, resultText, timeLeft } from '#/lib/games'
+import {
+  categoryOf,
+  formatClock,
+  pairMoves,
+  reasonLabel,
+  reasonText,
+  resultText,
+  timeLeft,
+} from '#/lib/games'
 import { squaresFor } from '#/lib/moveInput'
 import { boardSquares, pieceSrc, squareStyles, uciSquares } from '#/lib/board'
 
@@ -251,7 +259,7 @@ export function Board({
 /** The server-rendered stand-in: the empty board in the theme's colours, every square named by `data-square`. */
 export function BoardPlaceholder({ orientation }: { orientation: Color }) {
   return (
-    <div aria-label="Chess board" className={`grid grid-cols-8 ${FRAME}`}>
+    <div role="group" aria-label="Chess board" className={`grid grid-cols-8 ${FRAME}`}>
       {squaresFor(orientation).map((square) => {
         // a1 is dark, h1 light: file index + rank is odd on the dark squares.
         const light = (square.charCodeAt(0) - 97 + Number(square[1])) % 2 === 0
@@ -609,14 +617,14 @@ export function GameResultPanel({
   analysing?: boolean
 }) {
   return (
-    <Panel variant="accent" title="Result">
+    <Panel variant="accent" title="Result" testId="result-panel">
       <p className="m-0 font-display text-display-sm" data-testid="game-result">
         {resultText(result)}
       </p>
       <a href={pgnHref} download className="text-sm" data-testid="game-pgn">
         Download PGN
       </a>
-      {reason ? <p className="m-0 text-sm text-fg-secondary">{reasonText(reason)}</p> : null}
+      {reason ? <p className="m-0 text-sm text-fg-secondary">{reasonLabel(reason)}</p> : null}
       {onAnalyse ? (
         <Button variant="outline" disabled={analysing} onClick={onAnalyse}>
           <Microscope aria-hidden size={15} />
@@ -642,7 +650,7 @@ export function GameOverCard({
   onClose: () => void
   children?: ReactNode
 }) {
-  const how = reason ? reasonText(reason) : ''
+  const how = reason ? reasonLabel(reason) : ''
   return (
     <div className="absolute inset-0 z-10 grid place-items-center bg-surface-page/55 p-4">
       <div
@@ -652,11 +660,7 @@ export function GameOverCard({
         className="motion-safe:animate-[pop_180ms_ease-out] flex w-full max-w-72 flex-col items-center gap-3 rounded-card border border-line-accent bg-surface-card p-5 text-center shadow-2xl"
       >
         <p className="m-0 font-display text-display-md">{resultText(result)}</p>
-        {how ? (
-          <p className="m-0 text-sm text-fg-secondary">
-            {how.charAt(0).toUpperCase() + how.slice(1)}
-          </p>
-        ) : null}
+        {how ? <p className="m-0 text-sm text-fg-secondary">{how}</p> : null}
         <div className="flex w-full flex-col gap-2">{children}</div>
         <button
           type="button"

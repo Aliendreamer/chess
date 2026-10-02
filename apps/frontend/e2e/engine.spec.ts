@@ -42,5 +42,5 @@ test('a game against the computer: it thinks, answers, and takes no draw offers'
 
   await page.getByRole('button', { name: 'Resign' }).click()
   await expect(page.getByTestId('game-result')).toHaveText('0–1')
-  await expect(page.getByText('resignation', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('result-panel')).toContainText('Resignation')
 })

@@ -95,6 +95,8 @@ export function Chip({
 export interface OptionTileProps {
   /** The big serif figure: a time control, a level. */
   figure: ReactNode
+  /** `sm` for a word rather than a time control, so it fits the tile (engine levels). */
+  figureSize?: 'md' | 'sm'
   caption?: ReactNode
   selected?: boolean
   align?: 'start' | 'center'
@@ -108,6 +110,7 @@ export interface OptionTileProps {
 
 export function OptionTile({
   figure,
+  figureSize = 'md',
   caption,
   selected = false,
   align = 'start',
@@ -133,7 +136,11 @@ export function OptionTile({
       ].join(' ')}
     >
       {bar ? <span aria-hidden className={`absolute inset-x-0 top-0 h-[3px] ${bar}`} /> : null}
-      <span className="font-display text-display-sm">{figure}</span>
+      <span
+        className={`max-w-full font-display break-words ${figureSize === 'sm' ? 'text-display-xs' : 'text-display-sm'}`}
+      >
+        {figure}
+      </span>
       {caption ? (
         <span
           className={['text-xs text-fg-secondary', center ? 'font-mono' : 'font-sans'].join(' ')}
@@ -227,7 +234,7 @@ export function SectionHeading({ size = 'sm', meta, className, children }: Secti
 /** A refusal or failure, announced to assistive tech. */
 export function ErrorText({ testId, children }: { testId?: string; children: ReactNode }) {
   return (
-    <p role="status" className="m-0 text-sm text-status-loss" data-testid={testId}>
+    <p role="alert" className="m-0 text-sm text-status-loss" data-testid={testId}>
       {children}
     </p>
   )
