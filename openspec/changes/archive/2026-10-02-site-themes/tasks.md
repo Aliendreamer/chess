@@ -23,6 +23,6 @@ Each group ends in one commit that passes the frontend gate (`pnpm typecheck && 
 
 ## 4. Verify
 
-- [ ] 4.1 🐳 Playwright (written, `e2e/settings.spec.ts`; needs the stack): choose Light, reload, and the page background is the parchment value. `tools/e2e.sh`.
+- [x] 4.1 🐳 (passed 2026-10-02: `tools/e2e.sh` 32/32) Playwright (written, `e2e/settings.spec.ts`; needs the stack): choose Light, reload, and the page background is the parchment value. `tools/e2e.sh`.
 - [x] 4.2 CLAUDE.md UI note: "dark by default, light optional; game-type tokens; lucide icons". Commit:
       `docs(repo): site-themes`.

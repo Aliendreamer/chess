@@ -37,7 +37,7 @@ Each group ends in one commit that passes the frontend gate: `pnpm typecheck && 
 
 ## 5. Verify
 
-- [ ] 5.1 🐳 Playwright: add a drag spec (`dragTo` e2→e4) and a premove spec (two browsers); run all specs with
+- [x] 5.1 🐳 (passed 2026-10-02: 32/32 Playwright, drags with `steps`; verify-part1.sh green) Playwright: add a drag spec (`dragTo` e2→e4) and a premove spec (two browsers); run all specs with
       `tools/e2e.sh`. Run `tools/localdev/verify-part1.sh` to confirm the server contract is unchanged.
 - [x] 5.2 Update CLAUDE.md's UI note (react-chessboard, Cburnett and attribution, Brown default, browser-only board)
       and `.serena/memories/frontend/core.md`. Commit: `docs(repo): board-look`.

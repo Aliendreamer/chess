@@ -35,5 +35,5 @@ pnpm check && pnpm test && pnpm build`). 🐳 marks Docker or live-stack steps. 
 
 ## 5. Verify
 
-- [ ] 5.1 🐳 Playwright (written, `e2e/settings.spec.ts`; needs the stack): choose Blue, reload, and the board's light square is #dee3e6. `tools/e2e.sh`.
+- [x] 5.1 🐳 (passed 2026-10-02: `tools/e2e.sh` 32/32) Playwright (written, `e2e/settings.spec.ts`; needs the stack): choose Blue, reload, and the board's light square is #dee3e6. `tools/e2e.sh`.
 - [x] 5.2 CLAUDE.md (preferences note) and Serena memory. Commit: `docs(repo): user-preferences`.

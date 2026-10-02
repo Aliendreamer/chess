@@ -25,5 +25,5 @@ Each group ends in one commit that passes the frontend gate (`pnpm typecheck && 
 
 ## 4. Verify
 
-- [ ] 4.1 🐳 Playwright (written, in `play.spec.ts`; needs the stack): after three moves, ← shows the previous position (`[data-square]` contents) and `f` flips the
+- [x] 4.1 🐳 (passed 2026-10-02: `tools/e2e.sh` 32/32) Playwright (written, in `play.spec.ts`; needs the stack): after three moves, ← shows the previous position (`[data-square]` contents) and `f` flips the
       board. `tools/e2e.sh`.

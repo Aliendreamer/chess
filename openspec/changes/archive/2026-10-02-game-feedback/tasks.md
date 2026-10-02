@@ -16,7 +16,7 @@ check && pnpm test && pnpm build`. 🐳 marks steps that need Docker or the live
 
 - [x] 2.1 `WebApi/Matchmaking/Rematch/` (endpoint + summary; the request is the invites' `InviteRouteRequest`): 403 non-player, 409
       playing, 400 engine, 200 with the `InviteView`. Unit-test the rules helper (`Rematch.Offer`) first.
-- [ ] 2.2 🐳 (written: `MatchmakingFlowTests.Both_players_asking_for_a_rematch_…`; needs Docker) Integration test (`nx integration-test backend`): two players finish a game, both post rematch, and a new
+- [x] 2.2 🐳 (passed 2026-10-02, 37/37 integration tests: `MatchmakingFlowTests.Both_players_asking_for_a_rematch_…`; needs Docker) Integration test (`nx integration-test backend`): two players finish a game, both post rematch, and a new
       game exists with swapped colours. Commit: `feat(backend): rematch endpoint`.
 
 ## 3. Tab signals and favicons (frontend)
@@ -40,7 +40,7 @@ check && pnpm test && pnpm build`. 🐳 marks steps that need Docker or the live
 
 ## 6. Verify
 
-- [ ] 6.1 🐳 Playwright (written in `play.spec.ts`; needs the stack) (two browsers): finish a game by resignation, both press Rematch, and both land on the new
+- [x] 6.1 🐳 (passed 2026-10-02: 32/32 Playwright; verify-part1.sh green) Playwright (written in `play.spec.ts`; needs the stack) (two browsers): finish a game by resignation, both press Rematch, and both land on the new
       game with swapped colours. Run `tools/e2e.sh` and `tools/localdev/verify-part1.sh`.
 - [x] 6.2 CLAUDE.md Games note (rematch = invite with the game's id) and Serena memory. Commit:
       `docs(repo): game-feedback`.

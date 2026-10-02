@@ -24,6 +24,6 @@ Each group ends in one commit that passes the frontend gate (`pnpm typecheck && 
 
 ## 5. Verify
 
-- [ ] 5.1 🐳 (needs the stack and a phone) `tools/e2e.sh` with both projects green, and a manual check on a real phone through
+- [ ] 5.1 🐳 (e2e half done 2026-10-02: chromium + mobile 32/32; the real-phone check is still open) `tools/e2e.sh` with both projects green, and a manual check on a real phone through
       `app.chess.localhost` (human).
 - [x] 5.2 CLAUDE.md UI note (breakpoint, top bar, mobile project). Commit: `docs(repo): responsive-layout`.

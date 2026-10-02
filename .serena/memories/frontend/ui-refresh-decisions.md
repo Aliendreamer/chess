@@ -19,13 +19,18 @@ site-themes, responsive-layout (openspec/changes/). Proposals page: https://clau
 - P9 preferences saved to the account (SSR, no flash): YES.
 - P10 phone: YES, as its own OpenSpec change; responsive design throughout.
 
-## Status (2026-10-01, end of day)
+## Status (2026-10-02)
 
-All six changes implemented on main (commits b43d92b … ede3074); every task done except the 🐳 ones: Playwright
-(`play.spec.ts` drag/premove/navigation/rematch, `settings.spec.ts`, `responsive.spec.ts` + the `mobile` project) and
-the backend integration tests (`MatchmakingFlowTests` rematch, `PreferencesFlowTests`) are written but were never run
-— no Docker in that session. Run `tools/e2e.sh` and `pnpm exec nx integration-test backend`, then archive the six
-changes. Deviations from the first proposals: material is lichess's surplus rule (not captured pieces);
-lucide-react pinned to 1.47.0 (workspace `minimumReleaseAge`); rematch endpoint lives in `WebApi/Matchmaking/Rematch/`;
-preferences code in `Authentication/Preferences.cs` + `lib/auth.ts` (no tiny files). Found and fixed on the way: the
-old board coloured a1 light.
+Verified on the live stack: backend integration 37/37, Playwright 32/32 (chromium + mobile), verify-part1.sh. Archived
+board-look, game-page-navigation, game-feedback, user-preferences, site-themes (specs synced: new `chessboard`,
+`game-feedback`, `user-preferences`, `site-themes`; `play-ui` and `game-matchmaking` extended). **responsive-layout
+stays open** only for its real-phone check (task 5.1, the owner's to do); archive it after that.
+
+Found on the way: Playwright `dragTo` needs `steps` (`e2e/support.ts#DRAG_STEPS`) — dnd-kit spends the activating move.
+And a real bug: the API's rate limiter keyed on the remote IP, which for every BFF call is the BFF itself, so the whole
+site shared 300/min (e2e hit 429). Owner's decision: key on the validated user (`user:{sub}`, limiter after
+authentication; a forged cookie falls back to the IP), and the BFF forwards the real client IP on every upstream call
+(rightmost X-Forwarded-For, one edge hop) — per-IP alone is not enough with CGNAT.
+
+Next (owner, 2026-10-02): more UI, an open analysis board, chess news feeds. Being brainstormed; first question asked
+was what "more UI" means (Live home/Club TV P6, screens for API-only features, polish, other).
