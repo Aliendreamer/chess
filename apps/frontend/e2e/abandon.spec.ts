@@ -46,5 +46,5 @@ test('a player who leaves loses by abandonment when the other claims it', async 
   await claim.getByRole('button', { name: 'Claim win' }).click()
 
   await expect(white.getByTestId('game-result')).toHaveText('1–0')
-  await expect(white.getByText('abandonment')).toBeVisible()
+  await expect(white.getByTestId('game-over')).toContainText('Abandonment')
 })

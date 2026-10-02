@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { PLAYER, USER, drag, move, sessionFile, signedIn } from './support'
+import { DRAG_STEPS, PLAYER, USER, drag, move, sessionFile, signedIn } from './support'
 import type { Browser, Page } from '@playwright/test'
 
 /**
@@ -103,7 +103,9 @@ test('pieces can be dragged, a premove plays itself, and the game can be looked 
 
   // White to move: Black queues Nc6 by dragging while it is not their turn.
   await expect(black.locator('[data-my-turn]')).toHaveAttribute('data-my-turn', 'false')
-  await black.locator('[data-square="b8"] img').dragTo(black.locator('[data-square="c6"]'))
+  await black
+    .locator('[data-square="b8"] img')
+    .dragTo(black.locator('[data-square="c6"]'), { steps: DRAG_STEPS })
   await move(white, 'g1', 'f3')
   // Black never clicks again: the premove is sent when White's move arrives.
   await expect(white.getByTestId('move-list')).toHaveText('1.e4e52.Nf3Nc6', { timeout: 15_000 })

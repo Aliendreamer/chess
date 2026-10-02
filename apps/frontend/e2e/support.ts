@@ -47,8 +47,16 @@ export async function move(page: Page, from: string, to: string) {
   await page.locator(`[data-square="${to}"]`).click()
 }
 
+/**
+ * Pointer moves per drag. react-chessboard's dnd-kit sensor spends the move that crosses its activation distance on
+ * starting the drag, so a single-move `dragTo` starts it and drops it back on the origin square.
+ */
+export const DRAG_STEPS = 10
+
 /** A drag-and-drop move on the board once it is this side's turn. */
 export async function drag(page: Page, from: string, to: string) {
   await boardReady(page, from)
-  await page.locator(`[data-square="${from}"] img`).dragTo(page.locator(`[data-square="${to}"]`))
+  await page
+    .locator(`[data-square="${from}"] img`)
+    .dragTo(page.locator(`[data-square="${to}"]`), { steps: DRAG_STEPS })
 }

@@ -25,8 +25,13 @@ test('a chosen board theme survives a reload', async ({ browser }) => {
     'rgb(222, 227, 230)',
   )
 
-  await page.getByRole('button', { name: 'Brown' }).click()
-  await expect(page.getByTestId('shell')).toHaveAttribute('data-board', 'brown')
+  // Freshly reloaded, so the same wait for hydration before the click.
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Brown' }).click()
+    await expect(page.getByTestId('shell')).toHaveAttribute('data-board', 'brown', {
+      timeout: 2_000,
+    })
+  }).toPass({ timeout: 15_000 })
 })
 
 test('the light site theme applies from the first paint (site-themes)', async ({ browser }) => {
@@ -44,6 +49,10 @@ test('the light site theme applies from the first paint (site-themes)', async ({
   await expect(page.getByTestId('shell')).toHaveAttribute('data-theme', 'light')
   await expect(page.getByTestId('shell')).toHaveCSS('background-color', /oklch\(0\.97 /)
 
-  await page.getByRole('button', { name: 'Dark (Club)' }).click()
-  await expect(page.getByTestId('shell')).toHaveAttribute('data-theme', 'dark')
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Dark (Club)' }).click()
+    await expect(page.getByTestId('shell')).toHaveAttribute('data-theme', 'dark', {
+      timeout: 2_000,
+    })
+  }).toPass({ timeout: 15_000 })
 })
