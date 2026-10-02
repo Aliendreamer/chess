@@ -19,10 +19,10 @@
       `GameResultPanel` (shared `reasonLabel`); styled PGN file picker; `ErrorText` `role="alert"`; `BoardPlaceholder`
       `role="group"`; Escape closes the TopBar menu; avatar on site tokens; `NavItem exact`. Commit:
       `fix(frontend): audit fixes`.
-- [ ] 3.2 `nx run-many -t lint test -p frontend` green; screenshots again at 1366 and 390 px to confirm.
-- [ ] 3.3 🐳 Playwright: History's title, `/nowhere` shows the not-found panel inside the shell (`e2e/responsive.spec.ts`
+- [x] 3.2 `nx run-many -t lint test -p frontend` green; screenshots again at 1366 and 390 px to confirm.
+- [x] 3.3 🐳 Playwright: History's title, `/nowhere` shows the not-found panel inside the shell (`e2e/responsive.spec.ts`
       or a new `e2e/shell.spec.ts`). `tools/e2e.sh`.
 
 ## 4. Docs
 
-- [ ] 4.1 CLAUDE.md UI note (titles via `pageTitle`, router defaults, `useLoadMore`). Commit: `docs(repo): ui-polish`.
+- [x] 4.1 CLAUDE.md UI note (titles via `pageTitle`, router defaults, `useLoadMore`). Commit: `docs(repo): ui-polish`.

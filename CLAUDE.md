@@ -194,7 +194,10 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   (live-home)**: `GET /api/lobby` (`WebApi/Lobby/`, one FusionCache answer for `Lobby:CacheSeconds`; queue sizes from
   `GetQueues` on the matchmaking singleton, null on a timeout) is polled by home every 10 s while visible (`useLobby`);
   Club TV and `/watch` draw `components/games.tsx#MiniBoard`, a static server-rendered board (never react-chessboard,
-  never a socket per board). Paged lists use `useLoadMore` + `<LoadMore>`. **Profiles
+  never a socket per board). Paged lists use `useLoadMore` + `<LoadMore>`. **Page shell (ui-polish)**: every route sets `head` with
+  `lib/feedback.ts#pageTitle` ("History · Chess"); `router.tsx` has the default pending bar, error panel (`RouterError`)
+  and not-found page from `components/layout.tsx`, and `_authenticated/$.tsx` keeps unknown addresses inside the shell;
+  `useTabSignals` never resets the title on the way out (the next page set it). **Profiles
   (player-profiles)**: `GET /api/players/{id}` (name, member since, record per time control; aborted games do not count)
   and `…/games` (`WebApi/Players/`, replica). The replica reads `users` only as `Data/ReadModels/PlayerIdentity` (id,
   username, created at), which `ProjectDbContext`'s configuration scan skips; never add private columns to it. Names

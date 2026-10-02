@@ -21,9 +21,12 @@ defects found in the audit are fixed.
    link) and `NotFound` (Panel, Home link). They render inside the Shell because `_authenticated` wraps its outlet.
 3. **`useLoadMore` in `lib/`.** History and Studies both page with a cursor; one hook owns `items`, `nextCursor`,
    `busy` and `error`, and a fetch failure becomes an error line instead of an unhandled rejection.
-4. **Nav matching.** `NavItem` takes `exact`; Home and History stay exact (a game page is not History — it may come
+4. **Unknown addresses go through the signed-in layout.** A path no route matches is answered by the root, outside the
+   Shell; `_authenticated/$.tsx` (a splat whose loader throws `notFound()`) catches it first, so the not-found page
+   keeps the navigation. Found by `e2e/shell.spec.ts`.
+5. **Nav matching.** `NavItem` takes `exact`; Home and History stay exact (a game page is not History — it may come
    from Watch), every other section highlights on its sub-pages.
-5. **OptionTile figures scale.** The engine tiles' `figure` uses a smaller display size when the text is long
+6. **OptionTile figures scale.** The engine tiles' `figure` uses a smaller display size when the text is long
    (`figureSize: 'sm'`), instead of letting it overflow.
 
 ## Risks / Trade-offs
