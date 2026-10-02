@@ -11,10 +11,10 @@
 - [x] 2.2 `routes/_authenticated/admin.tsx` (`beforeLoad`: `notFound()` without `Admin`), filter chips, "Load more";
       Navigation takes `me` and shows Admin (`Shield` icon) to admins. `pnpm generate-routes`;
       `nx run-many -t lint test -p frontend`. Commit: `feat(frontend): dead letters for admins`.
-- [ ] 2.3 🐳 Playwright `e2e/admin.spec.ts`: testuser sees the Admin entry and the page (empty state or rows); player
+- [x] 2.3 🐳 Playwright `e2e/admin.spec.ts`: testuser sees the Admin entry and the page (empty state or rows); player
       gets the not-found page at `/admin`. `tools/e2e.sh`.
 
 ## 3. Docs
 
-- [ ] 3.1 CLAUDE.md (admin page, keep `lib/admin.ts` groups in step with `IProjection`). Commit:
+- [x] 3.1 CLAUDE.md (admin page, keep `lib/admin.ts` groups in step with `IProjection`). Commit:
       `docs(repo): admin-screens`.

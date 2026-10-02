@@ -222,7 +222,8 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   (`ProjectionGapException`). A new event type needs a `TopicTagger.BoundTypes` entry AND a mapper.
   Every record goes through `Projections/ProjectionRunner`: `LastSeq` is a concurrency token (a lost race
   re-runs and skips), and any other exception is retried 5× then parked in `projection_dead_letters`,
-  quarantining that `(group, aggregate)` until an Admin replays it (`WebApi/Admin/`). Gaps never park.
+  quarantining that `(group, aggregate)` until an Admin replays it (`WebApi/Admin/`; in the browser at `/admin`,
+  admin-screens, shown only to the `Admin` role — a new consumer group also goes into `lib/admin.ts#PROJECTION_GROUPS`). Gaps never park.
 
 - **Games (backend)** — `Akka/Games/GameActor` (sharded `games`, persistence id `game-{id:N}`, Guid v7 ids) owns
   board and clocks; rules only via `Games/ChessRules` (Gera.Chess shares our root namespace `Chess`, so it is used
