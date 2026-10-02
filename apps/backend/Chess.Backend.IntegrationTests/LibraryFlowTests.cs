@@ -45,12 +45,23 @@ public sealed class LibraryFlowTests(StackFixture stack)
         string[] immortal = ["e2e4", "e7e5", "f2f4", "e5f4", "f1c4", "d8h4"];
         object Game(string w, string[] moves) => new
         {
-            white = w, black = "Kieseritzky, Lionel", @event = "London casual", site = "London", round = "?", date = "1851.06.21",
-            result = "1-0", eco = (string?)null, moves, startFen = (string?)null,
+            white = w,
+            black = "Kieseritzky, Lionel",
+            @event = "London casual",
+            site = "London",
+            round = "?",
+            date = "1851.06.21",
+            result = "1-0",
+            eco = (string?)null,
+            moves,
+            startFen = (string?)null,
         };
         object batch = new
         {
-            source = "Test", licence = "moves only (facts)", sourceRef = "test.pgn", worldChampionship = false,
+            source = "Test",
+            licence = "moves only (facts)",
+            sourceRef = "test.pgn",
+            worldChampionship = false,
             games = new[] { Game(white, immortal), Game(white.ToUpperInvariant(), immortal), Game("Someone", ["e2e4", "e7e4"]) },
         };
 
