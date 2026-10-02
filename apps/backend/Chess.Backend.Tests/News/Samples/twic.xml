@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
+	<channel>
+		<title>The Week in Chess</title>
+		<link>https://theweekinchess.com/</link>
+		<description>Chess News from throughout the World</description>
+		<language>en</language>
+		<copyright>The Week in Chess</copyright>
+		<ttl>120</ttl><item>
+		<title>46th World Chess Olympiad 2026 - Games and Results</title>
+		<link>https://theweekinchess.com/chessnews/events/46th-world-chess-olympiad-2026</link>
+		<description><![CDATA[ The 46th World Chess Olympiad takes place Wed 16th to Sun 27th Sep 2026 in Samarkand, Uzbekistan. The USA, India and hosts Uzbekistan are the top three seeds, India, Georgia, Kazakhstan and China are the top women's seeds. </p>
+<p>
+
+I will broadcast the top 20 matches live for each of the Open and Women's event.(update every minute) the viewer I use isn't much use for any more, the full compilation file will update every 15 minutes. I hope this file will be the best available with good structure to the PGN and good checking procedures. I won't display it on this page, again the size of the file makes it fairly pointless with this viewer.]]></description>
+		<pubDate>Thu Sep 17 20:10:00 2026</pubDate>
+		<guid isPermaLink="false">https://theweekinchess.com/chessnews/events/46th-world-chess-olympiad-2026</guid>
+		<dc:creator>Mark Crowther </dc:creator>
+
+</item>
+
+<item>
+		<title>3rd FIDE Chess Olympiad for People with Disabilities 2026 - Games and Results</title>
+		<link>https://theweekinchess.com/chessnews/events/3rd-fide-chess-olympiad-for-people-with-disabilities-2026</link>
+		<description><![CDATA[ The 3rd FIDE Chess Olympiad for People with Disabilities took place Fri 11th to Thu 17th Sep 2026. Poland beat Cuba in Round 5 to take the lead which they retained to the end, Cuba took the Silver medal and Uzbekistan 1 the Bronze.]]></description>
+		<pubDate>Thu Sep 17 20:10:00 2026</pubDate>
+		<guid isPermaLink="false">https://theweekinchess.com/chessnews/events/3rd-fide-chess-olympiad-for-people-with-disabilities-2026</guid>
+		<dc:creator>Mark Crowther </dc:creator>
+
+</item>
+
+<item>
+		<title>Clutch Chess: The Legends 2026 - Games and results</title>
+		<link>https://theweekinchess.com/chessnews/events/clutch-chess-the-legends-2026</link>
+		<description><![CDATA[ Clutch Chess: The Legends was a match between Garry Kasparov and Veselin Topalov held over three days at the Saint Louis Chess Club. The games were Chess960. There were two time controls: Rapid (Games 1, 2, 5, 6, 9 and 10)  25+10spm and Blitz (3, 4, 7, 8, 11 and 12) 5m+3spm. The Clutch Chess is all about the scoring; day one has a normal score, day 2 has double day 1 and day 3 is triple day one, the idea being that there is a building excitement. There was also bonus money, up to $24,000 that rolled over to the final two games if there was a draw. I cannot currently display Chess960 games,
+Topalov won the match 16-8, The rapid portion saw Topalov win a rapid game on day one and Kasparov on day 3, the rest were drawn. Topalov won 5 of the 6 blitz games only losing one, on the first day.]]></description>
+		<pubDate>Sun Sep 13 22:09:00 2026</pubDate>
+		<guid isPermaLink="false">https://theweekinchess.com/chessnews/events/clutch-chess-the-legends-2026</guid>
+		<dc:creator>Mark Crowther </dc:creator>
+
+</item>
+</channel>
+</rss>

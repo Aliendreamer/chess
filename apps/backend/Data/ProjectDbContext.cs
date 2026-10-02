@@ -41,6 +41,10 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<Opening> Openings => Set<Opening>();
 
+    public DbSet<NewsItem> NewsItems => Set<NewsItem>();
+
+    public DbSet<ChessEvent> ChessEvents => Set<ChessEvent>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();

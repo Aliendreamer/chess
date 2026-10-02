@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>English Chess Federation</title>
+	<atom:link href="https://www.englishchess.org.uk/feed/" rel="self" type="application/rss+xml" />
+	<link>https://www.englishchess.org.uk</link>
+	<description></description>
+	<lastBuildDate>Wed, 30 Sep 2026 08:21:32 +0000</lastBuildDate>
+	<language>en-GB</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	
+
+<image>
+	<url>https://www.englishchess.org.uk/wp-content/uploads/2018/07/cropped-little-square-logo-32x32.jpg</url>
+	<title>English Chess Federation</title>
+	<link>https://www.englishchess.org.uk</link>
+	<width>32</width>
+	<height>32</height>
+</image> 
+	<item>
+		<title>Coaching blind players</title>
+		<link>https://www.englishchess.org.uk/coaching-blind-players/</link>
+		
+		<dc:creator><![CDATA[WebAdmin]]></dc:creator>
+		<pubDate>Wed, 30 Sep 2026 08:21:32 +0000</pubDate>
+				<category><![CDATA[Chess News]]></category>
+		<category><![CDATA[FP News]]></category>
+		<guid isPermaLink="false">https://www.englishchess.org.uk/?p=95133</guid>
+
+					<description><![CDATA[Greetings all! Putting on my ECF Manager of Coaches hat I have been asked by Gerry Walsh if there are any coaches out there who would like to coach blind...]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>New ECF resources for chess clubs</title>
+		<link>https://www.englishchess.org.uk/new-ecf-resources-for-chess-clubs/</link>
+		
+		<dc:creator><![CDATA[Melinda Wilde]]></dc:creator>
+		<pubDate>Tue, 15 Sep 2026 13:48:56 +0000</pubDate>
+				<category><![CDATA[Chess News]]></category>
+		<category><![CDATA[ECF News]]></category>
+		<guid isPermaLink="false">https://www.englishchess.org.uk/?p=94966</guid>
+
+					<description><![CDATA[The English Chess Federation has produced a new collection of guidance and model documents to support local chess clubs. The resources are intended to help club volunteers establish clear and...]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>ECF AGM – Call for nominations</title>
+		<link>https://www.englishchess.org.uk/ecf-agm-call-for-nominations-4/</link>
+		
+		<dc:creator><![CDATA[Melinda Wilde]]></dc:creator>
+		<pubDate>Mon, 14 Sep 2026 08:28:17 +0000</pubDate>
+				<category><![CDATA[Chess News]]></category>
+		<category><![CDATA[ECF News]]></category>
+		<guid isPermaLink="false">https://www.englishchess.org.uk/?p=94942</guid>
+
+					<description><![CDATA[Nominations are invited for the positions detailed below, which will be the subject of elections to be held at the Annual General Meeting on 14th November 2026. Posts due for...]]></description>
+		
+		
+		
+			</item>
+</channel>
+</rss>

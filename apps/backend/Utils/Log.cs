@@ -80,4 +80,10 @@ internal static partial class Log
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Journal publisher stopped ({Reason}); re-acquiring in {Delay}")]
     public static partial void PublisherStopped(ILogger logger, Exception exception, string reason, TimeSpan delay);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "News source {Source} could not be fetched; trying again next round")]
+    public static partial void NewsFeedFailed(ILogger logger, Exception exception, string source);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "News source {Source} answered {Status}; trying again next round")]
+    public static partial void NewsFeedRefused(ILogger logger, string source, int status);
 }

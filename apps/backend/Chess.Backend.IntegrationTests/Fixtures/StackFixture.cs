@@ -112,6 +112,7 @@ public sealed class StackFixture : IAsyncLifetime
         Environment.SetEnvironmentVariable("Engine__StallSeconds", EngineStallSeconds.ToString(CultureInfo.InvariantCulture));
         Environment.SetEnvironmentVariable("Correspondence__MoveDeadline", MoveDeadline.ToString("c", CultureInfo.InvariantCulture));
         Environment.SetEnvironmentVariable("Correspondence__SweepSeconds", "1");
+        Environment.SetEnvironmentVariable("News__Enabled", "false"); // no fetches to the internet from tests
         Environment.SetEnvironmentVariable("Smtp__Host", _mailpit.Hostname);
         Environment.SetEnvironmentVariable("Smtp__Port", _mailpit.GetMappedPublicPort(1025).ToString(CultureInfo.InvariantCulture));
     }

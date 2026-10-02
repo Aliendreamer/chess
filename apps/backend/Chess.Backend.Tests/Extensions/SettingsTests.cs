@@ -5,7 +5,9 @@ using Chess.Backend.Correspondence;
 using Chess.Backend.Engine;
 using Chess.Backend.Extensions;
 using Chess.Backend.Messaging;
+using Chess.Backend.News;
 using Chess.Backend.Projections;
+using Chess.Backend.WebApi.Lobby;
 using Microsoft.Extensions.Configuration;
 
 namespace Chess.Backend.Tests.Extensions;
@@ -43,6 +45,11 @@ public sealed class SettingsTests
         Assert.Equivalent(new AnalysisOptions(), Bound<AnalysisOptions>(AnalysisOptions.SectionName), strict: true);
         Assert.Equivalent(new ObservabilityOptions(), Bound<ObservabilityOptions>(ObservabilityOptions.SectionName), strict: true);
 
+        Assert.Equivalent(new LobbyOptions(), Bound<LobbyOptions>(LobbyOptions.SectionName), strict: true);
+        // News lists its feeds in the file (the code default is empty: the binder appends onto arrays); the rest must match.
+        NewsOptions news = Bound<NewsOptions>(NewsOptions.SectionName);
+        Assert.Equivalent(new NewsOptions { Feeds = news.Feeds }, news, strict: true);
+
         // Keycloak's section holds environment values (client id, URLs); only its tuning must match.
         Assert.Equal(new KeycloakOptions().HttpTimeoutSeconds, Bound<KeycloakOptions>(KeycloakOptions.SectionName).HttpTimeoutSeconds);
     }
@@ -72,6 +79,19 @@ public sealed class SettingsTests
         new PublisherLagOptions().Validate();
         new ProjectionDeadLetterOptions().Validate();
         new SessionStoreOptions().Validate();
+        new LobbyOptions().Validate();
+        new NewsOptions().Validate();
+    }
+
+    [Fact]
+    public void The_shipped_news_feeds_are_the_five_checked_sources()
+    {
+        NewsOptions news = Bound<NewsOptions>(NewsOptions.SectionName);
+        news.Validate();
+        Assert.Equal(["fide", "chessbase", "lichess", "twic", "ecf"], news.Feeds.Select(f => f.Id));
+        Assert.Equal("application/rss+xml", news.Feeds.Single(f => f.Id == "twic").Accept);
+        // chess.com's terms forbid displaying its content (not theweekinchess.com, which only ends alike).
+        Assert.DoesNotContain(news.Feeds, f => new Uri(f.Url).Host is "chess.com" or "www.chess.com");
     }
 
     public static TheoryData<string, Action> Invalid() => new()

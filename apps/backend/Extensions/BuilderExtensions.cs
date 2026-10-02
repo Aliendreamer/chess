@@ -9,6 +9,7 @@ using Chess.Backend.Analysis;
 using Chess.Backend.Correspondence;
 using Chess.Backend.Engine;
 using Chess.Backend.Messaging;
+using Chess.Backend.News;
 using Chess.Backend.Projections;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -68,6 +69,10 @@ internal static class BuilderExtension
             akka.WithMatchmaking(sp.GetRequiredService<AkkaOptions>());
             akka.WithInviteSharding(sp.GetRequiredService<AkkaOptions>());
             akka.WithDeadlineSweeper();
+            if (sp.GetRequiredService<NewsOptions>().Enabled)
+            {
+                akka.WithNewsFetcher();
+            }
             if (sp.GetRequiredService<KafkaOptions>().Enabled)
             {
                 akka.WithJournalPublisher();
@@ -135,6 +140,10 @@ internal static class BuilderExtension
         // Games against the engine (engine-play D6): one consumer asks for moves, the other applies the answers.
         EngineOptions engine = services.AddSettings<EngineOptions>(configuration, EngineOptions.SectionName);
         services.AddSettings<CorrespondenceOptions>(configuration, CorrespondenceOptions.SectionName);
+        // Chess news (chess-news): one HTTP client for every feed (redirects followed: FIDE moved its feed to /feed/).
+        services.AddSettings<NewsOptions>(configuration, NewsOptions.SectionName);
+        services.AddHttpClient(NewsRounds.HttpClientName);
+        services.AddSingleton<INewsRounds, NewsRounds>();
         // Correspondence deadlines (correspondence-games D3): the projection fills game_deadlines, the sweeper reads it.
         services.AddScoped<DeadlineProjection>();
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<DeadlineProjection>());

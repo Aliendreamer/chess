@@ -29,4 +29,9 @@
     <ProjectReference Include="../Chess.Backend.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Saved feed samples (chess-news), trimmed to three items each. -->
+    <None Include="News/Samples/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

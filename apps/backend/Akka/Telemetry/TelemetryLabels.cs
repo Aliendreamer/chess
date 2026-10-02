@@ -54,6 +54,7 @@ internal static class ActorNames
     public const string Matchmaking = "matchmaking";
     public const string JournalPublisher = "journal-publisher";
     public const string DeadlineSweeper = "deadline-sweeper";
+    public const string NewsFetcher = "news-fetcher";
     public const string HubFanOut = "hub-fanout";
     public const string ClusterMetrics = "cluster-metrics";
 }

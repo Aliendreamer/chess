@@ -22,6 +22,7 @@ using Chess.Backend.Correspondence;
 using Chess.Backend.Engine;
 using Chess.Backend.Games;
 using Chess.Backend.Messaging;
+using Chess.Backend.News;
 using Confluent.Kafka;
 using LinqToDB;
 using Microsoft.AspNetCore.SignalR;
@@ -136,6 +137,26 @@ internal static class MatchmakingRegistration
                 resolver.GetService<IDueDeadlines>(),
                 resolver.GetService<TimeProvider>(),
                 TimeSpan.FromSeconds(resolver.GetService<CorrespondenceOptions>().SweepSeconds))),
+            new ClusterSingletonOptions { Role = AkkaOptions.BackendRole },
+            createProxyToo: false);
+    }
+
+    /// <summary>The news schedule (chess-news D1): one per cluster, on the backend role.</summary>
+    public static AkkaConfigurationBuilder WithNewsFetcher(this AkkaConfigurationBuilder akka)
+    {
+        ArgumentNullException.ThrowIfNull(akka);
+        return akka.WithSingleton<NewsFetcher>(
+            NewsFetcher.SingletonName,
+            (_, _, resolver) =>
+            {
+                NewsOptions news = resolver.GetService<NewsOptions>();
+                return Props.Create(() => new NewsFetcher(
+                    resolver.GetService<INewsRounds>(),
+                    resolver.GetService<TimeProvider>(),
+                    TimeSpan.FromMinutes(news.FetchMinutes),
+                    TimeSpan.FromMinutes(news.EventsMinutes),
+                    TimeSpan.FromSeconds(20)));
+            },
             new ClusterSingletonOptions { Role = AkkaOptions.BackendRole },
             createProxyToo: false);
     }
@@ -270,7 +291,7 @@ internal static class ClusterMetricsRegistration
                 [InviteShardingExtensions.ShardTypeName] = registry.Get<InviteActor>(),
                 [PingTopics.ShardTypeName] = registry.Get<PingActor>(),
             };
-            List<string> singletons = [MatchmakingActor.SingletonName, DeadlineSweeper.SingletonName];
+            List<string> singletons = [MatchmakingActor.SingletonName, DeadlineSweeper.SingletonName, NewsFetcher.SingletonName];
             if (publisher)
             {
                 singletons.Add(JournalPublisher.SingletonName);

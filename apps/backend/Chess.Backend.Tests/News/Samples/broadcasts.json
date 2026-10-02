@@ -1,0 +1,131 @@
+{
+  "active": [
+    {
+      "tour": {
+        "id": "2aIImqz1",
+        "name": "2026 Army and Navy Club Pall Mall Masters - Super Rapid",
+        "slug": "2026-army-and-navy-club-pall-mall-masters-super-rapid",
+        "info": {
+          "format": "6-player double round-robin",
+          "tc": "15+5",
+          "fideTC": "rapid",
+          "location": "The Army & Navy Club, 36 Pall Mall, London SW1Y 5JN",
+          "timeZone": "Europe/London",
+          "players": "McShane, Moussard, Maroroa Jones, Tiviakov, Lagarde, Bok",
+          "website": "https://sites.google.com/view/chessengland",
+          "standings": "https://s1.chess-results.com/tnr1393997.aspx?art=1",
+          "regulations": "https://docs.google.com/document/d/1jRe3DJ6QKtRzXovOSc2A8D63ynbBO0J_G2rUDFXpqmE/edit?usp=sharing"
+        },
+        "createdAt": 1789049568731,
+        "url": "https://lichess.org/broadcast/2026-army-and-navy-club-pall-mall-masters-super-rapid/2aIImqz1",
+        "tier": 4,
+        "dates": [1791018000000, 1791118800000],
+        "image": "https://image.lichess1.org/display?fmt=webp&h=400&op=thumbnail&path=qwf6MMDgCvED.webp&w=800&sig=7dfc49e01c79f8a9ab8271b2835cfc88415e50de"
+      },
+      "round": {
+        "id": "zax2NaLQ",
+        "name": "Round 1",
+        "slug": "round-1",
+        "startsAt": 1791018000000,
+        "url": "https://lichess.org/broadcast/2026-army-and-navy-club-pall-mall-masters-super-rapid/round-1/zax2NaLQ"
+      },
+      "group": "2026 Army and Navy Club Pall Mall Masters"
+    },
+    {
+      "tour": {
+        "id": "XoBds6h9",
+        "name": "German Women's Bundesliga 2026/27 (1. Frauenbundesliga)",
+        "slug": "german-womens-bundesliga-202627-1-frauenbundesliga",
+        "info": {
+          "format": "12-team round-robin",
+          "tc": "90 min / 40 moves + 30 min + 30 sec / move",
+          "fideTC": "standard",
+          "location": "Germany",
+          "timeZone": "Europe/Berlin",
+          "website": "https://schachbundesliga.de/frauen-2026-27",
+          "standings": "https://ergebnisdienst.schachbund.de/bedh.php?liga=fb1"
+        },
+        "createdAt": 1790773932174,
+        "url": "https://lichess.org/broadcast/german-womens-bundesliga-202627-1-frauenbundesliga/XoBds6h9",
+        "tier": 4,
+        "dates": [1791029700000, 1808032500000],
+        "image": "https://image.lichess1.org/display?fmt=webp&h=400&op=thumbnail&path=jGXKmtFq_hd5.webp&w=800&sig=b6f9c91812311b1d6c907cb4d2a383d22d82efef",
+        "teamTable": true,
+        "showTeamScores": true
+      },
+      "round": {
+        "id": "w6fcSTdz",
+        "name": "Round 1",
+        "slug": "round-1",
+        "startsAt": 1791029700000,
+        "url": "https://lichess.org/broadcast/german-womens-bundesliga-202627-1-frauenbundesliga/round-1/w6fcSTdz"
+      }
+    },
+    {
+      "tour": {
+        "id": "5K0T8thB",
+        "name": "Hungarian Superleague 2026/27",
+        "slug": "hungarian-superleague-202627",
+        "info": {
+          "format": "Team Round Robin",
+          "fideTC": "standard",
+          "location": "Hungary",
+          "timeZone": "Europe/Budapest",
+          "website": "https://chess.hu/csapatbajnoksagok/?b=389"
+        },
+        "createdAt": 1790267552385,
+        "url": "https://lichess.org/broadcast/hungarian-superleague-202627/5K0T8thB",
+        "tier": 4,
+        "dates": [1791033300000, 1808640900000],
+        "image": "https://image.lichess1.org/display?fmt=webp&h=400&op=thumbnail&path=Q8ZABhs_Ki4j.webp&w=800&sig=a8961fac1cbeb1898b5001ea5f8e4cbb462ebafb"
+      },
+      "round": {
+        "id": "0NbxxPR6",
+        "name": "Round 1",
+        "slug": "round-1",
+        "startsAt": 1791033300000,
+        "url": "https://lichess.org/broadcast/hungarian-superleague-202627/round-1/0NbxxPR6"
+      }
+    },
+    {
+      "tour": {
+        "id": "L1LREl2M",
+        "name": "FIDE ISCF World Schools Team Championship 2026 | European Continental Stage",
+        "slug": "fide-iscf-world-schools-team-championship-2026-european-continental-stage",
+        "info": {
+          "format": "8-round Swiss for teams",
+          "tc": "45 min + 10 sec",
+          "fideTC": "rapid",
+          "location": "Tsaghkadzor, Armenia",
+          "timeZone": "Asia/Yerevan",
+          "website": "https://worldschoolteam2026.fide.com/",
+          "standings": "https://s3.chess-results.com/tnr1506605.aspx?art=1",
+          "regulations": "https://worldschoolteam2026.fide.com/files/WSTC_regulations_2026.pdf"
+        },
+        "createdAt": 1790525463476,
+        "url": "https://lichess.org/broadcast/fide-iscf-world-schools-team-championship-2026-european-continental-stage/L1LREl2M",
+        "tier": 4,
+        "dates": [1790667600000, 1790934000000],
+        "image": "https://image.lichess1.org/display?fmt=webp&h=400&op=thumbnail&path=mgm1XDTo96SC.webp&w=800&sig=df3e02c24c26d9c6ef40e1a747a14db1f08d2c17",
+        "teamTable": true
+      },
+      "round": {
+        "id": "65wmW3Mm",
+        "name": "Round 8",
+        "slug": "round-8",
+        "finishedAt": 1790941689005,
+        "finished": true,
+        "startsAt": 1790934000000,
+        "url": "https://lichess.org/broadcast/fide-iscf-world-schools-team-championship-2026-european-continental-stage/round-8/65wmW3Mm"
+      },
+      "group": "FIDE ISCF World Schools Team Championship 2026"
+    }
+  ],
+  "upcoming": [],
+  "past": {
+    "currentPage": 1,
+    "maxPerPage": 0,
+    "currentPageResults": [],
+    "nbResults": 0
+  }
+}

@@ -8,8 +8,8 @@ using Npgsql;
 namespace Chess.Backend.Data;
 
 /// <summary>
-/// Replica-bound, read-only: the rm_* tables, the public columns of <c>users</c> (<see cref="PlayerIdentity"/>) and the
-/// game library are mapped, tracking is off, SaveChanges throws.
+/// Replica-bound, read-only: the rm_* tables, the public columns of <c>users</c> (<see cref="PlayerIdentity"/>), the
+/// game library and the news are mapped, tracking is off, SaveChanges throws.
 /// </summary>
 internal sealed class ReadDbContext : DbContext
 {
@@ -34,6 +34,10 @@ internal sealed class ReadDbContext : DbContext
 
     public DbSet<Opening> Openings => Set<Opening>();
 
+    public DbSet<NewsItem> NewsItems => Set<NewsItem>();
+
+    public DbSet<ChessEvent> ChessEvents => Set<ChessEvent>();
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess) =>
         throw new InvalidOperationException("ReadDbContext is read-only (replica).");
 
@@ -50,6 +54,8 @@ internal sealed class ReadDbContext : DbContext
         modelBuilder.ApplyConfiguration(new LibraryGameConfiguration());
         modelBuilder.ApplyConfiguration(new LibraryPositionConfiguration());
         modelBuilder.ApplyConfiguration(new OpeningConfiguration());
+        modelBuilder.ApplyConfiguration(new NewsItemConfiguration());
+        modelBuilder.ApplyConfiguration(new ChessEventConfiguration());
     }
 }
 
