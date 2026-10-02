@@ -79,6 +79,30 @@ internal sealed partial class ChessRules
         }
     }
 
+    /// <summary>
+    /// A move written in SAN (the opening list, game-library), read by the rules library and then played as UCI through
+    /// <see cref="TryApply"/>, so both notations take the same checks. An unreadable or illegal move is rejected.
+    /// </summary>
+    public MoveOutcome TryApplySan(string san)
+    {
+        Gera.Move? parsed;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(san) || !_board.TryParseFromSan(san, out parsed, false) || parsed is null)
+            {
+                return new MoveRejected($"Not a legal move here: {san}.");
+            }
+        }
+        catch (Exception e) when (e is Gera.ChessArgumentException or Gera.ChessInvalidMoveException
+                                      or Gera.ChessPieceNotFoundException or ArgumentException)
+        {
+            return new MoveRejected($"Not a legal move here: {san}.");
+        }
+
+        string promotion = parsed.IsPromotion ? char.ToLowerInvariant(san[san.IndexOf('=', StringComparison.Ordinal) + 1]).ToString() : string.Empty;
+        return TryApply($"{parsed.OriginalPosition}{parsed.NewPosition}{promotion}");
+    }
+
     public MoveOutcome TryApply(string uci)
     {
         Match m = UciPattern().Match(uci ?? string.Empty);

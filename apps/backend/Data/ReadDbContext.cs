@@ -1,4 +1,5 @@
 using Chess.Backend.Data.ModelConfigurations;
+using Chess.Backend.Data.Models;
 using Chess.Backend.Data.ReadModels;
 using Chess.Backend.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -7,8 +8,8 @@ using Npgsql;
 namespace Chess.Backend.Data;
 
 /// <summary>
-/// Replica-bound, read-only: the rm_* tables and the public columns of <c>users</c> (<see cref="PlayerIdentity"/>) are
-/// mapped, tracking is off, SaveChanges throws.
+/// Replica-bound, read-only: the rm_* tables, the public columns of <c>users</c> (<see cref="PlayerIdentity"/>) and the
+/// game library are mapped, tracking is off, SaveChanges throws.
 /// </summary>
 internal sealed class ReadDbContext : DbContext
 {
@@ -27,6 +28,12 @@ internal sealed class ReadDbContext : DbContext
 
     public DbSet<PlayerIdentity> Players => Set<PlayerIdentity>();
 
+    public DbSet<LibraryGame> LibraryGames => Set<LibraryGame>();
+
+    public DbSet<LibraryPosition> LibraryPositions => Set<LibraryPosition>();
+
+    public DbSet<Opening> Openings => Set<Opening>();
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess) =>
         throw new InvalidOperationException("ReadDbContext is read-only (replica).");
 
@@ -40,6 +47,9 @@ internal sealed class ReadDbContext : DbContext
         modelBuilder.ApplyConfiguration(new RmGamePlayerConfiguration());
         modelBuilder.ApplyConfiguration(new RmMoveConfiguration());
         modelBuilder.ApplyConfiguration(new PlayerIdentityConfiguration());
+        modelBuilder.ApplyConfiguration(new LibraryGameConfiguration());
+        modelBuilder.ApplyConfiguration(new LibraryPositionConfiguration());
+        modelBuilder.ApplyConfiguration(new OpeningConfiguration());
     }
 }
 

@@ -53,9 +53,10 @@ moves_uci text[], ply int, source text, licence text, source_ref text, dedupe_ke
    refused: famous games start from the start), computes every position key, matches the opening, builds the dedupe
    key (`lower(white)|lower(black)|year|moves hash`) and inserts game + positions in one transaction per batch. The
    answer lists `{ index, status: imported | duplicate | refused, error? }`.
-4. **Openings seed.** `tools/library/openings/{a..e}.tsv` (CC0, committed — small, public domain, attributed in
-   `apps/frontend/ATTRIBUTION.md`) are replayed at startup into `openings` when the table is empty (an `ISettings`
-   switch `Library:SeedOpenings`, on). Position keys make transpositions land on the same name.
+4. **Openings seed.** `apps/backend/Library/Openings/{a..e}.tsv` (CC0, committed — small, public domain, attributed
+   in `apps/frontend/ATTRIBUTION.md`) are embedded in the backend and replayed (SAN through `ChessRules.TryApplySan`)
+   into `openings` at startup when the table is empty, under an advisory lock so two nodes never seed together. Rows
+   that do not replay are skipped. Position keys make transpositions land on the same name.
 5. **Reads.** `GET /api/library/games?player&event&from&to&result&wc&eco&opening&cursor&limit` (keyset by `(year desc,
 id)`), `GET /api/library/games/{id}` (moves + headers + attribution), `GET /api/library/positions/{key}` (games at
    that position with the ply, plus W/D/B counts, first 50 by year), `GET /api/library/openings/{key}` (name for the

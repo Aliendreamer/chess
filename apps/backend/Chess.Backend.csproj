@@ -25,6 +25,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- lichess chess-openings (CC0): the opening names, seeded into `openings` at startup (game-library). -->
+    <EmbeddedResource Include="Library/Openings/*.tsv" LogicalName="openings.%(Filename).tsv" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FastEndpoints" />
     <PackageReference Include="FastEndpoints.Swagger" />
     <PackageReference Include="Scalar.AspNetCore" />

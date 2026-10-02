@@ -33,3 +33,10 @@ The lichess copy of the same set is GPLv2+, so it is deliberately **not** the so
 ## Board colours
 
 The Brown, Blue and Green board colours match lichess's flat board themes (colour values only).
+
+## Opening names
+
+The opening names and ECO codes come from lichess's [chess-openings](https://github.com/lichess-org/chess-openings) list,
+embedded in the backend as `apps/backend/Library/Openings/*.tsv`. Its README: "As a collection of facts, this data set
+is in the public domain … Insofar as that qualifies for copyright, the work is released under the CC0 Public Domain
+Dedication."

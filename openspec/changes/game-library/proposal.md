@@ -48,7 +48,7 @@ so this change does not depend on `analysis-board` being archived first)
 - Backend: migration for `library_games`, `library_positions`, `openings`; `Library/` (replay, position keys via
   `Analysis/PositionKey`, opening match, duplicate check, `LibraryService`); `WebApi/Library/` (search, game, position,
   opening) and `WebApi/Admin/ImportLibrary/` (batch import, Admin role); an openings seed from the lichess TSV files
-  (CC0, small, committed in `tools/library/openings/`).
+  (CC0, small, committed and embedded from `apps/backend/Library/Openings/`).
 - Frontend: `lib/library.ts`, `lib/server/library.ts`, `routes/_authenticated/library.tsx`, the admin import form,
   the analysis board's panel and opening line; `parsePgn` passes through Event, Site, Round, ECO.
 - Data: PGN files are fetched by an admin and **never committed** (like the Stockfish archive): the repo does not

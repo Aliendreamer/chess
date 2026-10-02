@@ -11,7 +11,7 @@ public sealed class ReadDbContextTests
     {
         using ReadDbContext db = Create();
         string[] entities = db.Model.GetEntityTypes().Select(e => e.ClrType.Name).Order().ToArray();
-        Assert.Equal(["PlayerIdentity", "RmGame", "RmGamePlayer", "RmMove", "RmPing"], entities);
+        Assert.Equal(["LibraryGame", "LibraryPosition", "Opening", "PlayerIdentity", "RmGame", "RmGamePlayer", "RmMove", "RmPing"], entities);
         Assert.Equal(QueryTrackingBehavior.NoTracking, db.ChangeTracker.QueryTrackingBehavior);
     }
 

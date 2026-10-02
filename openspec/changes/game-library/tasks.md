@@ -1,11 +1,12 @@
 ## 1. Schema and openings
 
-- [ ] 1.1 Entities `LibraryGame`, `LibraryPosition`, `Opening` (one class per file, `Data/Models` + configurations),
+- [x] 1.1 Entities `LibraryGame`, `LibraryPosition`, `Opening` (one class per file, `Data/Models` + configurations),
       `pg_trgm` extension and indexes; migration `./build_migration.sh "AddGameLibrary"`; `ReadDbContext` maps the three
       read-only. `dotnet build` warning-clean.
-- [ ] 1.2 Commit `tools/library/openings/{a..e}.tsv` (lichess `chess-openings`, CC0) and an ATTRIBUTION line. Failing
+- [x] 1.2 Commit `apps/backend/Library/Openings/{a..e}.tsv` (lichess `chess-openings`, CC0, embedded) and an
+      ATTRIBUTION line. Failing
       unit test: `OpeningSeed.Parse` replays a TSV row ("C67 Ruy Lopez: Berlin Defense, 1. e4 e5 2. Nf3 Nc6 3. Bb5
-      Nf6 4. O-O") to its position key and ply. Implement + `Library:SeedOpenings` startup step (only when empty).
+      Nf6 4. O-O") to its position key and ply. Implement + the startup seed (only when empty, advisory lock).
 
 ## 2. Import
 

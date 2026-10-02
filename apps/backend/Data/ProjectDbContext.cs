@@ -35,9 +35,16 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<PositionEvaluation> PositionEvaluations => Set<PositionEvaluation>();
 
+    public DbSet<LibraryGame> LibraryGames => Set<LibraryGame>();
+
+    public DbSet<LibraryPosition> LibraryPositions => Set<LibraryPosition>();
+
+    public DbSet<Opening> Openings => Set<Opening>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();
+        modelBuilder.HasPostgresExtension("pg_trgm"); // the library's name and event search (game-library)
         // PlayerIdentity is the replica's narrow view of users (ReadDbContext only); here users is the User entity.
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ProjectDbContext).Assembly, t => t != typeof(PlayerIdentityConfiguration));
     }
@@ -62,6 +69,6 @@ internal static class SeedData
     public static Task SeedAsync(ProjectDbContext context, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return Task.CompletedTask;
+        return Library.OpeningSeed.SeedAsync(context, ct);
     }
 }

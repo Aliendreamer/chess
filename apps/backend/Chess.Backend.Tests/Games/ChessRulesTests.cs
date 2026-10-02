@@ -142,3 +142,45 @@ public sealed class SideCanMateTests
     public void Mating_material_by_side(string fen, string side, bool canMate) =>
         Assert.Equal(canMate, ChessRules.FromFen(fen).CanMate(Enum.Parse<Side>(side)));
 }
+
+public sealed class ChessRulesSanTests
+{
+    private static string Uci(ChessRules rules, string san) => Assert.IsType<MoveApplied>(rules.TryApplySan(san)).Uci;
+
+    [Fact]
+    public void Plain_moves_become_uci()
+    {
+        ChessRules rules = ChessRules.NewGame();
+        Assert.Equal(["e2e4", "e7e5", "g1f3", "b8c6"], new[] { "e4", "e5", "Nf3", "Nc6" }.Select(san => Uci(rules, san)));
+    }
+
+    [Fact]
+    public void Castling_is_the_kings_move()
+    {
+        ChessRules rules = ChessRules.NewGame();
+        foreach (string san in new[] { "e4", "e5", "Nf3", "Nc6", "Bc4", "Bc5" })
+        {
+            Uci(rules, san);
+        }
+
+        Assert.Equal("e1g1", Uci(rules, "O-O"));
+    }
+
+    [Fact]
+    public void A_promotion_keeps_its_piece()
+    {
+        ChessRules rules = ChessRules.ForStudy("8/4P3/8/8/8/8/k7/4K3 w - - 0 1")!;
+        Assert.Equal("e7e8q", Uci(rules, "e8=Q"));
+    }
+
+    [Fact]
+    public void An_illegal_or_unreadable_move_is_rejected()
+    {
+        ChessRules rules = ChessRules.NewGame();
+        Assert.IsType<MoveRejected>(rules.TryApplySan("Ke5"));
+        Assert.IsType<MoveRejected>(rules.TryApplySan("hello"));
+        Assert.Equal(STANDARD, rules.Fen);
+    }
+
+    private const string STANDARD = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+}
