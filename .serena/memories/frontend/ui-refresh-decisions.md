@@ -50,5 +50,5 @@ verified (unit gates, 36/36 Playwright, integration tests):
 Round 3 (2026-10-02): owner approved the design for an open analysis board, a famous-games library (WC + classics,
 search by details/opening/position) and chess news. Written as OpenSpec changes `analysis-board`, `game-library`,
 `chess-news` (ROADMAP Part 6), not implemented yet; build in that order. Source research (licences, working feeds)
-is in `game-library`/`chess-news` design.md. Owner still to answer: Caissabase licence check (1993–2004 gap) and
-whether "Events now" (lichess broadcasts) joins `chess-news`.
+is in `game-library`/`chess-news` design.md. "Events now" (lichess broadcasts) is IN `chess-news` (owner, 2026-10-02).
+Owner will check PGN Mentor and Caissabase licences later (1993–2004 gap waits on Caissabase).

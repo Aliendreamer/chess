@@ -218,8 +218,9 @@ feeds. Three OpenSpec changes, in this order:
   (CC0). Every row keeps its source and licence; PGN collections are never committed. Open: 1993–2004 waits for a check
   of Caissabase's CC0 claim; asking PGN Mentor for permission.
 - **`chess-news`** **[proposed]**: headlines and links only (never article text or images) from FIDE, ChessBase, the
-  Lichess blog, TWIC and the ECF, fetched every 30 min by a singleton; chess.com left out (its terms). Open: an
-  "Events now" box from the lichess broadcast API.
+  Lichess blog, TWIC and the ECF, fetched every 30 min by a singleton; chess.com left out (its terms). Plus an
+  **Events now** box (owner, 2026-10-02): the tournaments being played, from lichess's broadcast list every 10 min,
+  names and links only.
 
 ## 7. Cross-cutting
 

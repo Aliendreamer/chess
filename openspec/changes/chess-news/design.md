@@ -10,6 +10,13 @@ Feeds checked on 2026-10-02 (fetched that day):
 | The Week in Chess        | https://theweekinchess.com/twic-rss-feed | RSS 2.0 | needs `Accept: application/rss+xml` (406 without); `pubDate` is not RFC-822 (`Thu Sep 17 20:10:00 2026`) |
 | English Chess Federation | https://www.englishchess.org.uk/feed/    | RSS 2.0 | ~10 items                                                                                                |
 
+Lichess broadcasts, checked the same day: `GET https://lichess.org/api/broadcast/top?page=1` answers JSON
+`{ active, upcoming, past }` (56 active tournaments that day). Each entry has `tour` (`id`, `name`, `url`, `tier`,
+`dates`, `info.location`, `info.tc`, `info.fideTC` standard/rapid/blitz, `image`) and `round` (`name`, `ongoing`,
+`startsAt`, `url`). The API asks for one request at a time and a minute's pause after a 429; unauthenticated use is
+"heavily rate-limited and might stop functioning", so a personal token is recommended. Broadcast games are CC BY-SA
+4.0 — this change shows only tournament names and links, no games.
+
 Left out: chess.com (user agreement forbids publicly displaying its content and automated retrieval), US Chess (403
 behind Cloudflare), New in Chess (human verification), Chessdom (unreachable), chess24 (merged into chess.com).
 
@@ -45,7 +52,17 @@ fetched_at)` unique on `(source, url)`; rows older than `News:KeepDays` (30) are
 5. **Frontend.** `NewsList` renders headline (an `<a target="_blank" rel="noopener noreferrer">`), source name and
    relative age; the source filter on `/news` is chips from the feeds the API reports (`GET /api/news/sources`). An
    outbound link says so for screen readers ("opens chessbase.com").
-6. **Courtesy.** Requests send `User-Agent: ChessClub/<version> (+https://app.chess.localhost)` and honour
+6. **Events now.** The same singleton asks `api/broadcast/top?page=1` every `News:EventsMinutes` (10), never in
+   parallel with itself, and replaces the stored set `chess_events(id, name, url, round_name, round_url, ongoing,
+location, fide_tc, tier, starts_at, ends_at, fetched_at)` with the `active` list (a whole snapshot, not a merge).
+   `BroadcastParser` (pure, tested on a saved sample) keeps only those fields; URLs must be `https://lichess.org/…`;
+   `image` is ignored (no third-party requests from the browser). A 429 pauses the next request by 60 s;
+   `News:LichessToken` (a secret, env var only, empty by default) is sent as a bearer token when set. Home shows the
+   top `News:EventsShown` (5): ongoing rounds first, then by tier (higher first), then start time — "live" on an
+   ongoing round, otherwise the round's start; place and time control (`fideTC` mapped to Classical/Rapid/Blitz);
+   each linking to the round on lichess (new tab, "opens lichess.org"). When the last snapshot is older than an hour
+   (lichess unreachable), the box hides rather than showing stale events.
+7. **Courtesy.** Requests send `User-Agent: ChessClub/<version> (+https://app.chess.localhost)` and honour
    `ETag`/`Last-Modified` (`If-None-Match` / `If-Modified-Since`, stored per feed in memory), so an unchanged feed is a 304.
 
 ## Risks / Trade-offs
@@ -53,10 +70,11 @@ fetched_at)` unique on `(source, url)`; rows older than `News:KeepDays` (30) are
 - [Feeds change URL or start blocking] → a failing source is visible in the metric and the logs; switching it off is
   configuration. The home panel shows whatever the other sources have.
 - [Terms change] → only headline + link are stored; removing a source deletes its rows (`DELETE … WHERE source`).
+- [lichess rate-limits or changes the broadcast API] → one request per 10 minutes from one node, a token when
+  configured, a 60 s back-off on 429, and the box hides when the snapshot is stale; nothing else depends on it.
 - [Clock-less dates] → TWIC's lenient format is parsed explicitly; anything unparseable takes the fetch time, so it
   still sorts sensibly.
 
 ## Open Questions
 
-- "Events now" from the lichess broadcast API (current tournaments, CC BY-SA games): owner to decide whether it joins
-  this change or comes later.
+(none — the owner added Events now to this change on 2026-10-02)

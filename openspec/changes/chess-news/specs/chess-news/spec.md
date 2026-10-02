@@ -53,3 +53,26 @@ article on its source's site, opening in a new tab.
 
 - **WHEN** a member picks FIDE on the News page
 - **THEN** only FIDE headlines are listed
+
+### Requirement: Home shows the tournaments being played now
+
+The backend SHALL keep a snapshot of lichess's active broadcast tournaments, asked every `News:EventsMinutes` from one
+node with at most one request at a time, keeping only name, place, time control, tier, current round and lichess
+links. Home SHALL show the top `News:EventsShown` — ongoing rounds first, then by tier, then by start — each marked
+live or with its round's start and linking to the round on lichess. The box SHALL hide when the snapshot is older than
+an hour or empty.
+
+#### Scenario: A live round
+
+- **WHEN** lichess lists an active tournament whose current round is ongoing
+- **THEN** home shows it first with "live", its place and time control, linking to that round on lichess
+
+#### Scenario: Lichess unreachable
+
+- **WHEN** the last successful snapshot is more than an hour old
+- **THEN** home shows no Events now box
+
+#### Scenario: Rate limited
+
+- **WHEN** lichess answers 429
+- **THEN** the next request waits at least 60 seconds and the previous snapshot stays
