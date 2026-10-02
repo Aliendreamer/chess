@@ -26,11 +26,23 @@ test('the top bar menu reaches every page', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('complementary')).toBeHidden() // the rail
   await page.getByText('Menu').click()
-  for (const name of ['Home', 'History', 'Studies', 'Settings']) {
-    await expect(page.getByRole('link', { name })).toBeVisible()
+  // Inside the menu, by exact name: home's headlines are links too, and any of them may contain "home".
+  const menu = page.locator('header details')
+  for (const name of [
+    'Home',
+    'Watch',
+    'History',
+    'Studies',
+    'Analysis',
+    'Library',
+    'News',
+    'Profile',
+    'Settings',
+  ]) {
+    await expect(menu.getByRole('link', { name, exact: true })).toBeVisible()
   }
-  await expect(page.getByRole('link', { name: 'Log out' })).toBeVisible()
-  await page.getByRole('link', { name: 'History' }).click()
+  await expect(menu.getByRole('link', { name: 'Log out', exact: true })).toBeVisible()
+  await menu.getByRole('link', { name: 'History', exact: true }).click()
   await expect(page).toHaveURL(/\/games$/)
 })
 
