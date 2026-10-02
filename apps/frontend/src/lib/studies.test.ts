@@ -87,7 +87,7 @@ describe('parsePgn', () => {
   it('makes one study per game, with variations as siblings, and reports a broken game', () => {
     const [ruy, broken, endgame] = parsePgn(pgn)
 
-    expect(ruy).toEqual({
+    expect(ruy).toMatchObject({
       ok: true,
       study: {
         title: 'Ruy ideas',
@@ -277,5 +277,25 @@ describe('fromInput (analysis-board)', () => {
     expect(replayed[0]?.san).toBe('e4')
     expect(replayed[0]?.children.map((move) => move.san)).toEqual(['e5', 'c5'])
     expect(fromInput(STANDARD_START, [{ uci: 'e2e5', children: [] }])).toEqual([])
+  })
+})
+
+describe('parsePgn headers (game-library)', () => {
+  it('passes the factual headers through, keeping a partial date', () => {
+    const [game] = parsePgn(
+      '[Event "World Championship"]\n[Site "New York"]\n[Date "1886.??.??"]\n[Round "1"]\n[White "Zukertort"]\n[Black "Steinitz"]\n[Result "1-0"]\n[ECO "D26"]\n\n1. d4 d5 1-0',
+    )
+    expect(game?.ok && game.headers).toEqual({
+      event: 'World Championship',
+      site: 'New York',
+      round: '1',
+      date: '1886.??.??',
+      eco: 'D26',
+    })
+  })
+
+  it('leaves out unknown headers', () => {
+    const [game] = parsePgn('[Event "?"]\n[Date "????.??.??"]\n\n1. e4 *')
+    expect(game?.ok && game.headers).toEqual({ event: null, site: null, round: null, date: null, eco: null })
   })
 })

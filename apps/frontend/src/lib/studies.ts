@@ -164,7 +164,18 @@ function updateChildren(
 }
 
 /** One game of an import: ready to send, or why it could not be read. */
-export type ParsedGame = { ok: true; study: StudyInput } | { ok: false; error: string }
+export type ParsedGame =
+  | { ok: true; study: StudyInput; headers: PgnHeaders }
+  | { ok: false; error: string }
+
+/** The factual headers a library import keeps (game-library); a partial date stays partial (`1886.??.??`). */
+export interface PgnHeaders {
+  event: string | null
+  site: string | null
+  round: string | null
+  date: string | null
+  eco: string | null
+}
 
 /**
  * PGN text → one study per game (studies D3): each game is split out and parsed on its own, so a broken game is
@@ -188,6 +199,17 @@ export function parsePgn(text: string): Array<ParsedGame> {
               : null
         return value && !value.includes('?') ? value : null
       }
+      // A header kept as written unless it is wholly unknown ("?", "????.??.??").
+      const raw = (name: string): string | null => {
+        const value = tags[name]
+        const text =
+          typeof value === 'object' && value !== null && 'value' in value
+            ? String(value.value)
+            : typeof value === 'string'
+              ? value
+              : null
+        return text && /[^?.\s]/.test(text) ? text : null
+      }
       const white = tag('White')
       const black = tag('Black')
       const event = tag('Event')
@@ -201,6 +223,13 @@ export function parsePgn(text: string): Array<ParsedGame> {
           black,
           result: tag('Result'),
           date: tag('Date'),
+        },
+        headers: {
+          event: raw('Event'),
+          site: raw('Site'),
+          round: raw('Round'),
+          date: raw('Date'),
+          eco: raw('ECO'),
         },
       }
     } catch (e) {

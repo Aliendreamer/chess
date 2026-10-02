@@ -5,12 +5,14 @@ import { MY_TURN } from '../play'
 import { THINK_LEVELS } from '../analysis'
 import { isPreferences } from '../auth'
 import { isAggregateId, isProjectionGroup } from '../admin'
+import { IMPORT_BATCH, searchQuery } from '../library'
 import { loadMe, loadPreferences, savePreferences } from './auth'
 import { apiUrl, clientIp, forwardClientIp, isGuid } from './upstream'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { telemetryEnabled } from './telemetry'
 import { loadPingLive, sendPing } from './pings'
 import { loadDeadLetters, replayDeadLetters } from './admin'
+import { importLibrary, loadLibrary, loadLibraryGame, loadOpening, loadPosition } from './library'
 import { loadPlayer, loadPlayerGames } from './players'
 import {
   loadEngineLevels,
@@ -43,6 +45,7 @@ import {
   loadMyGames,
   rematch,
 } from './play'
+import type { ImportBatch, LibrarySearch } from '../library'
 import type { Preferences } from '../auth'
 import type { GameCommand } from '../games'
 import type { InviteView, MyTurn } from '../play'
@@ -204,6 +207,68 @@ export const postCancelInvite = createServerFn({ method: 'POST' })
 export const postRematch = createServerFn({ method: 'POST' })
   .validator((gameId: string) => guid(gameId))
   .handler(({ data }) => rematch(serverFetch(), data))
+
+/** A position key as the API takes it: a FEN's first four fields (game-library). */
+const POSITION_KEY = /^[pnbrqkPNBRQK1-8/]+ [wb] [KQkq-]+ [a-h1-8-]+$/
+function positionKeyOf(key: string): string {
+  if (typeof key !== 'string' || key.length > 100 || !POSITION_KEY.test(key))
+    throw new Error('Not a position key.')
+  return key
+}
+
+/** Library search (game-library): the filters are checked here and sent as a query string. */
+export const getLibrary = createServerFn({ method: 'GET' })
+  .validator((input: { search: LibrarySearch; limit: number; cursor?: string }) => {
+    const s = input.search
+    const search: LibrarySearch = {}
+    const text = (v: string | undefined) =>
+      typeof v === 'string' && v.trim() ? v.slice(0, 100) : null
+    const year = (v: number | undefined) =>
+      typeof v === 'number' && Number.isInteger(v) && v >= 1400 && v <= 2100 ? v : null
+    const player = text(s.player)
+    if (player) search.player = player
+    const event = text(s.event)
+    if (event) search.event = event
+    const opening = text(s.opening)
+    if (opening) search.opening = opening
+    const from = year(s.from)
+    if (from) search.from = from
+    const to = year(s.to)
+    if (to) search.to = to
+    if (s.result === '1-0' || s.result === '0-1' || s.result === '1/2-1/2') search.result = s.result
+    if (s.wc === true) search.wc = true
+    if (typeof s.eco === 'string' && /^[A-Ea-e][0-9]{0,2}$/.test(s.eco)) search.eco = s.eco
+    return searchQuery(search, Math.min(Math.max(Math.trunc(input.limit), 1), 50), input.cursor)
+  })
+  .handler(({ data }) => loadLibrary(serverFetch(), data))
+
+export const getLibraryGame = createServerFn({ method: 'GET' })
+  .validator((id: string) => guid(id))
+  .handler(({ data }) => loadLibraryGame(serverFetch(), data))
+
+export const getLibraryPosition = createServerFn({ method: 'GET' })
+  .validator((key: string) => positionKeyOf(key))
+  .handler(({ data }) => loadPosition(serverFetch(), data))
+
+export const getOpening = createServerFn({ method: 'GET' })
+  .validator((key: string) => positionKeyOf(key))
+  .handler(({ data }) => loadOpening(serverFetch(), data))
+
+/** One import batch (Admin; the API checks the role). */
+export const postImportLibrary = createServerFn({ method: 'POST' })
+  .validator((batch: ImportBatch) => {
+    if (!batch.source?.trim() || !batch.licence?.trim())
+      throw new Error('Name the source and the licence.')
+    if (
+      !Array.isArray(batch.games) ||
+      batch.games.length === 0 ||
+      batch.games.length > IMPORT_BATCH
+    ) {
+      throw new Error(`1 to ${IMPORT_BATCH} games at a time.`)
+    }
+    return batch
+  })
+  .handler(({ data }) => importLibrary(serverFetch(), data))
 
 /** Parked projection records (admin-screens); the API answers 403 to anyone without the Admin role. */
 export const getDeadLetters = createServerFn({ method: 'GET' })
