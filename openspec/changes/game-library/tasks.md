@@ -10,10 +10,10 @@
 
 ## 2. Import
 
-- [ ] 2.1 Failing unit tests for `Library/LibraryImport` (pure): a legal game → positions for every ply and its deepest
+- [x] 2.1 Failing unit tests for `Library/LibraryImport` (pure): a legal game → positions for every ply and its deepest
       opening; an illegal move → refused with the move; a FEN start → refused; the dedupe key ignores name case and
       spacing; `year` from `1886.??.??`, `1972.07.11`, `????.??.??`. Implement on `ChessRules` + `PositionKey`.
-- [ ] 2.2 `WebApi/Admin/ImportLibrary/` (`Roles(Admin)`, ≤100 games, one transaction, per-game outcome). Commit:
+- [x] 2.2 `WebApi/Admin/ImportLibrary/` (`Roles(Admin)`, ≤100 games, one transaction, per-game outcome). Commit:
       `feat(backend): the game library and its import`.
 - [ ] 2.3 🐳 Integration test: import 3 games (new, duplicate, illegal) → outcomes; the stored game has its positions
       and opening; a non-admin gets 403 (`nx integration-test backend`).
