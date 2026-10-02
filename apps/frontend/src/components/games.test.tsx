@@ -11,6 +11,7 @@ import {
   MoveNav,
   PlayerStrip,
   PromotionPicker,
+  RecentGames,
   RematchOffer,
   TvGrid,
   YourTurnList,
@@ -20,8 +21,20 @@ import type { GameView } from '#/lib/games'
 
 // The router's <Link> needs a router; the lists only need an anchor to their game.
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, params }: { children: ReactNode; params: { id: string } }) => (
-    <a href={`/games/${params.id}`}>{children}</a>
+  Link: ({
+    children,
+    to,
+    params,
+    ...rest
+  }: {
+    children: ReactNode
+    to: string
+    params: { id: string }
+    'aria-label'?: string
+  }) => (
+    <a href={to.replace('$id', params.id)} aria-label={rest['aria-label']}>
+      {children}
+    </a>
   ),
 }))
 
@@ -401,13 +414,42 @@ describe('TvGrid', () => {
       <TvGrid games={[tv('g1', 'testuser', 'player'), tv('g2', 'anna', 'Stockfish (Club)')]} />,
     )
     const links = screen.getAllByRole('link')
-    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/games/g1', '/games/g2'])
+    const games = links.map((a) => a.getAttribute('href')).filter((h) => h?.startsWith('/games/'))
+    expect(games).toEqual(['/games/g1', '/games/g2'])
     expect(screen.getByRole('img', { name: 'testuser vs player, 3+2' })).toBeTruthy()
-    expect(screen.getByText('Stockfish (Club)')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Stockfish (Club)' }).getAttribute('href')).toBe(
+      '/players/2',
+    )
   })
 
   it('says so when no game is on', () => {
     render(<TvGrid games={[]} empty="No games on right now." />)
     expect(screen.getByText('No games on right now.')).toBeTruthy()
+  })
+})
+
+describe('RecentGames', () => {
+  it('names the opponent as a link to their profile and opens the game from its ending', () => {
+    render(
+      <RecentGames
+        games={[
+          {
+            gameId: 'g1',
+            color: 'white',
+            opponentId: 5,
+            opponent: 'player',
+            timeControl: '3+2',
+            status: 'ended',
+            result: '0-1',
+            reason: 'checkmate',
+            createdAt: '2026-10-02T10:00:00Z',
+          },
+        ]}
+      />,
+    )
+    expect(screen.getByRole('link', { name: 'player' }).getAttribute('href')).toBe('/players/5')
+    expect(screen.getByRole('link', { name: 'Open the game vs player' }).getAttribute('href')).toBe(
+      '/games/g1',
+    )
   })
 })

@@ -321,7 +321,11 @@ export function categoryOf(timeControl: string): Category {
 
 /** The category's name for people: "Blitz", "Untimed". */
 export function category(timeControl: string): string {
-  return CATEGORY_LABELS[categoryOf(timeControl)]
+  return categoryLabel(categoryOf(timeControl))
+}
+
+export function categoryLabel(c: Category): string {
+  return CATEGORY_LABELS[c]
 }
 
 /** The clocks, counted down locally since the view arrived (D5); re-based on every new view. */

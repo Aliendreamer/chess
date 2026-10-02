@@ -10,11 +10,11 @@
 
 ## 2. Frontend
 
-- [ ] 2.1 Failing vitest: `recordByCategory` groups per-time-control rows into game types in a fixed order;
+- [x] 2.1 Failing vitest: `recordByCategory` groups per-time-control rows into game types in a fixed order;
       `lib/server/players.ts` paths and 404 → null. Implement + `getPlayer` / `getPlayerGames` server functions.
-- [ ] 2.2 Failing component tests: `PlayerStats` (totals, a bar, rows per type) and `PlayerLink` (link to
+- [x] 2.2 Failing component tests: `PlayerStats` (totals, a bar, rows per type) and `PlayerLink` (link to
       `/players/$id`, plain text for id 0). Implement in `components/players.tsx`.
-- [ ] 2.3 `/players/$id` route (not found → the router's not-found screen), Profile nav entry, names linked in
+- [x] 2.3 `/players/$id` route (not found → the router's not-found screen), Profile nav entry, names linked in
       `RecentGames`, `PlayerStrip` and `TvGrid`. `pnpm generate-routes`; `nx run-many -t lint test -p frontend`. Commit:
       `feat(frontend): player profiles`.
 - [ ] 2.4 🐳 Playwright `e2e/profile.spec.ts`: after a resignation, the winner opens the loser's profile from the game

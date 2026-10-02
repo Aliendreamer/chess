@@ -5,7 +5,9 @@ import { PLAYER, USER, move, signedIn } from './support'
  * live-home: `player` plays the computer; `testuser`, not in that game, finds it on Club TV and on the Watch page and
  * opens it as a spectator — the board without the players' controls.
  */
-test('a game in play shows on Club TV and Watch, and opens for a spectator', async ({ browser }) => {
+test('a game in play shows on Club TV and Watch, and opens for a spectator', async ({
+  browser,
+}) => {
   test.setTimeout(120_000)
   const playing = await signedIn(browser, PLAYER)
   const form = playing.getByTestId('engine-form')

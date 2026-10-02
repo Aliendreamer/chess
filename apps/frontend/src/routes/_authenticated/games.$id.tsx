@@ -336,6 +336,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
       <PlayerStrip
         testId={`strip-${color}`}
         name={color === 'white' ? white : black}
+        playerId={color === 'white' ? current.whiteId : current.blackId}
         detail={[color, you && toMove ? 'your move' : null].filter(Boolean).join(' · ')}
         {...(clockless ? {} : { ms: color === 'white' ? clocks.whiteMs : clocks.blackMs })}
         active={toMove && current.ply >= 2}

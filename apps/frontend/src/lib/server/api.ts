@@ -9,6 +9,7 @@ import { apiUrl, clientIp, forwardClientIp, isGuid } from './upstream'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { telemetryEnabled } from './telemetry'
 import { loadPingLive, sendPing } from './pings'
+import { loadPlayer, loadPlayerGames } from './players'
 import {
   loadEngineLevels,
   loadGameLive,
@@ -195,6 +196,25 @@ export const postCancelInvite = createServerFn({ method: 'POST' })
 export const postRematch = createServerFn({ method: 'POST' })
   .validator((gameId: string) => guid(gameId))
   .handler(({ data }) => rematch(serverFetch(), data))
+
+/** A player id: a `users` id, negative for the computer players. */
+function playerId(id: number): number {
+  if (!Number.isSafeInteger(id) || id === 0) throw new Error('Not a player id.')
+  return id
+}
+
+/** A public profile (player-profiles); null for an unknown player. */
+export const getPlayer = createServerFn({ method: 'GET' })
+  .validator((id: number) => playerId(id))
+  .handler(({ data }) => loadPlayer(serverFetch(), data))
+
+export const getPlayerGames = createServerFn({ method: 'GET' })
+  .validator((input: { id: number; limit: number; cursor?: string }) => ({
+    id: playerId(input.id),
+    limit: Math.min(Math.max(Math.trunc(input.limit), 1), 50),
+    cursor: input.cursor,
+  }))
+  .handler(({ data }) => loadPlayerGames(serverFetch(), data.id, data))
 
 /** The lobby (live-home): polled by home every 10 s, answered from a cache the API shares between callers. */
 export const getLobby = createServerFn({ method: 'GET' }).handler(() => loadLobby(serverFetch()))

@@ -83,11 +83,16 @@ export function FlipIcon() {
 
 /** A dot in the game type's colour, placed before the time control or the type's name. */
 export function CategoryMark({ timeControl }: { timeControl: string }) {
+  return <CategoryDot category={categoryOf(timeControl)} />
+}
+
+/** The game type's colour dot, for a type rather than one time control (a profile's record). */
+export function CategoryDot({ category }: { category: Category }) {
   return (
     <span
       aria-hidden
-      data-category={categoryOf(timeControl)}
-      className={`inline-block size-2 shrink-0 rounded-full ${TC_BG[categoryOf(timeControl)]}`}
+      data-category={category}
+      className={`inline-block size-2 shrink-0 rounded-full ${TC_BG[category]}`}
     />
   )
 }
@@ -370,6 +375,8 @@ export function Clock({ ms, active = false }: { ms: number; active?: boolean }) 
 
 export interface PlayerStripProps {
   name: string
+  /** Links the name to the player's profile (player-profiles). */
+  playerId?: number
   /** A short caption: "white · your move". */
   detail: string
   ms?: number
@@ -383,6 +390,7 @@ export interface PlayerStripProps {
 
 export function PlayerStrip({
   name,
+  playerId,
   detail,
   ms,
   active = false,
@@ -393,7 +401,9 @@ export function PlayerStrip({
   return (
     <div className="flex items-center justify-between gap-3" data-testid={testId}>
       <div className="flex min-w-0 flex-col">
-        <span className="font-medium text-fg-primary">{name}</span>
+        <span className="font-medium text-fg-primary">
+          {playerId === undefined ? name : <PlayerLink id={playerId} name={name} />}
+        </span>
         <span className="flex items-center gap-2 text-xs text-fg-secondary">
           {detail}
           {material && material.pieces.length + material.plus > 0 ? (
@@ -549,20 +559,22 @@ export function RecentGames({ games, pgn = false }: RecentGamesProps) {
             >
               {!finished ? '…' : game.result ? resultText(game.result) : '—'}
             </span>
-            <Link
-              to="/games/$id"
-              params={{ id: game.gameId }}
-              className="truncate text-fg-primary no-underline hover:text-fg-accent"
-            >
-              vs {game.opponent}
-            </Link>
+            <span className="truncate text-fg-primary">
+              {'vs '}
+              <PlayerLink id={game.opponentId} name={game.opponent} />
+            </span>
             <span className="flex items-center gap-2 font-mono text-fg-secondary">
               <CategoryMark timeControl={game.timeControl} />
               {game.timeControl}
             </span>
-            <span className="truncate text-sm text-fg-secondary max-shell:col-start-2">
-              {!finished ? 'in play' : game.reason ? reasonText(game.reason) : ''}
-            </span>
+            <Link
+              to="/games/$id"
+              params={{ id: game.gameId }}
+              aria-label={`Open the game vs ${game.opponent}`}
+              className="truncate text-sm text-fg-secondary no-underline hover:text-fg-accent hover:underline max-shell:col-start-2"
+            >
+              {!finished ? 'in play' : game.reason ? reasonText(game.reason) : 'open'}
+            </Link>
             {pgn ? (
               finished ? (
                 <a href={`/pgn/${game.gameId}`} download className="font-mono text-sm no-underline">
@@ -869,7 +881,7 @@ export function TvGrid({
     >
       {games.map((game) => (
         <li key={game.gameId} className="flex min-w-0 flex-col gap-1.5">
-          <TvName name={game.black} />
+          <TvName id={game.blackId} name={game.black} />
           <Link
             to="/games/$id"
             params={{ id: game.gameId }}
@@ -882,7 +894,7 @@ export function TvGrid({
             />
           </Link>
           <span className="flex items-center justify-between gap-2">
-            <TvName name={game.white} />
+            <TvName id={game.whiteId} name={game.white} />
             <span className="flex shrink-0 items-center gap-1.5 font-mono text-xs text-fg-secondary">
               <CategoryMark timeControl={game.timeControl} />
               {game.timeControl}
@@ -894,6 +906,32 @@ export function TvGrid({
   )
 }
 
-function TvName({ name }: { name: string }) {
-  return <span className="truncate text-sm text-fg-primary">{name}</span>
+function TvName({ id, name }: { id: number; name: string }) {
+  return (
+    <span className="truncate text-sm text-fg-primary">
+      <PlayerLink id={id} name={name} />
+    </span>
+  )
+}
+
+/** A player's name as a link to their profile; the unknown player (id 0) stays plain text. */
+export function PlayerLink({
+  id,
+  name,
+  className,
+}: {
+  id: number
+  name: string
+  className?: string
+}) {
+  if (id === 0) return <span className={className}>{name}</span>
+  return (
+    <Link
+      to="/players/$id"
+      params={{ id: String(id) }}
+      className={className ?? 'text-fg-primary no-underline hover:text-fg-accent hover:underline'}
+    >
+      {name}
+    </Link>
+  )
 }

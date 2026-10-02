@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { BookOpen, History, House, Menu, Settings, Tv } from 'lucide-react'
+import { BookOpen, History, House, Menu, Settings, Tv, UserRound } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Me, Preferences } from '#/lib/auth'
 import type { LinkProps } from '@tanstack/react-router'
@@ -32,7 +32,7 @@ export function Shell({
         <TopBar me={me} />
         <aside className="hidden flex-col gap-7 border-r border-line-divider bg-surface-rail px-4 py-6 shell:flex">
           <Wordmark />
-          <Navigation />
+          <Navigation me={me} />
           <div className="mt-auto">
             <Account me={me} testId="identity-name" />
           </div>
@@ -62,7 +62,7 @@ function TopBar({ me }: { me: Me }) {
           className="absolute right-0 mt-2 flex w-60 flex-col gap-5 rounded-card border border-line-default bg-surface-rail p-3 shadow-2xl"
           onClick={(event) => event.currentTarget.closest('details')?.removeAttribute('open')}
         >
-          <Navigation />
+          <Navigation me={me} />
           <Account me={me} />
         </div>
       </details>
@@ -70,7 +70,7 @@ function TopBar({ me }: { me: Me }) {
   )
 }
 
-function Navigation() {
+function Navigation({ me }: { me: Me }) {
   return (
     <>
       <NavGroup label="Play">
@@ -82,6 +82,12 @@ function Navigation() {
         <NavItem to="/studies" label="Studies" icon={<BookOpen size={16} />} />
       </NavGroup>
       <NavGroup label="You">
+        <NavItem
+          to="/players/$id"
+          params={{ id: String(me.id) }}
+          label="Profile"
+          icon={<UserRound size={16} />}
+        />
         <NavItem to="/settings" label="Settings" icon={<Settings size={16} />} />
       </NavGroup>
     </>
@@ -131,16 +137,18 @@ function NavGroup({ label, children }: { label: string; children: ReactNode }) {
 
 interface NavItemProps {
   to: NonNullable<LinkProps['to']>
+  params?: LinkProps['params']
   label: string
   /** A Lucide icon (site-themes), decorative: the label names the link. */
   icon?: ReactNode
 }
 
 /** A router link; the router marks the current one (`data-status="active"`), styled as selected. */
-function NavItem({ to, label, icon }: NavItemProps) {
+function NavItem({ to, params, label, icon }: NavItemProps) {
   return (
     <Link
       to={to}
+      {...(params ? { params } : {})}
       activeOptions={{ exact: true }}
       className="flex min-h-9 w-full items-center gap-2 rounded-control p-2 text-base pointer-coarse:min-h-11 text-fg-body no-underline transition-colors duration-[120ms] hover:bg-surface-hover hover:text-fg-body data-[status=active]:bg-surface-selected data-[status=active]:text-fg-primary"
     >
