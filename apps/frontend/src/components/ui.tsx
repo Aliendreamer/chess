@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import type { ColourChoice, CommandOutcome } from '#/lib/games'
+import type { Pager } from '#/lib/play'
 import { pieceSrc } from '#/lib/board'
 
 export type ButtonVariant = 'primary' | 'outline' | 'secondary'
@@ -196,7 +197,8 @@ export function Panel({
 export interface SectionHeadingProps {
   /** `xl` is the page title (an h1); `sm` a section heading (an h2). */
   size?: 'sm' | 'xl'
-  meta?: string
+  /** A count, a status, or a link such as "Watch all". */
+  meta?: ReactNode
   className?: string
   children: ReactNode
 }
@@ -296,6 +298,21 @@ export function ColourPicker({
           {c.label}
         </button>
       ))}
+    </div>
+  )
+}
+
+/** "Load more" under a paged list (ui-polish): "Loading…" while it loads, the error line when a page fails. */
+export function LoadMore({ pager }: { pager: Pager }) {
+  if (!pager.hasMore && !pager.error) return null
+  return (
+    <div className="flex flex-col items-start gap-2">
+      {pager.hasMore ? (
+        <Button disabled={pager.busy} onClick={() => void pager.more()}>
+          {pager.busy ? 'Loading…' : 'Load more'}
+        </Button>
+      ) : null}
+      {pager.error ? <ErrorText>{pager.error}</ErrorText> : null}
     </div>
   )
 }

@@ -21,11 +21,11 @@
 
 ## 3. Frontend: lobby on home, Watch page
 
-- [ ] 3.1 Failing vitest for `lib/server/play.ts#loadLobby` and `loadLiveGames` (paths, 401 redirect) and for
+- [x] 3.1 Failing vitest for `lib/server/play.ts#loadLobby` and `loadLiveGames` (paths, 401 redirect) and for
       `isLobby`; then the server functions `getLobby` / `getLiveGames` in `api.ts`.
-- [ ] 3.2 Home: counters line, "n waiting" on preset tiles, Club TV (`TvGrid`) with its empty state, poll every 10 s
+- [x] 3.2 Home: counters line, "n waiting" on preset tiles, Club TV (`TvGrid`) with its empty state, poll every 10 s
       while visible (`useLobby` in `lib/play.ts`, tested with fake timers and `document.visibilityState`).
-- [ ] 3.3 `/watch` route + a Watch nav entry (`Tv` icon) under Play; "Load more" with an error line. Run
+- [x] 3.3 `/watch` route + a Watch nav entry (`Tv` icon) under Play; "Load more" with an error line. Run
       `pnpm generate-routes`. `nx run-many -t lint test -p frontend` green. Commit: `feat(frontend): club tv and watch`.
 - [ ] 3.4 🐳 Playwright `e2e/watch.spec.ts`: `player` starts a game against the computer and moves; `testuser` (not in
       that game) sees it on Club TV and on /watch, opens it and sees the board without move controls. `tools/e2e.sh`.

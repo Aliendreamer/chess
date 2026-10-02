@@ -7,6 +7,8 @@ import {
   joinQueue,
   leaveQueue,
   loadInvite,
+  loadLiveGames,
+  loadLobby,
   loadMyGames,
   rematch,
 } from './play'
@@ -121,5 +123,29 @@ describe('loadMyGames', () => {
       '/api/me/games?limit=8',
       '/api/me/games?limit=20&cursor=abc',
     ])
+  })
+})
+
+describe('loadLobby', () => {
+  it('reads the shared lobby', async () => {
+    const calls: Array<Call> = []
+    const lobby = { gamesInPlay: 2, queues: null, tv: [] }
+    expect(await loadLobby(fakeFetch(200, lobby, calls))).toEqual(lobby)
+    expect(calls[0]?.url).toBe('/api/lobby')
+  })
+
+  it('sends a lost session to login', async () => {
+    await expect(loadLobby(fakeFetch(401, {}))).rejects.toSatisfy(isRedirect)
+  })
+})
+
+describe('loadLiveGames', () => {
+  it('pages through the games in play', async () => {
+    const calls: Array<Call> = []
+    await loadLiveGames(fakeFetch(200, { items: [], nextCursor: null, limit: 24 }, calls), {
+      limit: 24,
+      cursor: 'abc',
+    })
+    expect(calls[0]?.url).toBe('/api/games?status=playing&limit=24&cursor=abc')
   })
 })

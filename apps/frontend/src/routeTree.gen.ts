@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as PgnIdRouteImport } from './routes/pgn/$id'
+import { Route as AuthenticatedWatchRouteImport } from './routes/_authenticated/watch'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedStudiesIndexRouteImport } from './routes/_authenticated/studies.index'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
@@ -36,6 +37,11 @@ const PgnIdRoute = PgnIdRouteImport.update({
   id: '/pgn/$id',
   path: '/pgn/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedWatchRoute = AuthenticatedWatchRouteImport.update({
+  id: '/watch',
+  path: '/watch',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
@@ -92,6 +98,7 @@ const AuthenticatedGamesIdRoute = AuthenticatedGamesIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/watch': typeof AuthenticatedWatchRoute
   '/pgn/$id': typeof PgnIdRoute
   '/games/$id': typeof AuthenticatedGamesIdRoute
   '/invites/$id': typeof AuthenticatedInvitesIdRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
+  '/watch': typeof AuthenticatedWatchRoute
   '/pgn/$id': typeof PgnIdRoute
   '/': typeof AuthenticatedIndexRoute
   '/games/$id': typeof AuthenticatedGamesIdRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/watch': typeof AuthenticatedWatchRoute
   '/pgn/$id': typeof PgnIdRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/games/$id': typeof AuthenticatedGamesIdRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/settings'
+    | '/watch'
     | '/pgn/$id'
     | '/games/$id'
     | '/invites/$id'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/settings'
+    | '/watch'
     | '/pgn/$id'
     | '/'
     | '/games/$id'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/_authenticated/settings'
+    | '/_authenticated/watch'
     | '/pgn/$id'
     | '/_authenticated/'
     | '/_authenticated/games/$id'
@@ -209,6 +221,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pgn/$id'
       preLoaderRoute: typeof PgnIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/watch': {
+      id: '/_authenticated/watch'
+      path: '/watch'
+      fullPath: '/watch'
+      preLoaderRoute: typeof AuthenticatedWatchRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
@@ -285,6 +304,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedWatchRoute: typeof AuthenticatedWatchRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedGamesIdRoute: typeof AuthenticatedGamesIdRoute
   AuthenticatedInvitesIdRoute: typeof AuthenticatedInvitesIdRoute
@@ -296,6 +316,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedWatchRoute: AuthenticatedWatchRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedGamesIdRoute: AuthenticatedGamesIdRoute,
   AuthenticatedInvitesIdRoute: AuthenticatedInvitesIdRoute,

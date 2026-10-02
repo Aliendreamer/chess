@@ -1,7 +1,15 @@
 import { redirect } from '@tanstack/react-router'
 import { LOGIN_REDIRECT, postCommand, readJson } from './upstream'
 import type { CommandOutcome } from '../games'
-import type { CursorPage, InviteView, MyGameItem, MyTurn, QueueStatus } from '../play'
+import type {
+  CursorPage,
+  InviteView,
+  LiveGameItem,
+  Lobby,
+  MyGameItem,
+  MyTurn,
+  QueueStatus,
+} from '../play'
 
 /**
  * `POST /api/matchmaking/{tc}`. A plain join always seeks a new game; a heartbeat (`?heartbeat=true`, every 25 s
@@ -71,5 +79,23 @@ export async function loadMyGames(
   return readJson<CursorPage<MyGameItem>>(
     await fetchImpl(`/api/me/games?${query.toString()}`),
     'GET /api/me/games',
+  )
+}
+
+/** `GET /api/lobby`: games in play, the queues and Club TV (live-home). */
+export async function loadLobby(fetchImpl: typeof fetch): Promise<Lobby> {
+  return readJson<Lobby>(await fetchImpl('/api/lobby'), 'GET /api/lobby')
+}
+
+/** `GET /api/games?status=playing`: every game in play, newest move first, keyset paged (the Watch page). */
+export async function loadLiveGames(
+  fetchImpl: typeof fetch,
+  page: { limit: number; cursor?: string | undefined },
+): Promise<CursorPage<LiveGameItem>> {
+  const query = new URLSearchParams({ status: 'playing', limit: String(page.limit) })
+  if (page.cursor) query.set('cursor', page.cursor)
+  return readJson<CursorPage<LiveGameItem>>(
+    await fetchImpl(`/api/games?${query.toString()}`),
+    'GET /api/games',
   )
 }

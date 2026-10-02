@@ -4,6 +4,7 @@ import type { InviteView, QueueStatus } from '#/lib/play'
 import type { ColourChoice, EngineLevel } from '#/lib/games'
 import {
   getEngineLevels,
+  getLobby,
   getMyGames,
   postCreateInvite,
   postJoinQueue,
@@ -11,7 +12,7 @@ import {
   postStartEngineGame,
 } from '#/lib/server/api'
 import { CORRESPONDENCE, PRESETS, category } from '#/lib/games'
-import { MY_TURN, isQueueView, pairingGame } from '#/lib/play'
+import { MY_TURN, isQueueView, pairingGame, useLobby, waitingIn } from '#/lib/play'
 import { liveStatusText, useLiveTopic } from '#/lib/live'
 import {
   Button,
@@ -24,7 +25,7 @@ import {
   buttonClass,
   useCommand,
 } from '#/components/ui'
-import { CategoryIcon, RecentGames, YourTurnList, categoryBar } from '#/components/games'
+import { CategoryIcon, RecentGames, TvGrid, YourTurnList, categoryBar } from '#/components/games'
 
 /** Home: quick pairing on a preset, an invite link for a friend, and your recent games. */
 /** `?seek=3+2` joins that queue on arrival: the game-over card's "New opponent" (game-feedback). */
@@ -38,12 +39,14 @@ function validateSearch(search: Record<string, unknown>): { seek?: string } {
 export const Route = createFileRoute('/_authenticated/')({
   validateSearch,
   loader: async () => {
-    const [games, yourTurn, levels] = await Promise.all([
+    const [games, yourTurn, levels, lobby] = await Promise.all([
       getMyGames({ data: { limit: 8 } }),
       getMyGames({ data: { limit: 20, turn: MY_TURN } }),
       getEngineLevels(),
+      // The lobby is a nicety: home still works when it cannot be read.
+      getLobby().catch(() => null),
     ])
-    return { games, yourTurn, levels }
+    return { games, yourTurn, levels, lobby }
   },
   component: HomePage,
 })
@@ -54,7 +57,8 @@ const FOUND_MS = 600
 
 function HomePage() {
   const { me } = Route.useRouteContext()
-  const { games, yourTurn, levels } = Route.useLoaderData()
+  const { games, yourTurn, levels, lobby: lobbyAtLoad } = Route.useLoaderData()
+  const lobby = useLobby(lobbyAtLoad, loadLobby)
   const navigate = useNavigate()
   const [seek, setSeek] = useState<QueueStatus | null>(null)
   const joining = useCommand()
@@ -79,7 +83,10 @@ function HomePage() {
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-wrap items-end justify-between gap-6">
-        <SectionHeading size="xl">{`Hello, ${me.username}.`}</SectionHeading>
+        <div className="flex flex-col gap-1">
+          <SectionHeading size="xl">{`Hello, ${me.username}.`}</SectionHeading>
+          {lobby ? <ClubPulse gamesInPlay={lobby.gamesInPlay} /> : null}
+        </div>
         {current ? (
           <Link
             to="/games/$id"
@@ -109,6 +116,7 @@ function HomePage() {
                 <span className="flex items-center gap-1.5">
                   <CategoryIcon timeControl={tc} />
                   {category(tc)}
+                  <Waiting count={waitingIn(lobby, tc)} />
                 </span>
               }
               label={`Play ${tc} (${category(tc)})`}
@@ -147,8 +155,34 @@ function HomePage() {
           <RecentGames games={games.items} />
         </section>
       </div>
+
+      {lobby ? (
+        <section className="flex flex-col gap-3.5" aria-label="Club TV">
+          <SectionHeading meta={<Link to="/watch">Watch all</Link>}>Club TV</SectionHeading>
+          <TvGrid games={lobby.tv} />
+        </section>
+      ) : null}
     </div>
   )
+}
+
+/** Polled by `useLobby`; defined once so the hook's effect does not restart on every render. */
+const loadLobby = () => getLobby()
+
+/** "3 games in play · Watch" under the greeting (live-home). */
+function ClubPulse({ gamesInPlay }: { gamesInPlay: number }) {
+  return (
+    <p className="m-0 text-sm text-fg-secondary" data-testid="club-pulse">
+      {gamesInPlay === 1 ? '1 game in play' : `${gamesInPlay} games in play`}
+      {' · '}
+      <Link to="/watch">Watch</Link>
+    </p>
+  )
+}
+
+/** "· 2 waiting" on a quick-pairing tile, only when someone is. */
+function Waiting({ count }: { count: number | null }) {
+  return count ? <span className="text-fg-accent">{`· ${count} waiting`}</span> : null
 }
 
 interface SeekProps {

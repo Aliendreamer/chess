@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { BookOpen, History, House, Menu, Settings } from 'lucide-react'
+import { BookOpen, History, House, Menu, Settings, Tv } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Me, Preferences } from '#/lib/auth'
 import type { LinkProps } from '@tanstack/react-router'
@@ -75,6 +75,7 @@ function Navigation() {
     <>
       <NavGroup label="Play">
         <NavItem to="/" label="Home" icon={<House size={16} />} />
+        <NavItem to="/watch" label="Watch" icon={<Tv size={16} />} />
       </NavGroup>
       <NavGroup label="Games">
         <NavItem to="/games" label="History" icon={<History size={16} />} />

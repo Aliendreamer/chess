@@ -5,6 +5,7 @@ import {
   Chip,
   ColourPicker,
   ErrorText,
+  LoadMore,
   OptionTile,
   Panel,
   SectionHeading,
@@ -166,5 +167,35 @@ describe('ColourPicker', () => {
     expect(screen.getByRole('button', { name: /Random/ }).getAttribute('aria-pressed')).toBe('true')
     fireEvent.click(screen.getByRole('button', { name: /Black/ }))
     expect(onChange).toHaveBeenCalledWith('black')
+  })
+})
+
+describe('LoadMore', () => {
+  const pager = (
+    over: Partial<{ hasMore: boolean; busy: boolean; error: string | null }> = {},
+  ) => ({
+    hasMore: true,
+    busy: false,
+    error: null,
+    more: vi.fn(() => Promise.resolve()),
+    ...over,
+  })
+
+  it('asks for more, and says it is loading', () => {
+    const p = pager()
+    const { rerender } = render(<LoadMore pager={p} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    expect(p.more).toHaveBeenCalled()
+    rerender(<LoadMore pager={pager({ busy: true })} />)
+    expect(screen.getByRole('button', { name: 'Loading…' }).hasAttribute('disabled')).toBe(true)
+  })
+
+  it('shows the error, and nothing once the list is complete', () => {
+    const { rerender } = render(
+      <LoadMore pager={pager({ error: 'The next page could not be loaded.' })} />,
+    )
+    expect(screen.getByText('The next page could not be loaded.')).toBeTruthy()
+    rerender(<LoadMore pager={pager({ hasMore: false })} />)
+    expect(screen.queryByRole('button')).toBeNull()
   })
 })

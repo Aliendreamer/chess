@@ -12,6 +12,7 @@ import {
   PlayerStrip,
   PromotionPicker,
   RematchOffer,
+  TvGrid,
   YourTurnList,
 } from './games'
 import type { ReactNode } from 'react'
@@ -378,5 +379,35 @@ describe('MiniBoard', () => {
     expect(board.querySelector('[data-square="e4"] img')).not.toBeNull()
     expect(board.querySelector('[data-square="e2"] img')).toBeNull()
     expect(board.querySelector('[data-square="a8"]')).toBe(board.firstElementChild)
+  })
+})
+
+describe('TvGrid', () => {
+  const tv = (gameId: string, white: string, black: string) => ({
+    gameId,
+    whiteId: 1,
+    white,
+    blackId: 2,
+    black,
+    timeControl: '3+2',
+    fen: START,
+    lastUci: null,
+    ply: 0,
+    updatedAt: '2026-10-02T10:00:00Z',
+  })
+
+  it('opens each game from its board and names both players', () => {
+    render(
+      <TvGrid games={[tv('g1', 'testuser', 'player'), tv('g2', 'anna', 'Stockfish (Club)')]} />,
+    )
+    const links = screen.getAllByRole('link')
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/games/g1', '/games/g2'])
+    expect(screen.getByRole('img', { name: 'testuser vs player, 3+2' })).toBeTruthy()
+    expect(screen.getByText('Stockfish (Club)')).toBeTruthy()
+  })
+
+  it('says so when no game is on', () => {
+    render(<TvGrid games={[]} empty="No games on right now." />)
+    expect(screen.getByText('No games on right now.')).toBeTruthy()
   })
 })

@@ -34,6 +34,8 @@ import {
   joinQueue,
   leaveQueue,
   loadInvite,
+  loadLiveGames,
+  loadLobby,
   loadMyGames,
   rematch,
 } from './play'
@@ -193,6 +195,17 @@ export const postCancelInvite = createServerFn({ method: 'POST' })
 export const postRematch = createServerFn({ method: 'POST' })
   .validator((gameId: string) => guid(gameId))
   .handler(({ data }) => rematch(serverFetch(), data))
+
+/** The lobby (live-home): polled by home every 10 s, answered from a cache the API shares between callers. */
+export const getLobby = createServerFn({ method: 'GET' }).handler(() => loadLobby(serverFetch()))
+
+/** Games in play for the Watch page, newest move first. */
+export const getLiveGames = createServerFn({ method: 'GET' })
+  .validator((input: { limit: number; cursor?: string }) => ({
+    limit: Math.min(Math.max(Math.trunc(input.limit), 1), 50),
+    cursor: input.cursor,
+  }))
+  .handler(({ data }) => loadLiveGames(serverFetch(), data))
 
 export const getMyGames = createServerFn({ method: 'GET' })
   .validator((input: { limit: number; cursor?: string; turn?: MyTurn }) => ({

@@ -39,7 +39,7 @@ games against the computer MAY appear.
 
 ### Requirement: Home shows the club is alive
 
-Home SHALL show the number of games in play, a "n waiting" count on each quick-pairing tile when the queues are known,
+Home SHALL show the number of games in play, a "n waiting" count on a quick-pairing tile when someone waits there,
 and a Club TV section of mini boards that each open the game. Home SHALL refresh the lobby every 10 s while the page is
 visible, and SHALL show an empty-state line instead of the boards when no game is on.
 

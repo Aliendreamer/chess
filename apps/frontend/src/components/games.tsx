@@ -28,7 +28,7 @@ import type {
   PgnResult,
 } from '#/lib/games'
 import type { Piece } from '#/lib/moveInput'
-import type { MyGameItem } from '#/lib/play'
+import type { MyGameItem, TvGame } from '#/lib/play'
 import { PreferencesContext, animationMs as animationMsOf } from '#/lib/auth'
 import { Button, Panel } from '#/components/ui'
 import { outcomeFor } from '#/lib/play'
@@ -848,4 +848,52 @@ export function YourTurnList({
       ))}
     </ul>
   )
+}
+
+/**
+ * Club TV and the Watch page (live-home): a mini board per game, Black's name above it and White's below, each board
+ * opening the game for a spectator (D20).
+ */
+export function TvGrid({
+  games,
+  empty = 'No games on right now.',
+}: {
+  games: ReadonlyArray<TvGame>
+  empty?: string
+}) {
+  if (games.length === 0) return <p className="m-0 text-sm text-fg-secondary">{empty}</p>
+  return (
+    <ul
+      className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(180px,100%),1fr))] gap-4 p-0"
+      data-testid="tv"
+    >
+      {games.map((game) => (
+        <li key={game.gameId} className="flex min-w-0 flex-col gap-1.5">
+          <TvName name={game.black} />
+          <Link
+            to="/games/$id"
+            params={{ id: game.gameId }}
+            className="block rounded-board outline-offset-2 transition-transform motion-safe:hover:scale-[1.02]"
+          >
+            <MiniBoard
+              fen={game.fen}
+              lastUci={game.lastUci}
+              label={`${game.white} vs ${game.black}, ${game.timeControl}`}
+            />
+          </Link>
+          <span className="flex items-center justify-between gap-2">
+            <TvName name={game.white} />
+            <span className="flex shrink-0 items-center gap-1.5 font-mono text-xs text-fg-secondary">
+              <CategoryMark timeControl={game.timeControl} />
+              {game.timeControl}
+            </span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function TvName({ name }: { name: string }) {
+  return <span className="truncate text-sm text-fg-primary">{name}</span>
 }
