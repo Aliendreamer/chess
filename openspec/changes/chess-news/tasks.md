@@ -30,7 +30,7 @@
 
 - [x] 4.1 `WebApi/News/ListNews/`, `ListSources/` and `ListEvents/` (SignedIn; events answer an empty list when the
       snapshot is older than an hour).
-- [ ] 4.2 Failing vitest for `lib/server/news.ts`, `NewsList` and `EventsNow` (live marker, place, time control, link
+- [x] 4.2 Failing vitest for `lib/server/news.ts`, `NewsList` and `EventsNow` (live marker, place, time control, link
       out, hidden when empty), and for `NewsList` (link, `target=_blank`, `rel`, source, relative age,
       empty state). Implement; home panel (8, "All news" link), the Events now box and `/news` (source chips, Load more); News in the
       navigation. Commit: `feat(frontend): chess news on home`.

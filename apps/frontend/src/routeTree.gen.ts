@@ -14,6 +14,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as PgnIdRouteImport } from './routes/pgn/$id'
 import { Route as AuthenticatedWatchRouteImport } from './routes/_authenticated/watch'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
 import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated/library'
 import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticated/analysis'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -51,6 +52,11 @@ const AuthenticatedWatchRoute = AuthenticatedWatchRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedNewsRoute = AuthenticatedNewsRouteImport.update({
+  id: '/news',
+  path: '/news',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedLibraryRoute = AuthenticatedLibraryRouteImport.update({
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
   '/library': typeof AuthenticatedLibraryRoute
+  '/news': typeof AuthenticatedNewsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/watch': typeof AuthenticatedWatchRoute
   '/pgn/$id': typeof PgnIdRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
   '/library': typeof AuthenticatedLibraryRoute
+  '/news': typeof AuthenticatedNewsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/watch': typeof AuthenticatedWatchRoute
   '/pgn/$id': typeof PgnIdRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/analysis': typeof AuthenticatedAnalysisRoute
   '/_authenticated/library': typeof AuthenticatedLibraryRoute
+  '/_authenticated/news': typeof AuthenticatedNewsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/watch': typeof AuthenticatedWatchRoute
   '/pgn/$id': typeof PgnIdRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/analysis'
     | '/library'
+    | '/news'
     | '/settings'
     | '/watch'
     | '/pgn/$id'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/analysis'
     | '/library'
+    | '/news'
     | '/settings'
     | '/watch'
     | '/pgn/$id'
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/analysis'
     | '/_authenticated/library'
+    | '/_authenticated/news'
     | '/_authenticated/settings'
     | '/_authenticated/watch'
     | '/pgn/$id'
@@ -294,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/news': {
+      id: '/_authenticated/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof AuthenticatedNewsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/library': {
@@ -402,6 +421,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAnalysisRoute: typeof AuthenticatedAnalysisRoute
   AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
+  AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWatchRoute: typeof AuthenticatedWatchRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -419,6 +439,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAnalysisRoute: AuthenticatedAnalysisRoute,
   AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
+  AuthenticatedNewsRoute: AuthenticatedNewsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWatchRoute: AuthenticatedWatchRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

@@ -12,6 +12,7 @@ import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { telemetryEnabled } from './telemetry'
 import { loadPingLive, sendPing } from './pings'
 import { loadDeadLetters, replayDeadLetters } from './admin'
+import { loadEvents, loadNews, loadNewsSources } from './news'
 import { importLibrary, loadLibrary, loadLibraryGame, loadOpening, loadPosition } from './library'
 import { loadPlayer, loadPlayerGames } from './players'
 import {
@@ -207,6 +208,24 @@ export const postCancelInvite = createServerFn({ method: 'POST' })
 export const postRematch = createServerFn({ method: 'POST' })
   .validator((gameId: string) => guid(gameId))
   .handler(({ data }) => rematch(serverFetch(), data))
+
+/** Chess news headlines (chess-news); `source` is a feed id. */
+export const getNews = createServerFn({ method: 'GET' })
+  .validator((input: { limit: number; source?: string; cursor?: string }) => ({
+    limit: Math.min(Math.max(Math.trunc(input.limit), 1), 50),
+    source:
+      typeof input.source === 'string' && /^[a-z0-9-]{1,32}$/.test(input.source)
+        ? input.source
+        : undefined,
+    cursor: input.cursor,
+  }))
+  .handler(({ data }) => loadNews(serverFetch(), data))
+
+export const getNewsSources = createServerFn({ method: 'GET' }).handler(() =>
+  loadNewsSources(serverFetch()),
+)
+
+export const getEvents = createServerFn({ method: 'GET' }).handler(() => loadEvents(serverFetch()))
 
 /** A position key as the API takes it: a FEN's first four fields (game-library). */
 const POSITION_KEY = /^[pnbrqkPNBRQK1-8/]+ [wb] [KQkq-]+ [a-h1-8-]+$/

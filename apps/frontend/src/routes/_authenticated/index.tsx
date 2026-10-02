@@ -4,8 +4,10 @@ import type { InviteView, QueueStatus } from '#/lib/play'
 import type { ColourChoice, EngineLevel } from '#/lib/games'
 import {
   getEngineLevels,
+  getEvents,
   getLobby,
   getMyGames,
+  getNews,
   postCreateInvite,
   postJoinQueue,
   postLeaveQueue,
@@ -26,6 +28,7 @@ import {
   useCommand,
 } from '#/components/ui'
 import { CategoryIcon, RecentGames, TvGrid, YourTurnList, categoryBar } from '#/components/games'
+import { EventsNow, NewsList } from '#/components/news'
 import { pageTitle } from '#/lib/feedback'
 
 /** Home: quick pairing on a preset, an invite link for a friend, and your recent games. */
@@ -40,14 +43,16 @@ function validateSearch(search: Record<string, unknown>): { seek?: string } {
 export const Route = createFileRoute('/_authenticated/')({
   validateSearch,
   loader: async () => {
-    const [games, yourTurn, levels, lobby] = await Promise.all([
+    const [games, yourTurn, levels, lobby, news, events] = await Promise.all([
       getMyGames({ data: { limit: 8 } }),
       getMyGames({ data: { limit: 20, turn: MY_TURN } }),
       getEngineLevels(),
-      // The lobby is a nicety: home still works when it cannot be read.
+      // The lobby, the news and the events are niceties: home still works when they cannot be read.
       getLobby().catch(() => null),
+      getNews({ data: { limit: 8 } }).catch(() => null),
+      getEvents().catch(() => []),
     ])
-    return { games, yourTurn, levels, lobby }
+    return { games, yourTurn, levels, lobby, news, events }
   },
   head: () => ({ meta: [{ title: pageTitle('Home') }] }),
   component: HomePage,
@@ -59,7 +64,7 @@ const FOUND_MS = 600
 
 function HomePage() {
   const { me } = Route.useRouteContext()
-  const { games, yourTurn, levels, lobby: lobbyAtLoad } = Route.useLoaderData()
+  const { games, yourTurn, levels, lobby: lobbyAtLoad, news, events } = Route.useLoaderData()
   const lobby = useLobby(lobbyAtLoad, loadLobby)
   const navigate = useNavigate()
   const [seek, setSeek] = useState<QueueStatus | null>(null)
@@ -159,6 +164,16 @@ function HomePage() {
             empty="No games yet: pick a time control under Quick pairing, or play the computer."
           />
         </section>
+      </div>
+
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))] gap-6">
+        <section className="flex flex-col gap-3.5" aria-label="News">
+          <SectionHeading meta={<Link to="/news">All news</Link>}>News</SectionHeading>
+          <NewsList items={news?.items ?? []} nowMs={Date.now()} />
+        </section>
+        <div className="flex flex-col gap-3.5">
+          <EventsNow events={events} />
+        </div>
       </div>
 
       {lobby ? (

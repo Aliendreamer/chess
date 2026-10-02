@@ -6,6 +6,7 @@ import {
   Library,
   Menu,
   Microscope,
+  Newspaper,
   Settings,
   Shield,
   Tv,
@@ -102,6 +103,7 @@ function Navigation({ me }: { me: Me }) {
         <NavItem to="/studies" label="Studies" icon={<BookOpen size={16} />} />
         <NavItem to="/analysis" label="Analysis" icon={<Microscope size={16} />} />
         <NavItem to="/library" label="Library" icon={<Library size={16} />} />
+        <NavItem to="/news" label="News" icon={<Newspaper size={16} />} />
       </NavGroup>
       <NavGroup label="You">
         <NavItem
