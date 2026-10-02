@@ -4,9 +4,9 @@ import type { DeadLetter, ProjectionGroup } from '#/lib/admin'
 import type { CursorPage } from '#/lib/play'
 import { PROJECTION_GROUPS, isAdmin, isProjectionGroup } from '#/lib/admin'
 import { useLoadMore } from '#/lib/play'
-import { getDeadLetters, postReplayDeadLetters } from '#/lib/server/api'
+import { getDeadLetters, postImportLibrary, postReplayDeadLetters } from '#/lib/server/api'
 import { Chip, LoadMore, SectionHeading } from '#/components/ui'
-import { DeadLetterList } from '#/components/admin'
+import { DeadLetterList, LibraryImportForm } from '#/components/admin'
 import { pageTitle } from '#/lib/feedback'
 
 const PAGE = 50
@@ -28,7 +28,7 @@ export const Route = createFileRoute('/_authenticated/admin')({
     // A fresh load (a replay, another filter) starts the pager over.
     loadedAt: Date.now(),
   }),
-  head: () => ({ meta: [{ title: pageTitle('Dead letters') }] }),
+  head: () => ({ meta: [{ title: pageTitle('Admin') }] }),
   component: AdminPage,
 })
 
@@ -52,7 +52,18 @@ function AdminPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SectionHeading size="xl">Dead letters</SectionHeading>
+      <SectionHeading size="xl">Admin</SectionHeading>
+
+      <section className="flex flex-col gap-3.5" aria-label="Game library">
+        <SectionHeading>Game library</SectionHeading>
+        <p className="m-0 max-w-prose text-sm text-fg-secondary">
+          Import famous games from PGN. Name where they come from and under which terms: every game
+          shows it. Only moves and factual headers are kept, never annotations.
+        </p>
+        <LibraryImportForm onImport={(batch) => postImportLibrary({ data: batch })} />
+      </section>
+
+      <SectionHeading>Dead letters</SectionHeading>
       <p className="m-0 max-w-prose text-sm text-fg-secondary">
         Records a projection could not apply after its retries. Each one quarantines its aggregate
         for that projection until it is replayed.

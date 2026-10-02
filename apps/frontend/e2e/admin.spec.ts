@@ -6,7 +6,8 @@ test('only an admin reaches the dead letters', async ({ browser }) => {
   const admin = await signedIn(browser, USER)
   await admin.getByRole('complementary').getByRole('link', { name: 'Admin' }).click()
   await expect(admin).toHaveURL(/\/admin$/)
-  await expect(admin.getByRole('heading', { level: 1 })).toHaveText('Dead letters')
+  await expect(admin.getByRole('heading', { level: 1 })).toHaveText('Admin')
+  await expect(admin.getByRole('heading', { name: 'Dead letters' })).toBeVisible()
   await expect(admin.getByRole('group', { name: 'Projection' })).toBeVisible()
   // Either rows or the empty state, depending on what earlier runs left parked.
   await expect(

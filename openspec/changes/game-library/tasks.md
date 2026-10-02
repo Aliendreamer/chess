@@ -31,7 +31,7 @@
 
 - [x] 4.1 `parsePgn` passes Event/Site/Round/ECO through (failing vitest first); `lib/library.ts` (types, query
       building), `lib/server/library.ts` (paths, 404 → null) with tests; server functions.
-- [ ] 4.2 Admin: Import to library (file, source, licence, WC checkbox), batches of 100 with progress and per-game
+- [x] 4.2 Admin: Import to library (file, source, licence, WC checkbox), batches of 100 with progress and per-game
       outcomes (component test with a fake import). Commit: `feat(frontend): import to the library`.
 - [ ] 4.3 `/library` (filters as URL search params, results with opening and attribution, Load more, About sources) and
       `?library={id}` on the analysis board; Library in the navigation. Commit: `feat(frontend): the game library`.
