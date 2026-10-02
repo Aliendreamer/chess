@@ -1,14 +1,14 @@
 ## 1. Backend: queues and the lobby read
 
-- [ ] 1.1 Failing TestKit test: `GetQueues` answers every preset with its waiting count (zero included) after one
+- [x] 1.1 Failing TestKit test: `GetQueues` answers every preset with its waiting count (zero included) after one
       join (fails: no such message). Add `GetQueues` / `QueueCounts` / `QueueCount` to `MatchmakingActor`.
-- [ ] 1.2 Failing unit tests for `LobbyReads` (pure, over an in-memory list of `RmGame`): TV order newest
+- [x] 1.2 Failing unit tests for `LobbyReads` (pure, over an in-memory list of `RmGame`): TV order newest
       `UpdatedAt` first, limit, correspondence left out, `gamesInPlay` counts every playing game. Then `LobbyOptions`
       (`Lobby:TvGames` 6, `Lobby:CacheSeconds` 2) in `Config/appsettings.json` (`SettingsTests` must stay green).
-- [ ] 1.3 `WebApi/Lobby/GetLobby/` (endpoint, response, summary): replica query + singleton ask, `queues: null` on a
+- [x] 1.3 `WebApi/Lobby/GetLobby/` (endpoint, response, summary): replica query + singleton ask, `queues: null` on a
       timeout, FusionCache one key for `CacheSeconds`, `no-store`, SignedIn. `GameListItem` gains `LastFen`/`LastUci`.
       `dotnet build` warning-clean, unit tests green. Commit: `feat(backend): the lobby read`.
-- [ ] 1.4 🐳 Integration test (`nx integration-test backend`): a started game shows up in `GET /api/lobby` (TV and
+- [x] 1.4 🐳 Integration test (`nx integration-test backend`): a started game shows up in `GET /api/lobby` (TV and
       count) and in `GET /api/games?status=playing` with its `lastFen`.
 
 ## 2. Frontend: mini board

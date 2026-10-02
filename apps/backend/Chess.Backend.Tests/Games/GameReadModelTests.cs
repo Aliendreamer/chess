@@ -58,7 +58,10 @@ public sealed class GameReadModelTests
     {
         GameListItem item = GameReads.ToListItem(Ended());
 
-        Assert.Equal(new GameListItem(Id, 1, "testuser", 2, "player", "5+3", "ended", "0-1", EndReason.Checkmate, 4, T0, T0.AddSeconds(6)), item);
+        Assert.Equal(
+            new GameListItem(Id, 1, "testuser", 2, "player", "5+3", "ended", "0-1", EndReason.Checkmate, 4, T0, T0.AddSeconds(6),
+                "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3", "d8h4"),
+            item);
     }
 
     [Fact]

@@ -11,7 +11,8 @@ internal static class GameReads
     public static bool IsListStatus(string? status) => status is RmGame.Playing or RmGame.Ended;
 
     public static GameListItem ToListItem(RmGame g) => new(
-        g.GameId, g.WhiteId, g.WhiteName, g.BlackId, g.BlackName, g.TimeControl, g.Status, g.Result, EndReasons.Parse(g.Reason), g.Ply, g.CreatedAt, g.UpdatedAt);
+        g.GameId, g.WhiteId, g.WhiteName, g.BlackId, g.BlackName, g.TimeControl, g.Status, g.Result, EndReasons.Parse(g.Reason), g.Ply, g.CreatedAt, g.UpdatedAt,
+        g.LastFen, g.LastUci);
 
     public static MyGameItem ToMyGame(RmGamePlayer me, RmGame g, TimeSpan moveDeadline) => new(
         g.GameId, me.Color, me.OpponentId, me.OpponentName, g.TimeControl, g.Status, g.Result, EndReasons.Parse(g.Reason), me.CreatedAt,

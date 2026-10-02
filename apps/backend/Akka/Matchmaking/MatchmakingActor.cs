@@ -17,6 +17,17 @@ internal sealed record LeaveQueue(long UserId, string TimeControl);
 
 internal sealed record GetQueue(string TimeControl);
 
+/// <summary>How many wait in every preset queue (the lobby, live-home): one ask instead of one per preset.</summary>
+internal sealed record GetQueues
+{
+    public static readonly GetQueues Instance = new();
+}
+
+internal sealed record QueueCount(string TimeControl, int Waiting);
+
+/// <summary>Every preset in D12 order, an empty queue included.</summary>
+internal sealed record QueueCounts(IReadOnlyList<QueueCount> Queues);
+
 /// <summary>Queued: your place (1 = next to be paired) and how many are waiting.</summary>
 /// <summary>
 /// Still waiting. <paramref name="Seq"/> is the queue's live seq as of this answer: a client ignores pairings in
@@ -87,6 +98,8 @@ internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
         Receive<JoinQueue>(HandleJoin);
         Receive<LeaveQueue>(HandleLeave);
         Receive<GetQueue>(q => Sender.Tell(TimeControl.TryParse(q.TimeControl, out _) ? View(q.TimeControl) : new QueueRejected(NotAPreset(q.TimeControl))));
+        Receive<GetQueues>(_ => Sender.Tell(new QueueCounts(
+            [.. TimeControl.Presets.Select(p => new QueueCount(p.ToString(), Queue(p.ToString()).Count))])));
         Receive<GameStarted>(HandleStarted);
         Receive<StartFailed>(HandleStartFailed);
         Receive<Sweep>(_ => SweepExpired());

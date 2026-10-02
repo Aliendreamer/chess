@@ -68,6 +68,19 @@ public sealed class MatchmakingActorTests() : TestKit(AkkaConfig.InMemoryPersist
     }
 
     [Fact]
+    public void GetQueues_counts_every_preset_queue_zero_included()
+    {
+        IActorRef mm = Matchmaker();
+        Join(mm, A, "3+2");
+
+        QueueCounts counts = Assert.IsType<QueueCounts>(Ask(mm, GetQueues.Instance));
+
+        Assert.Equal(TimeControl.Presets.Select(p => p.ToString()), counts.Queues.Select(q => q.TimeControl));
+        Assert.Equal(1, Assert.Single(counts.Queues, q => q.TimeControl == "3+2").Waiting);
+        Assert.All(counts.Queues.Where(q => q.TimeControl != "3+2"), q => Assert.Equal(0, q.Waiting));
+    }
+
+    [Fact]
     public void A_queue_never_holds_two_seekers_because_pairing_is_immediate()
     {
         IActorRef mm = Matchmaker();

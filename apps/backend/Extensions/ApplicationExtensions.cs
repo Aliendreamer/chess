@@ -2,6 +2,7 @@ using Chess.Backend.Akka;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Messaging;
 using Chess.Backend.Projections;
+using Chess.Backend.WebApi.Lobby;
 using FastEndpoints.Swagger;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -84,6 +85,7 @@ internal static class FastEndpointSetup
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.AddFastEndpoints();
         builder.Services.AddSettings<ApiOptions>(builder.Configuration, ApiOptions.SectionName);
+        builder.Services.AddSettings<LobbyOptions>(builder.Configuration, LobbyOptions.SectionName);
         builder.Services.SwaggerDocument(o =>
         {
             o.DocumentSettings = s =>

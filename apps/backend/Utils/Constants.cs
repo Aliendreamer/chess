@@ -96,6 +96,7 @@ internal static class Constants
     public static class Cache
     {
         public const string UserIdBySubject = "user-id:";
+        public const string Lobby = "lobby";
         public const string OidcDiscovery = "oidc:discovery";
         public const string PreferencesByUser = "prefs:";
     }
