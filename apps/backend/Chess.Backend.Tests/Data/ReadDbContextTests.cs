@@ -11,7 +11,7 @@ public sealed class ReadDbContextTests
     {
         using ReadDbContext db = Create();
         string[] entities = db.Model.GetEntityTypes().Select(e => e.ClrType.Name).Order().ToArray();
-        Assert.Equal(["RmGame", "RmGamePlayer", "RmMove", "RmPing"], entities);
+        Assert.Equal(["PlayerIdentity", "RmGame", "RmGamePlayer", "RmMove", "RmPing"], entities);
         Assert.Equal(QueryTrackingBehavior.NoTracking, db.ChangeTracker.QueryTrackingBehavior);
     }
 
@@ -20,6 +20,7 @@ public sealed class ReadDbContextTests
     {
         using ProjectDbContext db = TestDb.Create();
         Assert.Equal("rm_pings", db.Model.FindEntityType(typeof(RmPing))!.GetTableName());
+        Assert.Null(db.Model.FindEntityType(typeof(PlayerIdentity))); // the replica's view of users, never migrated
     }
 
     [Fact]

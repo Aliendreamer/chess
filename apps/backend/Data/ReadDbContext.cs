@@ -6,7 +6,10 @@ using Npgsql;
 
 namespace Chess.Backend.Data;
 
-/// <summary>Replica-bound, read-only: only rm_* tables are mapped, tracking is off, SaveChanges throws.</summary>
+/// <summary>
+/// Replica-bound, read-only: the rm_* tables and the public columns of <c>users</c> (<see cref="PlayerIdentity"/>) are
+/// mapped, tracking is off, SaveChanges throws.
+/// </summary>
 internal sealed class ReadDbContext : DbContext
 {
     public ReadDbContext(DbContextOptions<ReadDbContext> options) : base(options)
@@ -22,6 +25,8 @@ internal sealed class ReadDbContext : DbContext
 
     public DbSet<RmMove> RmMoves => Set<RmMove>();
 
+    public DbSet<PlayerIdentity> Players => Set<PlayerIdentity>();
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess) =>
         throw new InvalidOperationException("ReadDbContext is read-only (replica).");
 
@@ -34,6 +39,7 @@ internal sealed class ReadDbContext : DbContext
         modelBuilder.ApplyConfiguration(new RmGameConfiguration());
         modelBuilder.ApplyConfiguration(new RmGamePlayerConfiguration());
         modelBuilder.ApplyConfiguration(new RmMoveConfiguration());
+        modelBuilder.ApplyConfiguration(new PlayerIdentityConfiguration());
     }
 }
 

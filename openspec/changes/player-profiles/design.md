@@ -20,8 +20,8 @@
 
 1. **Ids in the URL, not names.** `/players/{id}` — the id is stable, a Keycloak name can change (D23 keeps the
    per-game snapshot). The page shows the current `users.Username`, falling back to "Player {id}".
-2. **Counted on the server, per time control.** `GET /api/players/{id}` runs one grouped query over the player's ended
-   games (`Result` ≠ `*`, aborted games are not results): per `TimeControl`, wins/draws/losses from the player's colour
+2. **Counted on the server, per time control.** `GET /api/players/{id}` reads the player's ended games (three columns
+   each) (`Result` ≠ `*`, aborted games are not results): per `TimeControl`, wins/draws/losses from the player's colour
    and the result. The API returns `[{ timeControl, wins, draws, losses }]` plus totals; the browser maps time controls
    to game types with the existing `category()`, so the category rules live in one place. A pure `PlayerRecord.Count`
    does the tallying so it is unit-tested without a database.
@@ -29,7 +29,10 @@
    item), so `RecentGames` renders it unchanged.
 4. **What is public.** Name, member-since date, record and games — all already visible to any signed-in user through
    games (D20). Email, full name and preferences are never returned. An unknown id is 404.
-5. **`PlayerLink`.** One component renders a name as a link to `/players/$id` (no link for id 0, the unknown player).
+5. **The replica reads `users` through `PlayerIdentity`.** `ReadDbContext` maps only `Id`, `Username` and `CreatedAt`
+   of `users` as `PlayerIdentity`, so the private columns cannot be selected by accident; `ProjectDbContext` skips that
+   configuration, so migrations are unchanged.
+6. **`PlayerLink`.** One component renders a name as a link to `/players/$id` (no link for id 0, the unknown player).
    `RecentGames` needs the opponent id, which `MyGameItem.opponentId` already has; the game page has `whiteId`/`blackId`.
 
 ## Risks / Trade-offs

@@ -1,3 +1,4 @@
+using Chess.Backend.Data.ModelConfigurations;
 using Chess.Backend.Data.ReadModels;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -37,7 +38,8 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ProjectDbContext).Assembly);
+        // PlayerIdentity is the replica's narrow view of users (ReadDbContext only); here users is the User entity.
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ProjectDbContext).Assembly, t => t != typeof(PlayerIdentityConfiguration));
     }
 }
 

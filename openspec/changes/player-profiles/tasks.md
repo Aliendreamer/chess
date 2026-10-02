@@ -1,11 +1,11 @@
 ## 1. Backend
 
-- [ ] 1.1 Failing unit tests for `Games/PlayerRecord.Count` (rows of colour/result/time control → totals and per time
+- [x] 1.1 Failing unit tests for `Games/PlayerRecord.Count` (rows of colour/result/time control → totals and per time
       control; `*` and playing rows ignored). Implement.
-- [ ] 1.2 `WebApi/Players/GetPlayer/` (route id = long, validator, 404, replica, SignedIn, `no-store`) and
+- [x] 1.2 `WebApi/Players/GetPlayer/` (route id = long, validator, 404, replica, SignedIn, `no-store`) and
       `WebApi/Players/PlayerGames/` (keyset like `me/games`). `dotnet build` warning-clean, unit tests green. Commit:
       `feat(backend): player profiles`.
-- [ ] 1.3 🐳 Integration test: after a finished invite game, both players' profiles show the result and their games
+- [x] 1.3 🐳 Integration test: after a finished invite game, both players' profiles show the result and their games
       list it (`nx integration-test backend`).
 
 ## 2. Frontend
