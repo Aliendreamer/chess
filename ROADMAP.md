@@ -205,6 +205,22 @@ Owner review of lichess.org on 2026-10-01 (proposals P1–P10). Six OpenSpec cha
   Not built: players online (no global presence), mini boards in "Your turn". Open: untimed games abandoned against the
   computer stay "in play" forever (see the change's design).
 
+### Part 6 — Analysis, the game library and news (proposed 2026-10-02)
+
+Owner request: an open analysis board, famous and World Championship games to search and analyse, and chess news
+feeds. Three OpenSpec changes, in this order:
+
+- **`analysis-board`** **[proposed]**: `/analysis` — any FEN, PGN or game, the study tree and engine panel without
+  saving; Save as study; a shareable position link. Frontend only; the study page shares the same component.
+- **`game-library`** **[proposed]**: a curated library (WC matches 1886–2024 and Candidates from PGN Mentor, moves
+  only; lichess broadcasts 2021–2026, CC BY-SA; hand-picked classics), searchable by player, event, year, result,
+  ECO/opening and position ("In the library" on the analysis board); opening names from lichess `chess-openings`
+  (CC0). Every row keeps its source and licence; PGN collections are never committed. Open: 1993–2004 waits for a check
+  of Caissabase's CC0 claim; asking PGN Mentor for permission.
+- **`chess-news`** **[proposed]**: headlines and links only (never article text or images) from FIDE, ChessBase, the
+  Lichess blog, TWIC and the ECF, fetched every 30 min by a singleton; chess.com left out (its terms). Open: an
+  "Events now" box from the lichess broadcast API.
+
 ## 7. Cross-cutting
 
 - **Testing**: unit (xUnit + Akka TestKit; vitest), integration (Testcontainers), e2e (Playwright);

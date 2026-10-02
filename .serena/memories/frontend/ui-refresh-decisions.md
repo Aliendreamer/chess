@@ -47,5 +47,8 @@ verified (unit gates, 36/36 Playwright, integration tests):
 - `ui-polish`: `pageTitle` on every route, router pending/error/not-found screens, catch-all `_authenticated/$.tsx`,
   `useLoadMore`/`LoadMore`, audit fixes (Maximum tile, study `*`, reason capitalised, file picker, a11y bits).
 
-Still not started from the owner's list: an open analysis board (paste FEN/PGN, analyse without a study) and chess
-news feeds (RSS/Atom, headline + link only). Each needs its own design conversation.
+Round 3 (2026-10-02): owner approved the design for an open analysis board, a famous-games library (WC + classics,
+search by details/opening/position) and chess news. Written as OpenSpec changes `analysis-board`, `game-library`,
+`chess-news` (ROADMAP Part 6), not implemented yet; build in that order. Source research (licences, working feeds)
+is in `game-library`/`chess-news` design.md. Owner still to answer: Caissabase licence check (1993–2004 gap) and
+whether "Events now" (lichess broadcasts) joins `chess-news`.
