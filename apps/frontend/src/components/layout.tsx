@@ -1,10 +1,11 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 import { BookOpen, History, House, Menu, Settings, Shield, Tv, UserRound } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Me, Preferences } from '#/lib/auth'
-import type { LinkProps } from '@tanstack/react-router'
+import type { ErrorComponentProps, LinkProps } from '@tanstack/react-router'
 import { DEFAULT_PREFERENCES, LOGOUT_HREF, PreferencesContext } from '#/lib/auth'
 import { isAdmin } from '#/lib/admin'
+import { Button, SectionHeading, buttonClass } from '#/components/ui'
 
 /**
  * The Club layout: a 248px rail (wordmark, navigation, who you are) and the content column; a top bar on narrow screens. The user's preferences
@@ -161,5 +162,65 @@ function NavItem({ to, params, label, icon }: NavItemProps) {
       ) : null}
       {label}
     </Link>
+  )
+}
+
+/** The router's pending screen (ui-polish): a thin accent bar along the top while a slow navigation loads. */
+export function PendingBar() {
+  return (
+    <div
+      role="progressbar"
+      aria-label="Loading"
+      className="fixed inset-x-0 top-0 z-50 h-0.5 bg-fg-accent motion-safe:animate-pulse"
+    />
+  )
+}
+
+/** A page whose data failed to load (ui-polish): what failed, another try, and the way home. */
+export function RouteError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <section className="flex max-w-xl flex-col gap-4" role="alert">
+      <SectionHeading size="xl">This page could not be loaded</SectionHeading>
+      <p className="m-0 text-fg-secondary">
+        The club's server did not answer as expected. It is often brief.
+      </p>
+      <p className="m-0 font-mono text-xs text-fg-muted">{message}</p>
+      <div className="flex gap-3">
+        <Button variant="primary" onClick={onRetry}>
+          Try again
+        </Button>
+        <Link to="/" className={buttonClass('outline')}>
+          Home
+        </Link>
+      </div>
+    </section>
+  )
+}
+
+/** The router's error screen: `RouteError`, retried by reloading the route's data. */
+export function RouterError({ error }: ErrorComponentProps) {
+  const router = useRouter()
+  return (
+    <RouteError
+      message={error instanceof Error ? error.message : String(error)}
+      onRetry={() => void router.invalidate()}
+    />
+  )
+}
+
+/** An unknown address or a missing game, study or player (ui-polish). */
+export function NotFound() {
+  return (
+    <section className="flex max-w-xl flex-col gap-4">
+      <SectionHeading size="xl">Not found</SectionHeading>
+      <p className="m-0 text-fg-secondary">
+        There is nothing at this address, or it is not yours to see.
+      </p>
+      <div>
+        <Link to="/" className={buttonClass('outline')}>
+          Home
+        </Link>
+      </div>
+    </section>
   )
 }

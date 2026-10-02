@@ -537,12 +537,14 @@ export interface RecentGamesProps {
   games: ReadonlyArray<MyGameItem>
   /** A PGN download link on finished games (the history page). */
   pgn?: boolean
+  /** What an empty list says (home points at Quick pairing). */
+  empty?: string
 }
 
 /** "My games" rows: result from my side, the opponent by name, the time control and how it ended. */
-export function RecentGames({ games, pgn = false }: RecentGamesProps) {
+export function RecentGames({ games, pgn = false, empty = 'No games yet.' }: RecentGamesProps) {
   if (games.length === 0) {
-    return <p className="m-0 text-sm text-fg-muted">No games yet.</p>
+    return <p className="m-0 text-sm text-fg-secondary">{empty}</p>
   }
   return (
     <ul className="m-0 flex list-none flex-col p-0" data-testid="recent-games">

@@ -4,6 +4,7 @@ import { getPlayer, getPlayerGames } from '#/lib/server/api'
 import { LoadMore, Panel, SectionHeading } from '#/components/ui'
 import { RecentGames } from '#/components/games'
 import { PlayerStats } from '#/components/players'
+import { pageTitle } from '#/lib/feedback'
 
 const PAGE = 20
 
@@ -19,6 +20,7 @@ export const Route = createFileRoute('/_authenticated/players/$id')({
     if (!player) throw notFound()
     return { player, games }
   },
+  head: ({ loaderData }) => ({ meta: [{ title: pageTitle(loaderData?.player.name ?? 'Player') }] }),
   component: PlayerPage,
 })
 

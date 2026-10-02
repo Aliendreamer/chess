@@ -1,6 +1,6 @@
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Shell } from './layout'
+import { NotFound, PendingBar, RouteError, Shell } from './layout'
 import type { ReactNode } from 'react'
 import { DEFAULT_PREFERENCES } from '#/lib/auth'
 
@@ -82,5 +82,28 @@ describe('Shell', () => {
       </Shell>,
     )
     expect(within(rail()).getByRole('link', { name: 'Admin' })).toBeDefined()
+  })
+})
+
+describe('router screens (ui-polish)', () => {
+  it('RouteError says what failed and offers another try and the way home', () => {
+    const onRetry = vi.fn()
+    render(<RouteError message="GET /api/games failed with 503" onRetry={onRetry} />)
+    expect(screen.getByRole('heading', { name: 'This page could not be loaded' })).toBeDefined()
+    expect(screen.getByText('GET /api/games failed with 503')).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(onRetry).toHaveBeenCalled()
+    expect(screen.getByRole('link', { name: 'Home' })).toBeDefined()
+  })
+
+  it('NotFound leads home', () => {
+    render(<NotFound />)
+    expect(screen.getByRole('heading', { name: 'Not found' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Home' })).toBeDefined()
+  })
+
+  it('PendingBar is a labelled progress bar', () => {
+    render(<PendingBar />)
+    expect(screen.getByRole('progressbar', { name: 'Loading' })).toBeDefined()
   })
 })

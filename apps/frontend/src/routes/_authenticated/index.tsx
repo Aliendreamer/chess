@@ -26,6 +26,7 @@ import {
   useCommand,
 } from '#/components/ui'
 import { CategoryIcon, RecentGames, TvGrid, YourTurnList, categoryBar } from '#/components/games'
+import { pageTitle } from '#/lib/feedback'
 
 /** Home: quick pairing on a preset, an invite link for a friend, and your recent games. */
 /** `?seek=3+2` joins that queue on arrival: the game-over card's "New opponent" (game-feedback). */
@@ -48,6 +49,7 @@ export const Route = createFileRoute('/_authenticated/')({
     ])
     return { games, yourTurn, levels, lobby }
   },
+  head: () => ({ meta: [{ title: pageTitle('Home') }] }),
   component: HomePage,
 })
 
@@ -151,8 +153,11 @@ function HomePage() {
               <YourTurnList games={yourTurn.items} nowMs={Date.now()} />
             </>
           ) : null}
-          <SectionHeading>Recent games</SectionHeading>
-          <RecentGames games={games.items} />
+          <SectionHeading meta={<Link to="/games">View all</Link>}>Recent games</SectionHeading>
+          <RecentGames
+            games={games.items}
+            empty="No games yet: pick a time control under Quick pairing, or play the computer."
+          />
         </section>
       </div>
 

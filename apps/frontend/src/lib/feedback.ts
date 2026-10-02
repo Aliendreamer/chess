@@ -12,6 +12,11 @@ export const FAVICON = '/favicon.svg'
 export const FAVICON_TURN = '/favicon-turn.svg'
 export const SITE_TITLE = 'Chess'
 
+/** A tab title (ui-polish): the page, then the site — "History · Chess"; just "Chess" without a page. */
+export function pageTitle(page?: string): string {
+  return page ? `${page} · ${SITE_TITLE}` : SITE_TITLE
+}
+
 export interface TabState {
   title: string
   /** True when the player is needed: the favicon gets its dot. */
@@ -23,7 +28,7 @@ export function tabState(
   meId: number,
   names: { white: string; black: string },
 ): TabState {
-  const plain = { title: `${names.white} vs ${names.black} · ${SITE_TITLE}`, turn: false }
+  const plain = { title: pageTitle(`${names.white} vs ${names.black}`), turn: false }
   const mine = myColor(view, meId)
   if (mine === null || view.status === 'ended') return plain
   const opponent = mine === 'white' ? names.black : names.white
@@ -35,7 +40,10 @@ export function tabState(
   return plain
 }
 
-/** Puts `state` into the tab (title and favicon) while the page is open, and restores the plain tab after. */
+/**
+ * Puts `state` into the tab (title and favicon) while the page is open, and the plain favicon back after. The title is
+ * left alone on the way out: the next page's `head` has already set its own.
+ */
 export function useTabSignals(state: TabState): void {
   useEffect(() => {
     document.title = state.title
@@ -44,7 +52,6 @@ export function useTabSignals(state: TabState): void {
   }, [state.title, state.turn])
   useEffect(
     () => () => {
-      document.title = SITE_TITLE
       const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
       if (icon) icon.href = FAVICON
     },

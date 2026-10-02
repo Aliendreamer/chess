@@ -7,6 +7,7 @@ import { category, topicId } from '#/lib/games'
 import { guestColor, isInviteView } from '#/lib/play'
 import { useLiveTopic } from '#/lib/live'
 import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
+import { pageTitle } from '#/lib/feedback'
 
 /**
  * An invite link (D7). The creator shares it and waits; anyone else signed in can accept. The `invite:{id}` frame
@@ -14,6 +15,7 @@ import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/componen
  */
 export const Route = createFileRoute('/_authenticated/invites/$id')({
   loader: ({ params }) => getInvite({ data: params.id }),
+  head: () => ({ meta: [{ title: pageTitle('Invite') }] }),
   component: InvitePage,
 })
 

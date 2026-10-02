@@ -20,6 +20,7 @@ import { uciSquares } from '#/lib/board'
 import { Board, MoveNav, PromotionPicker } from '#/components/games'
 import { AnalysisPanel, MoveTree } from '#/components/studies'
 import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
+import { pageTitle } from '#/lib/feedback'
 
 /**
  * A study (studies D7): the board, its move tree and the tools around it. Moves played on the board go into the tree
@@ -28,6 +29,7 @@ import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/componen
  */
 export const Route = createFileRoute('/_authenticated/studies/$id')({
   loader: ({ params }) => getStudy({ data: params.id }),
+  head: ({ loaderData }) => ({ meta: [{ title: pageTitle(loaderData?.title ?? 'Study') }] }),
   component: StudyPage,
 })
 

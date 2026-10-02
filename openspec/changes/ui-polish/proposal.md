@@ -12,7 +12,8 @@ For a player:
 - Each page has its own tab title ("History · Chess", "testuser vs player · Chess", a study's title, …).
 - A slow navigation shows a thin progress bar; a failed one shows a Club-styled error panel with "Try again" and a way
   home; an unknown address shows a not-found page in the shell.
-- "Load more" on History and Studies says when it is loading and shows an error when it fails.
+- "Load more" (History, and the new Watch, profile and admin lists) says when it is loading and shows an error when it
+  fails.
 - Home: "Recent games" gets a "View all" link to History and an empty state that points at Quick pairing.
 - The engine level tiles fit their names ("Maximum" is no longer clipped).
 - A study without a known result no longer shows `*`; the PGN file picker looks like the rest of the form.

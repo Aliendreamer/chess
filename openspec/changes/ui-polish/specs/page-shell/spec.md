@@ -23,7 +23,7 @@ inside the normal shell.
 
 ### Requirement: Paged lists show their state
 
-"Load more" SHALL say "Loading…" while it loads and SHALL show an error line, keeping the items already shown, when a
+Every "Load more" (History, Watch, a profile's games, the admin list) SHALL say "Loading…" while it loads and SHALL show an error line, keeping the items already shown, when a
 page fails.
 
 #### Scenario: A page fails

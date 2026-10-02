@@ -4,9 +4,11 @@ import type { Preferences } from '#/lib/auth'
 import { putPreferences } from '#/lib/server/api'
 import { SettingsForm } from '#/components/settings'
 import { SectionHeading, useCommand } from '#/components/ui'
+import { pageTitle } from '#/lib/feedback'
 
 /** Display preferences (user-preferences): each change is saved at once; a refusal puts the saved value back. */
 export const Route = createFileRoute('/_authenticated/settings')({
+  head: () => ({ meta: [{ title: pageTitle('Settings') }] }),
   component: SettingsPage,
 })
 

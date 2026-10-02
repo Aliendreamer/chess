@@ -7,6 +7,7 @@ import { useLoadMore } from '#/lib/play'
 import { getDeadLetters, postReplayDeadLetters } from '#/lib/server/api'
 import { Chip, LoadMore, SectionHeading } from '#/components/ui'
 import { DeadLetterList } from '#/components/admin'
+import { pageTitle } from '#/lib/feedback'
 
 const PAGE = 50
 
@@ -27,6 +28,7 @@ export const Route = createFileRoute('/_authenticated/admin')({
     // A fresh load (a replay, another filter) starts the pager over.
     loadedAt: Date.now(),
   }),
+  head: () => ({ meta: [{ title: pageTitle('Dead letters') }] }),
   component: AdminPage,
 })
 

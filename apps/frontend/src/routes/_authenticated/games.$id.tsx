@@ -38,7 +38,7 @@ import {
   pieceAt,
 } from '#/lib/moveInput'
 import { material, premoveClick, replay, resolvePremove, uciSquares } from '#/lib/board'
-import { rematchState, tabState, useTabSignals } from '#/lib/feedback'
+import { pageTitle, rematchState, tabState, useTabSignals } from '#/lib/feedback'
 import { isInviteView } from '#/lib/play'
 import {
   Board,
@@ -62,6 +62,17 @@ import { Button, ErrorText, buttonClass, useCommand } from '#/components/ui'
  */
 export const Route = createFileRoute('/_authenticated/games/$id')({
   loader: ({ params }) => getGamePage({ data: params.id }),
+  head: ({ loaderData }) => ({
+    meta: [
+      {
+        title: pageTitle(
+          loaderData?.summary
+            ? `${loaderData.summary.white} vs ${loaderData.summary.black}`
+            : 'Game',
+        ),
+      },
+    ],
+  }),
   component: GamePage,
 })
 

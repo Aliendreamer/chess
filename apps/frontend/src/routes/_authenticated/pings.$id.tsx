@@ -3,6 +3,7 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { getPingLive, postPing } from '#/lib/server/api'
 import { PingFeed } from '#/components/pings'
 import { Button } from '#/components/ui'
+import { pageTitle } from '#/lib/feedback'
 
 /**
  * The Part 0 spine, end to end in one page: the loader reads the sharded actor through the BFF
@@ -11,6 +12,7 @@ import { Button } from '#/components/ui'
  */
 export const Route = createFileRoute('/_authenticated/pings/$id')({
   loader: ({ params }) => getPingLive({ data: params.id }),
+  head: () => ({ meta: [{ title: pageTitle('Ping') }] }),
   component: PingPage,
 })
 

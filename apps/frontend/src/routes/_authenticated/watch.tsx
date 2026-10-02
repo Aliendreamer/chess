@@ -3,12 +3,14 @@ import { toTvGame, useLoadMore } from '#/lib/play'
 import { getLiveGames } from '#/lib/server/api'
 import { LoadMore, SectionHeading } from '#/components/ui'
 import { TvGrid } from '#/components/games'
+import { pageTitle } from '#/lib/feedback'
 
 const PAGE = 24
 
 /** Every game in play, newest move first, each opening for a spectator (live-home; D20). */
 export const Route = createFileRoute('/_authenticated/watch')({
   loader: () => getLiveGames({ data: { limit: PAGE } }),
+  head: () => ({ meta: [{ title: pageTitle('Watch') }] }),
   component: WatchPage,
 })
 

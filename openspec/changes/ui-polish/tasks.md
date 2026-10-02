@@ -1,16 +1,16 @@
 ## 1. Titles and router screens
 
-- [ ] 1.1 Failing vitest: `pageTitle('History')` is "History · Chess", `pageTitle()` is "Chess". Implement in
+- [x] 1.1 Failing vitest: `pageTitle('History')` is "History · Chess", `pageTitle()` is "Chess". Implement in
       `lib/feedback.ts`; `head` on every authenticated route.
-- [ ] 1.2 Failing component tests: `RouteError` shows the message, "Try again" calls back, a Home link; `NotFound` has a
+- [x] 1.2 Failing component tests: `RouteError` shows the message, "Try again" calls back, a Home link; `NotFound` has a
       Home link; `PendingBar` renders a progressbar. Implement in `components/layout.tsx`; wire as router defaults
       (`defaultPendingMs` 300). Commit: `feat(frontend): page titles, error and not-found screens`.
 
 ## 2. Lists and home
 
-- [ ] 2.1 Failing vitest for `useLoadMore` (appends, `busy`, error keeps items). Implement in `lib/`; use on History
-      and Studies.
-- [ ] 2.2 Home: "View all" on Recent games; `RecentGames` empty state with a quick-pairing hint (component test).
+- [x] 2.1 Failing vitest for `useLoadMore` (appends, `busy`, error keeps items). Implement in `lib/`; use on History
+      (built with live-home's Watch page; Studies loads its list at once and has no "Load more").
+- [x] 2.2 Home: "View all" on Recent games; `RecentGames` empty state with a quick-pairing hint (component test).
       Commit: `feat(frontend): load-more states and a way on from recent games`.
 
 ## 3. Defects from the audit

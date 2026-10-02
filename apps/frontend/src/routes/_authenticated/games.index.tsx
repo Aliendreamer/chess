@@ -1,8 +1,8 @@
-import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import type { MyGameItem } from '#/lib/play'
+import { useLoadMore } from '#/lib/play'
 import { getMyGames } from '#/lib/server/api'
-import { Button, SectionHeading } from '#/components/ui'
+import { pageTitle } from '#/lib/feedback'
+import { LoadMore, SectionHeading } from '#/components/ui'
 import { RecentGames } from '#/components/games'
 
 const PAGE = 20
@@ -10,38 +10,19 @@ const PAGE = 20
 /** Your games, newest first, keyset-paged from the replica ("Load more" follows the cursor). */
 export const Route = createFileRoute('/_authenticated/games/')({
   loader: () => getMyGames({ data: { limit: PAGE } }),
+  head: () => ({ meta: [{ title: pageTitle('History') }] }),
   component: HistoryPage,
 })
 
+const nextPage = (cursor: string) => getMyGames({ data: { limit: PAGE, cursor } })
+
 function HistoryPage() {
-  const first = Route.useLoaderData()
-  const [games, setGames] = useState<Array<MyGameItem>>(first.items)
-  const [cursor, setCursor] = useState(first.nextCursor)
-  const [loading, setLoading] = useState(false)
-
-  async function more() {
-    if (!cursor) return
-    setLoading(true)
-    try {
-      const page = await getMyGames({ data: { limit: PAGE, cursor } })
-      setGames((prev) => [...prev, ...page.items])
-      setCursor(page.nextCursor)
-    } finally {
-      setLoading(false)
-    }
-  }
-
+  const pager = useLoadMore(Route.useLoaderData(), nextPage)
   return (
     <div className="flex flex-col gap-6">
       <SectionHeading size="xl">History</SectionHeading>
-      <RecentGames games={games} pgn />
-      {cursor ? (
-        <div>
-          <Button disabled={loading} onClick={() => void more()}>
-            Load more
-          </Button>
-        </div>
-      ) : null}
+      <RecentGames games={pager.items} pgn />
+      <LoadMore pager={pager} />
     </div>
   )
 }

@@ -453,3 +453,14 @@ describe('RecentGames', () => {
     )
   })
 })
+
+describe('RecentGames when empty', () => {
+  it('says so, in the words the page gives', () => {
+    const { rerender } = render(<RecentGames games={[]} />)
+    expect(screen.getByText('No games yet.')).toBeTruthy()
+    rerender(
+      <RecentGames games={[]} empty="No games yet: pick a time control under Quick pairing." />,
+    )
+    expect(screen.getByText('No games yet: pick a time control under Quick pairing.')).toBeTruthy()
+  })
+})

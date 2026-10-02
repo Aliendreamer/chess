@@ -5,10 +5,12 @@ import { getMyStudies, postCreateStudies } from '#/lib/server/api'
 import { STANDARD_START, parsePgn } from '#/lib/studies'
 import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
 import { StudyList } from '#/components/studies'
+import { pageTitle } from '#/lib/feedback'
 
 /** My studies and the PGN import (studies D3, D7). */
 export const Route = createFileRoute('/_authenticated/studies/')({
   loader: () => getMyStudies({ data: { limit: 50 } }),
+  head: () => ({ meta: [{ title: pageTitle('Studies') }] }),
   component: StudiesPage,
 })
 

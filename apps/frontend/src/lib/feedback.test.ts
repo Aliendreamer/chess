@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { rematchState, tabState } from './feedback'
+import { cleanup, renderHook } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
+import { pageTitle, rematchState, tabState, useTabSignals } from './feedback'
 import type { GameView } from './games'
 import type { InviteView } from './play'
 
@@ -92,5 +93,35 @@ describe('rematchState', () => {
 
   it('cancelled or expired is gone', () => {
     expect(rematchState(invite({ status: 'expired' }), BOB)).toEqual({ kind: 'gone' })
+  })
+})
+
+describe('pageTitle', () => {
+  it('names the page before the site', () => {
+    expect(pageTitle('History')).toBe('History · Chess')
+    expect(pageTitle('testuser vs player')).toBe('testuser vs player · Chess')
+    expect(pageTitle()).toBe('Chess')
+    expect(pageTitle('')).toBe('Chess')
+  })
+})
+
+describe('useTabSignals', () => {
+  afterEach(cleanup)
+
+  it('leaves the title to the next page when the game closes, and puts the plain favicon back', () => {
+    const icon = document.createElement('link')
+    icon.rel = 'icon'
+    document.head.appendChild(icon)
+    const { unmount } = renderHook(() =>
+      useTabSignals({ title: '● Your move · vs player', turn: true }),
+    )
+    expect(document.title).toBe('● Your move · vs player')
+    expect(icon.href).toContain('/favicon-turn.svg')
+
+    document.title = 'History · Chess' // the next route's head, set before this page's cleanup runs
+    unmount()
+    expect(document.title).toBe('History · Chess')
+    expect(icon.href).toMatch(/\/favicon\.svg$/)
+    icon.remove()
   })
 })
