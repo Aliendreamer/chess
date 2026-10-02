@@ -3,6 +3,7 @@ import {
   BookOpen,
   History,
   House,
+  Library,
   Menu,
   Microscope,
   Settings,
@@ -100,6 +101,7 @@ function Navigation({ me }: { me: Me }) {
         <NavItem to="/games" exact label="History" icon={<History size={16} />} />
         <NavItem to="/studies" label="Studies" icon={<BookOpen size={16} />} />
         <NavItem to="/analysis" label="Analysis" icon={<Microscope size={16} />} />
+        <NavItem to="/library" label="Library" icon={<Library size={16} />} />
       </NavGroup>
       <NavGroup label="You">
         <NavItem

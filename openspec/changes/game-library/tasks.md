@@ -33,9 +33,9 @@
       building), `lib/server/library.ts` (paths, 404 → null) with tests; server functions.
 - [x] 4.2 Admin: Import to library (file, source, licence, WC checkbox), batches of 100 with progress and per-game
       outcomes (component test with a fake import). Commit: `feat(frontend): import to the library`.
-- [ ] 4.3 `/library` (filters as URL search params, results with opening and attribution, Load more, About sources) and
+- [x] 4.3 `/library` (filters as URL search params, results with opening and attribution, Load more, About sources) and
       `?library={id}` on the analysis board; Library in the navigation. Commit: `feat(frontend): the game library`.
-- [ ] 4.4 Analysis board: opening name of the current position, In the library panel (games, W/D/B, open at that ply)
+- [x] 4.4 Analysis board: opening name of the current position, In the library panel (games, W/D/B, open at that ply)
       — component tests for the panel. Commit: `feat(frontend): famous games at every position`.
 - [ ] 4.5 🐳 Playwright `e2e/library.spec.ts`: testuser imports a small PGN (two games, one illegal) as admin; searches
       by player; opens a game on the analysis board; the In the library panel lists it at a middle position.

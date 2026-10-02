@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ParsedGame } from '#/lib/studies'
-import { getFinishedGame, postAnalysis, postCreateStudies } from '#/lib/server/api'
+import {
+  getFinishedGame,
+  getLibraryGame,
+  getLibraryPosition,
+  getOpening,
+  postAnalysis,
+  postCreateStudies,
+} from '#/lib/server/api'
 import {
   STANDARD_START,
   analysisTitle,
+  fenAt,
   fromGame,
   fromInput,
   isFen,
@@ -13,7 +21,9 @@ import {
   toInput,
   useMoveTree,
 } from '#/lib/studies'
-import { useAnalysis } from '#/lib/analysis'
+import { positionKey, useAnalysis } from '#/lib/analysis'
+import { uciLine, useLibraryPosition, useOpeningName } from '#/lib/library'
+import { PositionPanel } from '#/components/library'
 import { pageTitle } from '#/lib/feedback'
 import { AnalysisBoard } from '#/components/studies'
 import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
@@ -23,12 +33,39 @@ import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/componen
  * until Save as study. Starts from `?fen=`, `?game={id}`, or what is pasted on the page.
  */
 export const Route = createFileRoute('/_authenticated/analysis')({
-  validateSearch: (search: Record<string, unknown>): { fen?: string; game?: string } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { fen?: string; game?: string; library?: string; ply?: number } => ({
     ...(typeof search['fen'] === 'string' ? { fen: search['fen'] } : {}),
     ...(typeof search['game'] === 'string' ? { game: search['game'] } : {}),
+    ...(typeof search['library'] === 'string' ? { library: search['library'] } : {}),
+    ...(typeof search['ply'] === 'number' && Number.isInteger(search['ply']) && search['ply'] >= 0
+      ? { ply: search['ply'] }
+      : {}),
   }),
   loaderDeps: ({ search }) => search,
   loader: async ({ deps }) => {
+    if (deps.library) {
+      const found = await getLibraryGame({ data: deps.library }).catch(() => null)
+      if (!found) {
+        return {
+          startFen: STANDARD_START,
+          tree: [],
+          players: undefined,
+          error: 'No such library game.',
+        }
+      }
+      const tree = fromInput(STANDARD_START, uciLine(found.moves))
+      const plies = Math.min(deps.ply ?? found.moves.length, found.moves.length)
+      return {
+        startFen: STANDARD_START,
+        tree,
+        path: Array.from({ length: plies }, () => 0),
+        players: { white: found.game.white, black: found.game.black },
+        library: found.game,
+        error: null,
+      }
+    }
     if (deps.game) {
       // Fair play: a game still being played is never put beside the engine through this link.
       const game = await getFinishedGame({ data: deps.game }).catch(() => null)
@@ -61,6 +98,10 @@ export const Route = createFileRoute('/_authenticated/analysis')({
   component: AnalysisPage,
 })
 
+/** Defined once, so the hooks' effects do not restart on every render. */
+const loadOpening = (key: string) => getOpening({ data: key })
+const loadPosition = (key: string) => getLibraryPosition({ data: key })
+
 function AnalysisPage() {
   const start = Route.useLoaderData()
   // A new starting point from the link starts a new board.
@@ -73,7 +114,13 @@ function AnalysisPage() {
 }
 
 function Analysis({ start }: { start: ReturnType<typeof Route.useLoaderData> }) {
-  const editor = useMoveTree(start.startFen, start.tree, lineEnd(start.tree, []))
+  const editor = useMoveTree(start.startFen, start.tree, start.path ?? lineEnd(start.tree, []))
+  // The line's positions (start excluded) name the opening; the last one finds the library's games.
+  const keys = editor.path.map((_, i) =>
+    positionKey(fenAt(editor.startFen, editor.tree, editor.path.slice(0, i + 1))),
+  )
+  const opening = useOpeningName(keys, loadOpening)
+  const atPosition = useLibraryPosition(positionKey(editor.fen), loadPosition)
   const analysis = useAnalysis((input) => postAnalysis({ data: input }))
   const navigate = useNavigate()
   const saving = useCommand()
@@ -140,6 +187,7 @@ function Analysis({ start }: { start: ReturnType<typeof Route.useLoaderData> }) 
       editor={editor}
       analysis={analysis}
       editable
+      aside={atPosition ? <PositionPanel position={atPosition} /> : null}
       header={
         <header className="flex flex-col gap-1">
           <SectionHeading size="xl">Analysis</SectionHeading>

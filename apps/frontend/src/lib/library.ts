@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { STANDARD_START } from './studies'
 import type { ParsedGame, StudyMoveInput } from './studies'
 
@@ -151,4 +152,73 @@ export function batches<T>(items: ReadonlyArray<T>, size: number): Array<Array<T
   const out: Array<Array<T>> = []
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size))
   return out
+}
+
+/** A game's moves as a one-line tree, to replay with `fromInput` (a library game opened on the analysis board). */
+export function uciLine(moves: ReadonlyArray<string>): Array<StudyMoveInput> {
+  return moves.reduceRight<Array<StudyMoveInput>>((children, uci) => [{ uci, children }], [])
+}
+
+/**
+ * The opening of the position at the end of `keys` (the line's positions, start excluded): the deepest named one,
+ * walking back from the end. Each position is asked once and remembered for the page's life.
+ */
+export function useOpeningName(
+  keys: ReadonlyArray<string>,
+  load: (key: string) => Promise<OpeningView | null>,
+): OpeningView | null {
+  const known = useRef(new Map<string, OpeningView | null>())
+  const [name, setName] = useState<OpeningView | null>(null)
+  const line = keys.join('|')
+  useEffect(() => {
+    // An object, so the check after an await is not narrowed away: the cleanup flips it while the walk waits.
+    const run = { live: true }
+    void (async () => {
+      for (let i = keys.length - 1; i >= 0; i--) {
+        const key = keys[i]!
+        if (!known.current.has(key)) {
+          known.current.set(key, await load(key).catch(() => null))
+          if (!run.live) return
+        }
+        const found = known.current.get(key)
+        if (found) {
+          setName(found)
+          return
+        }
+      }
+      if (run.live) setName(null)
+    })()
+    return () => {
+      run.live = false
+    }
+  }, [line])
+  return name
+}
+
+/** The library games at the position on the board, asked once per position. */
+export function useLibraryPosition(
+  key: string,
+  load: (key: string) => Promise<LibraryPosition>,
+): LibraryPosition | null {
+  const known = useRef(new Map<string, LibraryPosition>())
+  const [position, setPosition] = useState<LibraryPosition | null>(known.current.get(key) ?? null)
+  useEffect(() => {
+    let live = true
+    const cached = known.current.get(key)
+    if (cached) {
+      setPosition(cached)
+      return
+    }
+    setPosition(null)
+    load(key)
+      .then((answer) => {
+        known.current.set(key, answer)
+        if (live) setPosition(answer)
+      })
+      .catch(() => undefined)
+    return () => {
+      live = false
+    }
+  }, [key])
+  return position
 }
