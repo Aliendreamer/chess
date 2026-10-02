@@ -19,10 +19,10 @@
       navigation (`Microscope` icon); the game page's Analyse opens the board (finished games only — no Analyse on
       Watch boards: their games are in play). `pnpm generate-routes`; gate
       green. Commit: `feat(frontend): the analysis board`.
-- [ ] 3.2 🐳 Playwright `e2e/analysis-board.spec.ts`: open with a FEN, play a move, ask the engine (quick) and see a
+- [x] 3.2 🐳 Playwright `e2e/analysis-board.spec.ts`: open with a FEN, play a move, ask the engine (quick) and see a
       score; paste a broken FEN and see the error; open a finished game's Analyse and see its moves; Save as study opens
       the new study. `tools/e2e.sh`.
 
 ## 4. Docs
 
-- [ ] 4.1 CLAUDE.md Studies note (AnalysisBoard shared, `/analysis`). Commit: `docs(repo): analysis-board`.
+- [x] 4.1 CLAUDE.md Studies note (AnalysisBoard shared, `/analysis`). Commit: `docs(repo): analysis-board`.

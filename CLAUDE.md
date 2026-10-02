@@ -284,6 +284,10 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   behind `WebApi/Studies/*` and `POST /api/games/{id}/study`. Frontend: `lib/studies.ts` (tree ops, PGN import with
   `@mliebelt/pgn-parser` — chess.js drops variations — per game, so a broken game is reported), `/studies`,
   `/studies/$id`, `/pgn/study/$id`. A controlled input must adopt text typed before hydration (see the import form).
+  **Analysis board (analysis-board)**: `/analysis` analyses any position without saving (`?fen=`, `?game={id}` for a
+  finished game only — judged by the live view, `lib/server/games.ts#loadFinishedGame`, since the replica lags; or a
+  pasted FEN/PGN); the study page and it share `components/studies.tsx#AnalysisBoard` + `lib/studies.ts#useMoveTree`.
+  The game page's Analyse opens the board; Save as study there makes the study.
 
 - **Engine analysis (engine-analysis)** — `POST /api/analysis {fen, think}` (one position: the one on the board;
   quick/normal/deep = `Analysis:QuickMs`/`NormalMs`/`DeepMs`) answers it from the shared cache

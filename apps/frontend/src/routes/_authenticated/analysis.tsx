@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ParsedGame } from '#/lib/studies'
-import { getGameMoves, getGameSummary, postAnalysis, postCreateStudies } from '#/lib/server/api'
+import { getFinishedGame, postAnalysis, postCreateStudies } from '#/lib/server/api'
 import {
   STANDARD_START,
   analysisTitle,
@@ -30,25 +30,22 @@ export const Route = createFileRoute('/_authenticated/analysis')({
   loaderDeps: ({ search }) => search,
   loader: async ({ deps }) => {
     if (deps.game) {
-      const [moves, summary] = await Promise.all([
-        getGameMoves({ data: deps.game }),
-        getGameSummary({ data: deps.game }),
-      ])
       // Fair play: a game still being played is never put beside the engine through this link.
-      if (summary?.status !== 'ended') {
-        return {
-          startFen: STANDARD_START,
-          tree: [],
-          players: undefined,
-          error: 'That game is still being played (or not found): it can be analysed once it ends.',
-        }
-      }
-      return {
-        startFen: STANDARD_START,
-        tree: fromGame(moves),
-        players: { white: summary.white, black: summary.black },
-        error: null,
-      }
+      const game = await getFinishedGame({ data: deps.game }).catch(() => null)
+      return game
+        ? {
+            startFen: STANDARD_START,
+            tree: fromGame(game.moves),
+            players: game.players,
+            error: null,
+          }
+        : {
+            startFen: STANDARD_START,
+            tree: [],
+            players: undefined,
+            error:
+              'That game is still being played (or not found): it can be analysed once it ends.',
+          }
     }
     if (deps.fen !== undefined && !isFen(deps.fen)) {
       return {

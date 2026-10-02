@@ -4,6 +4,7 @@ import { problemMessage } from './upstream'
 import {
   downloadPgn,
   loadEngineLevels,
+  loadFinishedGame,
   loadGameLive,
   loadGameMoves,
   loadGameSummary,
@@ -262,5 +263,58 @@ describe('games against the computer', () => {
     const levels = [{ level: '1320', label: 'Casual', name: 'Stockfish (Casual)' }]
 
     expect(await loadEngineLevels(fakeFetch(200, { levels }))).toEqual(levels)
+  })
+})
+
+describe('loadFinishedGame (analysis-board)', () => {
+  const view = (status: string, ply: number) => ({ status, ply, whiteId: 1, blackId: -1 })
+  const moves = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({
+      ply: i + 1,
+      uci: 'e2e4',
+      san: 'e4',
+      fenAfter: 'f',
+      whiteMs: 0,
+      blackMs: 0,
+      at: '',
+    }))
+
+  /** Answers by path: the live view, the summary, then the moves as they reach the replica. */
+  function server(
+    live: unknown,
+    movePages: Array<number>,
+    summary: unknown = { white: 'player', black: 'Stockfish' },
+  ) {
+    const asked: Array<string> = []
+    const impl: typeof fetch = (input) => {
+      const url = String(input)
+      asked.push(url)
+      if (url.endsWith('/live')) return Promise.resolve(new Response(JSON.stringify(live)))
+      if (url.endsWith('/moves')) {
+        const n = movePages.length > 1 ? movePages.shift()! : movePages[0]!
+        return Promise.resolve(new Response(JSON.stringify(moves(n))))
+      }
+      return Promise.resolve(new Response(JSON.stringify(summary)))
+    }
+    return { impl, asked }
+  }
+  const noWait = () => Promise.resolve()
+
+  it('refuses a game still being played, by the live view (not the lagging replica)', async () => {
+    const { impl } = server(view('playing', 3), [3])
+    expect(await loadFinishedGame(impl, 'g1', noWait)).toBeNull()
+  })
+
+  it('waits until the replica has every move', async () => {
+    const { impl, asked } = server(view('ended', 2), [1, 1, 2])
+    const game = await loadFinishedGame(impl, 'g1', noWait)
+    expect(game?.moves).toHaveLength(2)
+    expect(game?.players).toEqual({ white: 'player', black: 'Stockfish' })
+    expect(asked.filter((u) => u.endsWith('/moves'))).toHaveLength(3)
+  })
+
+  it('gives up waiting after a few tries and uses what is there', async () => {
+    const { impl } = server(view('ended', 4), [3])
+    expect((await loadFinishedGame(impl, 'g1', noWait))?.moves).toHaveLength(3)
   })
 })

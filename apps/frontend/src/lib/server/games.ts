@@ -95,3 +95,34 @@ export function downloadPgn(
     env,
   )
 }
+
+/** How often and how long `loadFinishedGame` waits for the replica's move list to catch up with the game. */
+const CATCH_UP_TRIES = 6
+const CATCH_UP_MS = 500
+
+/**
+ * A finished game for the analysis board (analysis-board): null while it is still being played — judged by the live
+ * view, which the actor answers, because the replica lags a just-ended game. The replica's moves are asked again
+ * (up to ~3 s) until they reach the game's last ply.
+ */
+export async function loadFinishedGame(
+  fetchImpl: typeof fetch,
+  id: string,
+  wait: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<{ moves: Array<MoveItem>; players: { white: string; black: string } } | null> {
+  const view = await loadGameLive(fetchImpl, id)
+  if (view.status !== 'ended') return null
+  let moves = await loadGameMoves(fetchImpl, id)
+  for (let i = 1; i < CATCH_UP_TRIES && moves.length < view.ply; i++) {
+    await wait(CATCH_UP_MS)
+    moves = await loadGameMoves(fetchImpl, id)
+  }
+  const summary = await loadGameSummary(fetchImpl, id)
+  return {
+    moves,
+    players: {
+      white: summary?.white ?? `Player ${view.whiteId}`,
+      black: summary?.black ?? `Player ${view.blackId}`,
+    },
+  }
+}

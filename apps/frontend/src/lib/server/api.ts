@@ -14,6 +14,7 @@ import { loadDeadLetters, replayDeadLetters } from './admin'
 import { loadPlayer, loadPlayerGames } from './players'
 import {
   loadEngineLevels,
+  loadFinishedGame,
   loadGameLive,
   loadGameMoves,
   loadGameSummary,
@@ -153,6 +154,11 @@ export const getGamePage = createServerFn({ method: 'GET' })
     ])
     return { view, summary, moves }
   })
+
+/** A finished game's moves and players for the analysis board; null while it is played (analysis-board). */
+export const getFinishedGame = createServerFn({ method: 'GET' })
+  .validator((id: string) => guid(id))
+  .handler(({ data }) => loadFinishedGame(serverFetch(), data))
 
 export const getGameMoves = createServerFn({ method: 'GET' })
   .validator((id: string) => guid(id))
