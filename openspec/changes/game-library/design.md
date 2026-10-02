@@ -66,7 +66,9 @@ id)`), `GET /api/library/games/{id}` (moves + headers + attribution), `GET /api/
    much to infer. Candidates and classics import with `kind` null.
 7. **Attribution.** Every game page shows "Source: PGN Mentor — moves only" / "Lichess broadcasts, CC BY-SA 4.0" from
    its row; `/library` has an About section listing sources with links.
-8. **PGN files are not committed.** `tools/library/SOURCES.md` lists the planned imports (URL, licence, kind) so an
+8. **Fields typed before hydration.** The import form adopts them (`useAdoptTyped`); the library search is a plain GET
+   form with named fields, so it works before hydration too. Found by `e2e/library.spec.ts`.
+9. **PGN files are not committed.** `tools/library/SOURCES.md` lists the planned imports (URL, licence, kind) so an
    admin can fetch and import them; the data lives only in the database.
 
 ## Risks / Trade-offs

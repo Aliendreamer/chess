@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import type { ColourChoice, CommandOutcome } from '#/lib/games'
 import type { Pager } from '#/lib/play'
@@ -322,4 +322,18 @@ export function LoadMore({ pager }: { pager: Pager }) {
       {pager.error ? <ErrorText>{pager.error}</ErrorText> : null}
     </div>
   )
+}
+
+/**
+ * Text typed or pasted into a controlled field before the page hydrated is in the field but not in state, and React
+ * does not report it as a change. Put the returned ref on the field: on mount, its text is handed to `adopt` once.
+ */
+export function useAdoptTyped<T extends HTMLInputElement | HTMLTextAreaElement>(
+  adopt: (value: string) => void,
+) {
+  const ref = useRef<T>(null)
+  useEffect(() => {
+    if (ref.current?.value) adopt(ref.current.value)
+  }, [])
+  return ref
 }

@@ -37,14 +37,15 @@
       `?library={id}` on the analysis board; Library in the navigation. Commit: `feat(frontend): the game library`.
 - [x] 4.4 Analysis board: opening name of the current position, In the library panel (games, W/D/B, open at that ply)
       — component tests for the panel. Commit: `feat(frontend): famous games at every position`.
-- [ ] 4.5 🐳 Playwright `e2e/library.spec.ts`: testuser imports a small PGN (two games, one illegal) as admin; searches
+- [x] 4.5 🐳 Playwright `e2e/library.spec.ts`: testuser imports a small PGN (two games, one illegal) as admin; searches
       by player; opens a game on the analysis board; the In the library panel lists it at a middle position.
 
 ## 5. First fill and docs
 
-- [ ] 5.1 `tools/library/SOURCES.md`: the planned imports (PGN Mentor WC 1886–2024 and Candidates, lichess broadcasts
+- [x] 5.1 `tools/library/SOURCES.md`: the planned imports (PGN Mentor WC 1886–2024 and Candidates, lichess broadcasts
       2021–2026 title matches, a hand-picked classics list), each with URL, licence, kind. 1993–2004 marked "waiting for
       the Caissabase licence check".
-- [ ] 5.2 👤 Owner/admin runs the first imports on the local stack and spot-checks a few games per decade.
-- [ ] 5.3 CLAUDE.md (library tables, import rules, never commit PGN collections, attribution) and Serena memory.
+- [ ] 5.2 👤 (left for the end by the owner, 2026-10-02: PGN Mentor and Caissabase terms first) Owner/admin runs the
+      first imports on the local stack and spot-checks a few games per decade.
+- [x] 5.3 CLAUDE.md (library tables, import rules, never commit PGN collections, attribution) and Serena memory.
       Commit: `docs(repo): game-library`.

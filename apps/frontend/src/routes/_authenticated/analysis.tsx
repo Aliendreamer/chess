@@ -26,7 +26,14 @@ import { uciLine, useLibraryPosition, useOpeningName } from '#/lib/library'
 import { PositionPanel } from '#/components/library'
 import { pageTitle } from '#/lib/feedback'
 import { AnalysisBoard } from '#/components/studies'
-import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
+import {
+  Button,
+  ErrorText,
+  Panel,
+  SectionHeading,
+  useAdoptTyped,
+  useCommand,
+} from '#/components/ui'
 
 /**
  * The open analysis board (analysis-board): any position or game with the study tree and the engine, nothing saved
@@ -129,6 +136,7 @@ function Analysis({ start }: { start: ReturnType<typeof Route.useLoaderData> }) 
   const [pasteError, setPasteError] = useState<string | null>(start.error)
   const [choices, setChoices] = useState<Array<ParsedGame & { ok: true }>>([])
   const [copied, setCopied] = useState(false)
+  const pasteBox = useAdoptTyped<HTMLTextAreaElement>(setPasted)
 
   useEffect(() => setCopied(false), [editor.fen])
 
@@ -196,6 +204,22 @@ function Analysis({ start }: { start: ReturnType<typeof Route.useLoaderData> }) 
               ? `${players.white} vs ${players.black}`
               : 'Not saved until you save it as a study.'}
           </span>
+          {start.library ? (
+            <span className="text-xs text-fg-muted" data-testid="library-attribution">
+              {[
+                start.library.event,
+                start.library.year,
+                `Source: ${start.library.source} — ${start.library.licence}`,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </span>
+          ) : null}
+          {opening ? (
+            <span className="text-sm text-fg-accent" data-testid="opening-name">
+              {`${opening.eco} ${opening.name}`}
+            </span>
+          ) : null}
         </header>
       }
     >
@@ -209,6 +233,7 @@ function Analysis({ start }: { start: ReturnType<typeof Route.useLoaderData> }) 
 
       <Panel variant="outlined" title="Start from" className="gap-3">
         <textarea
+          ref={pasteBox}
           aria-label="FEN or PGN"
           value={pasted}
           onChange={(e) => setPasted(e.target.value)}

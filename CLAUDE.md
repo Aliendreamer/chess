@@ -287,7 +287,14 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   **Analysis board (analysis-board)**: `/analysis` analyses any position without saving (`?fen=`, `?game={id}` for a
   finished game only — judged by the live view, `lib/server/games.ts#loadFinishedGame`, since the replica lags; or a
   pasted FEN/PGN); the study page and it share `components/studies.tsx#AnalysisBoard` + `lib/studies.ts#useMoveTree`.
-  The game page's Analyse opens the board; Save as study there makes the study.
+  The game page's Analyse opens the board; Save as study there makes the study. **Game library (game-library)**:
+  `library_games` (moves and factual headers, never annotations, each with `source` and `licence`), `library_positions`
+  (every position a game reached, by `PositionKey`) and `openings` (lichess `chess-openings`, CC0, embedded from
+  `apps/backend/Library/Openings/*.tsv` and seeded at startup under an advisory lock). Admins import PGN on `/admin`
+  (`POST /api/admin/library/import`, ≤100 games: replayed from the start, illegal → refused, `DedupeKey` → duplicate);
+  members search `/library` (`pg_trgm` ILIKE on names/event) and the analysis board shows the opening and "In the
+  library" per position (`?library={id}&ply=`). PGN collections are never committed: `tools/library/SOURCES.md` lists
+  what may be imported and under which licence. Fields typed before hydration: `useAdoptTyped`, or a plain GET form.
 
 - **Engine analysis (engine-analysis)** — `POST /api/analysis {fen, think}` (one position: the one on the board;
   quick/normal/deep = `Analysis:QuickMs`/`NormalMs`/`DeepMs`) answers it from the shared cache

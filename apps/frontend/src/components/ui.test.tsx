@@ -10,6 +10,7 @@ import {
   Panel,
   SectionHeading,
   buttonClass,
+  useAdoptTyped,
   useCommand,
 } from './ui'
 
@@ -206,5 +207,27 @@ describe('OptionTile figure size (ui-polish)', () => {
     const figure = screen.getByText('Maximum')
     expect(figure.className).toContain('text-display-xs')
     expect(figure.className).toContain('break-words')
+  })
+})
+
+describe('useAdoptTyped', () => {
+  it('adopts text that was in the field before the page hydrated, once', () => {
+    const adopted: Array<string> = []
+    function Field() {
+      const ref = useAdoptTyped<HTMLInputElement>((v) => adopted.push(v))
+      return <input aria-label="Field" ref={ref} defaultValue="typed early" />
+    }
+    render(<Field />)
+    expect(adopted).toEqual(['typed early'])
+  })
+
+  it('adopts nothing from an empty field', () => {
+    const adopted: Array<string> = []
+    function Field() {
+      const ref = useAdoptTyped<HTMLInputElement>((v) => adopted.push(v))
+      return <input aria-label="Field" ref={ref} defaultValue="" />
+    }
+    render(<Field />)
+    expect(adopted).toEqual([])
   })
 })

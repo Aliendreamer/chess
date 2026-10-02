@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { LibrarySearch } from '#/lib/library'
 import { useLoadMore } from '#/lib/play'
@@ -24,7 +23,7 @@ export const Route = createFileRoute('/_authenticated/library')({
       ...(year('from') ? { from: year('from') } : {}),
       ...(year('to') ? { to: year('to') } : {}),
       ...(result === '1-0' || result === '0-1' || result === '1/2-1/2' ? { result } : {}),
-      ...(search['wc'] === true ? { wc: true } : {}),
+      ...(search['wc'] === true || search['wc'] === 'true' ? { wc: true } : {}),
     } as LibrarySearch
   },
   loaderDeps: ({ search }) => search,
@@ -68,100 +67,92 @@ function Results({
 const FIELD =
   'rounded-control border border-line-default bg-surface-inset px-3 py-2 text-fg-primary placeholder:text-fg-muted'
 
+/**
+ * A plain GET form with named fields: before hydration the browser submits it as `/library?…` itself, after it the
+ * fields are read from the form, so nothing typed early is lost.
+ */
 function SearchForm({ initial }: { initial: LibrarySearch }) {
   const navigate = useNavigate()
-  const [form, setForm] = useState({
-    player: initial.player ?? '',
-    event: initial.event ?? '',
-    opening: initial.opening ?? '',
-    eco: initial.eco ?? '',
-    from: initial.from ? String(initial.from) : '',
-    to: initial.to ? String(initial.to) : '',
-    result: initial.result ?? '',
-    wc: initial.wc ?? false,
-  })
-  const set = (k: keyof typeof form) => (e: { target: { value: string } }) =>
-    setForm({ ...form, [k]: e.target.value })
 
-  function submit() {
-    const year = (v: string) => (/^\d{4}$/.test(v) ? Number(v) : undefined)
+  function submit(form: HTMLFormElement) {
+    const data = new FormData(form)
+    const text = (k: string) => String(data.get(k) ?? '').trim()
     const next: Record<string, string | number | boolean> = {}
-    for (const k of ['player', 'event', 'opening', 'eco'] as const)
-      if (form[k].trim()) next[k] = form[k].trim()
-    const from = year(form.from)
-    const to = year(form.to)
-    if (from) next.from = from
-    if (to) next.to = to
-    if (form.result) next.result = form.result
-    if (form.wc) next.wc = true
+    for (const k of ['player', 'event', 'opening', 'eco']) if (text(k)) next[k] = text(k)
+    for (const k of ['from', 'to']) if (/^\d{4}$/.test(text(k))) next[k] = Number(text(k))
+    if (text('result')) next.result = text('result')
+    if (data.get('wc')) next.wc = true
     void navigate({ to: '/library', search: next as LibrarySearch })
   }
 
   return (
     <Panel variant="filled" className="gap-3" testId="library-search">
       <form
+        method="get"
+        action="/library"
         className="grid grid-cols-[repeat(auto-fit,minmax(min(180px,100%),1fr))] gap-3"
         onSubmit={(e) => {
           e.preventDefault()
-          submit()
+          submit(e.currentTarget)
         }}
       >
         <input
+          name="player"
           aria-label="Player"
           placeholder="Player"
-          value={form.player}
-          onChange={set('player')}
+          defaultValue={initial.player}
           className={FIELD}
         />
         <input
+          name="event"
           aria-label="Event"
           placeholder="Event"
-          value={form.event}
-          onChange={set('event')}
+          defaultValue={initial.event}
           className={FIELD}
         />
         <input
+          name="opening"
           aria-label="Opening"
           placeholder="Opening"
-          value={form.opening}
-          onChange={set('opening')}
+          defaultValue={initial.opening}
           className={FIELD}
         />
         <input
+          name="eco"
           aria-label="ECO"
           placeholder="ECO (C67, C6, C)"
-          value={form.eco}
-          onChange={set('eco')}
+          defaultValue={initial.eco}
           className={FIELD}
         />
         <input
+          name="from"
           aria-label="From year"
           placeholder="From year"
           inputMode="numeric"
-          value={form.from}
-          onChange={set('from')}
+          defaultValue={initial.from}
           className={FIELD}
         />
         <input
+          name="to"
           aria-label="To year"
           placeholder="To year"
           inputMode="numeric"
-          value={form.to}
-          onChange={set('to')}
+          defaultValue={initial.to}
           className={FIELD}
         />
-        <select aria-label="Result" value={form.result} onChange={set('result')} className={FIELD}>
+        <select
+          name="result"
+          aria-label="Result"
+          defaultValue={initial.result ?? ''}
+          className={FIELD}
+        >
           <option value="">Any result</option>
           <option value="1-0">White won</option>
           <option value="1/2-1/2">Draw</option>
           <option value="0-1">Black won</option>
         </select>
         <label className="flex items-center gap-2 text-sm text-fg-body">
-          <input
-            type="checkbox"
-            checked={form.wc}
-            onChange={(e) => setForm({ ...form, wc: e.target.checked })}
-          />
+          <input type="checkbox" name="wc" value="true" defaultChecked={initial.wc ?? false} />
           World Championship only
         </label>
         <Button type="submit" variant="primary">

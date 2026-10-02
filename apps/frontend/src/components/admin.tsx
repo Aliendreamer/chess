@@ -5,7 +5,7 @@ import type { CommandOutcome } from '#/lib/games'
 import { IMPORT_BATCH, batches, toImportGame } from '#/lib/library'
 import { parsePgn } from '#/lib/studies'
 import { firstLine } from '#/lib/admin'
-import { Button, ErrorText, buttonClass } from '#/components/ui'
+import { Button, ErrorText, buttonClass, useAdoptTyped } from '#/components/ui'
 
 /** The admin screens (admin-screens): parked projection records, each with its error and a Replay. */
 
@@ -118,6 +118,9 @@ export function LibraryImportForm({
     refused: number
   } | null>(null)
   const [problems, setProblems] = useState<Array<string>>([])
+  const sourceField = useAdoptTyped<HTMLInputElement>(setSource)
+  const licenceField = useAdoptTyped<HTMLInputElement>(setLicence)
+  const textField = useAdoptTyped<HTMLTextAreaElement>(setText)
 
   async function run() {
     setBusy(true)
@@ -169,6 +172,7 @@ export function LibraryImportForm({
         <label className="flex flex-col gap-1 text-sm text-fg-secondary">
           Source
           <input
+            ref={sourceField}
             value={source}
             onChange={(e) => setSource(e.target.value)}
             maxLength={100}
@@ -179,6 +183,7 @@ export function LibraryImportForm({
         <label className="flex flex-col gap-1 text-sm text-fg-secondary">
           Licence
           <input
+            ref={licenceField}
             value={licence}
             onChange={(e) => setLicence(e.target.value)}
             maxLength={100}
@@ -188,6 +193,7 @@ export function LibraryImportForm({
         </label>
       </div>
       <textarea
+        ref={textField}
         aria-label="PGN"
         value={text}
         onChange={(e) => setText(e.target.value)}
