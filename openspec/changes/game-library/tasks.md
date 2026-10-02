@@ -15,16 +15,16 @@
       spacing; `year` from `1886.??.??`, `1972.07.11`, `????.??.??`. Implement on `ChessRules` + `PositionKey`.
 - [x] 2.2 `WebApi/Admin/ImportLibrary/` (`Roles(Admin)`, ≤100 games, one transaction, per-game outcome). Commit:
       `feat(backend): the game library and its import`.
-- [ ] 2.3 🐳 Integration test: import 3 games (new, duplicate, illegal) → outcomes; the stored game has its positions
+- [x] 2.3 🐳 Integration test: import 3 games (new, duplicate, illegal) → outcomes; the stored game has its positions
       and opening; a non-admin gets 403 (`nx integration-test backend`).
 
 ## 3. Reads
 
-- [ ] 3.1 Failing unit tests for the search filters (`LibraryReads`, pure over `IQueryable`): player either colour and
+- [x] 3.1 Failing unit tests for the search filters (`LibraryReads`, pure over `IQueryable`): player either colour and
       any case, year range, WC flag, ECO, result; keyset order `(year desc, id)`.
-- [ ] 3.2 `WebApi/Library/` search, game, position (games + W/D/B counts), opening; replica; cache headers. Commit:
+- [x] 3.2 `WebApi/Library/` search, game, position (games + W/D/B counts), opening; replica; cache headers. Commit:
       `feat(backend): library search, positions and openings`.
-- [ ] 3.3 🐳 Integration test: after an import, search by player and by ECO finds it; its third position lists it with
+- [x] 3.3 🐳 Integration test: after an import, search by player and by ECO finds it; its third position lists it with
       the ply; the opening endpoint names it.
 
 ## 4. Frontend

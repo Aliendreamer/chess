@@ -1,5 +1,9 @@
+using Chess.Backend.Games;
+
 namespace Chess.Backend.Library;
 
+/// <summary>Written camel-cased on the wire (<c>"imported"</c>), like every other enum.</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(WireEnumConverter<ImportStatus>))]
 internal enum ImportStatus
 {
     Imported,

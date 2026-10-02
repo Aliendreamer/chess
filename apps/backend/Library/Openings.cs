@@ -70,15 +70,19 @@ internal static class OpeningSeed
             return; // the in-memory store of unit tests: no locks, no transactions, nothing to name
         }
 
-        await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync(ct);
-        await context.Database.ExecuteSqlAsync($"select pg_advisory_xact_lock({SeedLock})", ct);
-        if (await context.Openings.AnyAsync(ct))
+        // The context retries on failure, so the transaction runs through its strategy as one retriable unit.
+        await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
         {
-            return;
-        }
+            await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync(ct);
+            await context.Database.ExecuteSqlAsync($"select pg_advisory_xact_lock({SeedLock})", ct);
+            if (await context.Openings.AnyAsync(ct))
+            {
+                return;
+            }
 
-        context.Openings.AddRange(ReadEmbedded());
-        await context.SaveChangesAsync(ct);
-        await transaction.CommitAsync(ct);
+            context.Openings.AddRange(ReadEmbedded());
+            await context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        });
     }
 }
