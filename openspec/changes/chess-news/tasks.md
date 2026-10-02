@@ -34,14 +34,14 @@
       out, hidden when empty), and for `NewsList` (link, `target=_blank`, `rel`, source, relative age,
       empty state). Implement; home panel (8, "All news" link), the Events now box and `/news` (source chips, Load more); News in the
       navigation. Commit: `feat(frontend): chess news on home`.
-- [ ] 4.3 🐳 Playwright `e2e/news.spec.ts` against the stack (live feeds): home shows a News panel with at least one
+- [x] 4.3 🐳 Playwright `e2e/news.spec.ts` against the stack (live feeds): home shows a News panel with at least one
       headline linking to an `https:` site, or its empty state if every feed is unreachable from the stack; Events now
       either lists tournaments linking to `https://lichess.org/broadcast/` or is absent.
-- [ ] 4.4 🐳 `tools/localdev/verify-observability.sh` still green; a `News` row on the backend dashboard (fetches per
+- [x] 4.4 🐳 `tools/localdev/verify-observability.sh` still green; a `News` row on the backend dashboard (fetches per
       source and outcome).
 
 ## 5. Docs
 
-- [ ] 5.1 CLAUDE.md (News note: sources, never article text or images, singleton fetcher, config, Events now and the
+- [x] 5.1 CLAUDE.md (News note: sources, never article text or images, singleton fetcher, config, Events now and the
       lichess token), ROADMAP. Commit:
       `docs(repo): chess-news`.

@@ -294,7 +294,13 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   (`POST /api/admin/library/import`, ≤100 games: replayed from the start, illegal → refused, `DedupeKey` → duplicate);
   members search `/library` (`pg_trgm` ILIKE on names/event) and the analysis board shows the opening and "In the
   library" per position (`?library={id}&ply=`). PGN collections are never committed: `tools/library/SOURCES.md` lists
-  what may be imported and under which licence. Fields typed before hydration: `useAdoptTyped`, or a plain GET form.
+  what may be imported and under which licence. Fields typed before hydration: `useAdoptTyped`, or a plain GET form. **Chess news (chess-news)**: the
+  `news-fetcher` cluster singleton (`News/`) runs `INewsRounds` every `News:FetchMinutes` over `News:Feeds` (FIDE,
+  ChessBase, Lichess blog, TWIC with its `Accept` header, ECF — never chess.com: its terms) and every
+  `News:EventsMinutes` over lichess's broadcast list (`chess_events`, replaced whole; 60 s pause after a 429;
+  `News__LichessToken` env var only). `FeedParser` refuses DTDs, keeps plain-text titles and https links only — never
+  article text or images (no third-party requests from the browser). `GET /api/news`, `/news/sources`, `/news/events`;
+  home's News and Events now, `/news`. `News__Enabled=false` keeps tests off the internet; metric `chess.news.fetch`.
 
 - **Engine analysis (engine-analysis)** — `POST /api/analysis {fen, think}` (one position: the one on the board;
   quick/normal/deep = `Analysis:QuickMs`/`NormalMs`/`DeepMs`) answers it from the shared cache
