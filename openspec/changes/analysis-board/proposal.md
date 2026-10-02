@@ -32,7 +32,9 @@ graph), opening names and the library panel (both `game-library`), anything for 
 
 ### Modified Capabilities
 
-(none — the study page keeps its requirements; it only shares components)
+- `studies`: "Analyse" on a finished game opens the analysis board with its moves instead of creating a study at once;
+  Save as study there makes the study (the requirement that a finished game can become an owned study still holds).
+  `POST /api/games/{id}/study` stays in the API.
 
 ## Impact
 

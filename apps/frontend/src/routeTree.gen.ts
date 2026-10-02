@@ -14,6 +14,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as PgnIdRouteImport } from './routes/pgn/$id'
 import { Route as AuthenticatedWatchRouteImport } from './routes/_authenticated/watch'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticated/analysis'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedSplatRouteImport } from './routes/_authenticated/$'
 import { Route as AuthenticatedStudiesIndexRouteImport } from './routes/_authenticated/studies.index'
@@ -49,6 +50,11 @@ const AuthenticatedWatchRoute = AuthenticatedWatchRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAnalysisRoute = AuthenticatedAnalysisRouteImport.update({
+  id: '/analysis',
+  path: '/analysis',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/$': typeof AuthenticatedSplatRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/analysis': typeof AuthenticatedAnalysisRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/watch': typeof AuthenticatedWatchRoute
   '/pgn/$id': typeof PgnIdRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/$': typeof AuthenticatedSplatRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/analysis': typeof AuthenticatedAnalysisRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/watch': typeof AuthenticatedWatchRoute
   '/pgn/$id': typeof PgnIdRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_authenticated/$': typeof AuthenticatedSplatRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/analysis': typeof AuthenticatedAnalysisRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/watch': typeof AuthenticatedWatchRoute
   '/pgn/$id': typeof PgnIdRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/admin'
+    | '/analysis'
     | '/settings'
     | '/watch'
     | '/pgn/$id'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
   to:
     | '/$'
     | '/admin'
+    | '/analysis'
     | '/settings'
     | '/watch'
     | '/pgn/$id'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/_authenticated/$'
     | '/_authenticated/admin'
+    | '/_authenticated/analysis'
     | '/_authenticated/settings'
     | '/_authenticated/watch'
     | '/pgn/$id'
@@ -270,6 +282,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/analysis': {
+      id: '/_authenticated/analysis'
+      path: '/analysis'
+      fullPath: '/analysis'
+      preLoaderRoute: typeof AuthenticatedAnalysisRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin': {
@@ -362,6 +381,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedSplatRoute: typeof AuthenticatedSplatRoute
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAnalysisRoute: typeof AuthenticatedAnalysisRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWatchRoute: typeof AuthenticatedWatchRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -377,6 +397,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSplatRoute: AuthenticatedSplatRoute,
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAnalysisRoute: AuthenticatedAnalysisRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWatchRoute: AuthenticatedWatchRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

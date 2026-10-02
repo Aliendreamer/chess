@@ -12,7 +12,6 @@ import {
   postGameCommand,
   postRematch,
   postStartEngineGame,
-  postStudyFromGame,
 } from '#/lib/server/api'
 import {
   CORRESPONDENCE,
@@ -112,13 +111,12 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   const [selected, setSelected] = useState<string | null>(null)
   const [promotion, setPromotion] = useState<{ from: string; to: string } | null>(null)
   const command = useCommand()
-  const analysing = useCommand()
   const navigate = useNavigate()
 
   // A finished game opens as a new study of mine (studies D5); the page stays if the server refuses.
-  async function analyse() {
-    const study = await analysing.run(() => postStudyFromGame({ data: id }))
-    if (study) void navigate({ to: '/studies/$id', params: { id: study.id } })
+  /** Opens the finished game on the analysis board (analysis-board); Save as study there keeps it. */
+  function analyse() {
+    void navigate({ to: '/analysis', search: { game: id } })
   }
   // "Keep waiting" hides the offer until it goes away (they came back); if they leave again, it shows again.
   const [waiting, setWaiting] = useState(false)
@@ -383,12 +381,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
               onClose={() => setGameOver(false)}
             >
               {endActions}
-              <Button
-                block
-                variant="outline"
-                disabled={analysing.busy}
-                onClick={() => void analyse()}
-              >
+              <Button block variant="outline" onClick={analyse}>
                 Analyse
               </Button>
             </GameOverCard>
@@ -445,12 +438,10 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
             result={current.result}
             reason={current.reason}
             pgnHref={`/pgn/${topic}`}
-            onAnalyse={() => void analyse()}
-            analysing={analysing.busy}
+            onAnalyse={analyse}
           />
         ) : null}
         {current.status === 'ended' && !gameOver ? endActions : null}
-        {analysing.error ? <ErrorText>{analysing.error}</ErrorText> : null}
 
         {live.status === 'reconnecting' ? (
           <p

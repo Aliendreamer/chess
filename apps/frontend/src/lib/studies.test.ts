@@ -3,8 +3,12 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   STANDARD_START,
   addMove,
+  analysisTitle,
   childrenAt,
   fenAt,
+  fromGame,
+  fromInput,
+  isFen,
   lineEnd,
   moveNumber,
   nextPath,
@@ -222,5 +226,56 @@ describe('useMoveTree (analysis-board)', () => {
     act(() => result.current.reset(PROMOTE, []))
     expect(result.current.fen).toBe(PROMOTE)
     expect(result.current.path).toEqual([])
+  })
+})
+
+describe('starting points (analysis-board)', () => {
+  it('knows a legal FEN from anything else', () => {
+    expect(isFen(STANDARD_START)).toBe(true)
+    expect(isFen('8/8/8/8/8/8/8/8 w - - 0 1')).toBe(false) // no kings
+    expect(isFen('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq')).toBe(false)
+    expect(isFen('hello')).toBe(false)
+  })
+
+  it('turns a game into its main line', () => {
+    const e4 = playMove(STANDARD_START, 'e2e4')!
+    const e5 = playMove(e4.fen, 'e7e5')!
+    const line = fromGame([
+      { uci: 'e2e4', san: 'e4', fenAfter: e4.fen },
+      { uci: 'e7e5', san: 'e5', fenAfter: e5.fen },
+    ])
+    expect(line).toEqual([
+      {
+        uci: 'e2e4',
+        san: 'e4',
+        fen: e4.fen,
+        children: [{ uci: 'e7e5', san: 'e5', fen: e5.fen, children: [] }],
+      },
+    ])
+    expect(fromGame([])).toEqual([])
+  })
+
+  it('names the study an analysis is saved as', () => {
+    expect(analysisTitle()).toBe('Analysis')
+    expect(analysisTitle({ white: 'Kasparov', black: 'Karpov' })).toBe(
+      'Kasparov vs Karpov, analysis',
+    )
+  })
+})
+
+describe('fromInput (analysis-board)', () => {
+  it('replays UCI moves with their variations into a full tree, stopping at an illegal move', () => {
+    const replayed = fromInput(STANDARD_START, [
+      {
+        uci: 'e2e4',
+        children: [
+          { uci: 'e7e5', children: [] },
+          { uci: 'c7c5', children: [] },
+        ],
+      },
+    ])
+    expect(replayed[0]?.san).toBe('e4')
+    expect(replayed[0]?.children.map((move) => move.san)).toEqual(['e5', 'c5'])
+    expect(fromInput(STANDARD_START, [{ uci: 'e2e5', children: [] }])).toEqual([])
   })
 })

@@ -30,16 +30,22 @@ page has `MoveNav`, ←/→ and `f`.
    Save as study is always one click away.
 3. **Starting points through the URL.** `?fen=` (validated with chess.js; an invalid FEN shows an error and the
    standard start), `?game={id}` (the route loader fetches `GET /api/games/{id}/moves`, which already serves any game
-   to any member, D20). A pasted PGN or FEN in the page replaces the tree after a confirm if the current tree has
-   moves. `game-library` will add `?library={id}` the same way.
+   to any member, D20). A pasted PGN or FEN in the page replaces the tree (no confirm dialog: Save as study is one click
+   away, and the browser's back button returns to the previous starting point when it came from the link). `game-library` will add `?library={id}` the same way.
 4. **Save as study** posts one `StudyInput` built from the tree (`toInput`) with a title from the source ("Analysis",
    "testuser vs player, analysis", the PGN's players) and navigates to the new study.
-5. **Shareable link.** A "Copy link" button writes `/analysis?fen=<current position>` — a position, not the tree;
+5. **Analyse opens the board, not a study.** The game page's Analyse (result panel and game-over card) navigates to
+   `/analysis?game={id}`; making a study is Save as study there. Looking at a game no longer leaves a study behind
+   (delta on `studies`).
+6. **Shareable link.** A "Copy link" button writes `/analysis?fen=<current position>` — a position, not the tree;
    trees can be long and are shared as studies.
 
 ## Risks / Trade-offs
 
 - [Extracting the study board could change studies] → the extraction is its own commit with no behaviour change, the
   studies vitest and Playwright specs run before anything new is added.
+- [Engine help during one's own game] → `?game=` opens finished games only, and no game page offers Analyse while it
+  is played; copying a FEN by hand cannot be stopped in a browser — fair-play detection is out of scope (as on any
+  site with an open analysis board).
 - [Engine load from casual use] → every request goes through the existing shared cache (`position_evaluations`) and
   its retry window; a popular position is evaluated once for everybody.

@@ -19,7 +19,7 @@ flip). Nothing SHALL be stored by moving or analysing on it.
 ### Requirement: Analysis starts from a FEN, a PGN or a game
 
 The analysis page SHALL start from the standard position, from a FEN given in the link or pasted, from a pasted PGN
-(choosing one game when it has several), or from any game a member can see, opened with its moves. An invalid FEN or
+(choosing one game when it has several), or from any finished game, opened with its moves; a game still being played SHALL NOT be opened this way. An invalid FEN or
 PGN SHALL be reported and SHALL NOT replace the current analysis.
 
 #### Scenario: A FEN in the link
@@ -31,6 +31,11 @@ PGN SHALL be reported and SHALL NOT replace the current analysis.
 
 - **WHEN** a member pastes text that is not a legal FEN
 - **THEN** an error says so and the board keeps its current position
+
+#### Scenario: A game still being played
+
+- **WHEN** a member opens the analysis page for a game that has not ended
+- **THEN** an error says it can be analysed once it ends, and the board starts from the standard position
 
 #### Scenario: From a finished game
 

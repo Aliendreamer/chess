@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { parseGame, split } from '@mliebelt/pgn-parser'
-import { Chess } from 'chess.js'
+import { Chess, validateFen } from 'chess.js'
 import { clickSquare, legalTargets, needsPromotion } from './moveInput'
 import type { ParseTree } from '@mliebelt/pgn-parser'
-import type { Color } from './games'
+import type { Color, MoveItem } from './games'
 
 /**
  * Studies (studies D1–D3): the move tree, the operations the board performs on it, and PGN import. Client-safe and
@@ -393,4 +393,35 @@ export function useMoveTree(
     },
     flip: () => setOrientation((o) => (o === 'white' ? 'black' : 'white')),
   }
+}
+
+/** A FEN chess.js accepts as a legal position (both kings, six fields, a sane side to move). */
+export function isFen(text: string): boolean {
+  return validateFen(text.trim()).ok
+}
+
+/** A game's moves (the API's list, in ply order) as a study main line from the standard start. */
+export function fromGame(
+  moves: ReadonlyArray<Pick<MoveItem, 'uci' | 'san' | 'fenAfter'>>,
+): Array<StudyMove> {
+  return moves.reduceRight<Array<StudyMove>>(
+    (children, m) => [{ uci: m.uci, san: m.san, fen: m.fenAfter, children }],
+    [],
+  )
+}
+
+/** The title an analysis is saved under: the game's players when it came from one. */
+export function analysisTitle(players?: { white: string; black: string }): string {
+  return players ? `${players.white} vs ${players.black}, analysis` : 'Analysis'
+}
+
+/** UCI moves (a parsed PGN) replayed from `startFen` into a tree with SAN and FEN; an illegal move ends its line. */
+export function fromInput(
+  startFen: string,
+  input: ReadonlyArray<StudyMoveInput>,
+): Array<StudyMove> {
+  return input.flatMap((m) => {
+    const played = playMove(startFen, m.uci)
+    return played ? [{ ...played, children: fromInput(played.fen, m.children) }] : []
+  })
 }

@@ -55,11 +55,11 @@ describe('Shell', () => {
       </Shell>,
     )
     const rail = screen.getByRole('complementary')
-    for (const name of ['Home', 'Watch', 'History', 'Studies', 'Profile', 'Settings']) {
+    for (const name of ['Home', 'Watch', 'History', 'Studies', 'Analysis', 'Profile', 'Settings']) {
       expect(within(rail).getByRole('link', { name })).toBeDefined()
     }
     const icons = [...rail.querySelectorAll('svg')]
-    expect(icons.length).toBe(6)
+    expect(icons.length).toBe(7)
     expect(icons.every((svg) => svg.closest('[aria-hidden]') !== null)).toBe(true)
   })
 
@@ -73,7 +73,16 @@ describe('Shell', () => {
     expect(bar.className).toContain('shell:hidden')
     expect(bar.querySelector('details summary')?.textContent).toBe('Menu')
     const menu = within(bar)
-    for (const name of ['Home', 'Watch', 'History', 'Studies', 'Profile', 'Settings', 'Log out']) {
+    for (const name of [
+      'Home',
+      'Watch',
+      'History',
+      'Studies',
+      'Analysis',
+      'Profile',
+      'Settings',
+      'Log out',
+    ]) {
       expect(menu.getByRole('link', { name })).toBeDefined()
     }
     expect(screen.getByRole('complementary').className).toContain('hidden')
