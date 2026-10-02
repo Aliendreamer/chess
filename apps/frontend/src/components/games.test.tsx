@@ -6,6 +6,7 @@ import {
   ClaimPanel,
   GameControls,
   GameOverCard,
+  MiniBoard,
   MoveList,
   MoveNav,
   PlayerStrip,
@@ -358,5 +359,24 @@ describe('YourTurnList', () => {
     const mark = container.querySelector('[data-category]')
     expect(mark?.getAttribute('data-category')).toBe('correspondence')
     expect(mark?.className).toContain('bg-tc-correspondence')
+  })
+})
+
+describe('MiniBoard', () => {
+  const AFTER_E4 = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'
+
+  it('is drawn on the server: every square and piece is in the HTML', () => {
+    const html = renderToString(<MiniBoard fen={START} label="testuser vs player" />)
+    expect(html.match(/data-square=/g)).toHaveLength(64)
+    expect(html.match(/<img/g)).toHaveLength(32)
+  })
+
+  it('tints the last move and names the board', () => {
+    render(<MiniBoard fen={AFTER_E4} lastUci="e2e4" label="testuser vs player" />)
+    const board = screen.getByRole('img', { name: 'testuser vs player' })
+    expect(board.querySelectorAll('[data-last]')).toHaveLength(2)
+    expect(board.querySelector('[data-square="e4"] img')).not.toBeNull()
+    expect(board.querySelector('[data-square="e2"] img')).toBeNull()
+    expect(board.querySelector('[data-square="a8"]')).toBe(board.firstElementChild)
   })
 })

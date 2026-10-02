@@ -13,9 +13,9 @@
 
 ## 2. Frontend: mini board
 
-- [ ] 2.1 Failing vitest: `boardSquares(fen, 'white')` returns 64 squares a8…h1 with the right pieces; `'black'` reverses
+- [x] 2.1 Failing vitest: `boardSquares(fen, 'white')` returns 64 squares a8…h1 with the right pieces; `'black'` reverses
       them. Implement in `lib/board.ts`.
-- [ ] 2.2 Failing component test: `MiniBoard` renders 64 `[data-square]` cells, 32 piece images for the start
+- [x] 2.2 Failing component test: `MiniBoard` renders 64 `[data-square]` cells, 32 piece images for the start
       position, the last move's two squares marked, and an accessible name. Implement in `components/games.tsx`.
       Commit: `feat(frontend): a static mini board`.
 

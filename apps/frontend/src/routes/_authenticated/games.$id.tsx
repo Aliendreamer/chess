@@ -37,7 +37,7 @@ import {
   needsPromotion,
   pieceAt,
 } from '#/lib/moveInput'
-import { material, premoveClick, replay, resolvePremove } from '#/lib/board'
+import { material, premoveClick, replay, resolvePremove, uciSquares } from '#/lib/board'
 import { rematchState, tabState, useTabSignals } from '#/lib/feedback'
 import { isInviteView } from '#/lib/play'
 import {
@@ -166,7 +166,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
     mine !== null && playing && current.sideToMove === mine && !pending && !command.busy
   const fen = pending?.fen ?? current.fen
   const lastUci = pending?.uci ?? current.lastUci
-  const lastMove = lastUci ? { from: lastUci.slice(0, 2), to: lastUci.slice(2, 4) } : null
+  const lastMove = uciSquares(lastUci)
   const targets = selected && myTurn ? legalTargets(fen, selected) : []
   const myLetter = mine === 'white' ? 'w' : 'b'
   // Premoves only where waiting is short (board-look): timed games against a person.

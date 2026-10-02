@@ -16,6 +16,7 @@ import {
 } from '#/lib/studies'
 import { scoreText, useAnalysis } from '#/lib/analysis'
 import { clickSquare, legalTargets, needsPromotion } from '#/lib/moveInput'
+import { uciSquares } from '#/lib/board'
 import { Board, MoveNav, PromotionPicker } from '#/components/games'
 import { AnalysisPanel, MoveTree } from '#/components/studies'
 import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
@@ -137,7 +138,7 @@ function Study({ loaded }: { loaded: StudyView }) {
     if (view) setSaved({ ...saved, shared: view.shared, version: view.version })
   }
 
-  const lastMove = current ? { from: current.uci.slice(0, 2), to: current.uci.slice(2, 4) } : null
+  const lastMove = uciSquares(current?.uci)
   const hasVariations = childrenAt(tree, path.slice(0, -1)).length > 1
   const scoreOf = (at: string) => {
     const best = analysis.evaluationOf(at)?.lines[0]

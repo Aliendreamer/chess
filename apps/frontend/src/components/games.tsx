@@ -34,7 +34,7 @@ import { Button, Panel } from '#/components/ui'
 import { outcomeFor } from '#/lib/play'
 import { categoryOf, formatClock, pairMoves, reasonText, resultText, timeLeft } from '#/lib/games'
 import { squaresFor } from '#/lib/moveInput'
-import { pieceSrc, squareStyles } from '#/lib/board'
+import { boardSquares, pieceSrc, squareStyles, uciSquares } from '#/lib/board'
 
 // Static class strings per game type (site-themes), so Tailwind sees every one.
 const TC_BG: Record<Category, string> = {
@@ -256,6 +256,46 @@ export function BoardPlaceholder({ orientation }: { orientation: Color }) {
             data-square={square}
             className={`aspect-square ${light ? 'bg-board-light' : 'bg-board-dark'}`}
           />
+        )
+      })}
+    </div>
+  )
+}
+
+/**
+ * A small static board (live-home): the position drawn on the server in the board theme's colours, the last move
+ * tinted, nothing to click — the link around it opens the game. One picture, named by `label`.
+ */
+export function MiniBoard({
+  fen,
+  lastUci,
+  label,
+  orientation = 'white',
+}: {
+  fen: string
+  lastUci?: string | null
+  label: string
+  orientation?: Color
+}) {
+  const last = uciSquares(lastUci)
+  return (
+    <div
+      role="img"
+      aria-label={label}
+      className="grid aspect-square w-full grid-cols-8 overflow-hidden rounded-board"
+    >
+      {boardSquares(fen, orientation).map(({ square, light, piece }) => {
+        const isLast = square === last?.from || square === last?.to
+        return (
+          <div
+            key={square}
+            data-square={square}
+            data-last={isLast ? '' : undefined}
+            className={`relative aspect-square ${light ? 'bg-board-light' : 'bg-board-dark'}`}
+          >
+            {isLast ? <span className="absolute inset-0 bg-(--board-last)" /> : null}
+            {piece ? <PieceImage piece={piece} className="absolute inset-0 size-full" /> : null}
+          </div>
         )
       })}
     </div>
