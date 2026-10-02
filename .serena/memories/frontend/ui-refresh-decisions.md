@@ -32,5 +32,20 @@ site shared 300/min (e2e hit 429). Owner's decision: key on the validated user (
 authentication; a forged cookie falls back to the IP), and the BFF forwards the real client IP on every upstream call
 (rightmost X-Forwarded-For, one edge hop) — per-IP alone is not enough with CGNAT.
 
-Next (owner, 2026-10-02): more UI, an open analysis board, chess news feeds. Being brainstormed; first question asked
-was what "more UI" means (Live home/Club TV P6, screens for API-only features, polish, other).
+## Round 2 (2026-10-02): "more UI" options 1–3, under a /goal
+
+Owner asked for UI work, open analysis tools and chess news feeds; then set the goal "do 1-3" = (1) finish Part 5's
+open items, (2) screens for API-only features, (3) polish. Built as four OpenSpec changes, every task done and
+verified (unit gates, 36/36 Playwright, integration tests):
+
+- `live-home` (P6, defaults for the owner to confirm): `GET /api/lobby` (cached 2 s, `GetQueues` on the singleton),
+  counters + "n waiting" on preset tiles, Club TV (6 latest games, no correspondence) as static `MiniBoard`s, `/watch`.
+  Polling, not a live kind. OPEN: untimed games abandoned against the computer stay "in play" forever (55 from e2e).
+- `player-profiles`: `GET /api/players/{id}` + `/games`, `/players/$id`, names are `PlayerLink`s everywhere, Profile
+  in the nav. Replica reads users via `PlayerIdentity` only (ProjectDbContext skips its configuration).
+- `admin-screens`: `/admin` dead letters (filter, replay, whole error) for the Admin role only; others get not-found.
+- `ui-polish`: `pageTitle` on every route, router pending/error/not-found screens, catch-all `_authenticated/$.tsx`,
+  `useLoadMore`/`LoadMore`, audit fixes (Maximum tile, study `*`, reason capitalised, file picker, a11y bits).
+
+Still not started from the owner's list: an open analysis board (paste FEN/PGN, analyse without a study) and chess
+news feeds (RSS/Atom, headline + link only). Each needs its own design conversation.
