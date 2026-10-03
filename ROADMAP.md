@@ -212,11 +212,14 @@ feeds. Three OpenSpec changes, in this order:
 
 - **`analysis-board`** **[built]**: `/analysis` — any FEN, PGN or game, the study tree and engine panel without
   saving; Save as study; a shareable position link. Frontend only; the study page shares the same component.
-- **`game-library`** **[built; first imports wait for the owner's licence checks]**: a curated library (WC matches 1886–2024 and Candidates from PGN Mentor, moves
+- **`game-library`** **[built; World Championships 1886–2024 imported from PGN Mentor, 2026-10-03]**: a curated library (WC matches 1886–2024 and Candidates from PGN Mentor, moves
   only; lichess broadcasts 2021–2026, CC BY-SA; hand-picked classics), searchable by player, event, year, result,
   ECO/opening and position ("In the library" on the analysis board); opening names from lichess `chess-openings`
   (CC0). Every row keeps its source and licence; PGN collections are never committed. Open: 1993–2004 waits for a check
   of Caissabase's CC0 claim; asking PGN Mentor for permission.
+- **Lumbra's GigaBase** **[deferred — owner, 2026-10-03: not used for now]**: the only licensed candidate (CC BY-NC-SA
+  4.0) for the 1993–2004 World Championships (split title, FIDE knockouts) that PGN Mentor lacks; those years stay
+  empty. Caissabase is gone (2025). See `tools/library/SOURCES.md`.
 - **`chess-news`** **[built]**: headlines and links only (never article text or images) from FIDE, ChessBase, the
   Lichess blog, TWIC and the ECF, fetched every 30 min by a singleton; chess.com left out (its terms). Plus an
   **Events now** box (owner, 2026-10-02): the tournaments being played, from lichess's broadcast list every 10 min,
