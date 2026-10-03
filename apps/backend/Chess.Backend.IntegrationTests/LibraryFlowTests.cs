@@ -28,7 +28,9 @@ public sealed class LibraryFlowTests(StackFixture stack)
 
     private sealed record AtPosition(Guid Id, int Ply, string Result);
 
-    private sealed record Position(int Games, int WhiteWins, int Draws, int BlackWins, IReadOnlyList<AtPosition> Items);
+    private sealed record Move(string Uci, int Games, int WhiteWins, int Draws, int BlackWins, string? Eco, string? Opening);
+
+    private sealed record Position(int Games, int WhiteWins, int Draws, int BlackWins, IReadOnlyList<AtPosition> Items, IReadOnlyList<Move> Moves);
 
     private sealed record Named(string Eco, string Name);
 
@@ -115,6 +117,29 @@ public sealed class LibraryFlowTests(StackFixture stack)
             AtPosition here = Assert.Single(position.Items, g => g.Id == id);
             Assert.Equal(3, here.Ply);
             Assert.True(position.WhiteWins >= 1);
+        }
+
+        // The explorer (library-explorer): from here the game went on with 3...exf4, a white win.
+        using (HttpResponseMessage r = await Api.GetAsync(client, $"/api/library/positions?key={Uri.EscapeDataString(afterThree)}", "reader", ct))
+        {
+            Position position = (await r.Content.ReadFromJsonAsync<Position>(Api.Json, ct))!;
+            Move next = Assert.Single(position.Moves, m => m.Uci == "e5f4");
+            Assert.True(next.Games >= 1 && next.WhiteWins >= 1);
+        }
+
+        string start = PositionKey.Of("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")!;
+        using (HttpResponseMessage r = await Api.GetAsync(client, $"/api/library/positions?key={Uri.EscapeDataString(start)}", "reader", ct))
+        {
+            Position position = (await r.Content.ReadFromJsonAsync<Position>(Api.Json, ct))!;
+            Assert.Contains(position.Moves, m => m.Uci == "e2e4"); // every game's first move counts at the start
+        }
+
+        string afterE5 = PositionKey.Of(ChessRules.Replay(["e2e4", "e7e5"]).Fen)!;
+        using (HttpResponseMessage r = await Api.GetAsync(client, $"/api/library/positions?key={Uri.EscapeDataString(afterE5)}", "reader", ct))
+        {
+            Position position = (await r.Content.ReadFromJsonAsync<Position>(Api.Json, ct))!;
+            Move f4 = Assert.Single(position.Moves, m => m.Uci == "f2f4");
+            Assert.Equal("C30", f4.Eco); // the move reaches a named opening
         }
 
         string kingsGambit = PositionKey.Of(ChessRules.Replay(["e2e4", "e7e5", "f2f4"]).Fen)!;

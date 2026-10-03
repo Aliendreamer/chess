@@ -80,4 +80,36 @@ public sealed class LibraryReadsTests
 
         Assert.Equal((5, 2, 1, 1), (counts.Games, counts.WhiteWins, counts.Draws, counts.BlackWins));
     }
+
+    [Fact]
+    public void Explore_groups_the_next_moves_with_their_results_most_played_first()
+    {
+        string[] e4e5 = ["e2e4", "e7e5"], e4c5 = ["e2e4", "c7c5"];
+        List<ExplorerMove> moves = [.. LibraryReads.Explore(
+        [
+            new GameAtPosition(e4e5, 1, "1-0"),
+            new GameAtPosition(e4e5, 1, "1/2-1/2"),
+            new GameAtPosition(e4c5, 1, "0-1"),
+            new GameAtPosition(["e2e4"], 1, "1-0"), // ends here: no next move
+        ])];
+
+        Assert.Equal(
+            [new ExplorerMove("e7e5", 2, 1, 1, 0), new ExplorerMove("c7c5", 1, 0, 0, 1)],
+            moves);
+    }
+
+    [Fact]
+    public void From_the_start_every_first_move_counts()
+    {
+        List<ExplorerMove> moves = [.. LibraryReads.Explore(
+        [
+            new GameAtPosition(["d2d4"], 0, "1-0"),
+            new GameAtPosition(["e2e4"], 0, "0-1"),
+            new GameAtPosition(["e2e4"], 0, "*"),
+        ])];
+
+        Assert.Equal(["e2e4", "d2d4"], moves.Select(m => m.Uci));
+        Assert.Equal(2, moves[0].Games);
+    }
 }
+

@@ -53,6 +53,12 @@ internal sealed record LibraryCursor(int Year, Guid Id)
     }
 }
 
+/// <summary>A library game at a position: its moves, how many were played to get there, how it ended.</summary>
+internal sealed record GameAtPosition(IReadOnlyList<string> Moves, int Ply, string Result);
+
+/// <summary>A move played from a position in the library, with how those games ended (library-explorer).</summary>
+internal sealed record ExplorerMove(string Uci, int Games, int WhiteWins, int Draws, int BlackWins);
+
 /// <summary>How the library games at one position ended.</summary>
 internal sealed record PositionCounts(int Games, int WhiteWins, int Draws, int BlackWins);
 
@@ -121,6 +127,16 @@ internal static class LibraryReads
 
         return games.OrderByDescending(g => g.Year ?? -1).ThenByDescending(g => g.Id).Take(limit + 1);
     }
+
+    /// <summary>The moves played next from a position, most played first; a game that ends there adds nothing.</summary>
+    public static IReadOnlyList<ExplorerMove> Explore(IEnumerable<GameAtPosition> games) =>
+        [.. games
+            .Where(g => g.Ply < g.Moves.Count)
+            .GroupBy(g => g.Moves[g.Ply], StringComparer.Ordinal)
+            .Select(m => new ExplorerMove(
+                m.Key, m.Count(), m.Count(g => g.Result == "1-0"), m.Count(g => g.Result == "1/2-1/2"), m.Count(g => g.Result == "0-1")))
+            .OrderByDescending(m => m.Games)
+            .ThenBy(m => m.Uci, StringComparer.Ordinal)];
 
     public static PositionCounts Count(IReadOnlyCollection<string> results)
     {
