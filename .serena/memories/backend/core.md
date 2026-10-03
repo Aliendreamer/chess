@@ -74,6 +74,9 @@ EF InMemory). Central package versions in `Directory.Packages.props`; `<Version>
 - Cookies `Domain=.chess.localhost` in dev (`SessionCookies:Domain`); the BFF strips it for the browser.
 - `DefaultItemExcludes` covers `.claude/**`, `.mcp.json`, `.serena/**` — agent sandbox masks would otherwise
   be picked up as Content by the Web SDK.
+- `dotnet watch` in the stack can rebuild between a model edit and its migration: the node then dies at startup
+  with `PendingModelChangesWarning` (Fatal `Startup failed at migrations`). If the snapshot is in sync, a restart of
+  `backend backend-2` is all it needs.
 - Only `Chess.Backend.csproj` is restored in Docker (tests excluded by `.dockerignore`).
 - Realm export: `tools/localdev/keycloak/chess-realm.json` (client `chess_api`/`chess-dev-secret`, users
   `testuser`/`Test123!` Admin+User, `player`/`Player123!` User). Change ⇒ `stack.sh down -v`.

@@ -224,8 +224,10 @@ feeds. Three OpenSpec changes, in this order:
   position in the club's famous games, with results and the opening each reaches, walked on the analysis board.
   Considered and dropped: Wikibooks theory text (two thirds stubs). Later: lichess broadcast master games (CC BY-SA)
   as a second explorer source; the full lichess database (30 GB a month) is out of proportion.
-- **Opening trainer** **[to design]**: drill opening lines from the lichess opening list (CC0) — named openings and/or
-  the member's own repertoire; first design question asked 2026-10-03.
+- **`opening-trainer`** **[built 2026-10-03]**: drill the named lines of the lichess opening list (CC0) by family
+  (owner: named openings, the whole family, progress remembered per member): the board plays the other side, a wrong
+  move is shown and replaced, and a Leitner schedule brings missed lines back first. Later: the member's own
+  repertoire (lines from their studies).
 - **`chess-news`** **[built]**: headlines and links only (never article text or images) from FIDE, ChessBase, the
   Lichess blog, TWIC and the ECF, fetched every 30 min by a singleton; chess.com left out (its terms). Plus an
   **Events now** box (owner, 2026-10-02): the tournaments being played, from lichess's broadcast list every 10 min,

@@ -26,9 +26,9 @@
 - [x] 4.2 Component tests (`components/trainer.tsx`): family list with progress, the drill feedback (wrong move shown,
       replay required, line done), the lines table. Implement `/trainer`, `/trainer/$family`, the nav entry, the
       profile section. Commit: `feat(frontend): the opening trainer`.
-- [x] 4.3 🐳 Playwright `e2e/trainer.spec.ts`: search "Ruy Lopez", train as White, play one line with one deliberate
-      mistake, see it marked missed and offered again.
+- [x] 4.3 🐳 Playwright `e2e/trainer.spec.ts`: search "najdorf", train as Black, play a line learning it from the
+      moves shown after wrong ones, see it offered again first, play it cleanly, find it on the profile.
 
 ## 5. Docs
 
-- [ ] 5.1 CLAUDE.md (trainer note), ROADMAP (trainer built), Serena memory. Commit: `docs(repo): opening-trainer`.
+- [x] 5.1 CLAUDE.md (trainer note), ROADMAP (trainer built), Serena memory. Commit: `docs(repo): opening-trainer`.

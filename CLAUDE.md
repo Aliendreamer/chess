@@ -295,7 +295,16 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   members search `/library` (`pg_trgm` ILIKE on names/event) and the analysis board shows the opening and "In the
   library" per position (`?library={id}&ply=`). The explorer (library-explorer) is the same endpoint's `moves`: the next move of every game
   at the position (the start position is not stored: there every game counts), with W/D/B and the opening reached. PGN collections are never committed: `tools/library/SOURCES.md` lists
-  what may be imported and under which licence. Fields typed before hydration: `useAdoptTyped`, or a plain GET form. **Chess news (chess-news)**: the
+  what may be imported and under which licence. Fields typed before hydration: `useAdoptTyped`, or a plain GET form. **Opening trainer (opening-trainer)**:
+  `openings."MovesUci"` (reseeded once when a row lacks it) gives each named line its moves; `Trainer/OpeningFamilies`
+  groups them by the name before ':' (search also matches a variation, the name before ','), and a family's lines are
+  only its leaves (no line of the group extends them). `trainer_progress` (PK user, line, colour) holds a Leitner box
+  0–5 and a due time (`TrainerSchedule`: clean = up a box, due after 0/1/3/7/14/30 days; a mistake = box 0, due now;
+  next = lowest due box, then oldest due, then new; learned from box 3), on the primary and only the member's own.
+  `GET /api/trainer/families?q&color`, `…/family?name&color`, `…/next`, `POST …/results`, `GET /api/me/trainer`.
+  Frontend: `lib/trainer.ts#useDrill` (the board plays the other side after 400 ms, a wrong move is shown with the
+  right one and must be replaced, `onDone(mistakes)` once), `/trainer`, `/trainer/$family?color=`, the rail's Trainer
+  and "Openings trained" on the member's own profile only. **Chess news (chess-news)**: the
   `news-fetcher` cluster singleton (`News/`) runs `INewsRounds` every `News:FetchMinutes` over `News:Feeds` (FIDE,
   ChessBase, Lichess blog, TWIC with its `Accept` header, ECF — never chess.com: its terms) and every
   `News:EventsMinutes` over lichess's broadcast list (`chess_events`, replaced whole; 60 s pause after a 429;

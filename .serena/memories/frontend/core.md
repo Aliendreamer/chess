@@ -47,6 +47,8 @@ Built from the `fe-ssr-tanstack` prompt. No i18n/TanStack Store/Query (dropped a
   plugin only runs on `build`, so **there is no relay (and no Nitro server routes) under `vite dev`**.
 - The edge must route `/api/auth/` and `/api/ws/` to the frontend, not the API — nginx `location /api/`
   otherwise swallows both (fixed in `apps/proxy/files/nginx.conf` with `^~` locations + upgrade headers).
+- Playwright: `locator.textContent()` waits (no timeout) for a missing element, so inside `expect.poll` check
+  `count()` first wherever an element can vanish (e.g. the trainer's status between the line's end and its outcome).
 - `.prettierignore` exists per package: `pnpm check` runs prettier with cwd=apps/frontend, so the root one
   does not apply (Playwright's `test-results/` needs ignoring there).
 - Quick local proof without Docker: run `.output/server/index.mjs` with `API_URL` pointing at any HTTP
