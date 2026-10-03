@@ -45,7 +45,10 @@
 - [x] 5.1 `tools/library/SOURCES.md`: the planned imports (PGN Mentor WC 1886–2024 and Candidates, lichess broadcasts
       2021–2026 title matches, a hand-picked classics list), each with URL, licence, kind. 1993–2004 marked "waiting for
       the Caissabase licence check".
-- [ ] 5.2 👤 (left for the end by the owner, 2026-10-02: PGN Mentor and Caissabase terms first) Owner/admin runs the
-      first imports on the local stack and spot-checks a few games per decade.
+- [x] 5.2 👤 (2026-10-03: owner approved PGN Mentor; Caissabase is gone, Lumbra's GigaBase approved as the 1993–2004
+      candidate, CC BY-NC-SA) First imports: all 49 PGN Mentor World Championship files, 1,030 games, counts checked
+      per file. Found and fixed on the way: unclaimed repetitions refused, files without blank lines between headers,
+      movetext and games, "?" players. 1993–2004 from Lumbra is a follow-up in `tools/library/SOURCES.md`. Owner/admin
+      runs the first imports on the local stack and spot-checks a few games per decade.
 - [x] 5.3 CLAUDE.md (library tables, import rules, never commit PGN collections, attribution) and Serena memory.
       Commit: `docs(repo): game-library`.

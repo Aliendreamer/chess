@@ -83,5 +83,6 @@ id)`), `GET /api/library/games/{id}` (moves + headers + attribution), `GET /api/
 
 ## Open Questions
 
-- Caissabase's licence (owner to check in a browser) decides whether 1993–2004 can be filled.
-- Whether to ask PGN Mentor for explicit permission.
+- (settled 2026-10-03) PGN Mentor: the owner accepts its free files as a factual source. Caissabase: gone since 2025,
+  not used. 1993–2004: Lumbra's GigaBase (CC BY-NC-SA 4.0) approved by the owner, to import as a follow-up — only
+  those events, attributed, removed if the club ever becomes commercial.

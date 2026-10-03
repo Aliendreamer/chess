@@ -52,7 +52,8 @@ useMoveTree; Analyse opens the board for FINISHED games only — judged by the l
 `game-library` (library_games/positions/openings; openings = lichess chess-openings CC0 embedded and seeded; admin
 import on /admin; /library search with pg_trgm; "In the library" + opening name on the board), `chess-news`
 (news-fetcher singleton: 5 feeds every 30 min, lichess broadcasts every 10 min for Events now; News__Enabled=false in
-tests). All verified on the stack (e2e 40/40, observability green). OPEN, owner's, left "for the end": PGN Mentor terms
-and Caissabase CC0 check → then the first real library imports (game-library task 5.2; tools/library/SOURCES.md).
+tests). All verified on the stack (e2e 40/40, observability green). 2026-10-03: PGN Mentor approved and imported (49 WC files,
+1,030 games, 89,681 positions on the local stack); Caissabase is gone; Lumbra's GigaBase (CC BY-NC-SA 4.0) approved
+for the 1993–2004 gap — follow-up in tools/library/SOURCES.md. game-library archived.
 Lessons: python str.replace without assert silently skipped an edit; gate commits on the gate's exit code
 (scratchpad fe-commit.sh); in-memory EF test stores need one name per test, not per scope.
