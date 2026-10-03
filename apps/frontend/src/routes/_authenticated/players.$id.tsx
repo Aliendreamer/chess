@@ -1,24 +1,27 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
 import { useLoadMore } from '#/lib/play'
-import { getPlayer, getPlayerGames } from '#/lib/server/api'
+import { getMyTraining, getPlayer, getPlayerGames } from '#/lib/server/api'
 import { LoadMore, Panel, SectionHeading } from '#/components/ui'
 import { RecentGames } from '#/components/games'
 import { PlayerStats } from '#/components/players'
+import { TrainedFamilies } from '#/components/trainer'
 import { pageTitle } from '#/lib/feedback'
 
 const PAGE = 20
 
 /** A player's public profile: name, member since, record by game type, and their games (player-profiles). */
 export const Route = createFileRoute('/_authenticated/players/$id')({
-  loader: async ({ params }) => {
+  loader: async ({ params, context }) => {
     const id = Number(params.id)
     if (!Number.isSafeInteger(id) || id === 0) throw notFound()
-    const [player, games] = await Promise.all([
+    // Training progress is the member's own: only their own profile shows it (opening-trainer).
+    const [player, games, training] = await Promise.all([
       getPlayer({ data: id }),
       getPlayerGames({ data: { id, limit: PAGE } }),
+      id === context.me.id ? getMyTraining() : null,
     ])
     if (!player) throw notFound()
-    return { player, games }
+    return { player, games, training }
   },
   head: ({ loaderData }) => ({ meta: [{ title: pageTitle(loaderData?.player.name ?? 'Player') }] }),
   component: PlayerPage,
@@ -27,7 +30,7 @@ export const Route = createFileRoute('/_authenticated/players/$id')({
 const SINCE = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 
 function PlayerPage() {
-  const { player, games } = Route.useLoaderData()
+  const { player, games, training } = Route.useLoaderData()
   const pager = useLoadMore(games, (cursor) =>
     getPlayerGames({ data: { id: player.id, limit: PAGE, cursor } }),
   )
@@ -44,6 +47,11 @@ function PlayerPage() {
       <Panel variant="filled" title="Record" testId="player-record">
         <PlayerStats record={player} />
       </Panel>
+      {training ? (
+        <Panel variant="outlined" title="Openings trained" testId="player-training">
+          <TrainedFamilies families={training} />
+        </Panel>
+      ) : null}
       <section className="flex flex-col gap-3.5">
         <SectionHeading>Games</SectionHeading>
         <RecentGames games={pager.items} />

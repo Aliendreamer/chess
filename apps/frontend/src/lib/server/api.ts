@@ -6,6 +6,7 @@ import { THINK_LEVELS } from '../analysis'
 import { isPreferences } from '../auth'
 import { isAggregateId, isProjectionGroup } from '../admin'
 import { IMPORT_BATCH, searchQuery } from '../library'
+import { isColor } from '../trainer'
 import { loadMe, loadPreferences, savePreferences } from './auth'
 import { apiUrl, clientIp, forwardClientIp, isGuid } from './upstream'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
@@ -15,6 +16,7 @@ import { loadDeadLetters, replayDeadLetters } from './admin'
 import { loadEvents, loadNews, loadNewsSources } from './news'
 import { importLibrary, loadLibrary, loadLibraryGame, loadOpening, loadPosition } from './library'
 import { loadPlayer, loadPlayerGames } from './players'
+import { loadFamilies, loadFamily, loadMyTraining, loadNextLine, recordRun } from './trainer'
 import {
   loadEngineLevels,
   loadFinishedGame,
@@ -52,6 +54,7 @@ import type { GameCommand } from '../games'
 import type { InviteView, MyTurn } from '../play'
 import type { StudyInput, StudyMoveInput } from '../studies'
 import type { Think } from '../analysis'
+import type { TrainerColor } from '../trainer'
 
 /**
  * A `fetch` bound to the internal API that re-attaches the caller's session cookie under its API name and tells the API
@@ -330,6 +333,58 @@ export const getPlayerGames = createServerFn({ method: 'GET' })
     cursor: input.cursor,
   }))
   .handler(({ data }) => loadPlayerGames(serverFetch(), data.id, data))
+
+/** A colour to train (opening-trainer). */
+function trainerColor(color: TrainerColor): TrainerColor {
+  if (!isColor(color)) throw new Error('Not a colour.')
+  return color
+}
+
+/** A family (or a narrower prefix of one) as the API takes it. */
+function familyName(name: string): string {
+  if (typeof name !== 'string' || !name.trim() || name.length > 200)
+    throw new Error('Not an opening.')
+  return name.trim()
+}
+
+/** The opening families with the member's progress, searched by part of a name. */
+export const getTrainerFamilies = createServerFn({ method: 'GET' })
+  .validator((input: { color: TrainerColor; q?: string }) => ({
+    color: trainerColor(input.color),
+    q: typeof input.q === 'string' ? input.q.trim().slice(0, 100) : '',
+  }))
+  .handler(({ data }) => loadFamilies(serverFetch(), data.color, data.q))
+
+export const getTrainerFamily = createServerFn({ method: 'GET' })
+  .validator((input: { name: string; color: TrainerColor }) => ({
+    name: familyName(input.name),
+    color: trainerColor(input.color),
+  }))
+  .handler(({ data }) => loadFamily(serverFetch(), data.name, data.color))
+
+export const getTrainerNext = createServerFn({ method: 'GET' })
+  .validator((input: { name: string; color: TrainerColor }) => ({
+    name: familyName(input.name),
+    color: trainerColor(input.color),
+  }))
+  .handler(({ data }) => loadNextLine(serverFetch(), data.name, data.color))
+
+export const postTrainerResult = createServerFn({ method: 'POST' })
+  .validator((input: { lineKey: string; color: TrainerColor; mistakes: number }) => {
+    if (typeof input.lineKey !== 'string' || !input.lineKey || input.lineKey.length > 100)
+      throw new Error('Not a line.')
+    return {
+      lineKey: input.lineKey,
+      color: trainerColor(input.color),
+      mistakes: Math.min(Math.max(Math.trunc(input.mistakes), 0), 1000),
+    }
+  })
+  .handler(({ data }) => recordRun(serverFetch(), data))
+
+/** The families the member has trained, for their own profile. */
+export const getMyTraining = createServerFn({ method: 'GET' }).handler(() =>
+  loadMyTraining(serverFetch()),
+)
 
 /** The lobby (live-home): polled by home every 10 s, answered from a cache the API shares between callers. */
 export const getLobby = createServerFn({ method: 'GET' }).handler(() => loadLobby(serverFetch()))

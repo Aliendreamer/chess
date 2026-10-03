@@ -21,12 +21,12 @@
 
 ## 4. Frontend
 
-- [ ] 4.1 Failing vitest for `lib/trainer.ts` (whose move it is, checking a move incl. promotion, the line's progress
+- [x] 4.1 Failing vitest for `lib/trainer.ts` (whose move it is, checking a move incl. promotion, the line's progress
       through it) and `lib/server/trainer.ts`. Implement + server functions.
-- [ ] 4.2 Component tests (`components/trainer.tsx`): family list with progress, the drill feedback (wrong move shown,
+- [x] 4.2 Component tests (`components/trainer.tsx`): family list with progress, the drill feedback (wrong move shown,
       replay required, line done), the lines table. Implement `/trainer`, `/trainer/$family`, the nav entry, the
       profile section. Commit: `feat(frontend): the opening trainer`.
-- [ ] 4.3 🐳 Playwright `e2e/trainer.spec.ts`: search "Ruy Lopez", train as White, play one line with one deliberate
+- [x] 4.3 🐳 Playwright `e2e/trainer.spec.ts`: search "Ruy Lopez", train as White, play one line with one deliberate
       mistake, see it marked missed and offered again.
 
 ## 5. Docs

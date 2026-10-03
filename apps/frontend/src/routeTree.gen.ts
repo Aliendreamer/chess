@@ -19,11 +19,13 @@ import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticated/analysis'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedSplatRouteImport } from './routes/_authenticated/$'
+import { Route as AuthenticatedTrainerIndexRouteImport } from './routes/_authenticated/trainer.index'
 import { Route as AuthenticatedStudiesIndexRouteImport } from './routes/_authenticated/studies.index'
 import { Route as AuthenticatedGamesIndexRouteImport } from './routes/_authenticated/games.index'
 import { Route as PgnStudyIdRouteImport } from './routes/pgn/study.$id'
 import { Route as OtelV1TracesRouteImport } from './routes/otel/v1/traces'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthenticatedTrainerFamilyRouteImport } from './routes/_authenticated/trainer.$family'
 import { Route as AuthenticatedStudiesIdRouteImport } from './routes/_authenticated/studies.$id'
 import { Route as AuthenticatedPlayersIdRouteImport } from './routes/_authenticated/players.$id'
 import { Route as AuthenticatedPingsIdRouteImport } from './routes/_authenticated/pings.$id'
@@ -79,6 +81,12 @@ const AuthenticatedSplatRoute = AuthenticatedSplatRouteImport.update({
   path: '/$',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedTrainerIndexRoute =
+  AuthenticatedTrainerIndexRouteImport.update({
+    id: '/trainer/',
+    path: '/trainer/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedStudiesIndexRoute =
   AuthenticatedStudiesIndexRouteImport.update({
     id: '/studies/',
@@ -105,6 +113,12 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTrainerFamilyRoute =
+  AuthenticatedTrainerFamilyRouteImport.update({
+    id: '/trainer/$family',
+    path: '/trainer/$family',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedStudiesIdRoute = AuthenticatedStudiesIdRouteImport.update({
   id: '/studies/$id',
   path: '/studies/$id',
@@ -146,11 +160,13 @@ export interface FileRoutesByFullPath {
   '/pings/$id': typeof AuthenticatedPingsIdRoute
   '/players/$id': typeof AuthenticatedPlayersIdRoute
   '/studies/$id': typeof AuthenticatedStudiesIdRoute
+  '/trainer/$family': typeof AuthenticatedTrainerFamilyRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/otel/v1/traces': typeof OtelV1TracesRoute
   '/pgn/study/$id': typeof PgnStudyIdRoute
   '/games/': typeof AuthenticatedGamesIndexRoute
   '/studies/': typeof AuthenticatedStudiesIndexRoute
+  '/trainer/': typeof AuthenticatedTrainerIndexRoute
 }
 export interface FileRoutesByTo {
   '/$': typeof AuthenticatedSplatRoute
@@ -167,11 +183,13 @@ export interface FileRoutesByTo {
   '/pings/$id': typeof AuthenticatedPingsIdRoute
   '/players/$id': typeof AuthenticatedPlayersIdRoute
   '/studies/$id': typeof AuthenticatedStudiesIdRoute
+  '/trainer/$family': typeof AuthenticatedTrainerFamilyRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/otel/v1/traces': typeof OtelV1TracesRoute
   '/pgn/study/$id': typeof PgnStudyIdRoute
   '/games': typeof AuthenticatedGamesIndexRoute
   '/studies': typeof AuthenticatedStudiesIndexRoute
+  '/trainer': typeof AuthenticatedTrainerIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -190,11 +208,13 @@ export interface FileRoutesById {
   '/_authenticated/pings/$id': typeof AuthenticatedPingsIdRoute
   '/_authenticated/players/$id': typeof AuthenticatedPlayersIdRoute
   '/_authenticated/studies/$id': typeof AuthenticatedStudiesIdRoute
+  '/_authenticated/trainer/$family': typeof AuthenticatedTrainerFamilyRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/otel/v1/traces': typeof OtelV1TracesRoute
   '/pgn/study/$id': typeof PgnStudyIdRoute
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
   '/_authenticated/studies/': typeof AuthenticatedStudiesIndexRoute
+  '/_authenticated/trainer/': typeof AuthenticatedTrainerIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -213,11 +233,13 @@ export interface FileRouteTypes {
     | '/pings/$id'
     | '/players/$id'
     | '/studies/$id'
+    | '/trainer/$family'
     | '/api/auth/$'
     | '/otel/v1/traces'
     | '/pgn/study/$id'
     | '/games/'
     | '/studies/'
+    | '/trainer/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/$'
@@ -234,11 +256,13 @@ export interface FileRouteTypes {
     | '/pings/$id'
     | '/players/$id'
     | '/studies/$id'
+    | '/trainer/$family'
     | '/api/auth/$'
     | '/otel/v1/traces'
     | '/pgn/study/$id'
     | '/games'
     | '/studies'
+    | '/trainer'
   id:
     | '__root__'
     | '/_authenticated'
@@ -256,11 +280,13 @@ export interface FileRouteTypes {
     | '/_authenticated/pings/$id'
     | '/_authenticated/players/$id'
     | '/_authenticated/studies/$id'
+    | '/_authenticated/trainer/$family'
     | '/api/auth/$'
     | '/otel/v1/traces'
     | '/pgn/study/$id'
     | '/_authenticated/games/'
     | '/_authenticated/studies/'
+    | '/_authenticated/trainer/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -343,6 +369,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSplatRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/trainer/': {
+      id: '/_authenticated/trainer/'
+      path: '/trainer'
+      fullPath: '/trainer/'
+      preLoaderRoute: typeof AuthenticatedTrainerIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/studies/': {
       id: '/_authenticated/studies/'
       path: '/studies'
@@ -377,6 +410,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/trainer/$family': {
+      id: '/_authenticated/trainer/$family'
+      path: '/trainer/$family'
+      fullPath: '/trainer/$family'
+      preLoaderRoute: typeof AuthenticatedTrainerFamilyRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/studies/$id': {
       id: '/_authenticated/studies/$id'
@@ -430,8 +470,10 @@ interface AuthenticatedRouteChildren {
   AuthenticatedPingsIdRoute: typeof AuthenticatedPingsIdRoute
   AuthenticatedPlayersIdRoute: typeof AuthenticatedPlayersIdRoute
   AuthenticatedStudiesIdRoute: typeof AuthenticatedStudiesIdRoute
+  AuthenticatedTrainerFamilyRoute: typeof AuthenticatedTrainerFamilyRoute
   AuthenticatedGamesIndexRoute: typeof AuthenticatedGamesIndexRoute
   AuthenticatedStudiesIndexRoute: typeof AuthenticatedStudiesIndexRoute
+  AuthenticatedTrainerIndexRoute: typeof AuthenticatedTrainerIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -448,8 +490,10 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedPingsIdRoute: AuthenticatedPingsIdRoute,
   AuthenticatedPlayersIdRoute: AuthenticatedPlayersIdRoute,
   AuthenticatedStudiesIdRoute: AuthenticatedStudiesIdRoute,
+  AuthenticatedTrainerFamilyRoute: AuthenticatedTrainerFamilyRoute,
   AuthenticatedGamesIndexRoute: AuthenticatedGamesIndexRoute,
   AuthenticatedStudiesIndexRoute: AuthenticatedStudiesIndexRoute,
+  AuthenticatedTrainerIndexRoute: AuthenticatedTrainerIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

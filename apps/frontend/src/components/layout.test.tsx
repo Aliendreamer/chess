@@ -62,13 +62,14 @@ describe('Shell', () => {
       'Studies',
       'Analysis',
       'Library',
+      'Trainer',
       'Profile',
       'Settings',
     ]) {
       expect(within(rail).getByRole('link', { name })).toBeDefined()
     }
     const icons = [...rail.querySelectorAll('svg')]
-    expect(icons.length).toBe(9)
+    expect(icons.length).toBe(10)
     expect(icons.every((svg) => svg.closest('[aria-hidden]') !== null)).toBe(true)
   })
 
