@@ -11,6 +11,7 @@ using Chess.Backend.Engine;
 using Chess.Backend.Messaging;
 using Chess.Backend.News;
 using Chess.Backend.Projections;
+using Chess.Backend.Trainer;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -144,6 +145,8 @@ internal static class BuilderExtension
         services.AddSettings<NewsOptions>(configuration, NewsOptions.SectionName);
         services.AddHttpClient(NewsRounds.HttpClientName);
         services.AddSingleton<INewsRounds, NewsRounds>();
+        // The opening trainer (opening-trainer): the named lines grouped once per process.
+        services.AddSingleton<OpeningFamiliesCache>();
         // Correspondence deadlines (correspondence-games D3): the projection fills game_deadlines, the sweeper reads it.
         services.AddScoped<DeadlineProjection>();
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<DeadlineProjection>());

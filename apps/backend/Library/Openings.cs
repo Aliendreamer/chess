@@ -19,7 +19,7 @@ internal static class OpeningSeed
     public static Opening? Parse(string eco, string name, string pgn)
     {
         ChessRules rules = ChessRules.NewGame();
-        int ply = 0;
+        List<string> moves = [];
         foreach (string token in (pgn ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
             if (token.EndsWith('.'))
@@ -27,16 +27,16 @@ internal static class OpeningSeed
                 continue; // a move number: "1." or "3..."
             }
 
-            if (rules.TryApplySan(token) is not MoveApplied)
+            if (rules.TryApplySan(token) is not MoveApplied applied)
             {
                 return null;
             }
 
-            ply++;
+            moves.Add(applied.Uci);
         }
 
-        return ply > 0 && PositionKey.Of(rules.Fen) is { } key
-            ? new Opening { PositionKey = key, Eco = eco, Name = name, Ply = ply }
+        return moves.Count > 0 && PositionKey.Of(rules.Fen) is { } key
+            ? new Opening { PositionKey = key, Eco = eco, Name = name, Ply = moves.Count, MovesUci = moves }
             : null;
     }
 
@@ -61,7 +61,7 @@ internal static class OpeningSeed
         }
     }
 
-    /// <summary>Fills <c>openings</c> once: under an advisory lock, and only when it is empty.</summary>
+    /// <summary>Fills <c>openings</c> under an advisory lock when it is empty or its rows predate the moves column.</summary>
     public static async Task SeedAsync(ProjectDbContext context, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -75,11 +75,14 @@ internal static class OpeningSeed
         {
             await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync(ct);
             await context.Database.ExecuteSqlAsync($"select pg_advisory_xact_lock({SeedLock})", ct);
-            if (await context.Openings.AnyAsync(ct))
+            // Seeded and complete: nothing to do. Rows from before the trainer lack their moves: refill once.
+            if (await context.Openings.AnyAsync(ct) && !await context.Openings.AnyAsync(o => o.MovesUci == null, ct))
             {
                 return;
             }
 
+            // A set-based delete: removing and re-adding the same keys through the tracker would clash.
+            await context.Openings.ExecuteDeleteAsync(ct);
             context.Openings.AddRange(ReadEmbedded());
             await context.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);

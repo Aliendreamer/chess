@@ -45,6 +45,8 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<ChessEvent> ChessEvents => Set<ChessEvent>();
 
+    public DbSet<TrainerProgress> TrainerProgress => Set<TrainerProgress>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.UseIdentityAlwaysColumns();

@@ -14,4 +14,7 @@ internal sealed class Opening
 
     /// <summary>How many plies the list's own line takes to reach it: the deeper, the more specific.</summary>
     public int Ply { get; set; }
+
+    /// <summary>The line's moves from the start (UCI), for the trainer (opening-trainer); null on rows seeded before it.</summary>
+    public List<string>? MovesUci { get; set; }
 }

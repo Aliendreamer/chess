@@ -1,22 +1,22 @@
 ## 1. Data
 
-- [ ] 1.1 Migration: `openings."MovesUci"` (text[]) and `trainer_progress` (PK user, line, colour; index (user, colour,
+- [x] 1.1 Migration: `openings."MovesUci"` (text[]) and `trainer_progress` (PK user, line, colour; index (user, colour,
       DueAt)). Failing unit test: `OpeningSeed.Parse` keeps the line's UCI; the seed refills a table whose rows lack
       moves. Implement.
 
 ## 2. Trainer logic (pure)
 
-- [ ] 2.1 Failing unit tests for `Trainer/OpeningFamilies`: families from names, line counts, leaves only, prefix and
+- [x] 2.1 Failing unit tests for `Trainer/OpeningFamilies`: families from names, line counts, leaves only, prefix and
       search. Implement over the seeded rows (cached).
-- [ ] 2.2 Failing unit tests for `Trainer/TrainerSchedule`: clean run up a box with the due steps, a mistake to box 0,
+- [x] 2.2 Failing unit tests for `Trainer/TrainerSchedule`: clean run up a box with the due steps, a mistake to box 0,
       the next-line order (lowest box due, oldest due, never seen), learned from box 3, "done for now" with the next due.
       Implement.
 
 ## 3. API
 
-- [ ] 3.1 `WebApi/Trainer/` families, family (lines + progress), next, results (validators; own progress only;
+- [x] 3.1 `WebApi/Trainer/` families, family (lines + progress), next, results (validators; own progress only;
       `no-store`). `dotnet build` warning-clean; unit tests. Commit: `feat(backend): the opening trainer`.
-- [ ] 3.2 🐳 Integration test: a member posts a clean and a missed result; next returns the missed line; the family
+- [x] 3.2 🐳 Integration test: a member posts a clean and a missed result; next returns the missed line; the family
       counts one learned after three clean runs (clock moved by `TimeProvider`).
 
 ## 4. Frontend
