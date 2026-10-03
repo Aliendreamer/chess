@@ -203,13 +203,15 @@ internal sealed class ReviewService(
 
     private async Task<ReviewView> ViewAsync(RmGame game, ReviewInput input, CancellationToken ct)
     {
+        // Never asked for: none, even when every position happens to be in the cache (a review is the players' choice).
+        if (!await Context.GameReviews.AnyAsync(r => r.GameId == game.GameId, ct))
+        {
+            return ReviewView.Nothing;
+        }
+
         ReviewResult review = GameReviewer.Review(input);
-        string status = review.Evaluated == review.Positions ? ReviewView.Complete
-            : await Context.GameReviews.AnyAsync(r => r.GameId == game.GameId, ct) ? ReviewView.Running
-            : ReviewView.None;
-        return status == ReviewView.None
-            ? ReviewView.Nothing with { Positions = review.Positions, Evaluated = review.Evaluated }
-            : new ReviewView(status, review.Evaluated, review.Positions, review.Moves, review.White, review.Black, review.BookExit);
+        string status = review.Evaluated == review.Positions ? ReviewView.Complete : ReviewView.Running;
+        return new ReviewView(status, review.Evaluated, review.Positions, review.Moves, review.White, review.Black, review.BookExit);
     }
 
     private async Task<ReviewInput> InputAsync(RmGame game, CancellationToken ct)

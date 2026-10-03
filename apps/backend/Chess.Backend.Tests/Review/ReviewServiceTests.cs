@@ -162,6 +162,18 @@ public sealed class ReviewServiceTests
     }
 
     [Fact]
+    public async Task A_game_nobody_asked_about_shows_no_review_even_when_its_positions_are_known()
+    {
+        Stack stack = new();
+        stack.Evaluated(stack.Game());
+
+        Assert.Equal(ReviewView.Nothing, await stack.Review().ReadAsync(GameId, CancellationToken.None));
+        (_, ReviewView? asked) = await stack.Review().StartAsync(GameId, White, admin: false, CancellationToken.None);
+        Assert.Equal(ReviewView.Complete, asked!.Status); // at once: nothing left for the engine
+        Assert.Empty(stack.Requests.Reviewed);
+    }
+
+    [Fact]
     public async Task A_players_mistakes_are_added_to_practice_once_and_only_from_a_complete_review()
     {
         Stack stack = new();
