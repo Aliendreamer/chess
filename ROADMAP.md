@@ -220,6 +220,12 @@ feeds. Three OpenSpec changes, in this order:
 - **Lumbra's GigaBase** **[deferred — owner, 2026-10-03: not used for now]**: the only licensed candidate (CC BY-NC-SA
   4.0) for the 1993–2004 World Championships (split title, FIDE knockouts) that PGN Mentor lacks; those years stay
   empty. Caissabase is gone (2025). See `tools/library/SOURCES.md`.
+- **`library-explorer`** **[built 2026-10-03]**: opening theory as the owner chose it — the moves played from any
+  position in the club's famous games, with results and the opening each reaches, walked on the analysis board.
+  Considered and dropped: Wikibooks theory text (two thirds stubs). Later: lichess broadcast master games (CC BY-SA)
+  as a second explorer source; the full lichess database (30 GB a month) is out of proportion.
+- **Opening trainer** **[to design]**: drill opening lines from the lichess opening list (CC0) — named openings and/or
+  the member's own repertoire; first design question asked 2026-10-03.
 - **`chess-news`** **[built]**: headlines and links only (never article text or images) from FIDE, ChessBase, the
   Lichess blog, TWIC and the ECF, fetched every 30 min by a singleton; chess.com left out (its terms). Plus an
   **Events now** box (owner, 2026-10-02): the tournaments being played, from lichess's broadcast list every 10 min,

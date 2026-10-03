@@ -293,7 +293,8 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   `apps/backend/Library/Openings/*.tsv` and seeded at startup under an advisory lock). Admins import PGN on `/admin`
   (`POST /api/admin/library/import`, ≤100 games: replayed from the start, illegal → refused, `DedupeKey` → duplicate);
   members search `/library` (`pg_trgm` ILIKE on names/event) and the analysis board shows the opening and "In the
-  library" per position (`?library={id}&ply=`). PGN collections are never committed: `tools/library/SOURCES.md` lists
+  library" per position (`?library={id}&ply=`). The explorer (library-explorer) is the same endpoint's `moves`: the next move of every game
+  at the position (the start position is not stored: there every game counts), with W/D/B and the opening reached. PGN collections are never committed: `tools/library/SOURCES.md` lists
   what may be imported and under which licence. Fields typed before hydration: `useAdoptTyped`, or a plain GET form. **Chess news (chess-news)**: the
   `news-fetcher` cluster singleton (`News/`) runs `INewsRounds` every `News:FetchMinutes` over `News:Feeds` (FIDE,
   ChessBase, Lichess blog, TWIC with its `Accept` header, ECF — never chess.com: its terms) and every

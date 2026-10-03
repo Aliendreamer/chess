@@ -10,10 +10,10 @@
 
 - [x] 2.1 Failing component tests: the moves table (SAN, counts, bar, opening name), a click calls back with the UCI.
       Implement; the analysis page plays the move. Commit: `feat(frontend): the library explorer on the board`.
-- [ ] 2.2 🐳 Playwright: at the start position the table lists 1.e4 among the moves; clicking it plays it and the table
+- [x] 2.2 🐳 Playwright: at the start position the table lists 1.e4 among the moves; clicking it plays it and the table
       shows Black's replies (needs the imported library; `e2e/library.spec.ts`).
 
 ## 3. Docs
 
-- [ ] 3.1 ROADMAP (explorer built; lichess master games later; Wikibooks dropped; trainer to design), CLAUDE.md
+- [x] 3.1 ROADMAP (explorer built; lichess master games later; Wikibooks dropped; trainer to design), CLAUDE.md
       library note. Commit: `docs(repo): library-explorer`.

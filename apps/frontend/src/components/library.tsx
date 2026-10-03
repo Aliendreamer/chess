@@ -109,7 +109,7 @@ function MovesTable({
         <tr className="text-left text-2xs uppercase tracking-wide text-fg-muted">
           <th className="py-1 font-medium">Move</th>
           <th className="py-1 text-right font-medium">Games</th>
-          <th className="py-1 pl-3 font-medium">White · draw · black</th>
+          <th className="py-1 pl-3 font-medium">Results</th>
         </tr>
       </thead>
       <tbody>
@@ -138,7 +138,7 @@ function MovesTable({
                 <div
                   role="img"
                   aria-label={`${share.wins}% white wins, ${share.draws}% draws, ${share.losses}% black wins`}
-                  className="flex h-3 w-full overflow-hidden rounded-full bg-surface-inset"
+                  className="flex h-3 w-full overflow-hidden rounded-full border border-line-strong bg-surface-inset"
                 >
                   <span className="bg-fg-primary" style={{ width: `${share.wins}%` }} />
                   <span className="bg-fg-muted" style={{ width: `${share.draws}%` }} />
