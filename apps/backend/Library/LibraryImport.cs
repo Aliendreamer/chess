@@ -30,12 +30,14 @@ internal sealed record RefusedGame(string Error) : ImportOutcome;
 
 /// <summary>
 /// The import's rules (game-library D3), pure: a library game starts from the standard position and every move must
-/// replay; its positions are keyed like the analysis cache (<see cref="PositionKey"/>); its opening is the deepest named
+/// replay, with no automatic draws (only a player's claim ends a real game that way); its positions are keyed like the analysis cache (<see cref="PositionKey"/>); its opening is the deepest named
 /// position it reaches unless the PGN names its own ECO; the same game twice is found by <see cref="DedupeKey"/>.
 /// </summary>
 internal static class LibraryImport
 {
     private static readonly string[] Results = ["1-0", "0-1", "1/2-1/2", "*"];
+
+    private const string StandardStart = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
     public static ImportOutcome Prepare(ImportGame game, ImportSource source, IReadOnlyDictionary<string, Opening> openings, DateTimeOffset now)
     {
@@ -63,7 +65,9 @@ internal static class LibraryImport
         }
 
         Guid id = Guid.CreateVersion7(now);
-        ChessRules rules = ChessRules.NewGame();
+        // No automatic endings (as in studies): a repetition or fifty moves end a real game only when a player claims
+        // them, and famous games went on past unclaimed ones. Checkmate and stalemate still end it.
+        ChessRules rules = ChessRules.ForStudy(StandardStart) ?? throw new InvalidOperationException("The start position did not load.");
         List<LibraryPosition> positions = [];
         Opening? opening = null;
         for (int i = 0; i < game.Moves.Count; i++)

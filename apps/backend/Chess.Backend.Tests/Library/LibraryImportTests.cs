@@ -83,4 +83,16 @@ public sealed class LibraryImportTests
         Assert.Equal(a, b);
         Assert.NotEqual(a, other);
     }
+
+    [Fact]
+    public void Play_continues_past_an_unclaimed_repetition()
+    {
+        // Knights out and back three times: a threefold repetition nobody claimed, then the game goes on.
+        string[] shuffle = ["g1f3", "g8f6", "f3g1", "f6g8", "g1f3", "g8f6", "f3g1", "f6g8", "g1f3", "g8f6", "f3g1", "f6g8"];
+
+        PreparedGame game = Assert.IsType<PreparedGame>(LibraryImport.Prepare(Game([.. shuffle, "e2e4"]), Source, Openings, Now));
+
+        Assert.Equal(13, game.Game.Ply);
+    }
 }
+
