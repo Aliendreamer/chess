@@ -28,10 +28,10 @@ mistakes practised until known — without slowing anyone's interactive analysis
    asked again). The worker runs a separate loop and consumer group on it (`Engine:ReviewProcesses`, default 1) and
    answers on `analysis.results`, where the existing consumer stores it. A member's position on the analysis board
    never waits behind a 90-move review.
-3. **Who may start one, and how often.** Only a player of the game (or an Admin), only when `rm_games.Status` is
+3. **Who may start one.** Only a player of the game (or an Admin), only when `rm_games.Status` is
    `ended` (a game the replica has not seen end is 409: fair play, as for the analysis link). `game_reviews(GameId PK,
-RequestedBy, RequestedAt)`; a member may start `Review:PerMemberPerDay` (default 10) reviews in 24 h (429 beyond);
-   asking again for a game already requested is free and re-asks only lost positions. Anyone who can see the game can
+RequestedBy, RequestedAt)` records that a review was asked for (status `none` vs `running`). No daily limit (owner,
+   2026-10-03: the club is mostly for personal use); asking again re-asks only lost positions. Anyone who can see the game can
    read its review.
 4. **Classification is pure and lichess-like.** Winning chances `w(cp) = 2 / (1 + e^(-0.00368208·cp)) - 1` in
    [-1, 1] from the mover's side (mate = ±1). A move's loss is `w(best before) - w(after)` for the mover:
@@ -59,7 +59,7 @@ bookExit }`. The game page polls it every 2 s while `running` (as the study boar
 
 ## Risks / Trade-offs
 
-- [Engine time] → on demand only, a daily limit, the shared cache, one review process by default; scale with
+- [Engine time] → on demand only, players only, the shared cache, one review process by default; scale with
   `Engine:ReviewProcesses` (the review group and the analysis group together stay within the topics' partitions).
 - [A 1 s evaluation is shallow] → enough to find mistakes worth practising (lichess's server review is similar); a
   deeper evaluation of the same position from the analysis board replaces it automatically.

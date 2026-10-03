@@ -21,7 +21,7 @@ For a member:
   trainer's lines (missed first, known ones later).
 
 In the code: a separate low-priority topic `analysis.review.requests` (reviews never queue in front of a member's
-interactive analysis), `game_reviews` (who asked, when, for the daily limit), `mistake_drills` (the member's practice
+interactive analysis), `game_reviews` (who asked, when), `mistake_drills` (the member's practice
 positions and their box), a pure `Review/GameReview` (classification), `WebApi/Review/` and `WebApi/Practice/`
 endpoints; frontend `lib/review.ts`, `components/review.tsx`, the game page's review panel, `/practice`.
 
@@ -50,4 +50,4 @@ request topic)
 - Frontend: `lib/review.ts`, `lib/server/review.ts`, `components/review.tsx`, the game page's panel and graph,
   `/practice`, a nav entry.
 - Engine time: about 1 s per position at the review think (≈1–2 min of one process per game); cached positions
-  (openings, repeated games) are free. A daily limit per member keeps it bounded.
+  (openings, repeated games) are free. No daily limit (owner: personal use); only players start reviews.

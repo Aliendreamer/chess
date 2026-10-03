@@ -4,8 +4,8 @@
 
 A player of a finished game SHALL be able to ask for an engine review of it; the server SHALL evaluate every position
 of the game not already evaluated, on a request queue separate from interactive analysis. A game still being played
-SHALL never be reviewed. A member SHALL be limited to a configured number of new reviews per day; asking again for a
-game already requested SHALL NOT count. Anyone who can see the game SHALL be able to read its review.
+SHALL never be reviewed. Asking again for a game already requested SHALL only re-ask positions whose request was
+lost. Anyone who can see the game SHALL be able to read its review.
 
 #### Scenario: Starting a review
 
