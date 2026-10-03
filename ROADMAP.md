@@ -215,8 +215,8 @@ feeds. Three OpenSpec changes, in this order:
 - **`game-library`** **[built; World Championships 1886–2024 imported from PGN Mentor, 2026-10-03]**: a curated library (WC matches 1886–2024 and Candidates from PGN Mentor, moves
   only; lichess broadcasts 2021–2026, CC BY-SA; hand-picked classics), searchable by player, event, year, result,
   ECO/opening and position ("In the library" on the analysis board); opening names from lichess `chess-openings`
-  (CC0). Every row keeps its source and licence; PGN collections are never committed. Open: 1993–2004 waits for a check
-  of Caissabase's CC0 claim; asking PGN Mentor for permission.
+  (CC0). Every row keeps its source and licence; PGN collections are never committed. PGN Mentor approved by the owner
+  (2026-10-03: free files, no stated restriction). The 1993–2004 split-title years stay empty (see Lumbra's GigaBase).
 - **Lumbra's GigaBase** **[deferred — owner, 2026-10-03: not used for now]**: the only licensed candidate (CC BY-NC-SA
   4.0) for the 1993–2004 World Championships (split title, FIDE knockouts) that PGN Mentor lacks; those years stay
   empty. Caissabase is gone (2025). See `tools/library/SOURCES.md`.
