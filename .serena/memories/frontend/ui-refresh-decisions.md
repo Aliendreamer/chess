@@ -23,8 +23,8 @@ site-themes, responsive-layout (openspec/changes/). Proposals page: https://clau
 
 Verified on the live stack: backend integration 37/37, Playwright 32/32 (chromium + mobile), verify-part1.sh. Archived
 board-look, game-page-navigation, game-feedback, user-preferences, site-themes (specs synced: new `chessboard`,
-`game-feedback`, `user-preferences`, `site-themes`; `play-ui` and `game-matchmaking` extended). **responsive-layout
-stays open** only for its real-phone check (task 5.1, the owner's to do); archive it after that.
+`game-feedback`, `user-preferences`, `site-themes`; `play-ui` and `game-matchmaking` extended). **responsive-layout**
+archived 2026-10-03 after the owner's real-phone check.
 
 Found on the way: Playwright `dragTo` needs `steps` (`e2e/support.ts#DRAG_STEPS`) — dnd-kit spends the activating move.
 And a real bug: the API's rate limiter keyed on the remote IP, which for every BFF call is the BFF itself, so the whole
