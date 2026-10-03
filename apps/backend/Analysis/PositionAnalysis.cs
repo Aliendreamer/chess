@@ -16,6 +16,9 @@ internal static class AnalysisTopics
 {
     public const string Requests = "analysis.requests";
     public const string Results = "analysis.results";
+
+    /// <summary>A game review's positions (game-review D2): its own consumer group, never ahead of interactive analysis.</summary>
+    public const string ReviewRequests = "analysis.review.requests";
 }
 
 /// <summary>How long the engine looks at a position, as a request names it; the times are <see cref="AnalysisOptions"/>.</summary>
@@ -154,9 +157,12 @@ internal sealed record AnalysisResultMessage(
 internal interface IAnalysisRequests
 {
     Task RequestAsync(AnalysisRequestMessage request, CancellationToken ct);
+
+    /// <summary>A game review's positions, on <see cref="AnalysisTopics.ReviewRequests"/>.</summary>
+    Task RequestReviewAsync(IReadOnlyList<AnalysisRequestMessage> requests, CancellationToken ct);
 }
 
-/// <summary>Produces to <c>analysis.requests</c>, keyed by position. Owns its producer: nothing else may produce.</summary>
+/// <summary>Produces to <c>analysis.requests</c> and the review topic, keyed by position. Owns its producer: nothing else may produce.</summary>
 [ExcludeFromCodeCoverage(Justification = "A Kafka producer; exercised by the integration and live checks.")]
 internal sealed class KafkaAnalysisRequests(string bootstrapServers) : IAnalysisRequests, IDisposable
 {
@@ -173,6 +179,15 @@ internal sealed class KafkaAnalysisRequests(string bootstrapServers) : IAnalysis
         return _producer.ProduceAsync(AnalysisTopics.Requests, new Message<string, string> { Key = request.Key, Value = JsonSerializer.Serialize(request), Headers = PipelineTracing.CurrentHeaders() }, ct);
     }
 
+    public Task RequestReviewAsync(IReadOnlyList<AnalysisRequestMessage> requests, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(requests);
+        return Task.WhenAll(requests.Select(r => _producer.ProduceAsync(
+            AnalysisTopics.ReviewRequests,
+            new Message<string, string> { Key = r.Key, Value = JsonSerializer.Serialize(r), Headers = PipelineTracing.CurrentHeaders() },
+            ct)));
+    }
+
     public void Dispose()
     {
         _producer.Flush(TimeSpan.FromSeconds(5));
@@ -186,6 +201,8 @@ internal sealed class NoAnalysisRequests : IAnalysisRequests
     public static readonly NoAnalysisRequests Instance = new();
 
     public Task RequestAsync(AnalysisRequestMessage request, CancellationToken ct) => Task.CompletedTask;
+
+    public Task RequestReviewAsync(IReadOnlyList<AnalysisRequestMessage> requests, CancellationToken ct) => Task.CompletedTask;
 }
 
 internal interface IAnalysisService : IService

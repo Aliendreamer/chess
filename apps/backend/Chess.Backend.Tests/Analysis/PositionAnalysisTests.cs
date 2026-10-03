@@ -13,22 +13,11 @@ public sealed class PositionAnalysisTests
     private const string AfterE4Key = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -";
     private static readonly DateTimeOffset Now = new(2026, 9, 28, 12, 0, 0, TimeSpan.Zero);
 
-    private sealed class Requests : IAnalysisRequests
-    {
-        public List<AnalysisRequestMessage> Sent { get; } = [];
-
-        public Task RequestAsync(AnalysisRequestMessage request, CancellationToken ct)
-        {
-            Sent.Add(request);
-            return Task.CompletedTask;
-        }
-    }
-
-    private static (ProjectDbContext Db, AnalysisService Service, Requests Sent, FakeClock Clock) Build()
+    private static (ProjectDbContext Db, AnalysisService Service, RecordingAnalysisRequests Sent, FakeClock Clock) Build()
     {
         FakeClock clock = new(Now);
         ProjectDbContext db = TestDb.Create(clock);
-        Requests sent = new();
+        RecordingAnalysisRequests sent = new();
         return (db, new AnalysisService(db, NullLogger<AnalysisService>.Instance, sent, Options.Create(new AnalysisOptions()), clock), sent, clock);
     }
 
@@ -53,7 +42,7 @@ public sealed class PositionAnalysisTests
     [Fact]
     public async Task An_unknown_position_is_asked_of_the_engine_once_and_answered_later()
     {
-        (ProjectDbContext db, AnalysisService service, Requests sent, _) = Build();
+        (ProjectDbContext db, AnalysisService service, RecordingAnalysisRequests sent, _) = Build();
         using (db)
         {
             PositionAnswer first = await service.AnalyseAsync(AfterE4, 3_000, CancellationToken.None);
@@ -69,7 +58,7 @@ public sealed class PositionAnalysisTests
     [Fact]
     public async Task A_request_left_unanswered_past_the_retry_time_is_sent_again()
     {
-        (ProjectDbContext db, AnalysisService service, Requests sent, FakeClock clock) = Build();
+        (ProjectDbContext db, AnalysisService service, RecordingAnalysisRequests sent, FakeClock clock) = Build();
         using (db)
         {
             await service.AnalyseAsync(Start, 1_000, CancellationToken.None);
@@ -86,7 +75,7 @@ public sealed class PositionAnalysisTests
     [Fact]
     public async Task A_stored_result_answers_that_think_time_and_shorter_ones_but_not_longer()
     {
-        (ProjectDbContext db, AnalysisService service, Requests sent, FakeClock clock) = Build();
+        (ProjectDbContext db, AnalysisService service, RecordingAnalysisRequests sent, FakeClock clock) = Build();
         using (db)
         {
             await new AnalysisResultConsumer(db, clock).ApplyAsync(StartKey, Result(StartKey, 3_000, 22), CancellationToken.None);
@@ -168,5 +157,25 @@ public sealed class PositionAnalysisTests
         v.TestValidate(new AnalysePositionRequest { Fen = Start, Think = "forever" }).ShouldHaveValidationErrorFor(r => r.Think);
         v.TestValidate(new AnalysePositionRequest { Fen = "e4" }).ShouldHaveValidationErrorFor(r => r.Fen);
         v.TestValidate(new AnalysePositionRequest()).ShouldHaveValidationErrorFor(r => r.Fen);
+    }
+}
+
+/// <summary>Records what would go to the engine worker (game-review uses it too).</summary>
+internal sealed class RecordingAnalysisRequests : IAnalysisRequests
+{
+    public List<AnalysisRequestMessage> Sent { get; } = [];
+
+    public List<AnalysisRequestMessage> Reviewed { get; } = [];
+
+    public Task RequestAsync(AnalysisRequestMessage request, CancellationToken ct)
+    {
+        Sent.Add(request);
+        return Task.CompletedTask;
+    }
+
+    public Task RequestReviewAsync(IReadOnlyList<AnalysisRequestMessage> requests, CancellationToken ct)
+    {
+        Reviewed.AddRange(requests);
+        return Task.CompletedTask;
     }
 }

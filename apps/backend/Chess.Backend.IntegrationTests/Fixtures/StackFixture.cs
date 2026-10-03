@@ -141,6 +141,7 @@ public sealed class StackFixture : IAsyncLifetime
             new TopicSpecification { Name = EngineTopics.Requests, NumPartitions = 3, ReplicationFactor = 1 },
             new TopicSpecification { Name = EngineTopics.Results, NumPartitions = 3, ReplicationFactor = 1 },
             new TopicSpecification { Name = AnalysisTopics.Requests, NumPartitions = 3, ReplicationFactor = 1 },
+            new TopicSpecification { Name = AnalysisTopics.ReviewRequests, NumPartitions = 3, ReplicationFactor = 1 },
             new TopicSpecification { Name = AnalysisTopics.Results, NumPartitions = 3, ReplicationFactor = 1 },
         ]);
     }

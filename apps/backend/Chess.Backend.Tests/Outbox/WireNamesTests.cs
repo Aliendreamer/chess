@@ -36,6 +36,7 @@ public sealed class WireNamesTests
         Assert.Equal(GameTopics.Kafka, PingTopics.Kafka);
         Assert.Equal(("engine.moves.requests", "engine.moves.results"), (EngineTopics.Requests, EngineTopics.Results));
         Assert.Equal(("analysis.requests", "analysis.results"), (AnalysisTopics.Requests, AnalysisTopics.Results));
+        Assert.Equal("analysis.review.requests", AnalysisTopics.ReviewRequests); // apps/engine's EngineTopics.ReviewRequests
     }
 
     [Fact]

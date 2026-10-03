@@ -11,6 +11,7 @@ using Chess.Backend.Engine;
 using Chess.Backend.Messaging;
 using Chess.Backend.News;
 using Chess.Backend.Projections;
+using Chess.Backend.Review;
 using Chess.Backend.Trainer;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -166,6 +167,7 @@ internal static class BuilderExtension
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<NotificationConsumer>());
         // Shared position analysis (engine-analysis): requests to the engine worker, results into the cache.
         services.AddSettings<AnalysisOptions>(configuration, AnalysisOptions.SectionName);
+        services.AddSettings<ReviewOptions>(configuration, ReviewOptions.SectionName);
         services.AddScoped<AnalysisResultConsumer>();
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<AnalysisResultConsumer>());
         if (kafka.Enabled)
