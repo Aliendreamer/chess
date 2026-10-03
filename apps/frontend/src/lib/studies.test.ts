@@ -311,7 +311,7 @@ describe('parsePgn tolerance (game-library)', () => {
     const pgn = [
       '[Event "WCh 2018"]\r\n[White "Caruana, Fabiano"]\r\n[Black "Carlsen, Magnus"]\r\n[Result "1/2-1/2"]\r\n1. e4 c5 1/2-1/2',
       '[Event "WCh 2018"]\r\n[White "Carlsen, Magnus"]\r\n[Black "Caruana, Fabiano"]\r\n[Result "1/2-1/2"]\r\n1. d4 d5 1/2-1/2',
-    ].join('\r\n\r\n')
+    ].join('\r\n') // and the next game's headers right after the result, no blank line either
     const games = parsePgn(pgn)
     expect(games.map((g) => g.ok)).toEqual([true, true])
     expect(games.map((g) => (g.ok ? g.study.white : null))).toEqual([

@@ -456,9 +456,13 @@ export function fromInput(
 }
 
 /**
- * PGN as files really come (game-library): Windows or old Mac line ends become `\n`, and a header block followed
- * directly by its movetext gets the blank line the standard puts between them — without it the splitter finds no game.
+ * PGN as files really come (game-library): Windows or old Mac line ends become `\n`, and the blank lines the standard
+ * puts between a game's headers and its movetext, and between games, are put back — without them the splitter cannot
+ * tell the games apart.
  */
 export function normalisePgn(text: string): string {
-  return text.replace(/\r\n?/g, '\n').replace(/^(\[[^\n]*\])\n(?=[^[\n])/gm, '$1\n\n')
+  return text
+    .replace(/\r\n?/g, '\n')
+    .replace(/^(\[[^\n]*\])\n(?=[^[\n])/gm, '$1\n\n') // headers straight into movetext
+    .replace(/^([^[\n][^\n]*)\n(?=\[)/gm, '$1\n\n') // movetext straight into the next game's headers
 }
