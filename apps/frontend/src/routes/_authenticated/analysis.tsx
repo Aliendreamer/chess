@@ -18,6 +18,7 @@ import {
   isFen,
   lineEnd,
   parsePgn,
+  playMove,
   toInput,
   useMoveTree,
 } from '#/lib/studies'
@@ -195,7 +196,18 @@ function Analysis({ start }: { start: ReturnType<typeof Route.useLoaderData> }) 
       editor={editor}
       analysis={analysis}
       editable
-      aside={atPosition ? <PositionPanel position={atPosition} /> : null}
+      aside={
+        atPosition ? (
+          <PositionPanel
+            position={atPosition}
+            fen={editor.fen}
+            onPlay={(uci) => {
+              const move = playMove(editor.fen, uci)
+              if (move) editor.playLine([move])
+            }}
+          />
+        ) : null
+      }
       header={
         <header className="flex flex-col gap-1">
           <SectionHeading size="xl">Analysis</SectionHeading>

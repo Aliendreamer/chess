@@ -41,12 +41,25 @@ export interface PositionGame {
   ply: number
 }
 
+/** A move played from the position in the library's games (library-explorer). */
+export interface ExplorerMove {
+  uci: string
+  games: number
+  whiteWins: number
+  draws: number
+  blackWins: number
+  eco: string | null
+  opening: string | null
+}
+
 export interface LibraryPosition {
   games: number
   whiteWins: number
   draws: number
   blackWins: number
   items: Array<PositionGame>
+  /** Most played first. */
+  moves: Array<ExplorerMove>
 }
 
 export interface OpeningView {

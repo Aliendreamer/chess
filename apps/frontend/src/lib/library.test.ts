@@ -104,7 +104,7 @@ describe('useLibraryPosition', () => {
   afterEach(cleanup)
 
   it('asks for the position on the board and keeps the answer per position', async () => {
-    const answer = { games: 1, whiteWins: 1, draws: 0, blackWins: 0, items: [] }
+    const answer = { games: 1, whiteWins: 1, draws: 0, blackWins: 0, items: [], moves: [] }
     const load = vi.fn(() => Promise.resolve(answer))
     const { result, rerender } = renderHook(({ key }) => useLibraryPosition(key, load), {
       initialProps: { key: 'k1' },

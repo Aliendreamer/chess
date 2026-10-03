@@ -1,5 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import type { LibraryGameItem, LibraryPosition } from '#/lib/library'
+import type { ExplorerMove, LibraryGameItem, LibraryPosition } from '#/lib/library'
+import { scoreShare } from '#/lib/players'
+import { playMove } from '#/lib/studies'
 import { Panel } from '#/components/ui'
 
 /**
@@ -43,10 +45,24 @@ export function LibraryList({ games }: { games: ReadonlyArray<LibraryGameItem> }
   )
 }
 
-/** "In the library" on the analysis board: how the games at this position ended, and each one at this move. */
-export function PositionPanel({ position }: { position: LibraryPosition }) {
+/**
+ * "In the library" on the analysis board: the moves played here in the library's games (library-explorer) — click one
+ * to play it — then how the games at this position ended, and each one at this move.
+ */
+export function PositionPanel({
+  position,
+  fen,
+  onPlay,
+}: {
+  position: LibraryPosition
+  fen: string
+  onPlay: (uci: string) => void
+}) {
   return (
     <Panel variant="outlined" title="In the library" className="gap-2" testId="library-panel">
+      {position.moves.length > 0 ? (
+        <MovesTable moves={position.moves} fen={fen} onPlay={onPlay} />
+      ) : null}
       {position.games === 0 ? (
         <p className="m-0 text-sm text-fg-secondary">No library game reached this position.</p>
       ) : (
@@ -71,5 +87,68 @@ export function PositionPanel({ position }: { position: LibraryPosition }) {
         </>
       )}
     </Panel>
+  )
+}
+
+function MovesTable({
+  moves,
+  fen,
+  onPlay,
+}: {
+  moves: ReadonlyArray<ExplorerMove>
+  fen: string
+  onPlay: (uci: string) => void
+}) {
+  return (
+    <table
+      className="w-full border-collapse text-sm"
+      aria-label="Moves played here"
+      data-testid="explorer"
+    >
+      <thead>
+        <tr className="text-left text-2xs uppercase tracking-wide text-fg-muted">
+          <th className="py-1 font-medium">Move</th>
+          <th className="py-1 text-right font-medium">Games</th>
+          <th className="py-1 pl-3 font-medium">White · draw · black</th>
+        </tr>
+      </thead>
+      <tbody>
+        {moves.map((m) => {
+          const san = playMove(fen, m.uci)?.san ?? m.uci
+          const share = scoreShare({ wins: m.whiteWins, draws: m.draws, losses: m.blackWins })
+          return (
+            <tr key={m.uci} className="border-t border-line-divider align-top">
+              <th scope="row" className="py-1.5 text-left font-normal">
+                <button
+                  type="button"
+                  aria-label={`Play ${san}`}
+                  onClick={() => onPlay(m.uci)}
+                  className="cursor-pointer bg-transparent p-0 font-mono text-fg-primary hover:text-fg-accent"
+                >
+                  {san}
+                </button>
+                {m.opening ? (
+                  <span className="block text-2xs text-fg-secondary">
+                    {`${m.eco ?? ''} ${m.opening}`.trim()}
+                  </span>
+                ) : null}
+              </th>
+              <td className="py-1.5 text-right font-mono text-fg-secondary">{m.games}</td>
+              <td className="py-1.5 pl-3">
+                <div
+                  role="img"
+                  aria-label={`${share.wins}% white wins, ${share.draws}% draws, ${share.losses}% black wins`}
+                  className="flex h-3 w-full overflow-hidden rounded-full bg-surface-inset"
+                >
+                  <span className="bg-fg-primary" style={{ width: `${share.wins}%` }} />
+                  <span className="bg-fg-muted" style={{ width: `${share.draws}%` }} />
+                  <span className="bg-surface-page" style={{ width: `${share.losses}%` }} />
+                </div>
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
   )
 }

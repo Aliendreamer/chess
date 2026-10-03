@@ -43,4 +43,14 @@ test('an imported game is searched, opened and found at a position', async ({ br
   await expect(
     page.getByTestId('library-panel').getByRole('link', { name: new RegExp(white) }),
   ).toBeVisible()
+
+  // The explorer (library-explorer): from the start, 1.e4 is among the moves; clicking it plays it.
+  await page.goto('/analysis')
+  const explorer = page.getByTestId('explorer')
+  await expect(explorer.getByRole('button', { name: 'Play e4' })).toBeVisible()
+  await expect(async () => {
+    await explorer.getByRole('button', { name: 'Play e4' }).click()
+    await expect(page.getByTestId('move-tree')).toContainText('e4', { timeout: 1_000 })
+  }).toPass({ timeout: 15_000 })
+  await expect(explorer.getByRole('button', { name: 'Play e5' })).toBeVisible()
 })
