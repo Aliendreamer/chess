@@ -228,10 +228,36 @@ feeds. Three OpenSpec changes, in this order:
   (owner: named openings, the whole family, progress remembered per member): the board plays the other side, a wrong
   move is shown and replaced, and a Leitner schedule brings missed lines back first. Later: the member's own
   repertoire (lines from their studies).
+- **`game-review`** **[proposed 2026-10-03]**: on request, the engine reviews a member's finished game (its own
+  low-priority topic, the shared evaluation cache, a daily limit): an evaluation graph, inaccuracies, mistakes and
+  blunders with the better move, where the game left the book; the member's own mistakes then become practice positions
+  on the trainer's schedule (`/practice`).
 - **`chess-news`** **[built]**: headlines and links only (never article text or images) from FIDE, ChessBase, the
   Lichess blog, TWIC and the ECF, fetched every 30 min by a singleton; chess.com left out (its terms). Plus an
   **Events now** box (owner, 2026-10-02): the tournaments being played, from lichess's broadcast list every 10 min,
   names and links only.
+
+### Part 7 — Desktop app (idea, owner 2026-10-03: think it through, feasibility first)
+
+The question: a desktop app, and could the whole club run as a standalone desktop app? Feasibility as of 2026-10-03:
+
+- **A thin desktop client (feasible, small).** A Tauri shell (system webview, ~10 MB; Electron is the heavier
+  alternative) around the hosted club: the same pages, login and cookie session, plus what a browser tab lacks —
+  a window and tray, OS notifications for "your turn" in correspondence games, start at login. Needs the club hosted
+  somewhere first (the deploy target is not implemented). Days, not weeks.
+- **A hybrid (feasible, medium).** The thin client plus a Stockfish bundled in the app, so the analysis board,
+  the trainer and practice evaluate locally (offline, no server engine time). Stockfish is GPLv3: shipping it means
+  shipping its licence and source offer, as the engine image does. Play, invites, the library and news stay online.
+- **Everything standalone (possible, large).** The club's server side is a distributed system: Keycloak, Postgres
+  primary + replica, Redpanda, Redis, an Akka cluster, the engine worker and the observability stack. A single
+  installable app would need a "local mode": one process, embedded storage (SQLite or an embedded Postgres), in-process
+  queues instead of Kafka topics (outbox, projections, engine and analysis requests), a local user instead of
+  Keycloak, Akka as one node, Stockfish as a child process, and the SSR BFF bundled (Electron can run it; Tauri would
+  need a Node sidecar). Offline it is a one-player app: games against the computer, studies, analysis, the library,
+  the trainer and review work; live and correspondence play need other people, so the server. Bundling the stack
+  under Docker Desktop is "standalone" only for people who already run Docker.
+- **Suggested order** (to decide): the thin client first, then the local engine; a local mode only if offline solo
+  use becomes a goal of its own.
 
 ## 7. Cross-cutting
 
