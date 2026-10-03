@@ -18,14 +18,16 @@ mistakes practised until known — without slowing anyone's interactive analysis
 ## Decisions
 
 1. **A review is the game's positions in the shared cache.** Nothing per game is stored but the request: the review
-   is computed on read from `rm_moves` + `position_evaluations` at `Review:ThinkMs` (default 1,000 ms; any longer
-   evaluation also counts). A position already evaluated (an opening, a game reviewed before, the analysis board) costs
+   is computed on read from `rm_moves` + `position_evaluations` at `Review:ThinkMs` (default 800 ms — apart from the board's 1/3/10 s, so a pending review
+   row never makes a member's quick evaluation wait; any longer evaluation also counts). A position already evaluated (an opening, a game reviewed before, the analysis board) costs
    nothing. Complete = every position before a move has an evaluation; the final position is judged from the result
-   (mate, stalemate, or the last evaluation for a resignation/time/agreement).
+   (mate, stalemate, or the last evaluation for a resignation/time/agreement). A game nobody asked about reads `none`
+   even when every position is cached (built: a review is the players' choice; asked, it completes at once).
 2. **Reviews get their own topic.** `POST /api/games/{id}/review` produces every missing position to
    `analysis.review.requests` (same message as `analysis.requests`), marking them `Requested` in
-   `position_evaluations` as `AnalysisService` does (a pending row younger than `Analysis:RetryAfterSeconds` is not
-   asked again). The worker runs a separate loop and consumer group on it (`Engine:ReviewProcesses`, default 1) and
+   `position_evaluations` as `AnalysisService` does (a pending row younger than `Review:RetryAfterSeconds`, 900 s, is
+   not asked again). The worker runs a separate loop and consumer group on it (`Engine:ReviewProcesses`, default 1;
+   a review position may wait `Engine:MaxReviewAgeSeconds`, 1 h, where an interactive one is dropped after 120 s) and
    answers on `analysis.results`, where the existing consumer stores it. A member's position on the analysis board
    never waits behind a 90-move review.
 3. **Who may start one.** Only a player of the game (or an Admin), only when `rm_games.Status` is
@@ -55,7 +57,8 @@ bookExit }`. The game page polls it every 2 s while `running` (as the study boar
    positions"), the graph (`components/review.tsx`, SVG, no chart library; a click goes to that move), marks in the
    move list (?! ? ??), the better move and line beside the current move, the book exit, and "Practise my mistakes".
    `/practice` (one position, the member's side down, the game and move it came from, "Show answer"), a "Practice"
-   nav entry with the due count, and a line on the member's own profile.
+   nav entry (built without a due count: the shell would fetch it on every page), and a line on the member's own
+   profile.
 
 ## Risks / Trade-offs
 

@@ -36,4 +36,4 @@
 
 ## 5. Docs
 
-- [ ] 5.1 CLAUDE.md (review note), ROADMAP (game review built), Serena memory. Commit: `docs(repo): game-review`.
+- [x] 5.1 CLAUDE.md (review note), ROADMAP (game review built), Serena memory. Commit: `docs(repo): game-review`.

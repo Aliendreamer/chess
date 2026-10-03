@@ -304,7 +304,17 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   `GET /api/trainer/families?q&color`, `…/family?name&color`, `…/next`, `POST …/results`, `GET /api/me/trainer`.
   Frontend: `lib/trainer.ts#useDrill` (the board plays the other side after 400 ms, a wrong move is shown with the
   right one and must be replaced, `onDone(mistakes)` once), `/trainer`, `/trainer/$family?color=`, the rail's Trainer
-  and "Openings trained" on the member's own profile only. **Chess news (chess-news)**: the
+  and "Openings trained" on the member's own profile only. **Game review (game-review)**: `POST /api/games/{id}/review` (a player of an
+  ended game, or an Admin; 409 while played) sends the positions the shared cache lacks to `analysis.review.requests`
+  at `Review:ThinkMs` (800 ms, kept apart from the board's think times) — the worker's own review loop
+  (`Engine:ReviewProcesses`, `MaxReviewAgeSeconds`) answers on `analysis.results`, so reviews never queue ahead of
+  interactive analysis. `GET …/review` computes the review on read (`Review/GameReviewer`, pure: lichess's winning
+  chances, 0.1/0.2/0.3 = ?!/?/??, the engine's own move never marked, a board ending judged from the result, the book
+  exit from `openings`); `none` until a player asks (`game_reviews`). `POST …/review/practice` copies the player's
+  mistakes and blunders into `mistake_drills`, drilled at `/practice` (`/api/practice/next|results`,
+  `/api/me/practice`) on `TrainerSchedule`. Frontend: `lib/review.ts` (`useReview` polls every 2 s while running,
+  `usePracticeBoard`), `components/review.tsx` (`EvalGraph`, `ReviewPanel` on the ended game page, move-list marks).
+  The local stack allows `RateLimit__PermitLimit=1200` (the e2e suite's pace). **Chess news (chess-news)**: the
   `news-fetcher` cluster singleton (`News/`) runs `INewsRounds` every `News:FetchMinutes` over `News:Feeds` (FIDE,
   ChessBase, Lichess blog, TWIC with its `Accept` header, ECF — never chess.com: its terms) and every
   `News:EventsMinutes` over lichess's broadcast list (`chess_events`, replaced whole; 60 s pause after a 429;

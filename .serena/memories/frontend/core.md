@@ -49,6 +49,8 @@ Built from the `fe-ssr-tanstack` prompt. No i18n/TanStack Store/Query (dropped a
   otherwise swallows both (fixed in `apps/proxy/files/nginx.conf` with `^~` locations + upgrade headers).
 - Playwright: `locator.textContent()` waits (no timeout) for a missing element, so inside `expect.poll` check
   `count()` first wherever an element can vanish (e.g. the trainer's status between the line's end and its outcome).
+- e2e specs mostly run as testuser on two workers: past ~300 API calls a minute the per-user rate limiter answers
+  429 (the shell shows "GET /api/me failed with 429"). The local stack sets `RateLimit__PermitLimit=1200`.
 - `.prettierignore` exists per package: `pnpm check` runs prettier with cwd=apps/frontend, so the root one
   does not apply (Playwright's `test-results/` needs ignoring there).
 - Quick local proof without Docker: run `.output/server/index.mjs` with `API_URL` pointing at any HTTP
