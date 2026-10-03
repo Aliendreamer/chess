@@ -64,6 +64,8 @@ public sealed class LibraryImportTests
         Assert.IsType<RefusedGame>(LibraryImport.Prepare(Game("e2e4") with { StartFen = "8/8/8/8/8/8/k7/4K3 w - - 0 1" }, Source, Openings, Now));
         Assert.IsType<RefusedGame>(LibraryImport.Prepare(Game(), Source, Openings, Now));
         Assert.IsType<RefusedGame>(LibraryImport.Prepare(Game("e2e4") with { White = " " }, Source, Openings, Now));
+        Assert.IsType<RefusedGame>(LibraryImport.Prepare(Game("e2e4") with { White = "?" }, Source, Openings, Now)); // PGN for "unknown"
+        Assert.IsType<RefusedGame>(LibraryImport.Prepare(Game("e2e4") with { Black = "??" }, Source, Openings, Now));
     }
 
     [Theory]

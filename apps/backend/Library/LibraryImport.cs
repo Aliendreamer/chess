@@ -44,7 +44,7 @@ internal static class LibraryImport
         ArgumentNullException.ThrowIfNull(game);
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(openings);
-        if (string.IsNullOrWhiteSpace(game.White) || string.IsNullOrWhiteSpace(game.Black))
+        if (Unnamed(game.White) || Unnamed(game.Black))
         {
             return new RefusedGame("Both players must be named.");
         }
@@ -127,6 +127,9 @@ internal static class LibraryImport
 
     private static string Normalise(string name) =>
         string.Join(' ', name.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
+
+    /// <summary>No name, or PGN's "?" for an unknown player: a famous game names both.</summary>
+    private static bool Unnamed(string? name) => string.IsNullOrWhiteSpace(name) || name.Trim().All(c => c == '?');
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) || value.Trim() == "?" ? null : value.Trim();
 }
