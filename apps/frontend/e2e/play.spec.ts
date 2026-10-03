@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { DRAG_STEPS, PLAYER, USER, drag, move, sessionFile, signedIn } from './support'
+import { DRAG_STEPS, PLAYER, USER, drag, inviteGame, move, sessionFile, signedIn } from './support'
 import type { Browser, Page } from '@playwright/test'
 
 /**
@@ -7,40 +7,6 @@ import type { Browser, Page } from '@playwright/test'
  * accepts, and the game is played by clicking squares — to a checkmate, a resignation and an agreed draw. Both
  * boards show the ending with a PGN to download.
  */
-
-/**
- * testuser invites as White on 3+2 and player accepts from the link: both pages end up on the same game. The creator
- * is moved there by the invite's live frame, not by reloading.
- */
-async function inviteGame(browser: Browser): Promise<{ white: Page; black: Page }> {
-  const white = await signedIn(browser, USER)
-  const black = await signedIn(browser, PLAYER)
-
-  // Choices only stick once the page has hydrated: retry until the chip reports itself selected.
-  await expect(async () => {
-    await white.getByRole('button', { name: '3+2', exact: true }).click()
-    await expect(white.getByRole('button', { name: '3+2', exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-      { timeout: 1_000 },
-    )
-  }).toPass({ timeout: 15_000 })
-  await white.getByTestId('invite-form').getByRole('button', { name: 'White', exact: true }).click()
-  await white.getByRole('button', { name: 'Create invite link' }).click()
-  await expect(white).toHaveURL(/\/invites\//)
-  await expect(white.getByTestId('invite-link')).toContainText('http')
-  const link = (await white.getByTestId('invite-link').textContent()) ?? ''
-
-  await black.goto(link)
-  await expect(black.getByText('You play black.')).toBeVisible()
-  // The button is in the server HTML before hydration; retry until the click takes.
-  await expect(async () => {
-    await black.getByRole('button', { name: 'Accept and play' }).click({ timeout: 1_000 })
-    await expect(black).toHaveURL(/\/games\//, { timeout: 2_000 })
-  }).toPass({ timeout: 20_000 })
-  await expect(white).toHaveURL(black.url())
-  return { white, black }
-}
 
 /** Both boards show the same ending. */
 async function bothEnded(pages: Array<Page>, result: string, reason: string) {

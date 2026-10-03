@@ -150,6 +150,12 @@ describe('game-page-navigation', () => {
     expect(onSelect).toHaveBeenCalledWith(1)
   })
 
+  it('a review’s annotations follow their moves', () => {
+    render(<MoveList sans={['f3', 'e5', 'g4']} marks={['?!', '', '??']} onSelect={() => {}} />)
+    expect(screen.getByRole('button', { name: 'g4??' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'e5' })).toBeTruthy()
+  })
+
   it('without a viewed ply the latest move is marked', () => {
     render(<MoveList sans={['e4', 'e5', 'Nf3']} onSelect={() => {}} />)
     expect(screen.getByRole('button', { name: 'Nf3' }).getAttribute('aria-current')).toBe('true')

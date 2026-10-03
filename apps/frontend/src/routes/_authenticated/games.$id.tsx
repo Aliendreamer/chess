@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { GameCommand, GameSummary, GameView, MoveItem } from '#/lib/games'
 import type { LiveFrame } from '#/lib/live'
@@ -9,9 +9,12 @@ import {
   getGameMoves,
   getGamePage,
   getGameSummary,
+  getReview,
   postGameCommand,
+  postPractiseGame,
   postRematch,
   postStartEngineGame,
+  postStartReview,
 } from '#/lib/server/api'
 import {
   CORRESPONDENCE,
@@ -39,6 +42,8 @@ import {
 import { material, premoveClick, replay, resolvePremove, uciSquares } from '#/lib/board'
 import { pageTitle, rematchState, tabState, useTabSignals } from '#/lib/feedback'
 import { isInviteView } from '#/lib/play'
+import { REVIEW_POLL_MS, marksFor, useReview } from '#/lib/review'
+import { ReviewPanel } from '#/components/review'
 import {
   Board,
   CategoryMark,
@@ -337,6 +342,18 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   }, [])
   const balance = material(shown?.fen ?? fen)
 
+  // The engine review (game-review): only once the game has ended; its players may start it.
+  const loadReview = useCallback(() => getReview({ data: topic }), [topic])
+  const startReview = useCallback(() => postStartReview({ data: topic }), [topic])
+  const reviewing = useReview(null, loadReview, startReview, REVIEW_POLL_MS, !playing)
+  const reviewed = reviewing.view && reviewing.view.status !== 'none' ? reviewing.view : null
+  const practising = useCommand()
+  const [added, setAdded] = useState<number | null>(null)
+  async function practise() {
+    const answer = await practising.run(() => postPractiseGame({ data: topic }))
+    if (answer) setAdded(answer.added)
+  }
+
   const top = side === 'white' ? 'black' : 'white'
   const strip = (color: 'white' | 'black') => {
     const toMove = playing && current.sideToMove.toLowerCase() === color
@@ -442,6 +459,20 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
           />
         ) : null}
         {current.status === 'ended' && !gameOver ? endActions : null}
+        {current.status === 'ended' ? (
+          <ReviewPanel
+            review={reviewing.view}
+            mine={mine}
+            canStart={mine !== null}
+            busy={reviewing.busy}
+            error={reviewing.error}
+            onStart={() => void reviewing.start()}
+            current={viewing ?? sans.length}
+            onSelect={go}
+            practice={{ busy: practising.busy, added, error: practising.error }}
+            onPractise={() => void practise()}
+          />
+        ) : null}
 
         {live.status === 'reconnecting' ? (
           <p
@@ -481,7 +512,12 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
 
         {/* On a phone the controls come before the move list (responsive-layout). */}
         <div className="max-shell:order-last">
-          <MoveList sans={sans} viewPly={viewing} onSelect={go} />
+          <MoveList
+            sans={sans}
+            viewPly={viewing}
+            onSelect={go}
+            {...(reviewed ? { marks: marksFor(reviewed.moves) } : {})}
+          />
         </div>
 
         {command.error ? <ErrorText testId="game-error">{command.error}</ErrorText> : null}

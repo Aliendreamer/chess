@@ -18,6 +18,14 @@ import { importLibrary, loadLibrary, loadLibraryGame, loadOpening, loadPosition 
 import { loadPlayer, loadPlayerGames } from './players'
 import { loadFamilies, loadFamily, loadMyTraining, loadNextLine, recordRun } from './trainer'
 import {
+  loadMyPractice,
+  loadPracticeNext,
+  loadReview,
+  practiseGame,
+  recordPractice,
+  startReview,
+} from './review'
+import {
   loadEngineLevels,
   loadFinishedGame,
   loadGameLive,
@@ -384,6 +392,37 @@ export const postTrainerResult = createServerFn({ method: 'POST' })
 /** The families the member has trained, for their own profile. */
 export const getMyTraining = createServerFn({ method: 'GET' }).handler(() =>
   loadMyTraining(serverFetch()),
+)
+
+/** A game's engine review (game-review): anyone signed in reads it; a game in play has none. */
+export const getReview = createServerFn({ method: 'GET' })
+  .validator((id: string) => guid(id))
+  .handler(({ data }) => loadReview(serverFetch(), data))
+
+/** Asks the engine to review a finished game (its players only; the API checks). */
+export const postStartReview = createServerFn({ method: 'POST' })
+  .validator((id: string) => guid(id))
+  .handler(({ data }) => startReview(serverFetch(), data))
+
+/** The caller's mistakes of a reviewed game into their practice. */
+export const postPractiseGame = createServerFn({ method: 'POST' })
+  .validator((id: string) => guid(id))
+  .handler(({ data }) => practiseGame(serverFetch(), data))
+
+export const getPracticeNext = createServerFn({ method: 'GET' }).handler(() =>
+  loadPracticeNext(serverFetch()),
+)
+
+export const postPracticeResult = createServerFn({ method: 'POST' })
+  .validator((input: { gameId: string; ply: number; correct: boolean }) => {
+    if (!Number.isInteger(input.ply) || input.ply < 1 || input.ply > 2000)
+      throw new Error('Not a move.')
+    return { gameId: guid(input.gameId), ply: input.ply, correct: input.correct === true }
+  })
+  .handler(({ data }) => recordPractice(serverFetch(), data))
+
+export const getMyPractice = createServerFn({ method: 'GET' }).handler(() =>
+  loadMyPractice(serverFetch()),
 )
 
 /** The lobby (live-home): polled by home every 10 s, answered from a cache the API shares between callers. */

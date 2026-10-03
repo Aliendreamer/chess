@@ -60,3 +60,37 @@ export async function drag(page: Page, from: string, to: string) {
     .locator(`[data-square="${from}"] img`)
     .dragTo(page.locator(`[data-square="${to}"]`), { steps: DRAG_STEPS })
 }
+
+/**
+ * testuser invites as White on 3+2 and player accepts from the link: both pages end up on the same game. The creator
+ * is moved there by the invite's live frame, not by reloading.
+ */
+export async function inviteGame(browser: Browser): Promise<{ white: Page; black: Page }> {
+  const white = await signedIn(browser, USER)
+  const black = await signedIn(browser, PLAYER)
+
+  // Choices only stick once the page has hydrated: retry until the chip reports itself selected.
+  await expect(async () => {
+    await white.getByRole('button', { name: '3+2', exact: true }).click()
+    await expect(white.getByRole('button', { name: '3+2', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+      { timeout: 1_000 },
+    )
+  }).toPass({ timeout: 15_000 })
+  await white.getByTestId('invite-form').getByRole('button', { name: 'White', exact: true }).click()
+  await white.getByRole('button', { name: 'Create invite link' }).click()
+  await expect(white).toHaveURL(/\/invites\//)
+  await expect(white.getByTestId('invite-link')).toContainText('http')
+  const link = (await white.getByTestId('invite-link').textContent()) ?? ''
+
+  await black.goto(link)
+  await expect(black.getByText('You play black.')).toBeVisible()
+  // The button is in the server HTML before hydration; retry until the click takes.
+  await expect(async () => {
+    await black.getByRole('button', { name: 'Accept and play' }).click({ timeout: 1_000 })
+    await expect(black).toHaveURL(/\/games\//, { timeout: 2_000 })
+  }).toPass({ timeout: 20_000 })
+  await expect(white).toHaveURL(black.url())
+  return { white, black }
+}

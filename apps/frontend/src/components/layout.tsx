@@ -1,6 +1,7 @@
 import { Link, useRouter } from '@tanstack/react-router'
 import {
   BookOpen,
+  Crosshair,
   GraduationCap,
   History,
   House,
@@ -105,6 +106,7 @@ function Navigation({ me }: { me: Me }) {
         <NavItem to="/analysis" label="Analysis" icon={<Microscope size={16} />} />
         <NavItem to="/library" label="Library" icon={<Library size={16} />} />
         <NavItem to="/trainer" label="Trainer" icon={<GraduationCap size={16} />} />
+        <NavItem to="/practice" label="Practice" icon={<Crosshair size={16} />} />
         <NavItem to="/news" label="News" icon={<Newspaper size={16} />} />
       </NavGroup>
       <NavGroup label="You">

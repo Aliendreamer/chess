@@ -26,12 +26,12 @@
 
 ## 4. Frontend
 
-- [ ] 4.1 Failing vitest for `lib/review.ts` (graph points, marks as move-list suffixes, polling until complete, the
+- [x] 4.1 Failing vitest for `lib/review.ts` (graph points, marks as move-list suffixes, polling until complete, the
       practice answer check) and `lib/server/review.ts`. Implement + server functions.
-- [ ] 4.2 Component tests (`components/review.tsx`): the graph (a click goes to the move), the marks, the better move
+- [x] 4.2 Component tests (`components/review.tsx`): the graph (a click goes to the move), the marks, the better move
       and line, the book exit with its trainer link, practice feedback. The game page's review panel, `/practice`, the
       nav entry with the due count, the profile line. Commit: `feat(frontend): game review and practice`.
-- [ ] 4.3 🐳 Playwright `e2e/review.spec.ts`: finish a short game against a person, start its review, see it complete
+- [x] 4.3 🐳 Playwright `e2e/review.spec.ts`: finish a short game against a person, start its review, see it complete
       with a marked move, add the mistakes, answer a practice position.
 
 ## 5. Docs

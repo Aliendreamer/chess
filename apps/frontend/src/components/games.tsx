@@ -443,13 +443,15 @@ export interface MoveListProps {
   viewPly?: number | null
   /** Makes each move a button that shows the position after it. */
   onSelect?: (ply: number) => void
+  /** The engine review's annotation per ply (`?!`, `?`, `??`), shown after the move (game-review). */
+  marks?: ReadonlyArray<string>
 }
 
 /**
  * SAN in numbered rows; the move on the board is tinted. On a phone it is one line that scrolls sideways
  * (responsive-layout); either way, while following the game the latest move is kept in view.
  */
-export function MoveList({ sans, viewPly = null, onSelect }: MoveListProps) {
+export function MoveList({ sans, viewPly = null, onSelect, marks = [] }: MoveListProps) {
   const rows = pairMoves(sans)
   const current = (viewPly ?? sans.length) - 1
   const list = useRef<HTMLOListElement>(null)
@@ -466,7 +468,14 @@ export function MoveList({ sans, viewPly = null, onSelect }: MoveListProps) {
   const cell = (san: string | undefined, index: number) => {
     const tint = current === index ? 'bg-surface-current' : ''
     if (san === undefined) return <li className="px-2.5 py-[7px] max-shell:hidden" />
-    if (!onSelect) return <li className={`shrink-0 px-2.5 py-[7px] ${tint}`}>{san}</li>
+    const mark = marks[index] ? <span className="text-status-loss">{marks[index]}</span> : null
+    if (!onSelect)
+      return (
+        <li className={`shrink-0 px-2.5 py-[7px] ${tint}`}>
+          {san}
+          {mark}
+        </li>
+      )
     return (
       <li className="flex shrink-0">
         <button
@@ -476,6 +485,7 @@ export function MoveList({ sans, viewPly = null, onSelect }: MoveListProps) {
           className={`w-full cursor-pointer border-0 bg-transparent px-2.5 py-[7px] text-left font-mono text-sm text-fg-primary hover:bg-surface-hover ${tint}`}
         >
           {san}
+          {mark}
         </button>
       </li>
     )
