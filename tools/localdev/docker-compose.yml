@@ -47,6 +47,8 @@ x-backend-env: &backend-env
   SessionCookies__PkceName: mp_pkce
   SessionStore__CleanupInterval: "00:05:00"
   ForwardedHeaders__KnownNetworks__0: 172.30.0.0/24
+  # The e2e suite drives two test users from two workers: far above any real member's pace (default 300/min).
+  RateLimit__PermitLimit: "1200"
   AllowedCorsOrigins__0: http://app.chess.localhost
   AllowedCorsOrigins__1: http://localhost:3000
   ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=chess;Username=chess;Password=chess"
