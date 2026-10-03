@@ -73,7 +73,7 @@ public sealed class AnalysisHandlerTests
     private static readonly DateTimeOffset Now = new(2026, 9, 28, 12, 0, 0, TimeSpan.Zero);
     private const string Start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-    private static AnalysisHandler Handler(List<FakeUci> started) => new(
+    private static AnalysisHandler Handler(List<FakeUci> started, JobKind kind = JobKind.Analysis) => new(
         async ct =>
         {
             FakeUci uci = new()
@@ -89,7 +89,8 @@ public sealed class AnalysisHandlerTests
         },
         new EngineOptions(),
         new FixedClock(Now),
-        NullLogger.Instance);
+        NullLogger.Instance,
+        kind);
 
     private static string Request(int multiPv = 3, int thinkMs = 100, DateTimeOffset? at = null) =>
         JsonSerializer.Serialize(new AnalysisRequest("key-1", Start, thinkMs, multiPv, at ?? Now.AddSeconds(-1)), Requests.Json);
@@ -129,5 +130,16 @@ public sealed class AnalysisHandlerTests
         Assert.Null(await handler.HandleAsync(Request(at: Now.AddMinutes(-5)), CancellationToken.None));
         Assert.Null(await handler.HandleAsync("{not json", CancellationToken.None));
         Assert.Empty(started);
+    }
+
+    [Fact]
+    public async Task A_review_request_waits_its_turn_longer_but_not_forever()
+    {
+        List<FakeUci> started = [];
+        await using AnalysisHandler handler = Handler(started, JobKind.Review);
+
+        // Five minutes behind a long game's other positions is still worth answering; a day-old request is not.
+        Assert.NotNull(await handler.HandleAsync(Request(at: Now.AddMinutes(-5)), CancellationToken.None));
+        Assert.Null(await handler.HandleAsync(Request(at: Now.AddHours(-2)), CancellationToken.None));
     }
 }

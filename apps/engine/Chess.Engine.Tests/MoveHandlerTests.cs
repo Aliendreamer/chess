@@ -143,6 +143,9 @@ public sealed class SettingsTests
     {
         new EngineOptions().Validate();
         Assert.Throws<InvalidOperationException>(() => new EngineOptions { AnalysisProcesses = 17 }.Validate());
+        Assert.Throws<InvalidOperationException>(() => new EngineOptions { ReviewProcesses = 17 }.Validate());
+        Assert.Throws<InvalidOperationException>(() => new EngineOptions { MaxReviewAgeSeconds = 0 }.Validate());
+        Assert.Throws<InvalidOperationException>(() => new KafkaOptions { BootstrapServers = "redpanda:9092", ReviewGroupId = "" }.Validate());
         new KafkaOptions { BootstrapServers = "redpanda:9092" }.Validate();
         Assert.Throws<InvalidOperationException>(() => new KafkaOptions().Validate());
     }

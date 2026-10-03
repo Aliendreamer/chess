@@ -49,7 +49,7 @@ echo "ok"
 
 step "roadmap topics exist"
 topics="$(compose exec -T redpanda rpk topic list 2>/dev/null | awk 'NR>1 {print $1}')"
-for t in game.events matchmaking.events analysis.requests analysis.results; do
+for t in game.events matchmaking.events analysis.requests analysis.review.requests analysis.results; do
   grep -qx "$t" <<<"$topics" || fail "missing topic $t (have: $(tr '\n' ' ' <<<"$topics"))"
 done
 echo "ok ($(wc -l <<<"$topics" | tr -d ' ') topics)"

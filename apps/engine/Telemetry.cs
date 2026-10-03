@@ -39,6 +39,7 @@ internal enum JobKind
 {
     Move,
     Analysis,
+    Review,
 }
 
 /// <summary>Why a request was dropped without a search: the <c>reason</c> label of <c>chess.engine.dropped</c>.</summary>
@@ -121,6 +122,7 @@ internal static class EngineTelemetry
     {
         JobKind.Move => "move",
         JobKind.Analysis => "analysis",
+        JobKind.Review => "review",
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
     };
 

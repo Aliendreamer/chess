@@ -15,6 +15,7 @@ internal static class EngineTopics
     public const string Results = "engine.moves.results";
     public const string AnalysisRequests = "analysis.requests";
     public const string AnalysisResults = "analysis.results";
+    public const string ReviewRequests = "analysis.review.requests";
 }
 
 /// <summary>A move to find: the engine plays <see cref="Ply"/> (the game's ply count before its move) in <see cref="Fen"/>.</summary>
@@ -40,6 +41,12 @@ internal sealed class EngineOptions
     /// <summary>Stockfish processes for analysis, apart from the move ones so analysis never delays a game.</summary>
     public int AnalysisProcesses { get; set; } = 1;
 
+    /// <summary>
+    /// Stockfish processes for game reviews (game-review D2): a review's positions queue here, never in front of a
+    /// member's interactive analysis. They answer on the analysis results topic.
+    /// </summary>
+    public int ReviewProcesses { get; set; } = 1;
+
     public string StockfishPath { get; set; } = "/opt/stockfish/stockfish";
 
     public int HashMb { get; set; } = 32;
@@ -50,6 +57,9 @@ internal sealed class EngineOptions
     /// <summary>Requests older than this are dropped: the asker has asked again (a stall or a retry) or moved on.</summary>
     public int MaxRequestAgeSeconds { get; set; } = 120;
 
+    /// <summary>A review position waits behind the rest of its game (and other games): older ones are dropped.</summary>
+    public int MaxReviewAgeSeconds { get; set; } = 3600;
+
     /// <summary>The longest think a request may ask for.</summary>
     public int MaxThinkMs { get; set; } = 60_000;
 
@@ -57,6 +67,8 @@ internal sealed class EngineOptions
     {
         Require(Processes is >= 1 and <= 16, "Engine:Processes must be 1–16.");
         Require(AnalysisProcesses is >= 0 and <= 16, "Engine:AnalysisProcesses must be 0–16.");
+        Require(ReviewProcesses is >= 0 and <= 16, "Engine:ReviewProcesses must be 0–16.");
+        Require(MaxReviewAgeSeconds > 0, "Engine:MaxReviewAgeSeconds must be positive.");
         Require(!string.IsNullOrWhiteSpace(StockfishPath), "Engine:StockfishPath is required.");
         Require(HashMb is >= 1 and <= 4096, "Engine:HashMb must be 1–4096.");
         Require(SlackSeconds > 0, "Engine:SlackSeconds must be positive.");
@@ -84,6 +96,8 @@ internal sealed class KafkaOptions
 
     public string AnalysisGroupId { get; set; } = "chess.engine-analysis";
 
+    public string ReviewGroupId { get; set; } = "chess.engine-review";
+
     /// <summary>Pause after a broker error before reading again.</summary>
     public int RetrySeconds { get; set; } = 5;
 
@@ -92,6 +106,7 @@ internal sealed class KafkaOptions
         EngineOptions.Require(!string.IsNullOrWhiteSpace(BootstrapServers), "Kafka:BootstrapServers is required.");
         EngineOptions.Require(!string.IsNullOrWhiteSpace(GroupId), "Kafka:GroupId is required.");
         EngineOptions.Require(!string.IsNullOrWhiteSpace(AnalysisGroupId), "Kafka:AnalysisGroupId is required.");
+        EngineOptions.Require(!string.IsNullOrWhiteSpace(ReviewGroupId), "Kafka:ReviewGroupId is required.");
         EngineOptions.Require(RetrySeconds > 0, "Kafka:RetrySeconds must be positive.");
     }
 }
@@ -173,11 +188,14 @@ internal static class Requests
         }
     }
 
-    public static bool Stale(DateTimeOffset requestedAt, TimeProvider clock, EngineOptions options, out long ageSeconds)
+    public static bool Stale(DateTimeOffset requestedAt, TimeProvider clock, EngineOptions options, out long ageSeconds) =>
+        Stale(requestedAt, clock, options.MaxRequestAgeSeconds, out ageSeconds);
+
+    public static bool Stale(DateTimeOffset requestedAt, TimeProvider clock, int maxAgeSeconds, out long ageSeconds)
     {
         TimeSpan age = clock.GetUtcNow() - requestedAt;
         ageSeconds = (long)age.TotalSeconds;
-        return age > TimeSpan.FromSeconds(options.MaxRequestAgeSeconds);
+        return age > TimeSpan.FromSeconds(maxAgeSeconds);
     }
 }
 
@@ -241,16 +259,21 @@ internal sealed class MoveHandler(
 /// <summary>
 /// One analysis request in, at most one result out (engine-analysis D3): full strength, the asked number of lines, the
 /// asked think time. Same failure rules as moves; a dropped request is asked again by the backend after its retry time.
+/// A review position (<see cref="JobKind.Review"/>, game-review D2) is the same job from its own topic, allowed to wait
+/// <see cref="EngineOptions.MaxReviewAgeSeconds"/>.
 /// </summary>
 internal sealed class AnalysisHandler(
     Func<CancellationToken, Task<UciEngine>> startEngine,
     EngineOptions options,
     TimeProvider clock,
-    ILogger logger) : IAsyncDisposable
+    ILogger logger,
+    JobKind kind = JobKind.Analysis) : IAsyncDisposable
 {
     public const int MaxLines = 5;
 
-    private readonly EngineSession _session = new(JobKind.Analysis, startEngine, logger);
+    private readonly EngineSession _session = new(kind, startEngine, logger);
+
+    private readonly int _maxAgeSeconds = kind == JobKind.Review ? options.MaxReviewAgeSeconds : options.MaxRequestAgeSeconds;
 
     public async Task<AnalysisResult?> HandleAsync(string json, CancellationToken ct)
     {
@@ -258,7 +281,7 @@ internal sealed class AnalysisHandler(
         if (request is null || string.IsNullOrWhiteSpace(request.Key) || string.IsNullOrWhiteSpace(request.Fen))
         {
             Log.RequestUnreadable(logger);
-            EngineTelemetry.DroppedRequest(JobKind.Analysis, DropReason.Unreadable);
+            EngineTelemetry.DroppedRequest(kind, DropReason.Unreadable);
             return null;
         }
 
@@ -266,14 +289,14 @@ internal sealed class AnalysisHandler(
         if (request.ThinkMs <= 0 || request.ThinkMs > options.MaxThinkMs || request.MultiPv is < 1 or > MaxLines)
         {
             Log.RequestRefused(logger, job, $"{request.MultiPv} lines", request.ThinkMs);
-            EngineTelemetry.DroppedRequest(JobKind.Analysis, DropReason.Refused);
+            EngineTelemetry.DroppedRequest(kind, DropReason.Refused);
             return null;
         }
 
-        if (Requests.Stale(request.RequestedAt, clock, options, out long ageSeconds))
+        if (Requests.Stale(request.RequestedAt, clock, _maxAgeSeconds, out long ageSeconds))
         {
             Log.RequestStale(logger, job, ageSeconds);
-            EngineTelemetry.DroppedRequest(JobKind.Analysis, DropReason.Stale);
+            EngineTelemetry.DroppedRequest(kind, DropReason.Stale);
             return null;
         }
 
@@ -289,8 +312,8 @@ internal sealed class AnalysisHandler(
 }
 
 /// <summary>
-/// The worker's loops: <see cref="EngineOptions.Processes"/> for moves and <see cref="EngineOptions.AnalysisProcesses"/>
-/// for analysis, each with its own consumer and engine, so a topic's partitions spread over them. A request is
+/// The worker's loops: <see cref="EngineOptions.Processes"/> for moves, <see cref="EngineOptions.AnalysisProcesses"/>
+/// for analysis and <see cref="EngineOptions.ReviewProcesses"/> for game reviews, each with its own consumer and engine, so a topic's partitions spread over them. A request is
 /// committed only after its result is produced (at-least-once); a broker error rewinds to it and reads it again.
 /// </summary>
 internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, TimeProvider clock, ILogger<EngineWorker> logger)
@@ -307,6 +330,7 @@ internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, Tim
 
         Log.WorkerStarted(logger, engine.Processes, EngineTopics.Requests);
         Log.WorkerStarted(logger, engine.AnalysisProcesses, EngineTopics.AnalysisRequests);
+        Log.WorkerStarted(logger, engine.ReviewProcesses, EngineTopics.ReviewRequests);
         IEnumerable<Task> moves = Enumerable.Range(0, engine.Processes).Select(n => Loop(
             JobKind.Move, $"chess-engine-move-{n}", EngineTopics.Requests, kafka.GroupId, producer, () =>
             {
@@ -323,7 +347,15 @@ internal sealed class EngineWorker(EngineOptions engine, KafkaOptions kafka, Tim
                     ? new Message<string, string> { Key = r.Key, Value = JsonSerializer.Serialize(r, Requests.Json) }
                     : null, handler, EngineTopics.AnalysisResults);
             }, stoppingToken));
-        await Task.WhenAll(moves.Concat(analysis)).ConfigureAwait(false);
+        IEnumerable<Task> reviews = Enumerable.Range(0, engine.ReviewProcesses).Select(n => Loop(
+            JobKind.Review, $"chess-engine-review-{n}", EngineTopics.ReviewRequests, kafka.ReviewGroupId, producer, () =>
+            {
+                AnalysisHandler handler = new(StartEngineAsync, engine, clock, logger, JobKind.Review);
+                return (async (json, ct) => await handler.HandleAsync(json, ct).ConfigureAwait(false) is { } r
+                    ? new Message<string, string> { Key = r.Key, Value = JsonSerializer.Serialize(r, Requests.Json) }
+                    : null, handler, EngineTopics.AnalysisResults);
+            }, stoppingToken));
+        await Task.WhenAll(moves.Concat(analysis).Concat(reviews)).ConfigureAwait(false);
         producer.Flush(TimeSpan.FromSeconds(5));
     }
 

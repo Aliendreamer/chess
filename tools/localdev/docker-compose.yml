@@ -243,7 +243,7 @@ services:
       - |
         set -euo pipefail
         existing="$$(rpk topic list -X brokers=redpanda:9092 | awk 'NR>1 {print $$1}')"
-        for t in game.events matchmaking.events analysis.requests analysis.results engine.moves.requests engine.moves.results; do
+        for t in game.events matchmaking.events analysis.requests analysis.review.requests analysis.results engine.moves.requests engine.moves.results; do
           if grep -qx "$$t" <<<"$$existing"; then echo "topic $$t exists"; continue; fi
           rpk topic create "$$t" -X brokers=redpanda:9092 --partitions 3 --replicas 1
         done
