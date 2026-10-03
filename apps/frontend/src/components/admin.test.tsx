@@ -111,4 +111,13 @@ describe('LibraryImportForm (game-library)', () => {
       true,
     )
   })
+
+  it('says so when the text holds no game at all', async () => {
+    const onImport = vi.fn()
+    render(<LibraryImportForm onImport={onImport} />)
+    fill('this is not a PGN file')
+    fireEvent.click(screen.getByRole('button', { name: 'Import to library' }))
+    expect(await screen.findByText('No PGN game was found in that text.')).toBeTruthy()
+    expect(onImport).not.toHaveBeenCalled()
+  })
 })

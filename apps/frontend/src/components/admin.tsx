@@ -133,6 +133,12 @@ export function LibraryImportForm({
       if (p.ok) games.push({ n, game: toImportGame(p) })
       else found.push(p.error)
     })
+    if (games.length === 0) {
+      setError('No PGN game was found in that text.')
+      setProblems(found)
+      setBusy(false)
+      return
+    }
     const sum = { imported: 0, duplicates: 0, refused: found.length }
     const chunks = batches(games, IMPORT_BATCH)
     try {

@@ -183,7 +183,7 @@ export interface PgnHeaders {
  * tag, or the standard start). Comments, NAGs and clocks are dropped.
  */
 export function parsePgn(text: string): Array<ParsedGame> {
-  return split(text, { startRule: 'games' }).map((part, n) => {
+  return split(normalisePgn(text), { startRule: 'games' }).map((part, n) => {
     try {
       const game = parseGame(part.all, { startRule: 'game' })
       const tags = (game.tags ?? {}) as Record<string, unknown>
@@ -453,4 +453,12 @@ export function fromInput(
     const played = playMove(startFen, m.uci)
     return played ? [{ ...played, children: fromInput(played.fen, m.children) }] : []
   })
+}
+
+/**
+ * PGN as files really come (game-library): Windows or old Mac line ends become `\n`, and a header block followed
+ * directly by its movetext gets the blank line the standard puts between them — without it the splitter finds no game.
+ */
+export function normalisePgn(text: string): string {
+  return text.replace(/\r\n?/g, '\n').replace(/^(\[[^\n]*\])\n(?=[^[\n])/gm, '$1\n\n')
 }
