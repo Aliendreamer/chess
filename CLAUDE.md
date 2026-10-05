@@ -13,7 +13,8 @@ An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding four apps:
   server-to-server, re-homes cookies, fetches page data via server functions. The browser only ever talks
   to `app.chess.localhost`. Built from the `fe-ssr-tanstack` prompt.
 - `apps/engine` — .NET 10 worker (`Chess.Engine`): Stockfish 19 behind Kafka for games against the computer,
-  outside the Akka cluster. Its image bakes in the Stockfish archive from `apps/engine/stockfish/` (git-ignored, GPLv3).
+  outside the Akka cluster. Its image downloads the pinned official Stockfish release at build time (`ARG`s in
+  `apps/engine/Dockerfile`, SHA-256-checked; GPLv3 notice + `SOURCE.txt` ship with it).
 - `apps/proxy` — nginx edge for deployment (`/api/` → backend, `/` → frontend, `/hc` local 200).
 
 Node ≥ 24, pnpm pinned in `package.json#packageManager` (bump deliberately). Docker is required for

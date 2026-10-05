@@ -268,6 +268,11 @@ The question: a desktop app, and could the whole club run as a standalone deskto
   BFF, the actors, the journal, Kafka, the consumers and the engine worker back to the other player's socket; actor,
   cluster and pipeline metrics per node; every container's logs; profiles of the backend and the BFF. Verify:
   `tools/localdev/verify-observability.sh`.
+- **Simplify the observability setup [idea, owner 2026-10-05]**: the local stack runs about eight observability
+  containers (1.5–2 GB). `grafana/otel-lgtm` (one image: collector, Prometheus, Tempo, Loki, Pyroscope, Grafana) was
+  rejected in `observability` as opaque and not tunable per part. To decide: a `stack.sh up --lite` mode on
+  `otel-lgtm` (same OTLP endpoint, the apps unchanged; tail sampling and Docker log collection off), or trimming the
+  current set; the full stack stays the shape we deploy.
 - **Security**: all commands pass the existing `[Authorize]` + `ICurrentUser`; hub connections carry
   the same cookie; rate limiting already per client via Redis; Kafka/Redpanda unauthenticated on the
   compose network only.

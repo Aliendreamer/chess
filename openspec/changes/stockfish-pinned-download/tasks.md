@@ -21,6 +21,6 @@
 
 ## 3. Docs
 
-- [ ] 3.1 CLAUDE.md (engine line and engine-play note), `.serena/memories/core.md` (the "later: pinned release" note),
+- [x] 3.1 CLAUDE.md (engine line and engine-play note), `.serena/memories/core.md` (the "later: pinned release" note),
       ROADMAP (carry-over done). Tell the owner the local `apps/engine/stockfish/` can be deleted.
       Commit: `docs(repo): stockfish-pinned-download`.
