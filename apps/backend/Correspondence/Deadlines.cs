@@ -4,6 +4,7 @@ using Akka.Event;
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Outbox;
+using Chess.Backend.Data.ReadModels;
 using Chess.Backend.Events;
 using Chess.Backend.Extensions;
 using Chess.Backend.Games;
@@ -94,30 +95,53 @@ internal sealed class DeadlineProjection(ProjectDbContext db, IOptions<Correspon
     }
 }
 
-/// <summary>The games whose deadline has passed, earliest first, from the primary (the replica may lag).</summary>
+/// <summary>
+/// The games the sweep asks to check themselves, from the primary (the replica may lag): correspondence games past their
+/// deadline, earliest first, then untimed games in play that have been quiet for <c>Akka:UntimedIdleMinutes</c>, oldest
+/// first — woken so a game against the computer nobody is at ends by abandonment (engine-game-abandonment D4).
+/// </summary>
 internal interface IDueDeadlines
 {
     Task<IReadOnlyList<Guid>> DueAsync(DateTimeOffset now, int max, CancellationToken ct);
 }
 
-internal sealed class DueDeadlines(IServiceScopeFactory scopes) : IDueDeadlines
+internal sealed class DueDeadlines(IServiceScopeFactory scopes, AkkaOptions akka) : IDueDeadlines
 {
     public async Task<IReadOnlyList<Guid>> DueAsync(DateTimeOffset now, int max, CancellationToken ct)
     {
         await using AsyncServiceScope scope = scopes.CreateAsyncScope();
         ProjectDbContext db = scope.ServiceProvider.GetRequiredService<ProjectDbContext>();
-        return await db.GameDeadlines.AsNoTracking()
+        return await QueryAsync(db, now, max, TimeSpan.FromMinutes(akka.UntimedIdleMinutes), ct);
+    }
+
+    public static async Task<IReadOnlyList<Guid>> QueryAsync(ProjectDbContext db, DateTimeOffset now, int max, TimeSpan untimedIdle, CancellationToken ct)
+    {
+        List<Guid> ids = await db.GameDeadlines.AsNoTracking()
             .Where(d => d.DueAt != null && d.DueAt <= now)
             .OrderBy(d => d.DueAt)
             .Take(max)
             .Select(d => d.GameId)
             .ToListAsync(ct);
+        if (ids.Count >= max)
+        {
+            return ids;
+        }
+
+        string untimed = TimeControl.Untimed.ToString();
+        DateTimeOffset quietSince = now - untimedIdle;
+        ids.AddRange(await db.RmGames.AsNoTracking()
+            .Where(g => g.TimeControl == untimed && g.Status == RmGame.Playing && g.UpdatedAt <= quietSince)
+            .OrderBy(g => g.UpdatedAt)
+            .Take(max - ids.Count)
+            .Select(g => g.GameId)
+            .ToListAsync(ct));
+        return ids;
     }
 }
 
 /// <summary>
 /// A cluster singleton (correspondence-games D3): every <see cref="CorrespondenceOptions.SweepSeconds"/> it asks each game
-/// past its deadline to check it. The game is the judge, so a row that is stale or seen twice costs one harmless check;
+/// past its deadline, and each quiet untimed game (engine-game-abandonment D4), to check it. The game is the judge, so a row that is stale or seen twice costs one harmless check;
 /// a game keeps being asked each sweep until its end reaches the projection.
 /// </summary>
 internal sealed class DeadlineSweeper : ReceiveActor, IWithTimers

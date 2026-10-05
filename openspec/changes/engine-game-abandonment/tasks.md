@@ -19,13 +19,13 @@
 
 ## 2. The sweep wakes quiet engine games
 
-- [ ] 2.1 Failing tests in `Chess.Backend.Tests/Correspondence/DeadlineTests.cs` for `DueDeadlines` (fails today: no
+- [x] 2.1 Failing tests in `Chess.Backend.Tests/Correspondence/DeadlineTests.cs` for `DueDeadlines` (fails today: no
       untimed rows returned): an untimed `playing` row quiet longer than `Akka:UntimedIdleMinutes` is returned; a
       recent one, an ended one and a quiet timed one are not; correspondence rows come first and the total stays
       ≤ `MaxPerSweep`.
-- [ ] 2.2 Failing actor test: `CheckDeadline` to an untimed engine game with the person absent is a wake-up that leads to
+- [x] 2.2 Failing actor test: `CheckDeadline` to an untimed engine game with the person absent is a wake-up that leads to
       the abandonment end; with the person present it changes nothing.
-- [ ] 2.3 Implement: `DueDeadlines` reads `rm_games` on `ProjectDbContext` (TimeControl `untimed`, Status `playing`,
+- [x] 2.3 Implement: `DueDeadlines` reads `rm_games` on `ProjectDbContext` (TimeControl `untimed`, Status `playing`,
       `UpdatedAt <= now - UntimedIdle`, oldest first) after the deadline rows; pass `AkkaOptions` timing in. Update the
       `DeadlineSweeper` summary. Commit: `feat(backend): the deadline sweep wakes quiet games against the computer`.
 - [ ] 2.4 🐳 `pnpm exec nx integration-test backend` (human-run in the sandbox): an engine game with a move, its actor

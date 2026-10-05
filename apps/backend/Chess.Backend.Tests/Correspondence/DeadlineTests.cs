@@ -3,6 +3,7 @@ using Akka.TestKit;
 using Akka.TestKit.Xunit2;
 using Chess.Backend.Akka.Games;
 using Chess.Backend.Correspondence;
+using Chess.Backend.Data.ReadModels;
 using Chess.Backend.Events;
 using Chess.Backend.Projections;
 
@@ -117,5 +118,60 @@ public sealed class DeadlineSweeperTests : TestKit
         Assert.Equal(a, games.ExpectMsg<CheckDeadline>().GameId);
         Assert.Equal(b, games.ExpectMsg<CheckDeadline>().GameId);
         Assert.Equal(a, games.ExpectMsg<CheckDeadline>(TimeSpan.FromSeconds(2)).GameId); // the next sweep asks again
+    }
+}
+
+/// <summary>The sweep's query (correspondence-games D3, engine-game-abandonment D4).</summary>
+public sealed class DueDeadlinesTests
+{
+    private static readonly DateTimeOffset Now = Time.Utc("2026-10-05T12:00:00Z");
+    private static readonly TimeSpan Idle = TimeSpan.FromMinutes(30);
+
+    private static RmGame Row(string tc, string status, DateTimeOffset updatedAt) => new()
+    {
+        GameId = Guid.CreateVersion7(),
+        WhiteName = "w",
+        BlackName = "b",
+        TimeControl = tc,
+        Status = status,
+        LastFen = "fen",
+        UpdatedAt = updatedAt,
+    };
+
+    [Fact]
+    public async Task Quiet_untimed_games_in_play_come_after_the_deadlines_oldest_first()
+    {
+        using ProjectDbContext db = TestDb.Create();
+        Guid due = Guid.CreateVersion7();
+        db.GameDeadlines.Add(new GameDeadline { GameId = due, DueAt = Now.AddMinutes(-1), LastSeq = 1 });
+        RmGame older = Row("untimed", RmGame.Playing, Now.AddHours(-5));
+        RmGame quiet = Row("untimed", RmGame.Playing, Now - Idle - TimeSpan.FromSeconds(1));
+        db.RmGames.AddRange(
+            quiet,
+            older,
+            Row("untimed", RmGame.Playing, Now.AddMinutes(-5)), // recent: the person may be thinking
+            Row("untimed", RmGame.Ended, Now.AddHours(-5)),
+            Row("5+3", RmGame.Playing, Now.AddHours(-5)));
+        await db.SaveChangesAsync();
+
+        IReadOnlyList<Guid> ids = await DueDeadlines.QueryAsync(db, Now, 10, Idle, CancellationToken.None);
+
+        Assert.Equal([due, older.GameId, quiet.GameId], ids);
+    }
+
+    [Fact]
+    public async Task The_total_never_exceeds_the_limit()
+    {
+        using ProjectDbContext db = TestDb.Create();
+        for (int i = 0; i < 3; i++)
+        {
+            db.GameDeadlines.Add(new GameDeadline { GameId = Guid.CreateVersion7(), DueAt = Now.AddMinutes(-i - 1), LastSeq = 1 });
+            db.RmGames.Add(Row("untimed", RmGame.Playing, Now.AddHours(-1)));
+        }
+
+        await db.SaveChangesAsync();
+
+        Assert.Equal(4, (await DueDeadlines.QueryAsync(db, Now, 4, Idle, CancellationToken.None)).Count);
+        Assert.Equal(2, (await DueDeadlines.QueryAsync(db, Now, 2, Idle, CancellationToken.None)).Count);
     }
 }
