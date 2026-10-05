@@ -35,13 +35,18 @@ internal sealed class SearchLibraryRequest
     [QueryParam]
     public string? Opening { get; init; }
 
+    /// <summary><c>all</c> (default), <c>wc</c> or <c>broadcasts</c>.</summary>
+    [QueryParam]
+    public string? Source { get; init; }
+
     [QueryParam]
     public int? Limit { get; init; }
 
     [QueryParam]
     public string? Cursor { get; init; }
 
-    public LibrarySearch ToSearch() => new(Player, Event, From, To, Result, Wc, Eco, Opening);
+    public LibrarySearch ToSearch() =>
+        new(Player, Event, From, To, Result, Wc, Eco, Opening, LibrarySources.TryParse(Source, out LibrarySource source) ? source : LibrarySource.All);
 }
 
 internal sealed class SearchLibraryRequestValidator : Validator<SearchLibraryRequest>
@@ -55,6 +60,7 @@ internal sealed class SearchLibraryRequestValidator : Validator<SearchLibraryReq
         RuleFor(r => r.Eco).Matches("^[A-Ea-e][0-9]{0,2}$").When(r => r.Eco is not null).WithMessage("ECO is A00–E99 or its start.");
         RuleFor(r => r.From).InclusiveBetween(1400, 2100).When(r => r.From is not null);
         RuleFor(r => r.To).InclusiveBetween(1400, 2100).When(r => r.To is not null);
+        RuleFor(r => r.Source).Must(s => LibrarySources.TryParse(s, out _)).WithMessage("Source is all, wc or broadcasts.");
         RuleFor(r => r.Limit).GreaterThan(0).When(r => r.Limit is not null);
         RuleFor(r => r.Cursor).Must(c => LibraryCursor.TryDecode(c, out _)).WithMessage("Invalid cursor.");
     }

@@ -99,5 +99,6 @@ internal static class Constants
         public const string Lobby = "lobby";
         public const string OidcDiscovery = "oidc:discovery";
         public const string PreferencesByUser = "prefs:";
+        public const string LibraryPosition = "library-position:";
     }
 }

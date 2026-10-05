@@ -12,7 +12,71 @@ internal sealed record LibrarySearch(
     string? Result = null,
     bool? WorldChampionship = null,
     string? Eco = null,
-    string? Opening = null);
+    string? Opening = null,
+    LibrarySource Source = LibrarySource.All);
+
+/// <summary>Which games the library counts and lists (broadcast-explorer D8).</summary>
+internal enum LibrarySource
+{
+    /// <summary>Every game.</summary>
+    All,
+
+    /// <summary>The curated games: PGN Mentor's World Championships and anything an admin uploaded; not broadcasts.</summary>
+    Wc,
+
+    /// <summary>lichess broadcasts (CC BY-SA 4.0).</summary>
+    Broadcasts,
+}
+
+internal static class LibrarySources
+{
+    /// <summary><c>all</c> (or nothing), <c>wc</c> or <c>broadcasts</c>.</summary>
+    public static bool TryParse(string? text, out LibrarySource source)
+    {
+        (bool known, source) = text switch
+        {
+            null or "" or "all" => (true, LibrarySource.All),
+            "wc" => (true, LibrarySource.Wc),
+            "broadcasts" => (true, LibrarySource.Broadcasts),
+            _ => (false, LibrarySource.All),
+        };
+        return known;
+    }
+
+    public static IQueryable<LibraryGame> Of(this IQueryable<LibraryGame> games, LibrarySource source) => source switch
+    {
+        LibrarySource.Wc => games.Where(g => g.Source != BroadcastFilter.Source),
+        LibrarySource.Broadcasts => games.Where(g => g.Source == BroadcastFilter.Source),
+        _ => games,
+    };
+
+    public static IQueryable<LibraryPosition> Of(this IQueryable<LibraryPosition> positions, LibrarySource source) => source switch
+    {
+        LibrarySource.Wc => positions.Where(p => p.Source != BroadcastFilter.Source),
+        LibrarySource.Broadcasts => positions.Where(p => p.Source == BroadcastFilter.Source),
+        _ => positions,
+    };
+}
+
+/// <summary>Section <c>Library</c>.</summary>
+internal sealed class LibraryOptions : Extensions.ISettings
+{
+    public const string SectionName = "Library";
+
+    /// <summary>
+    /// How long an explorer answer per (position, source) is shared (broadcast-explorer D9): the first plies are asked
+    /// for by every visitor and each groups up to the whole library. Imports only add games, so a stale answer is short.
+    /// </summary>
+    public int ExplorerCacheMinutes { get; set; } = 10;
+
+    public void Validate()
+    {
+        if (ExplorerCacheMinutes < 0)
+        {
+            throw new InvalidOperationException("Library:ExplorerCacheMinutes must not be negative.");
+        }
+    }
+}
 
 /// <summary>Where a page of the newest-year-first list ends; a game without a year sorts as year −1, after all others.</summary>
 internal sealed record LibraryCursor(int Year, Guid Id)
@@ -113,7 +177,7 @@ internal static class LibraryReads
             games = games.Where(g => g.Eco != null && g.Eco.StartsWith(prefix));
         }
 
-        return games;
+        return games.Of(search.Source);
     }
 
     /// <summary>Newest year first (no year last), then id; seeks past <paramref name="after"/> and takes one extra row.</summary>
@@ -132,10 +196,11 @@ internal static class LibraryReads
     /// Each game's first visit to a position (broadcast-explorer D6): a game that passes through it twice (a repetition)
     /// counts once, with the move it played the first time. Answered from the covering index on the position key.
     /// </summary>
-    public static IQueryable<LibraryPosition> FirstVisits(IQueryable<LibraryPosition> positions, string key)
+    public static IQueryable<LibraryPosition> FirstVisits(IQueryable<LibraryPosition> positions, string key, LibrarySource source)
     {
         ArgumentNullException.ThrowIfNull(positions);
-        return positions.Where(p => p.PositionKey == key
+        // A game's positions all carry its source, so filtering the outer rows is enough.
+        return positions.Of(source).Where(p => p.PositionKey == key
             && !positions.Any(q => q.PositionKey == key && q.GameId == p.GameId && q.Ply < p.Ply));
     }
 
@@ -144,9 +209,9 @@ internal static class LibraryReads
     /// (library-explorer, broadcast-explorer D6); a game that ends there counts in the totals but adds no move.
     /// </summary>
     public static async Task<(PositionCounts Counts, IReadOnlyList<ExplorerMove> Moves)> ExploreAsync(
-        IQueryable<LibraryPosition> positions, string key, CancellationToken ct)
+        IQueryable<LibraryPosition> positions, string key, LibrarySource source, CancellationToken ct)
     {
-        var groups = await FirstVisits(positions, key)
+        var groups = await FirstVisits(positions, key, source)
             .GroupBy(p => p.NextUci)
             .Select(g => new
             {
@@ -168,8 +233,8 @@ internal static class LibraryReads
 
     /// <summary>The first <paramref name="limit"/> games at a position, newest year first, limited in the database.</summary>
     public static async Task<IReadOnlyList<GameAtPosition>> GamesAtAsync(
-        IQueryable<LibraryPosition> positions, IQueryable<LibraryGame> games, string key, int limit, CancellationToken ct) =>
-        await FirstVisits(positions, key)
+        IQueryable<LibraryPosition> positions, IQueryable<LibraryGame> games, string key, LibrarySource source, int limit, CancellationToken ct) =>
+        await FirstVisits(positions, key, source)
             .Join(games, p => p.GameId, g => g.Id, (p, g) => new { p.Ply, Game = g })
             .OrderByDescending(r => r.Game.Year ?? -1)
             .ThenBy(r => r.Game.White)

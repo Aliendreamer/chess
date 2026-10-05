@@ -39,7 +39,7 @@
 
 ## 4. Sources in the reads
 
-- [ ] 4.1 `source=all|wc|broadcasts` on `GET /api/library/positions` and `/api/library/games` (validator; unknown → 400) and the FusionCache entry per `(key, source)` (`Library:ExplorerCacheMinutes`).
+- [x] 4.1 `source=all|wc|broadcasts` on `GET /api/library/positions` and `/api/library/games` (validator; unknown → 400) and the FusionCache entry per `(key, source)` (`Library:ExplorerCacheMinutes`).
       🐳 Integration test: one World Championship game and two broadcast games after 1.e4 → broadcasts counts 2, wc 1,
       all 3. Commit: `feat(backend): the explorer by source`.
 

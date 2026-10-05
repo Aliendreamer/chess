@@ -86,13 +86,18 @@ public sealed class LibraryReadsTests
     private static readonly ImportSource Mentor = new("PGN Mentor", "moves only (facts)", null, WorldChampionship: true);
 
     /// <summary>Stores games as the import would (rows and positions) and returns the database.</summary>
-    private static async Task<ProjectDbContext> Library(params (string Result, string[] Moves)[] games)
+    private static readonly ImportSource Lichess = new(BroadcastFilter.Source, BroadcastFilter.Licence, null, WorldChampionship: false);
+
+    private static Task<ProjectDbContext> Library(params (string Result, string[] Moves)[] games) =>
+        Library([.. games.Select(g => (Mentor, g.Result, g.Moves))]);
+
+    private static async Task<ProjectDbContext> Library(IEnumerable<(ImportSource Source, string Result, string[] Moves)> games)
     {
         ProjectDbContext db = TestDb.Create();
-        foreach ((string result, string[] moves) in games)
+        foreach ((ImportSource source, string result, string[] moves) in games)
         {
             ImportGame game = new("W", "B", null, null, null, null, result, null, moves, null);
-            PreparedGame prepared = Assert.IsType<PreparedGame>(LibraryImport.Prepare(game, Mentor, new Dictionary<string, Opening>(), DateTimeOffset.UnixEpoch));
+            PreparedGame prepared = Assert.IsType<PreparedGame>(LibraryImport.Prepare(game, source, new Dictionary<string, Opening>(), DateTimeOffset.UnixEpoch));
             db.LibraryGames.Add(prepared.Game);
             db.LibraryPositions.AddRange(prepared.Positions);
         }
@@ -112,7 +117,7 @@ public sealed class LibraryReadsTests
             ("0-1", ["e2e4", "c7c5"]),
             ("1-0", ["e2e4"])); // ends here: counted, but no next move
 
-        (PositionCounts counts, IReadOnlyList<ExplorerMove> moves) = await LibraryReads.ExploreAsync(db.LibraryPositions, KeyAfter("e2e4"), CancellationToken.None);
+        (PositionCounts counts, IReadOnlyList<ExplorerMove> moves) = await LibraryReads.ExploreAsync(db.LibraryPositions, KeyAfter("e2e4"), LibrarySource.All, CancellationToken.None);
 
         Assert.Equal((4, 2, 1, 1), (counts.Games, counts.WhiteWins, counts.Draws, counts.BlackWins));
         Assert.Equal([new ExplorerMove("e7e5", 2, 1, 1, 0), new ExplorerMove("c7c5", 1, 0, 0, 1)], moves);
@@ -123,7 +128,7 @@ public sealed class LibraryReadsTests
     {
         using ProjectDbContext db = await Library(("1-0", ["d2d4"]), ("0-1", ["e2e4"]), ("*", ["e2e4"]));
 
-        (PositionCounts counts, IReadOnlyList<ExplorerMove> moves) = await LibraryReads.ExploreAsync(db.LibraryPositions, KeyAfter(), CancellationToken.None);
+        (PositionCounts counts, IReadOnlyList<ExplorerMove> moves) = await LibraryReads.ExploreAsync(db.LibraryPositions, KeyAfter(), LibrarySource.All, CancellationToken.None);
 
         Assert.Equal(3, counts.Games);
         Assert.Equal([("e2e4", 2), ("d2d4", 1)], moves.Select(m => (m.Uci, m.Games)));
@@ -135,7 +140,7 @@ public sealed class LibraryReadsTests
         // Knights out and back: the start position again at ply 4, then 1.e4 from there.
         using ProjectDbContext db = await Library(("1-0", ["g1f3", "g8f6", "f3g1", "f6g8", "e2e4"]));
 
-        (PositionCounts counts, IReadOnlyList<ExplorerMove> moves) = await LibraryReads.ExploreAsync(db.LibraryPositions, KeyAfter(), CancellationToken.None);
+        (PositionCounts counts, IReadOnlyList<ExplorerMove> moves) = await LibraryReads.ExploreAsync(db.LibraryPositions, KeyAfter(), LibrarySource.All, CancellationToken.None);
 
         Assert.Equal(1, counts.Games);
         Assert.Equal([new ExplorerMove("g1f3", 1, 1, 0, 0)], moves);
@@ -152,10 +157,47 @@ public sealed class LibraryReadsTests
 
         await db.SaveChangesAsync();
 
-        List<(int? Year, int Ply)> games = [.. (await LibraryReads.GamesAtAsync(db.LibraryPositions, db.LibraryGames, KeyAfter(), 50, CancellationToken.None))
+        List<(int? Year, int Ply)> games = [.. (await LibraryReads.GamesAtAsync(db.LibraryPositions, db.LibraryGames, KeyAfter(), LibrarySource.All, 50, CancellationToken.None))
             .Select(g => (g.Game.Year, g.Ply))];
 
         Assert.Equal([(2020, 0), (1990, 0)], games);
+    }
+
+    [Theory]
+    [InlineData("all", 3)]
+    [InlineData("wc", 1)]
+    [InlineData("broadcasts", 2)]
+    public async Task The_explorer_counts_one_source_or_all(string query, int games)
+    {
+        Assert.True(LibrarySources.TryParse(query, out LibrarySource source));
+        using ProjectDbContext db = await Library([(Mentor, "1-0", ["e2e4", "e7e5"]), (Lichess, "0-1", ["e2e4", "c7c5"]), (Lichess, "1-0", ["e2e4", "e7e5"])]);
+
+        (PositionCounts counts, _) = await LibraryReads.ExploreAsync(db.LibraryPositions, KeyAfter("e2e4"), source, CancellationToken.None);
+        IReadOnlyList<GameAtPosition> listed = await LibraryReads.GamesAtAsync(db.LibraryPositions, db.LibraryGames, KeyAfter("e2e4"), source, 50, CancellationToken.None);
+
+        Assert.Equal((games, games), (counts.Games, listed.Count));
+    }
+
+    [Fact]
+    public async Task The_search_filters_by_source()
+    {
+        using ProjectDbContext db = await Library([(Mentor, "1-0", ["e2e4"]), (Lichess, "0-1", ["d2d4"])]);
+
+        Assert.Equal(BroadcastFilter.Source, Assert.Single(LibraryReads.Filter(db.LibraryGames, new LibrarySearch(Source: LibrarySource.Broadcasts))).Source);
+        Assert.Equal("PGN Mentor", Assert.Single(LibraryReads.Filter(db.LibraryGames, new LibrarySearch(Source: LibrarySource.Wc))).Source);
+        Assert.Equal(2, LibraryReads.Filter(db.LibraryGames, new LibrarySearch()).Count());
+    }
+
+    [Theory]
+    [InlineData(null, "All")]
+    [InlineData("all", "All")]
+    [InlineData("wc", "Wc")]
+    [InlineData("broadcasts", "Broadcasts")]
+    public void Sources_are_read_from_the_query(string? text, string expected)
+    {
+        Assert.True(LibrarySources.TryParse(text, out LibrarySource source));
+        Assert.Equal(expected, source.ToString());
+        Assert.False(LibrarySources.TryParse("everything", out _));
     }
 }
 

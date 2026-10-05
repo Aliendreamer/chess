@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using Chess.Backend.IntegrationTests.Fixtures;
+using Chess.Backend.Analysis;
+using Chess.Backend.Games;
 using Chess.Backend.Library;
 using Microsoft.Extensions.DependencyInjection;
 using ZstdSharp;
@@ -26,7 +28,11 @@ public sealed class BroadcastImportFlowTests(StackFixture stack)
 
     private sealed record Page<T>(IReadOnlyList<T> Items, string? NextCursor, int Limit);
 
-    private sealed record GameView(Listed Game, IReadOnlyList<string> Moves);
+    private sealed record Move(string Uci, int Games);
+
+    private sealed record AtPosition(Guid Id, string Source, string? SourceRef);
+
+    private sealed record Position(int Games, IReadOnlyList<AtPosition> Items, IReadOnlyList<Move> Moves);
 
     private sealed class Lichess(byte[] month) : HttpMessageHandler
     {
@@ -67,7 +73,7 @@ public sealed class BroadcastImportFlowTests(StackFixture stack)
         using CancellationTokenSource cts = new(TestTimeout);
         CancellationToken ct = cts.Token;
         string run = Guid.NewGuid().ToString("N")[..8];
-        string text = Game($"Kept-{run}, A", 2600, "1. e4 e5 2. Nf3 Nc6") + Game($"Kept-{run}, B", 2600, "1. d4 d5")
+        string text = Game($"Kept-{run}, A", 2600, "1. a3 h6 2. h3 a6 3. Nf3") + Game($"Kept-{run}, B", 2600, "1. d4 d5")
             + Game($"Weak-{run}, C", 2100, "1. c4 e5") + Game($"Illegal-{run}, D", 2600, "1. e4 e5 2. Ke3");
         byte[] month;
         using (Compressor compressor = new(3))
@@ -101,6 +107,25 @@ public sealed class BroadcastImportFlowTests(StackFixture stack)
             List<Listed> found = [.. (await r.Content.ReadFromJsonAsync<Page<Listed>>(Api.Json, ct))!.Items];
             Assert.Equal(2, found.Count);
             Assert.All(found, g => Assert.Equal(("lichess broadcasts", "CC BY-SA 4.0"), (g.Source, g.Licence)));
+        }
+
+        // The explorer by source (broadcast-explorer D8): an unusual line, so other tests' games never share it.
+        string key = Uri.EscapeDataString(PositionKey.Of(ChessRules.Replay(["a2a3", "h7h6", "h2h3", "a7a6"]).Fen)!);
+        foreach ((string source, int games) in (ValueTuple<string, int>[])[("all", 1), ("broadcasts", 1), ("wc", 0)])
+        {
+            using HttpResponseMessage r = await Api.GetAsync(client, $"/api/library/positions?key={key}&source={source}", "reader", ct);
+            Position position = (await r.Content.ReadFromJsonAsync<Position>(Api.Json, ct))!;
+            Assert.Equal(games, position.Games);
+            if (games == 1)
+            {
+                Assert.Equal("g1f3", Assert.Single(position.Moves).Uci);
+                Assert.StartsWith("https://lichess.org/broadcast/", Assert.Single(position.Items).SourceRef, StringComparison.Ordinal);
+            }
+        }
+
+        using (HttpResponseMessage r = await Api.GetAsync(client, $"/api/library/positions?key={key}&source=everything", "reader", ct))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, r.StatusCode);
         }
 
         Run second = await ImportAsync(client, run, ct);

@@ -49,6 +49,7 @@ public sealed class SettingsTests
         Assert.Equivalent(new ObservabilityOptions(), Bound<ObservabilityOptions>(ObservabilityOptions.SectionName), strict: true);
 
         Assert.Equivalent(new LobbyOptions(), Bound<LobbyOptions>(LobbyOptions.SectionName), strict: true);
+        Assert.Equivalent(new LibraryOptions(), Bound<LibraryOptions>(LibraryOptions.SectionName), strict: true);
         Assert.Equivalent(new LibraryBroadcastsOptions(), Bound<LibraryBroadcastsOptions>(LibraryBroadcastsOptions.SectionName), strict: true);
         // News lists its feeds in the file (the code default is empty: the binder appends onto arrays); the rest must match.
         NewsOptions news = Bound<NewsOptions>(NewsOptions.SectionName);

@@ -149,6 +149,7 @@ internal static class BuilderExtension
         services.AddHttpClient(NewsRounds.HttpClientName);
         services.AddSingleton<INewsRounds, NewsRounds>();
         // lichess broadcasts into the library (broadcast-explorer D1): a month's file streamed by the importer singleton.
+        services.AddSettings<LibraryOptions>(configuration, LibraryOptions.SectionName);
         LibraryBroadcastsOptions broadcasts = services.AddSettings<LibraryBroadcastsOptions>(configuration, LibraryBroadcastsOptions.SectionName);
         services.AddHttpClient(BroadcastImports.HttpClientName, client => client.Timeout = TimeSpan.FromMinutes(broadcasts.DownloadTimeoutMinutes));
         services.AddSingleton<IBroadcastImports, BroadcastImports>();

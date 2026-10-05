@@ -1,7 +1,10 @@
 namespace Chess.Backend.WebApi.Library;
 
-/// <summary>A library game at a position: who played it, when, how it ended, and after which ply it stood there.</summary>
-internal sealed record PositionGame(Guid Id, string White, string Black, int? Year, string? Event, string Result, int Ply);
+/// <summary>
+/// A library game at a position: who played it, when, how it ended, after which ply it stood there, and where it came
+/// from (a broadcast game links to its lichess page: the attribution its licence asks for).
+/// </summary>
+internal sealed record PositionGame(Guid Id, string White, string Black, int? Year, string? Event, string Result, int Ply, string Source, string? SourceRef);
 
 /// <summary>A move played from the position (library-explorer): how often, how it went, and the opening it reaches.</summary>
 internal sealed record ExplorerMoveView(string Uci, int Games, int WhiteWins, int Draws, int BlackWins, string? Eco, string? Opening);

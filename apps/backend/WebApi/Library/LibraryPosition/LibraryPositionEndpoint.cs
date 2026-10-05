@@ -3,12 +3,14 @@ using Chess.Backend.Games;
 using Chess.Backend.Library;
 using Microsoft.Net.Http.Headers;
 using Npgsql;
+using ZiggyCreatures.Caching.Fusion;
 
 namespace Chess.Backend.WebApi.Library;
 
 /// <summary>The library games that reached a position (game-library): "In the library" on the analysis board.</summary>
 [ExcludeFromCodeCoverage]
-internal sealed class LibraryPositionEndpoint(ReadDbContext read) : Endpoint<LibraryPositionRequest, LibraryPositionView>
+internal sealed class LibraryPositionEndpoint(ReadDbContext read, IFusionCache cache, IOptions<LibraryOptions> options)
+    : Endpoint<LibraryPositionRequest, LibraryPositionView>
 {
     private const int Shown = 50;
 
@@ -29,17 +31,27 @@ internal sealed class LibraryPositionEndpoint(ReadDbContext read) : Endpoint<Lib
         HttpContext.Response.Headers[HeaderNames.CacheControl] = LibraryHttp.CacheControl;
         try
         {
-            (PositionCounts counts, IReadOnlyList<ExplorerMove> moves) = await LibraryReads.ExploreAsync(read.LibraryPositions, req.Key, ct);
-            List<PositionGame> items = [.. (await LibraryReads.GamesAtAsync(read.LibraryPositions, read.LibraryGames, req.Key, Shown, ct))
-                .Select(r => new PositionGame(r.Game.Id, r.Game.White, r.Game.Black, r.Game.Year, r.Game.Event, r.Game.Result, r.Ply))];
-            await Send.OkAsync(
-                new LibraryPositionView(counts.Games, counts.WhiteWins, counts.Draws, counts.BlackWins, items, await NamedAsync(req.Key, moves, ct)),
+            // One answer per (position, source) for a while (broadcast-explorer D9): the first plies are asked by everyone.
+            LibrarySource source = req.SourceChoice;
+            LibraryPositionView view = await cache.GetOrSetAsync(
+                $"{Constants.Cache.LibraryPosition}{req.Key}:{source}",
+                async (FusionCacheFactoryExecutionContext<LibraryPositionView> _, CancellationToken token) => await BuildAsync(req.Key, source, token),
+                o => o.SetDuration(TimeSpan.FromMinutes(options.Value.ExplorerCacheMinutes)),
                 ct);
+            await Send.OkAsync(view, ct);
         }
         catch (NpgsqlException)
         {
             ThrowError("Read replica unavailable.", StatusCodes.Status503ServiceUnavailable);
         }
+    }
+
+    private async Task<LibraryPositionView> BuildAsync(string key, LibrarySource source, CancellationToken ct)
+    {
+        (PositionCounts counts, IReadOnlyList<ExplorerMove> moves) = await LibraryReads.ExploreAsync(read.LibraryPositions, key, source, ct);
+        List<PositionGame> items = [.. (await LibraryReads.GamesAtAsync(read.LibraryPositions, read.LibraryGames, key, source, Shown, ct))
+            .Select(r => new PositionGame(r.Game.Id, r.Game.White, r.Game.Black, r.Game.Year, r.Game.Event, r.Game.Result, r.Ply, r.Game.Source, r.Game.SourceRef))];
+        return new LibraryPositionView(counts.Games, counts.WhiteWins, counts.Draws, counts.BlackWins, items, await NamedAsync(key, moves, ct));
     }
 
     /// <summary>Each move with the opening name of the position it reaches, when that position is named.</summary>

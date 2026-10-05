@@ -140,7 +140,8 @@ Checked on 2026-10-05:
      the right trade. The panel says "broadcast games are indexed for the first 20 moves".
 8. **Source switch.**
    - `GET /api/library/positions?key=&source=all|wc|broadcasts` (default all). It maps to a `source` value list in
-     `LibraryReads`, so a later source is one entry.
+     `LibraryReads`, so a later source is one entry. `wc` means every curated source (PGN Mentor's World Championships
+     and anything an admin uploaded), i.e. not broadcasts. Each listed game carries its source and link.
    - The panel keeps the choice in the URL (`?src=`) like the other analysis-board state, and shows one attribution
      line per source counted.
    - `/library` search takes the same `source`.
