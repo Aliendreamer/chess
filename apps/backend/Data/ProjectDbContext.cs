@@ -37,6 +37,8 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<LibraryGame> LibraryGames => Set<LibraryGame>();
 
+    public DbSet<LibraryImportRun> LibraryImportRuns => Set<LibraryImportRun>();
+
     public DbSet<LibraryPosition> LibraryPositions => Set<LibraryPosition>();
 
     public DbSet<Opening> Openings => Set<Opening>();

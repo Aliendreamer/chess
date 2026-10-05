@@ -8,6 +8,7 @@ using Chess.Backend.Akka.Ping;
 using Chess.Backend.Analysis;
 using Chess.Backend.Correspondence;
 using Chess.Backend.Engine;
+using Chess.Backend.Library;
 using Chess.Backend.Messaging;
 using Chess.Backend.News;
 using Chess.Backend.Projections;
@@ -71,6 +72,7 @@ internal static class BuilderExtension
             akka.WithMatchmaking(sp.GetRequiredService<AkkaOptions>());
             akka.WithInviteSharding(sp.GetRequiredService<AkkaOptions>());
             akka.WithDeadlineSweeper();
+            akka.WithLibraryImporter();
             if (sp.GetRequiredService<NewsOptions>().Enabled)
             {
                 akka.WithNewsFetcher();
@@ -146,6 +148,10 @@ internal static class BuilderExtension
         services.AddSettings<NewsOptions>(configuration, NewsOptions.SectionName);
         services.AddHttpClient(NewsRounds.HttpClientName);
         services.AddSingleton<INewsRounds, NewsRounds>();
+        // lichess broadcasts into the library (broadcast-explorer D1): a month's file streamed by the importer singleton.
+        LibraryBroadcastsOptions broadcasts = services.AddSettings<LibraryBroadcastsOptions>(configuration, LibraryBroadcastsOptions.SectionName);
+        services.AddHttpClient(BroadcastImports.HttpClientName, client => client.Timeout = TimeSpan.FromMinutes(broadcasts.DownloadTimeoutMinutes));
+        services.AddSingleton<IBroadcastImports, BroadcastImports>();
         // The opening trainer (opening-trainer): the named lines grouped once per process.
         services.AddSingleton<OpeningFamiliesCache>();
         // Correspondence deadlines (correspondence-games D3): the projection fills game_deadlines, the sweeper reads it.

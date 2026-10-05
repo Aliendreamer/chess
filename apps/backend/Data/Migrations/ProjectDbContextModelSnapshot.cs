@@ -269,6 +269,54 @@ namespace Chess.Backend.Data.Migrations
                     b.ToTable("library_games", (string)null);
                 });
 
+            modelBuilder.Entity("Chess.Backend.Data.Models.LibraryImportRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Duplicate")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Imported")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Kept")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Month")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)");
+
+                    b.Property<int>("Read")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Refused")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartedAt");
+
+                    b.ToTable("library_import_runs", (string)null);
+                });
+
             modelBuilder.Entity("Chess.Backend.Data.Models.LibraryPosition", b =>
                 {
                     b.Property<string>("PositionKey")

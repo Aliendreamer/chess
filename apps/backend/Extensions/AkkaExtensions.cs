@@ -21,6 +21,7 @@ using Chess.Backend.Akka.Ping;
 using Chess.Backend.Correspondence;
 using Chess.Backend.Engine;
 using Chess.Backend.Games;
+using Chess.Backend.Library;
 using Chess.Backend.Messaging;
 using Chess.Backend.News;
 using Confluent.Kafka;
@@ -139,6 +140,17 @@ internal static class MatchmakingRegistration
                 TimeSpan.FromSeconds(resolver.GetService<CorrespondenceOptions>().SweepSeconds))),
             new ClusterSingletonOptions { Role = AkkaOptions.BackendRole },
             createProxyToo: false);
+    }
+
+    /// <summary>The broadcast importer (broadcast-explorer D1): one month at a time per cluster, reached from every node.</summary>
+    public static AkkaConfigurationBuilder WithLibraryImporter(this AkkaConfigurationBuilder akka)
+    {
+        ArgumentNullException.ThrowIfNull(akka);
+        return akka.WithSingleton<LibraryImporter>(
+            LibraryImporter.SingletonName,
+            (_, _, resolver) => Props.Create(() => new LibraryImporter(resolver.GetService<IBroadcastImports>())),
+            new ClusterSingletonOptions { Role = AkkaOptions.BackendRole },
+            createProxyToo: true);
     }
 
     /// <summary>The news schedule (chess-news D1): one per cluster, on the backend role.</summary>
@@ -291,7 +303,7 @@ internal static class ClusterMetricsRegistration
                 [InviteShardingExtensions.ShardTypeName] = registry.Get<InviteActor>(),
                 [PingTopics.ShardTypeName] = registry.Get<PingActor>(),
             };
-            List<string> singletons = [MatchmakingActor.SingletonName, DeadlineSweeper.SingletonName, NewsFetcher.SingletonName];
+            List<string> singletons = [MatchmakingActor.SingletonName, DeadlineSweeper.SingletonName, NewsFetcher.SingletonName, LibraryImporter.SingletonName];
             if (publisher)
             {
                 singletons.Add(JournalPublisher.SingletonName);

@@ -27,14 +27,14 @@
 
 ## 3. The month import
 
-- [ ] 3.1 `library_import_runs` (migration) and the `library-importer` cluster singleton (`ActorTracing` envelope, span
+- [x] 3.1 `library_import_runs` (migration) and the `library-importer` cluster singleton (`ActorTracing` envelope, span
       and persist rules as for every actor; it persists nothing).
       Failing TestKit test with a fake fetcher: a run streams games in batches through `ILibraryService`, saves counts
       per batch, ends finished; a second start while running is refused; a fetch failure ends failed with the status.
-- [ ] 3.2 `WebApi/Admin/ImportBroadcasts/`: POST start (month validator: format, published range → 400; running → 409;
+- [x] 3.2 `WebApi/Admin/ImportBroadcasts/`: POST start (month validator: format, published range → 400; running → 409;
       `Roles(Admin)`) and GET runs. The URL is built from the month only. Commit:
       `feat(backend): import a month of lichess broadcasts`.
-- [ ] 3.3 🐳 Integration test: the fixture served by a local HTTP stub as a "month" → the kept games are imported with
+- [ ] 3.3 🐳 Integration test (`BroadcastImportFlowTests`, written; human-run): a synthetic month served in-process in place of lichess → the kept games are imported with
       source, licence and URL; a second run is all duplicates; a non-admin gets 403; "2019-13" gets 400.
 
 ## 4. Sources in the reads

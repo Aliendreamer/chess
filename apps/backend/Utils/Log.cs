@@ -86,4 +86,10 @@ internal static partial class Log
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "News source {Source} answered {Status}; trying again next round")]
     public static partial void NewsFeedRefused(ILogger logger, string source, int status);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Broadcast import {Month} finished: {Read} read, {Kept} kept, {Imported} imported, {Duplicate} already there, {Refused} refused")]
+    public static partial void BroadcastImportFinished(ILogger logger, string month, int read, int kept, int imported, int duplicate, int refused);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Broadcast import {Month} failed: {Reason}")]
+    public static partial void BroadcastImportFailed(ILogger logger, Exception? exception, string month, string reason);
 }
