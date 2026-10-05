@@ -73,11 +73,14 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private DateTimeOffset _createdAt;
     private DateTimeOffset _lastMoveAt;
 
-    /// <summary>The engine's side and level in a game against it; null between people (engine-play D3, D5).</summary>
+    /// <summary>The engine's side and level in a game against it; null between people (engine-play D3; its absence rule: engine-game-abandonment).</summary>
     private EnginePlayer? _engine;
 
     /// <summary>Asks the engine again when it has not moved within <see cref="GameTimings.EngineStall"/> (engine-play D6).</summary>
     private readonly IEngineRequests _engineRequests;
+
+    /// <summary>When the engine is next asked again if it has not moved; null unless it is the engine's turn.</summary>
+    private DateTimeOffset? _stallDue;
 
     /// <summary>When the side to move's clock started running; null while no clock runs (before both first moves).</summary>
     private DateTimeOffset? _turnStartedAt;
@@ -395,10 +398,10 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private void HandlePresence(ReportPresence report)
     {
         // Fire-and-forget from the hub: spectators and finished games are simply ignored, and so is every report in a
-        // game against the engine, which never connects (engine-play D5), or in a correspondence game, where the missed
-        // deadline is the only abandonment (correspondence-games D2).
-        if (!_created || _engine is not null || _timeControl.IsCorrespondence || _status == GameStatus.Ended
-            || (report.UserId != _white && report.UserId != _black))
+        // correspondence game, where the missed deadline is the only abandonment (correspondence-games D2). In a game
+        // against the engine only the person counts: the engine never connects (engine-game-abandonment D1).
+        if (!_created || _timeControl.IsCorrespondence || _status == GameStatus.Ended
+            || (report.UserId != _white && report.UserId != _black) || report.UserId == EngineId)
         {
             return;
         }
@@ -473,6 +476,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         if (events.Count == 0 && ClaimableBy(now) is { } claimant && _offeredTo != claimant)
         {
             events.Add(new AbandonmentOffered(claimant, now));
+        }
+        else if (events.Count == 0 && _engine is { } engine && AwayLongEnough(now) is not null)
+        {
+            // Nobody to offer a claim to: the engine wins at once (engine-game-abandonment D2).
+            events.Add(Ended((engine.Side == SideNames.White ? Side.White : Side.Black).WinFor(), EndReason.Abandonment, now));
         }
 
         if (events.Count == 0)
@@ -557,9 +565,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     /// <summary>The engine has not moved in time: a request was lost, or the game moved node mid-think. Ask again.</summary>
     private void HandleEngineStall()
     {
-        if (EngineToMove && _engine is { } engine)
+        DateTimeOffset now = _clock.GetUtcNow();
+        if (EngineToMove && _engine is { } engine && _stallDue is { } due && now >= due)
         {
             _engineRequests.Nudge(_gameId, Ply, _rules.Fen, engine.Level);
+            _stallDue = now + _timings.EngineStall;
         }
 
         Rearm();
@@ -830,9 +840,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             Timers.StartSingleTimer(PassivateTimer, PassivateNow.Instance, idle);
         }
 
-        if (EngineToMove)
+        // Due from the start of the engine's turn (or the last nudge), so presence re-arming never pushes it back.
+        _stallDue = EngineToMove ? _stallDue ?? now + _timings.EngineStall : null;
+        if (_stallDue is { } stallDue)
         {
-            Timers.StartSingleTimer(EngineStallTimer, EngineStall.Instance, _timings.EngineStall);
+            Timers.StartSingleTimer(EngineStallTimer, EngineStall.Instance, stallDue > now ? stallDue - now : TimeSpan.Zero);
         }
 
         if (NextPresenceCheck(now) is { } at)
@@ -843,8 +855,17 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
 
     // ---- presence (presence-and-abandonment) -------------------------------------------------------------------
 
-    /// <summary>Absence counts only while playing after both first moves, and only once the BFF reports on this game.</summary>
-    private bool PresenceActive => _tracking && _status == GameStatus.Playing && Ply >= 2;
+    /// <summary>
+    /// Absence counts only while playing after both first moves, and only once the BFF reports on this game. In a game
+    /// against the engine it counts from the person's first move, reported or not, so a game nobody watches is still
+    /// judged (engine-game-abandonment D1).
+    /// </summary>
+    private bool PresenceActive => _status == GameStatus.Playing && (_engine is not null ? PersonHasMoved : _tracking && Ply >= 2);
+
+    /// <summary>The engine's player id in a game against it, else null.</summary>
+    private long? EngineId => _engine is { } engine ? (engine.Side == SideNames.White ? _white : _black) : null;
+
+    private bool PersonHasMoved => Ply >= 2 || (Ply == 1 && EngineId == _black);
 
     /// <summary>
     /// Present while any BFF instance reported the player within the lease. A player not reported since this
@@ -852,6 +873,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     /// </summary>
     private bool IsPresent(long player, DateTimeOffset now)
     {
+        if (player == EngineId)
+        {
+            return true; // the engine never connects and never leaves
+        }
+
         if (_presence.TryGetValue(player, out Dictionary<string, DateTimeOffset>? byInstance)
             && byInstance.Values.Any(seen => now - seen < _timings.Lease))
         {
@@ -862,7 +888,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     }
 
     /// <summary>The present player may claim once the other has been away for <see cref="GameTimings.AbandonAfter"/>.</summary>
-    private long? ClaimableBy(DateTimeOffset now)
+    private long? ClaimableBy(DateTimeOffset now) =>
+        _engine is null && AwayLongEnough(now) is { } away ? Opponent(away) : null; // the engine never claims (D2)
+
+    /// <summary>The one player away for <see cref="GameTimings.AbandonAfter"/> or longer; null if none or both.</summary>
+    private long? AwayLongEnough(DateTimeOffset now)
     {
         if (!PresenceActive || _absentSince.Count != 1)
         {
@@ -870,7 +900,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         }
 
         (long away, DateTimeOffset since) = _absentSince.Single();
-        return now - since >= _timings.AbandonAfter ? Opponent(away) : null;
+        return now - since >= _timings.AbandonAfter ? away : null;
     }
 
     private long? AbsentId => _status == GameStatus.Ended || _absentSince.Count == 0
@@ -890,6 +920,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
 
         foreach (long player in (long[])[_white, _black])
         {
+            if (player == EngineId)
+            {
+                continue; // always present: nothing to expire
+            }
+
             bool present = IsPresent(player, now);
             if (_absentSince.TryGetValue(player, out DateTimeOffset since))
             {
@@ -901,9 +936,9 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
                 {
                     Consider(since + _timings.AbandonAfter);
                 }
-                else if (ClaimableBy(now) is { } claimant && _offeredTo != claimant)
+                else if ((ClaimableBy(now) is { } claimant && _offeredTo != claimant) || _engine is not null)
                 {
-                    Consider(now); // due and not yet offered (never when both are away: nobody can claim)
+                    Consider(now); // due and not yet offered or ended (never when both are away: nobody can claim)
                 }
 
                 continue;

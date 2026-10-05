@@ -1,19 +1,21 @@
 ## 1. The actor ends an abandoned engine game
 
-- [ ] 1.1 Failing TestKit tests in `Chess.Backend.Tests/Games/EngineGameTests.cs` (fail today because presence reports
+- [x] 1.1 Failing TestKit tests in `Chess.Backend.Tests/Games/EngineGameTests.cs` (fail today because presence reports
       are dropped and nothing is persisted): the person (White) moves, reports `Absent`, 60 s pass → `GameEnded` `0-1`
       `Abandonment`; same with the person as Black after their first move → `1-0`; `Absent` then `Present` at 40 s →
       `PlayerLeft`, `PlayerReturned`, no end; `ClaimAbandonment` by either id → 409; no `AbandonmentOffered` ever;
       the person to move before their first move and absent → only the first-move abort (`Aborted`, no result).
-- [ ] 1.2 Failing test: a recovered engine game (person has moved) with no presence report at all ends after one lease
+- [x] 1.2 Failing test: a recovered engine game (person has moved) with no presence report at all ends after one lease
       plus `AbandonAfter` (presence does not wait for `_tracking`).
-- [ ] 1.3 Guard tests in `GamePresenceTests.cs` / `CorrespondenceGameTests.cs` stay green: people still get
+- [x] 1.3 Guard tests in `GamePresenceTests.cs` / `CorrespondenceGameTests.cs` stay green: people still get
       `AbandonmentOffered` + claim; correspondence still ignores presence.
-- [ ] 1.4 Implement in `Akka/Games/GameActor.cs`: accept reports in engine games for the person only;
+- [x] 1.4 Implement in `Akka/Games/GameActor.cs`: accept reports in engine games for the person only;
       `PresenceActive` for engine games = playing and the person has moved (no `_tracking`); the engine's id always
       present; at `AbandonAfter` an engine game persists `Ended(engine side wins, Abandonment)` instead of
       `AbandonmentOffered`; `ClaimableBy` null in engine games. Update the doc comments citing engine-play D5.
-      Commit: `feat(backend): leaving a game against the computer loses it`.
+      Commit: `feat(backend): leaving a game against the computer loses it`. Also: the engine's stall timer
+      is due from the start of its turn, so presence re-arming never pushes it back (test
+      `The_persons_presence_reports_never_push_the_engines_stall_back`).
 
 ## 2. The sweep wakes quiet engine games
 

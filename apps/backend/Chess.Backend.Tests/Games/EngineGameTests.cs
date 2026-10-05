@@ -7,7 +7,7 @@ using Chess.Backend.Tests.Engine;
 
 namespace Chess.Backend.Tests.Games;
 
-/// <summary>Games against the engine (engine-play D2–D5): the engine's seat, no draw offers, no presence, recovery.</summary>
+/// <summary>Games against the engine (engine-play D2–D5): the engine's seat, no draw offers, abandonment by the human only, recovery.</summary>
 public sealed class EngineGameTests() : GameActorTestBase(virtualTime: true)
 {
     private static readonly EngineLevel Level = EngineLevel.Find("1600")!;
@@ -18,10 +18,13 @@ public sealed class EngineGameTests() : GameActorTestBase(virtualTime: true)
 
     private RecordingEngineRequests Requests { get; } = new();
 
-    private (Guid Id, IActorRef Actor) EngineGame()
+    /// <summary>Timings for tests about the engine's stall: the person stays presumed present throughout.</summary>
+    private static readonly GameTimings LongLease = GameTimings.Default with { Lease = TimeSpan.FromHours(1) };
+
+    private (Guid Id, IActorRef Actor) EngineGame(GameTimings? timings = null)
     {
         Guid id = Guid.CreateVersion7();
-        IActorRef actor = CreateTestProbe().ChildActorOf(Props.Create(() => new GameActor(id, null, Clock, GameTimings.Default, Requests)));
+        IActorRef actor = CreateTestProbe().ChildActorOf(Props.Create(() => new GameActor(id, null, Clock, timings ?? GameTimings.Default, Requests)));
         GameView created = Assert.IsType<GameView>(Send(actor, new CreateGame(id, White, Level.UserId, TimeControl.Untimed, AsBlack)));
         Assert.Equal(("black", "1600"), (created.EngineSide, created.EngineLevel));
         return (id, actor);
@@ -86,18 +89,97 @@ public sealed class EngineGameTests() : GameActorTestBase(virtualTime: true)
         Assert.Equal(seq, View(actor, id).Seq);
     }
 
+    /// <summary>Reports presence and waits until the actor has handled it (reports have no reply of their own).</summary>
+    private void Report(IActorRef actor, Guid id, long user, bool present)
+    {
+        actor.Tell(new ReportPresence(id, user, "bff-1", present), TestActor);
+        View(actor, id);
+    }
+
+    /// <summary>A game with the engine as White, already past its first move, the human (Black) to reply.</summary>
+    private (Guid Id, IActorRef Actor) EngineAsWhite(GameTimings? timings = null)
+    {
+        Guid id = Guid.CreateVersion7();
+        IActorRef actor = CreateTestProbe().ChildActorOf(Props.Create(() => new GameActor(id, null, Clock, timings ?? GameTimings.Default, Requests)));
+        Assert.IsType<GameView>(Send(actor, new CreateGame(id, Level.UserId, Black, TimeControl.Untimed, new EnginePlayer("white", "1600"))));
+        Move(actor, id, Level.UserId, "e2e4");
+        return (id, actor);
+    }
+
     [Fact]
-    public void Presence_is_ignored_so_no_abandonment_is_ever_offered()
+    public void A_human_away_for_a_minute_loses_to_the_engine_by_abandonment()
     {
         (Guid id, IActorRef actor) = EngineGame();
-        long seq = Play(actor, id, "e2e4 e7e5").Seq;
+        Play(actor, id, "e2e4 e7e5");
 
-        actor.Tell(new ReportPresence(id, White, "bff-1", Present: true));
-        actor.Tell(new ReportPresence(id, White, "bff-1", Present: false));
-        Advance(TimeSpan.FromMinutes(10));
+        Report(actor, id, White, present: true);
+        Report(actor, id, White, present: false);
+        Advance(GameTimings.Default.AbandonAfter - TimeSpan.FromSeconds(1));
+        Assert.Equal((GameStatus.Playing, (long?)White), (View(actor, id).Status, View(actor, id).AbsentId));
+        Advance(TimeSpan.FromSeconds(2));
+
+        AwaitAssert(() =>
+        {
+            GameView view = View(actor, id);
+            Assert.Equal((GameStatus.Ended, "0-1", EndReason.Abandonment, (long?)null), (view.Status, view.Result, view.Reason, view.ClaimableBy));
+        });
+    }
+
+    [Fact]
+    public void The_human_as_black_loses_by_abandonment_after_their_first_move()
+    {
+        (Guid id, IActorRef actor) = EngineAsWhite(GameTimings.Default with { EngineStall = TimeSpan.FromHours(1) });
+        Move(actor, id, Black, "e7e5");
+
+        Report(actor, id, Black, present: false);
+        Advance(GameTimings.Default.AbandonAfter + TimeSpan.FromSeconds(1));
+
+        AwaitAssert(() => Assert.Equal(("1-0", EndReason.Abandonment), (View(actor, id).Result, View(actor, id).Reason)));
+    }
+
+    [Fact]
+    public void Coming_back_within_the_minute_keeps_the_game_going_and_nobody_may_claim()
+    {
+        (Guid id, IActorRef actor) = EngineGame();
+        Play(actor, id, "e2e4 e7e5");
+
+        Report(actor, id, White, present: false);
+        Advance(TimeSpan.FromSeconds(40));
+        Report(actor, id, White, present: true);
+        Advance(TimeSpan.FromMinutes(5));
+        Report(actor, id, White, present: true);
 
         GameView view = View(actor, id);
-        Assert.Equal((seq, (long?)null, (long?)null), (view.Seq, view.AbsentId, view.ClaimableBy));
+        Assert.Equal((GameStatus.Playing, (long?)null, (long?)null), (view.Status, view.AbsentId, view.ClaimableBy));
+        AssertRejected(Send(actor, new ClaimAbandonment(id, White, Win: true)), RejectionCode.Conflict);
+        AssertRejected(Send(actor, new ClaimAbandonment(id, Level.UserId, Win: true)), RejectionCode.Conflict);
+    }
+
+    [Fact]
+    public void Leaving_before_the_first_move_only_aborts_it()
+    {
+        (Guid id, IActorRef actor) = EngineAsWhite();
+
+        Report(actor, id, Black, present: false);
+        Advance(GameActor.FirstMoveWindow + TimeSpan.FromSeconds(1));
+
+        AwaitAssert(() => Assert.Equal(("*", EndReason.Aborted), (View(actor, id).Result, View(actor, id).Reason)));
+    }
+
+    [Fact]
+    public void A_recovered_game_nobody_reports_on_ends_after_one_lease_and_a_minute()
+    {
+        (Guid id, IActorRef actor) = EngineGame();
+        Play(actor, id, "e2e4 e7e5");
+        StopAndWait(actor);
+
+        IActorRef recovered = Spawn(id);
+        Assert.Equal(GameStatus.Playing, View(recovered, id).Status);
+        Advance(GameTimings.Default.Lease + TimeSpan.FromSeconds(1));
+        AwaitAssert(() => Assert.Equal((long?)White, View(recovered, id).AbsentId));
+        Advance(GameTimings.Default.AbandonAfter + TimeSpan.FromSeconds(1));
+
+        AwaitAssert(() => Assert.Equal(("0-1", EndReason.Abandonment), (View(recovered, id).Result, View(recovered, id).Reason)));
     }
 
     [Fact]
@@ -127,7 +209,7 @@ public sealed class EngineGameTests() : GameActorTestBase(virtualTime: true)
     [Fact]
     public void A_silent_engine_is_asked_again_after_the_stall_time_and_again_after_that()
     {
-        (Guid id, IActorRef actor) = EngineGame();
+        (Guid id, IActorRef actor) = EngineGame(LongLease);
         GameView afterE4 = Move(actor, id, White, "e2e4");
 
         Advance(GameTimings.Default.EngineStall - TimeSpan.FromSeconds(1));
@@ -139,6 +221,20 @@ public sealed class EngineGameTests() : GameActorTestBase(virtualTime: true)
         AwaitCondition(() => Requests.Sent.Count == 2);
 
         Assert.Equal([(id, 1, afterE4.Fen, "1600", true), (id, 1, afterE4.Fen, "1600", true)], Requests.Sent);
+    }
+
+    [Fact]
+    public void The_persons_presence_reports_never_push_the_engines_stall_back()
+    {
+        (Guid id, IActorRef actor) = EngineGame(LongLease);
+        Move(actor, id, White, "e2e4");
+
+        Report(actor, id, White, present: true);
+        Advance(TimeSpan.FromSeconds(30));
+        Report(actor, id, White, present: true);
+        Advance(GameTimings.Default.EngineStall - TimeSpan.FromSeconds(30) + TimeSpan.FromSeconds(1));
+
+        AwaitCondition(() => Requests.Sent.Count == 1);
     }
 
     [Fact]
