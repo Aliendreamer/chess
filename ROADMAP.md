@@ -199,11 +199,11 @@ Owner review of lichess.org on 2026-10-01 (proposals P1–P10). Six OpenSpec cha
   type and an icon set (Lucide, ISC).
 - **`responsive-layout`** (P10) **[decided]**: its own spec; every page works from phone width up.
 - **No sound** (P4) **[decided]**: the site plays no sounds.
-- **`live-home`** (P6) **[default — built 2026-10-02, owner to confirm]**: games in play and "n waiting" per preset on
+- **`live-home`** (P6) **[built 2026-10-02, confirmed by the owner 2026-10-05]**: games in play and "n waiting" per preset on
   home, Club TV (the six games moved most recently, correspondence left out, engine games in, nobody can opt out) as
   static mini boards, and a Watch page of every game in play. Polled `GET /api/lobby` (cached 2 s), not a live kind.
-  Not built: players online (no global presence), mini boards in "Your turn". Open: untimed games abandoned against the
-  computer stay "in play" forever (see the change's design).
+  Not built: players online (no global presence), mini boards in "Your turn". Untimed games against the computer that the
+  person leaves end after 1 min (owner, 2026-10-05: `engine-game-abandonment`).
 
 ### Part 6 — Analysis, the game library and news (built 2026-10-02)
 
