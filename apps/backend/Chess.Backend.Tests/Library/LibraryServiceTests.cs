@@ -1,5 +1,6 @@
 using Chess.Backend.Library;
 using Microsoft.Extensions.Logging.Abstractions;
+using ZiggyCreatures.Caching.Fusion;
 
 namespace Chess.Backend.Tests.Library;
 
@@ -10,7 +11,8 @@ public sealed class LibraryServiceTests
     private static ImportGame Game(string white, params string[] uci) =>
         new(white, "Black Player", "Event", null, null, "1900.??.??", "1-0", null, [.. uci], null);
 
-    private static LibraryService Service(ProjectDbContext db) => new(db, TimeProvider.System, NullLogger<LibraryService>.Instance);
+    private static LibraryService Service(ProjectDbContext db, IFusionCache? cache = null) =>
+        new(db, TimeProvider.System, cache ?? new FusionCache(new FusionCacheOptions()), NullLogger<LibraryService>.Instance);
 
     [Fact]
     public async Task New_games_are_stored_with_their_positions_and_every_game_gets_an_outcome()
@@ -42,5 +44,21 @@ public sealed class LibraryServiceTests
 
         Assert.Equal([ImportStatus.Duplicate, ImportStatus.Imported, ImportStatus.Duplicate], items.Select(i => i.Status));
         Assert.Equal(2, await db.LibraryGames.CountAsync());
+    }
+
+    [Fact]
+    public async Task Storing_games_removes_the_cached_explorer_answers_and_duplicates_alone_do_not()
+    {
+        await using ProjectDbContext db = TestDb.Create();
+        using FusionCache cache = new(new FusionCacheOptions());
+        async Task<bool> Cached() => (await cache.TryGetAsync<int>("k")).HasValue;
+        await cache.SetAsync("k", 1, tags: [Constants.Cache.LibraryPositionsTag]);
+
+        await Service(db, cache).ImportAsync(Source, [Game("A", "e2e4")], CancellationToken.None);
+        Assert.False(await Cached());
+
+        await cache.SetAsync("k", 1, tags: [Constants.Cache.LibraryPositionsTag]);
+        await Service(db, cache).ImportAsync(Source, [Game("A", "e2e4")], CancellationToken.None);
+        Assert.True(await Cached());
     }
 }

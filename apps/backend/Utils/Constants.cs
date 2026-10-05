@@ -100,5 +100,8 @@ internal static class Constants
         public const string OidcDiscovery = "oidc:discovery";
         public const string PreferencesByUser = "prefs:";
         public const string LibraryPosition = "library-position:";
+
+        /// <summary>Every explorer answer: an import that stores games removes them all (broadcast-explorer D9).</summary>
+        public const string LibraryPositionsTag = "library-positions";
     }
 }

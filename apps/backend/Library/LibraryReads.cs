@@ -65,7 +65,7 @@ internal sealed class LibraryOptions : Extensions.ISettings
 
     /// <summary>
     /// How long an explorer answer per (position, source) is shared (broadcast-explorer D9): the first plies are asked
-    /// for by every visitor and each groups up to the whole library. Imports only add games, so a stale answer is short.
+    /// for by every visitor and each groups up to the whole library. An import that stores games removes them all.
     /// </summary>
     public int ExplorerCacheMinutes { get; set; } = 10;
 

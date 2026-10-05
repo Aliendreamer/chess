@@ -37,6 +37,7 @@ internal sealed class LibraryPositionEndpoint(ReadDbContext read, IFusionCache c
                 $"{Constants.Cache.LibraryPosition}{req.Key}:{source}",
                 async (FusionCacheFactoryExecutionContext<LibraryPositionView> _, CancellationToken token) => await BuildAsync(req.Key, source, token),
                 o => o.SetDuration(TimeSpan.FromMinutes(options.Value.ExplorerCacheMinutes)),
+                [Constants.Cache.LibraryPositionsTag],
                 ct);
             await Send.OkAsync(view, ct);
         }

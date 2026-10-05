@@ -61,6 +61,7 @@ public sealed class BroadcastImportsTests
         services.AddLogging();
         services.AddSingleton(TimeProvider.System);
         services.AddScoped(_ => TestDb.Create(name: db));
+        services.AddFusionCache();
         services.AddScoped<ILibraryService, LibraryService>();
         ServiceProvider provider = services.BuildServiceProvider();
         LibraryBroadcastsOptions options = new() { BatchSize = 2 };

@@ -1,4 +1,5 @@
 using Chess.Backend.Games;
+using ZiggyCreatures.Caching.Fusion;
 
 namespace Chess.Backend.Library;
 
@@ -24,7 +25,7 @@ internal interface ILibraryService : IService
 /// The library's writes (game-library D3): <see cref="LibraryImport"/> decides each game, this stores the new ones and
 /// skips games already in the library — or twice in the same batch — by their dedupe key.
 /// </summary>
-internal sealed class LibraryService(ProjectDbContext context, TimeProvider clock, ILogger<LibraryService> logger)
+internal sealed class LibraryService(ProjectDbContext context, TimeProvider clock, IFusionCache cache, ILogger<LibraryService> logger)
     : BaseService(context, logger), ILibraryService
 {
     /// <summary>The most games one import request may carry; the admin page sends files in batches of this size.</summary>
@@ -61,6 +62,12 @@ internal sealed class LibraryService(ProjectDbContext context, TimeProvider cloc
         }
 
         await Context.SaveChangesAsync(ct);
+        if (items.Any(i => i.Status == ImportStatus.Imported))
+        {
+            // New games change what the explorer counts: its cached answers go (broadcast-explorer D9).
+            await cache.RemoveByTagAsync(Constants.Cache.LibraryPositionsTag, token: ct);
+        }
+
         return items;
     }
 }
