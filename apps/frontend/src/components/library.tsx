@@ -5,6 +5,7 @@ import {
   BROADCAST_SOURCE,
   LIBRARY_SOURCES,
   creditsFor,
+  lichessUrl,
 } from '#/lib/library'
 import { scoreShare } from '#/lib/players'
 import { playMove } from '#/lib/studies'
@@ -89,33 +90,36 @@ export function PositionPanel({
             {`${position.games} ${position.games === 1 ? 'game' : 'games'} · white ${position.whiteWins} · draws ${position.draws} · black ${position.blackWins}`}
           </p>
           <ul className="m-0 flex max-h-64 list-none flex-col gap-1 overflow-y-auto p-0">
-            {position.items.map((g) => (
-              <li key={g.id} className="flex items-baseline justify-between gap-3 text-sm">
-                <Link
-                  to="/analysis"
-                  search={{ library: g.id, ply: g.ply }}
-                  className="truncate text-fg-primary no-underline hover:text-fg-accent"
-                >
-                  {`${g.white} – ${g.black}${g.year ? `, ${g.year}` : ''}`}
-                </Link>
-                <span className="flex shrink-0 items-baseline gap-2">
-                  {g.source === BROADCAST_SOURCE && g.sourceRef ? (
-                    <a
-                      href={g.sourceRef}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      aria-label={`${g.white} – ${g.black} on lichess`}
-                      className="text-2xs text-fg-secondary hover:text-fg-accent"
-                    >
-                      lichess
-                    </a>
-                  ) : null}
-                  <span className="font-mono text-fg-secondary">
-                    {RESULT[g.result] ?? g.result}
+            {position.items.map((g) => {
+              const onLichess = g.source === BROADCAST_SOURCE ? lichessUrl(g.sourceRef) : null
+              return (
+                <li key={g.id} className="flex items-baseline justify-between gap-3 text-sm">
+                  <Link
+                    to="/analysis"
+                    search={{ library: g.id, ply: g.ply }}
+                    className="truncate text-fg-primary no-underline hover:text-fg-accent"
+                  >
+                    {`${g.white} – ${g.black}${g.year ? `, ${g.year}` : ''}`}
+                  </Link>
+                  <span className="flex shrink-0 items-baseline gap-2">
+                    {onLichess ? (
+                      <a
+                        href={onLichess}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        aria-label={`${g.white} – ${g.black} on lichess`}
+                        className="text-2xs text-fg-secondary hover:text-fg-accent"
+                      >
+                        lichess
+                      </a>
+                    ) : null}
+                    <span className="font-mono text-fg-secondary">
+                      {RESULT[g.result] ?? g.result}
+                    </span>
                   </span>
-                </span>
-              </li>
-            ))}
+                </li>
+              )
+            })}
           </ul>
         </>
       )}

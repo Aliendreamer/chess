@@ -117,3 +117,15 @@ public sealed class BroadcastFilterTests
         Assert.Equal(["e2e4"], game.Moves);
     }
 }
+
+public sealed class LichessUrlTests
+{
+    [Theory]
+    [InlineData("https://lichess.org/broadcast/x/r/abc", "https://lichess.org/broadcast/x/r/abc")]
+    [InlineData("javascript:alert(1)", null)]
+    [InlineData("http://lichess.org/x", null)]
+    [InlineData("https://lichess.org.evil.example/x", null)]
+    [InlineData(null, null)]
+    public void Only_https_lichess_pages_are_kept(string? url, string? kept) =>
+        Assert.Equal(kept, BroadcastFilter.LichessUrl(url));
+}

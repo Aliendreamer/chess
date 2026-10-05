@@ -27,6 +27,7 @@ import { positionKey, useAnalysis } from '#/lib/analysis'
 import {
   BROADCAST_SOURCE,
   isLibrarySource,
+  lichessUrl,
   uciLine,
   useLibraryPosition,
   useOpeningName,
@@ -81,7 +82,9 @@ export const Route = createFileRoute('/_authenticated/analysis')({
         path: Array.from({ length: plies }, () => 0),
         players: { white: found.game.white, black: found.game.black },
         library: found.game,
-        librarySourceRef: found.sourceRef,
+        // Rendered as a link: only a lichess page of a broadcast game.
+        librarySourceRef:
+          found.game.source === BROADCAST_SOURCE ? lichessUrl(found.sourceRef) : null,
         error: null,
       }
     }
@@ -250,7 +253,7 @@ function Analysis({ start }: { start: ReturnType<typeof Route.useLoaderData> }) 
               ]
                 .filter(Boolean)
                 .join(' · ')}
-              {start.library.source === BROADCAST_SOURCE && start.librarySourceRef ? (
+              {start.librarySourceRef ? (
                 <>
                   {' · '}
                   <a

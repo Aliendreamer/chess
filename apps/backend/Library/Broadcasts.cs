@@ -101,8 +101,14 @@ internal static partial class BroadcastFilter
             h.GetValueOrDefault("ECO"),
             uci,
             StartFen: null,
-            SourceRef: h.GetValueOrDefault("GameURL"));
+            SourceRef: LichessUrl(h.GetValueOrDefault("GameURL")));
     }
+
+    /// <summary>The game's lichess page, or null: the link is rendered, so only an https URL on lichess.org is kept.</summary>
+    public static string? LichessUrl(string? url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out Uri? u) && u.Scheme == Uri.UriSchemeHttps && u.Host == "lichess.org"
+            ? u.AbsoluteUri
+            : null;
 
     /// <summary>
     /// The base time in minutes, or null when it cannot be read (kept). <c>N</c> or <c>N+M</c> is minutes under 180 and

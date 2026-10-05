@@ -61,6 +61,17 @@ export function isLibrarySource(value: unknown): value is LibrarySource {
 /** The `source` the API stores on a broadcast game. */
 export const BROADCAST_SOURCE = 'lichess broadcasts'
 
+/** A broadcast game's lichess page, only when it is an https URL on lichess.org (the link is rendered); else null. */
+export function lichessUrl(value: string | null | undefined): string | null {
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && url.hostname === 'lichess.org' ? url.href : null
+  } catch {
+    return null
+  }
+}
+
 /** Broadcast games are indexed for their opening only: this many moves (40 plies). */
 export const BROADCAST_POSITION_MOVES = 20
 

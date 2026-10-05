@@ -5,6 +5,7 @@ import {
   batches,
   creditsFor,
   isLibrarySource,
+  lichessUrl,
   mainLine,
   publishedMonths,
   searchQuery,
@@ -212,5 +213,17 @@ describe('useBroadcastRuns', () => {
     expect(load).not.toHaveBeenCalled()
     await act(() => result.current.refresh())
     expect(result.current.runs).toHaveLength(1)
+  })
+})
+
+describe('lichessUrl', () => {
+  it('keeps only https pages on lichess.org', () => {
+    expect(lichessUrl('https://lichess.org/broadcast/x/r/abc')).toBe(
+      'https://lichess.org/broadcast/x/r/abc',
+    )
+    expect(lichessUrl('javascript:alert(1)')).toBeNull()
+    expect(lichessUrl('http://lichess.org/x')).toBeNull()
+    expect(lichessUrl('https://lichess.org.evil.example/x')).toBeNull()
+    expect(lichessUrl(null)).toBeNull()
   })
 })
