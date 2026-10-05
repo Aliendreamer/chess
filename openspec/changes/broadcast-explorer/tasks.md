@@ -58,7 +58,7 @@
 
 ## 6. Docs and the real import
 
-- [ ] 6.1 `tools/library/SOURCES.md`: the broadcast row (how to import it on `/admin`, the default filter, removal by
+- [x] 6.1 `tools/library/SOURCES.md`: the broadcast row (how to import it on `/admin`, the default filter, removal by
       source). `apps/frontend/ATTRIBUTION.md`: lichess broadcasts, CC BY-SA 4.0. Commit:
       `docs(repo): lichess broadcasts as a library source`.
 - [ ] 6.2 👤 Human-run on the live stack: import 2026-08, then check `/analysis` at the start position shows broadcast

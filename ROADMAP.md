@@ -222,8 +222,11 @@ feeds. Three OpenSpec changes, in this order:
   empty. Caissabase is gone (2025). See `tools/library/SOURCES.md`.
 - **`library-explorer`** **[built 2026-10-03]**: opening theory as the owner chose it — the moves played from any
   position in the club's famous games, with results and the opening each reaches, walked on the analysis board.
-  Considered and dropped: Wikibooks theory text (two thirds stubs). Later: lichess broadcast master games (CC BY-SA)
-  as a second explorer source; the full lichess database (30 GB a month) is out of proportion.
+  Considered and dropped: Wikibooks theory text (two thirds stubs). The full lichess database (30 GB a month) is out
+  of proportion.
+- **`broadcast-explorer`** **[built 2026-10-05; default filter 2400+/no blitz, owner may change]**: lichess broadcast
+  games (CC BY-SA 4.0) as a second explorer source, imported a month at a time from `/admin`, with a source switch and
+  credit lines; the explorer now counts in the database.
 - **`opening-trainer`** **[built 2026-10-03]**: drill the named lines of the lichess opening list (CC0) by family
   (owner: named openings, the whole family, progress remembered per member): the board plays the other side, a wrong
   move is shown and replaced, and a Leitner schedule brings missed lines back first. Later: the member's own

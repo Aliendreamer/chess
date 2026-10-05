@@ -298,7 +298,13 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   (`POST /api/admin/library/import`, ≤100 games: replayed from the start, illegal → refused, `DedupeKey` → duplicate);
   members search `/library` (`pg_trgm` ILIKE on names/event) and the analysis board shows the opening and "In the
   library" per position (`?library={id}&ply=`). The explorer (library-explorer) is the same endpoint's `moves`: the next move of every game
-  at the position (the start position is not stored: there every game counts), with W/D/B and the opening reached. PGN collections are never committed: `tools/library/SOURCES.md` lists
+  at the position, with W/D/B and the opening reached, counted in SQL from `library_positions` (ply 0 stored; each row
+  copies the next move, result and source; a game counts once, at its first visit), cached per (key, source) under the
+  `library-positions` tag, which an import that stores games removes. **Broadcasts (broadcast-explorer)**: `/admin` starts
+  a month (`POST|GET /api/admin/library/broadcasts`); the `library-importer` singleton streams lichess's
+  `.pgn.zst` (`Library/Broadcasts.cs`, `Pgn.cs`, `BroadcastImport.cs`; runs in `library_import_runs`) through
+  `LibraryBroadcasts:*` (2400+, no blitz, 40 plies of positions); `source=all|wc|broadcasts` on the reads, `?src=` on
+  `/analysis`, a CC BY-SA credit wherever broadcasts count. PGN collections are never committed: `tools/library/SOURCES.md` lists
   what may be imported and under which licence. Fields typed before hydration: `useAdoptTyped`, or a plain GET form. **Opening trainer (opening-trainer)**:
   `openings."MovesUci"` (reseeded once when a row lacks it) gives each named line its moves; `Trainer/OpeningFamilies`
   groups them by the name before ':' (search also matches a variation, the name before ','), and a family's lines are

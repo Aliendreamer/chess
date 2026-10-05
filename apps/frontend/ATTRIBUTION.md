@@ -40,3 +40,10 @@ The opening names and ECO codes come from lichess's [chess-openings](https://git
 embedded in the backend as `apps/backend/Library/Openings/*.tsv`. Its README: "As a collection of facts, this data set
 is in the public domain … Insofar as that qualifies for copyright, the work is released under the CC0 Public Domain
 Dedication."
+
+## Lichess broadcast games
+
+Games in the library with the source "lichess broadcasts" come from the
+[lichess broadcast database](https://database.lichess.org/#broadcasts), released under the
+[Creative Commons Attribution-ShareAlike 4.0 licence](https://creativecommons.org/licenses/by-sa/4.0/). The explorer
+credits them as "Lichess broadcasts, CC BY-SA 4.0" and each game links to its page on lichess.org.
