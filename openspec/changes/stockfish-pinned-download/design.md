@@ -37,7 +37,8 @@ sha256sum -c -`. It works without BuildKit, but needs curl in the image and is m
   `push`, not for local images.
 - **D4 — The download layer comes before the .NET publish.** It changes only when the pin changes, so it is placed
   right after `FROM … AS build` and cached across code changes; today the `COPY` sits after `dotnet publish`.
-- **D5 — The folder and its ignore entry go.** `.gitignore` loses `apps/engine/stockfish/`; comments in `build.sh`,
+- **D5 — The folder goes, its ignore entry stays.** The `.gitignore` entry stays (comment reworded) so a leftover
+  local archive can never be committed by accident; comments in `build.sh`,
   compose, CLAUDE.md and the Serena memory stop asking for the archive. A leftover local folder is harmless (no longer
   in any `COPY`), and the change tells the owner they can delete it.
 

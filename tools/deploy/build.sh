@@ -50,7 +50,7 @@ case "$APP" in
     DOCKERFILE="$REPO_ROOT/apps/backend/Dockerfile"
     ;;
   engine)
-    # Needs the Stockfish archive in apps/engine/stockfish/ (git-ignored); the image carries its GPL notice.
+    # The image downloads a pinned Stockfish release (hash-checked) and carries its GPL notice and source offer.
     IMAGE_NAME="aliendreamer/chess-engine"
     CONTEXT="$REPO_ROOT/apps/engine"
     DOCKERFILE="$REPO_ROOT/apps/engine/Dockerfile"

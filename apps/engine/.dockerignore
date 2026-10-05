@@ -5,3 +5,4 @@ Chess.Engine.Tests/
 .claude/
 .serena/
 *.md
+stockfish/

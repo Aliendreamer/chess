@@ -255,8 +255,8 @@ services:
     restart: "no"
 
   # Stockfish behind Kafka (engine-play D1): reads engine.moves.requests, answers on engine.moves.results. Its own
-  # container so a search never competes with the game actors' clocks for CPU. Needs the Stockfish archive in
-  # apps/engine/stockfish/ (git-ignored).
+  # container so a search never competes with the game actors' clocks for CPU. The image downloads a pinned
+  # Stockfish release at build time.
   engine:
     logging: *default-logging
     build:
