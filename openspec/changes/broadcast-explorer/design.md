@@ -92,7 +92,7 @@ Checked on 2026-10-05:
    - `Result` is not `*`.
    - Both `WhiteElo` and `BlackElo` are at least `MinElo` (2400). A missing Elo fails.
    - With `ExcludeFast` (true), the game is dropped when its `TimeControl` reads as under 10 minutes base. Readings:
-     `N` or `N+M` with N < 200 counts as minutes, N ≥ 200 as seconds; `H:MM:SS` and `Nmin…` are understood.
+     `N` or `N+M` with N < 180 counts as minutes, N ≥ 180 as seconds (180+2 is blitz; no game starts with three hours); `H:MM:SS` and `Nmin…` are understood.
      Anything else, or no time control, counts as unknown and is kept.
 
    At the defaults that keeps about 2,300 games a month in 2026 and about 500 in 2021, roughly 120,000 over 81

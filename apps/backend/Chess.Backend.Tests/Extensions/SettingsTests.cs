@@ -1,3 +1,4 @@
+using Chess.Backend.Library;
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Analysis;
@@ -48,6 +49,7 @@ public sealed class SettingsTests
         Assert.Equivalent(new ObservabilityOptions(), Bound<ObservabilityOptions>(ObservabilityOptions.SectionName), strict: true);
 
         Assert.Equivalent(new LobbyOptions(), Bound<LobbyOptions>(LobbyOptions.SectionName), strict: true);
+        Assert.Equivalent(new LibraryBroadcastsOptions(), Bound<LibraryBroadcastsOptions>(LibraryBroadcastsOptions.SectionName), strict: true);
         // News lists its feeds in the file (the code default is empty: the binder appends onto arrays); the rest must match.
         NewsOptions news = Bound<NewsOptions>(NewsOptions.SectionName);
         Assert.Equivalent(new NewsOptions { Feeds = news.Feeds }, news, strict: true);

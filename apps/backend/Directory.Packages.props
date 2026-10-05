@@ -43,6 +43,8 @@
     <PackageVersion Include="Pyroscope.OpenTelemetry" Version="0.5.1" />
     <PackageVersion Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
     <PackageVersion Include="Npgsql.OpenTelemetry" Version="10.0.3" />
+    <!-- lichess broadcast files are zstd (broadcast-explorer D2); MIT, pure C# -->
+    <PackageVersion Include="ZstdSharp.Port" Version="0.8.8" />
     <!-- tests -->
     <PackageVersion Include="Akka.TestKit.Xunit2" Version="1.5.71" />
     <PackageVersion Include="Akka.Persistence.TestKit" Version="1.5.71" />

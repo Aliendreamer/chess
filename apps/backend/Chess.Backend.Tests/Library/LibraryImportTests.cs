@@ -101,6 +101,26 @@ public sealed class LibraryImportTests
     }
 
     [Fact]
+    public void Positions_can_be_capped_while_every_move_is_kept()
+    {
+        string[] shuffle = [.. Enumerable.Repeat<string[]>(["g1f3", "g8f6", "f3g1", "f6g8"], 22).SelectMany(m => m), "e2e4", "e7e5"];
+        ImportSource capped = Source with { MaxPositionPly = 40 };
+
+        PreparedGame game = Assert.IsType<PreparedGame>(LibraryImport.Prepare(Game(shuffle), capped, Openings, Now));
+
+        Assert.Equal((90, 90, 41), (game.Game.Ply, game.Game.MovesUci.Count, game.Positions.Count));
+        Assert.Equal((40, shuffle[40]), (game.Positions[^1].Ply, game.Positions[^1].NextUci));
+    }
+
+    [Fact]
+    public void A_game_may_name_its_own_source_reference()
+    {
+        PreparedGame game = Assert.IsType<PreparedGame>(LibraryImport.Prepare(Game("e2e4") with { SourceRef = "https://lichess.org/x" }, Source, Openings, Now));
+
+        Assert.Equal("https://lichess.org/x", game.Game.SourceRef);
+    }
+
+    [Fact]
     public void Play_continues_past_an_unclaimed_repetition()
     {
         // Knights out and back three times: a threefold repetition nobody claimed, then the game goes on.

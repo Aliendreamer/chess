@@ -76,6 +76,7 @@
     <PackageReference Include="Pyroscope.OpenTelemetry" />
     <PackageReference Include="Serilog.Sinks.OpenTelemetry" />
     <PackageReference Include="Npgsql.OpenTelemetry" />
+    <PackageReference Include="ZstdSharp.Port" />
   </ItemGroup>
 
   <ItemGroup>

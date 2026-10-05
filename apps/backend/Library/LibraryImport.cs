@@ -16,10 +16,15 @@ internal sealed record ImportGame(
     string Result,
     string? Eco,
     IReadOnlyList<string> Moves,
-    string? StartFen);
+    string? StartFen,
+    string? SourceRef = null);
 
-/// <summary>Where a batch of games came from and under which terms; every game of the batch carries it.</summary>
-internal sealed record ImportSource(string Source, string Licence, string? SourceRef, bool WorldChampionship);
+/// <summary>
+/// Where a batch of games came from and under which terms; every game of the batch carries it, and a game's own
+/// <see cref="ImportGame.SourceRef"/> wins over the batch's. <see cref="MaxPositionPly"/> caps the positions stored per
+/// game (every move is still kept): broadcasts index their openings only (broadcast-explorer D7).
+/// </summary>
+internal sealed record ImportSource(string Source, string Licence, string? SourceRef, bool WorldChampionship, int? MaxPositionPly = null);
 
 internal abstract record ImportOutcome;
 
@@ -79,7 +84,11 @@ internal static class LibraryImport
             }
 
             LibraryPosition position = Position(rules, id, i + 1, game, source);
-            positions.Add(position);
+            if (i + 1 <= (source.MaxPositionPly ?? int.MaxValue))
+            {
+                positions.Add(position);
+            }
+
             if (openings.TryGetValue(position.PositionKey, out Opening? named))
             {
                 opening = named;
@@ -106,7 +115,7 @@ internal static class LibraryImport
                 Ply = game.Moves.Count,
                 Source = source.Source,
                 Licence = source.Licence,
-                SourceRef = source.SourceRef,
+                SourceRef = Clean(game.SourceRef) ?? source.SourceRef,
                 DedupeKey = DedupeKey(game.White, game.Black, year, game.Moves),
                 CreatedAt = now,
             },

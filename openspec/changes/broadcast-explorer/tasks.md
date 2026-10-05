@@ -14,14 +14,14 @@
 
 ## 2. Reading broadcast files
 
-- [ ] 2.1 Add `ZstdSharp.Port` (exact pin) and a decoding stream that steps over skippable frames. Failing unit test:
-      a committed multi-frame fixture (synthetic PGN, made once with `pzstd`, a few hundred bytes) decodes to the
-      whole text; without the frame skipping it stops after the skippable frame.
-- [ ] 2.2 `Library/Pgn` reader (pure, one game at a time from a `TextReader`). Failing tests: - headers parsed; - `{ [%eval 0.19] [%clk 1:28:26] }`, `;` comments, `(…)` variations and `$1` NAGs skipped; - SAN turned to UCI through `ChessRules.TryApplySan`; - an illegal SAN refuses that game with its index and the next game still reads.
-- [ ] 2.3 `BroadcastFilter` + `LibraryBroadcastsOptions` (`AddSettings`, defaults in `Config/appsettings.json`,
+- [x] 2.1 Add `ZstdSharp.Port` (exact pin) and a decoding stream that steps over skippable frames. Failing unit test:
+      a multi-frame file built in the test (pzstd's layout: skippable frame + zstd frame, twice) decodes to the whole
+      text. ZstdSharp steps over skippable frames itself; checked on 2021-06 (6,629 games, as lichess counts).
+- [x] 2.2 `Library/Pgn` reader (pure, one game at a time from a `TextReader`). Failing tests: - headers parsed; - `{ [%eval 0.19] [%clk 1:28:26] }`, `;` comments, `(…)` variations and `$1` NAGs skipped; - SAN turned to UCI through `ChessRules.TryApplySan`; - an illegal SAN refuses that game with its index and the next game still reads.
+- [x] 2.3 `BroadcastFilter` + `LibraryBroadcastsOptions` (`AddSettings`, defaults in `Config/appsettings.json`,
       `SettingsTests` green). Failing table tests: - Elo 2450/2310 → out; Elo missing → out; - `3+2` → out; `90+30`, `90min/40moves + 30min + 30sec/move`, `1:30:30`, `5400+30` and no time control → in;
       `600` (seconds) → in; `5+0` → out; - Chess960, `FEN`, `*` → out.
-- [ ] 2.4 `LibraryImport.Prepare` takes `maxPositionPly`. Failing test: a 90-ply game capped at 40 keeps 41 positions
+- [x] 2.4 `LibraryImport.Prepare` takes `maxPositionPly`. Failing test: a 90-ply game capped at 40 keeps 41 positions
       and all 90 moves. Broadcast headers map as in the design: Event = BroadcastName, SourceRef = GameURL, WC false.
       Commit: `feat(backend): read lichess broadcast files`.
 
