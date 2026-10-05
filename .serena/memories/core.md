@@ -138,3 +138,12 @@ wants network (edge.openspec.dev) and fails inside the agent sandbox.
 
 See `mem:tech_stack`, `mem:suggested_commands`, `mem:conventions`, `mem:task_completion`,
 `mem:agent_workflow` (what the user does NOT want agents to do; sandbox limits and workarounds).
+
+## 2026-10-05 — four follow-ups proposed (owner's answers), live-home confirmed
+
+`openspec/changes/`: `engine-game-abandonment` (built: a person a minute away from an engine game loses by
+Abandonment; the deadline sweep wakes quiet untimed games), `stockfish-pinned-download`, `broadcast-explorer` (lichess
+broadcasts, CC BY-SA 4.0; default filter 2400+/no blitz still the owner's to confirm), `study-repertoire-trainer`.
+Order agreed: abandonment → stockfish → broadcasts → repertoire. pnpm is not on the agent's PATH: `corepack pnpm` works
+(a shim in the session scratchpad lets the husky hooks run). Actor tests with virtual time: two timers due at the same
+instant re-arm each other at zero delay, which the TestScheduler only fires on the next Advance — keep test timings apart.

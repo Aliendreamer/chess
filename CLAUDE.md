@@ -257,7 +257,10 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   scale; `Games/EngineLevel`), and `GameCreated`/`CreateGame` carry an optional `EnginePlayer(side,
 level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or increment; never a preset, so not in the
   queue or invites; the first-move abort only while a person is to move; idle passivation after
-  `Akka:UntimedIdleMinutes`), ignore presence (no abandonment) and refuse draw offers. `Engine/`:
+  `Akka:UntimedIdleMinutes`) and refuse draw offers. Presence counts only the person, from their first move, reported
+  or not (engine-game-abandonment): a minute away ends the game, the engine winning by `Abandonment` (no claim), and the
+  `DeadlineSweeper` also wakes untimed games quiet for `UntimedIdleMinutes` so a game nobody is at still ends. The
+  engine's stall timer is due from the start of its turn (`_stallDue`), so presence re-arming never pushes it back. `Engine/`:
   `EngineRequestConsumer` (on `game.events`, watermark on its `engine_games` row, kept after the end) produces to
   `engine.moves.requests` whenever the engine is to move, with a think time from `Engine:MinThinkMs`–`MaxThinkMs`
   (5–10 s); the worker (`apps/engine`, one Stockfish process + consumer per `Engine:Processes`, commit after produce)

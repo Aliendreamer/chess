@@ -41,5 +41,5 @@
 
 ## 4. Docs
 
-- [ ] 4.1 CLAUDE.md (engine-play note: presence and abandonment in engine games, the sweep), ROADMAP Part 5 (the
+- [x] 4.1 CLAUDE.md (engine-play note: presence and abandonment in engine games, the sweep), ROADMAP Part 5 (the
       live-home open note settled) and Part 2, Serena memory. Commit: `docs(repo): engine-game-abandonment`.
