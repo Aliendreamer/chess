@@ -68,7 +68,8 @@ internal static class LibraryImport
         // No automatic endings (as in studies): a repetition or fifty moves end a real game only when a player claims
         // them, and famous games went on past unclaimed ones. Checkmate and stalemate still end it.
         ChessRules rules = ChessRules.ForStudy(StandardStart) ?? throw new InvalidOperationException("The start position did not load.");
-        List<LibraryPosition> positions = [];
+        // Every position from the start (ply 0), each with the move played from it (broadcast-explorer D6).
+        List<LibraryPosition> positions = [Position(rules, id, 0, game, source)];
         Opening? opening = null;
         for (int i = 0; i < game.Moves.Count; i++)
         {
@@ -77,9 +78,9 @@ internal static class LibraryImport
                 return new RefusedGame($"Illegal move {i + 1} ({game.Moves[i]}): {rejected.Reason}");
             }
 
-            string key = PositionKey.Of(rules.Fen) ?? throw new InvalidOperationException("The rules library produced no position.");
-            positions.Add(new LibraryPosition { PositionKey = key, GameId = id, Ply = i + 1 });
-            if (openings.TryGetValue(key, out Opening? named))
+            LibraryPosition position = Position(rules, id, i + 1, game, source);
+            positions.Add(position);
+            if (openings.TryGetValue(position.PositionKey, out Opening? named))
             {
                 opening = named;
             }
@@ -111,6 +112,16 @@ internal static class LibraryImport
             },
             positions);
     }
+
+    private static LibraryPosition Position(ChessRules rules, Guid id, int ply, ImportGame game, ImportSource source) => new()
+    {
+        PositionKey = PositionKey.Of(rules.Fen) ?? throw new InvalidOperationException("The rules library produced no position."),
+        GameId = id,
+        Ply = ply,
+        NextUci = ply < game.Moves.Count ? game.Moves[ply] : null,
+        Result = game.Result,
+        Source = source.Source,
+    };
 
     /// <summary>The year of a PGN date (<c>1886.??.??</c> → 1886); null when it has none.</summary>
     public static int? YearOf(string? date) =>

@@ -1,11 +1,12 @@
 ## 1. Explorer counts in SQL (before any new data)
 
-- [ ] 1.1 Migration `./build_migration.sh "LibraryPositionNextMove"`: - `library_positions` gains `next_uci` (null), `result` and `source`, plus ply-0 rows. - The covering index `(position_key) include (next_uci, result, source, game_id, ply)`. - Backfill SQL from `library_games.moves_uci`.
+- [x] 1.1 Migration `./build_migration.sh "LibraryPositionNextMove"`: - `library_positions` gains `next_uci` (null), `result` and `source`, plus ply-0 rows. - The covering index `(position_key) include (next_uci, result, source, game_id, ply)`. - Backfill SQL from `library_games.moves_uci`.
 
       `LibraryImport.Prepare` writes ply 0 and the new columns. Failing unit test first: a 3-ply game yields 4
       positions, ply 0 with `next_uci` = move 1, the last one with null; today it yields 3 with no next move.
 
-- [ ] 1.2 The explorer endpoint counts with the `distinct on (game_id)` + `group by next_uci` query, and the games list
+- [x] 1.2 The explorer endpoint counts with a first-visit (`NOT EXISTS` an earlier ply) + `group by next_uci` LINQ query
+      (unit-tested in memory; the SQL runs in the existing `LibraryFlowTests`), and the games list
       is limited to 50 in SQL. The start-position special case is removed.
       🐳 Integration test (`nx integration-test backend`), red against the old in-memory code only through its new
       assertion: three games after 1.e4 give e7e5 2 (1/1/0) and c7c5 1 (0/0/1); the start position lists every first

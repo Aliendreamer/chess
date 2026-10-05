@@ -281,9 +281,28 @@ namespace Chess.Backend.Data.Migrations
                     b.Property<int>("Ply")
                         .HasColumnType("integer");
 
+                    b.Property<string>("NextUci")
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.HasKey("PositionKey", "GameId", "Ply");
 
                     b.HasIndex("GameId");
+
+                    b.HasIndex("PositionKey")
+                        .HasDatabaseName("IX_library_positions_explorer");
+
+                    NpgsqlIndexBuilderExtensions.IncludeProperties(b.HasIndex("PositionKey"), new[] { "NextUci", "Result", "Source", "GameId", "Ply" });
 
                     b.ToTable("library_positions", (string)null);
                 });

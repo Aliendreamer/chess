@@ -53,8 +53,8 @@ internal sealed record LibraryCursor(int Year, Guid Id)
     }
 }
 
-/// <summary>A library game at a position: its moves, how many were played to get there, how it ended.</summary>
-internal sealed record GameAtPosition(IReadOnlyList<string> Moves, int Ply, string Result);
+/// <summary>A library game at a position and the ply of its first visit there.</summary>
+internal sealed record GameAtPosition(LibraryGame Game, int Ply);
 
 /// <summary>A move played from a position in the library, with how those games ended (library-explorer).</summary>
 internal sealed record ExplorerMove(string Uci, int Games, int WhiteWins, int Draws, int BlackWins);
@@ -128,15 +128,55 @@ internal static class LibraryReads
         return games.OrderByDescending(g => g.Year ?? -1).ThenByDescending(g => g.Id).Take(limit + 1);
     }
 
-    /// <summary>The moves played next from a position, most played first; a game that ends there adds nothing.</summary>
-    public static IReadOnlyList<ExplorerMove> Explore(IEnumerable<GameAtPosition> games) =>
-        [.. games
-            .Where(g => g.Ply < g.Moves.Count)
-            .GroupBy(g => g.Moves[g.Ply], StringComparer.Ordinal)
-            .Select(m => new ExplorerMove(
-                m.Key, m.Count(), m.Count(g => g.Result == "1-0"), m.Count(g => g.Result == "1/2-1/2"), m.Count(g => g.Result == "0-1")))
+    /// <summary>
+    /// Each game's first visit to a position (broadcast-explorer D6): a game that passes through it twice (a repetition)
+    /// counts once, with the move it played the first time. Answered from the covering index on the position key.
+    /// </summary>
+    public static IQueryable<LibraryPosition> FirstVisits(IQueryable<LibraryPosition> positions, string key)
+    {
+        ArgumentNullException.ThrowIfNull(positions);
+        return positions.Where(p => p.PositionKey == key
+            && !positions.Any(q => q.PositionKey == key && q.GameId == p.GameId && q.Ply < p.Ply));
+    }
+
+    /// <summary>
+    /// How the games at a position ended, and the moves played next, most played first, counted in the database
+    /// (library-explorer, broadcast-explorer D6); a game that ends there counts in the totals but adds no move.
+    /// </summary>
+    public static async Task<(PositionCounts Counts, IReadOnlyList<ExplorerMove> Moves)> ExploreAsync(
+        IQueryable<LibraryPosition> positions, string key, CancellationToken ct)
+    {
+        var groups = await FirstVisits(positions, key)
+            .GroupBy(p => p.NextUci)
+            .Select(g => new
+            {
+                Uci = g.Key,
+                Games = g.Count(),
+                WhiteWins = g.Count(p => p.Result == "1-0"),
+                Draws = g.Count(p => p.Result == "1/2-1/2"),
+                BlackWins = g.Count(p => p.Result == "0-1"),
+            })
+            .ToListAsync(ct);
+        PositionCounts counts = new(groups.Sum(g => g.Games), groups.Sum(g => g.WhiteWins), groups.Sum(g => g.Draws), groups.Sum(g => g.BlackWins));
+        List<ExplorerMove> moves = [.. groups
+            .Where(g => g.Uci is not null)
+            .Select(g => new ExplorerMove(g.Uci!, g.Games, g.WhiteWins, g.Draws, g.BlackWins))
             .OrderByDescending(m => m.Games)
             .ThenBy(m => m.Uci, StringComparer.Ordinal)];
+        return (counts, moves);
+    }
+
+    /// <summary>The first <paramref name="limit"/> games at a position, newest year first, limited in the database.</summary>
+    public static async Task<IReadOnlyList<GameAtPosition>> GamesAtAsync(
+        IQueryable<LibraryPosition> positions, IQueryable<LibraryGame> games, string key, int limit, CancellationToken ct) =>
+        await FirstVisits(positions, key)
+            .Join(games, p => p.GameId, g => g.Id, (p, g) => new { p.Ply, Game = g })
+            .OrderByDescending(r => r.Game.Year ?? -1)
+            .ThenBy(r => r.Game.White)
+            .ThenBy(r => r.Game.Id)
+            .Take(limit)
+            .Select(r => new GameAtPosition(r.Game, r.Ply))
+            .ToListAsync(ct);
 
     public static PositionCounts Count(IReadOnlyCollection<string> results)
     {

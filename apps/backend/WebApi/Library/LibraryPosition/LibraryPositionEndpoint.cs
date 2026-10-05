@@ -12,8 +12,6 @@ internal sealed class LibraryPositionEndpoint(ReadDbContext read) : Endpoint<Lib
 {
     private const int Shown = 50;
 
-    private static readonly string StartKey = PositionKey.Of("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")!;
-
     public override void Configure()
     {
         Get("library/positions");
@@ -31,23 +29,9 @@ internal sealed class LibraryPositionEndpoint(ReadDbContext read) : Endpoint<Lib
         HttpContext.Response.Headers[HeaderNames.CacheControl] = LibraryHttp.CacheControl;
         try
         {
-            // A game may pass through a position twice (a repetition): it counts once, at its first visit. The start
-            // position is not stored (every game has it): there every game counts, at ply 0.
-            var rows = req.Key == StartKey
-                ? await read.LibraryGames.Select(g => new { Ply = 0, Game = g }).ToListAsync(ct)
-                : await read.LibraryPositions
-                    .Where(p => p.PositionKey == req.Key)
-                    .GroupBy(p => p.GameId)
-                    .Select(g => new { GameId = g.Key, Ply = g.Min(p => p.Ply) })
-                    .Join(read.LibraryGames, p => p.GameId, g => g.Id, (p, g) => new { p.Ply, Game = g })
-                    .ToListAsync(ct);
-            PositionCounts counts = LibraryReads.Count([.. rows.Select(r => r.Game.Result)]);
-            List<PositionGame> items = [.. rows
-                .OrderByDescending(r => r.Game.Year ?? -1)
-                .ThenBy(r => r.Game.White, StringComparer.Ordinal)
-                .Take(Shown)
+            (PositionCounts counts, IReadOnlyList<ExplorerMove> moves) = await LibraryReads.ExploreAsync(read.LibraryPositions, req.Key, ct);
+            List<PositionGame> items = [.. (await LibraryReads.GamesAtAsync(read.LibraryPositions, read.LibraryGames, req.Key, Shown, ct))
                 .Select(r => new PositionGame(r.Game.Id, r.Game.White, r.Game.Black, r.Game.Year, r.Game.Event, r.Game.Result, r.Ply))];
-            IReadOnlyList<ExplorerMove> moves = LibraryReads.Explore(rows.Select(r => new GameAtPosition(r.Game.MovesUci, r.Ply, r.Game.Result)));
             await Send.OkAsync(
                 new LibraryPositionView(counts.Games, counts.WhiteWins, counts.Draws, counts.BlackWins, items, await NamedAsync(req.Key, moves, ct)),
                 ct);

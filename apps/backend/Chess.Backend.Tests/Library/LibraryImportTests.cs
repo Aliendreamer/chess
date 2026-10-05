@@ -36,7 +36,7 @@ public sealed class LibraryImportTests
 
         Assert.Equal(("Fischer, Robert James", "Spassky, Boris V", 1972, "1972.07.23", 4, true), (game.Game.White, game.Game.Black, game.Game.Year, game.Game.DateText, game.Game.Ply, game.Game.WorldChampionship));
         Assert.Equal(("C40", "King's Knight Opening"), (game.Game.Eco, game.Game.OpeningName));
-        Assert.Equal([1, 2, 3, 4], game.Positions.Select(p => p.Ply));
+        Assert.Equal([0, 1, 2, 3, 4], game.Positions.Select(p => p.Ply));
         Assert.Equal(PositionKey.Of(ChessRules.Replay(["e2e4", "e7e5", "g1f3", "b8c6"]).Fen), game.Positions[^1].PositionKey);
         Assert.All(game.Positions, p => Assert.Equal(game.Game.Id, p.GameId));
         Assert.Equal(("PGN Mentor", "moves only (facts)", "WorldChamp1972.pgn"), (game.Game.Source, game.Game.Licence, game.Game.SourceRef));
@@ -84,6 +84,20 @@ public sealed class LibraryImportTests
 
         Assert.Equal(a, b);
         Assert.NotEqual(a, other);
+    }
+
+    [Fact]
+    public void Each_position_from_the_start_carries_the_move_played_next_the_result_and_the_source()
+    {
+        PreparedGame game = Assert.IsType<PreparedGame>(LibraryImport.Prepare(Game("e2e4", "e7e5", "g1f3"), Source, Openings, Now));
+
+        Assert.Equal(
+            [(0, "e2e4"), (1, "e7e5"), (2, "g1f3"), (3, (string?)null)],
+            game.Positions.Select(p => (p.Ply, p.NextUci)));
+        Assert.Equal(PositionKey.Of(ChessRules.NewGame().Fen), game.Positions[0].PositionKey);
+        // The literal the LibraryPositionNextMove migration backfills ply 0 with.
+        Assert.Equal("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -", game.Positions[0].PositionKey);
+        Assert.All(game.Positions, p => Assert.Equal(("1-0", "PGN Mentor"), (p.Result, p.Source)));
     }
 
     [Fact]

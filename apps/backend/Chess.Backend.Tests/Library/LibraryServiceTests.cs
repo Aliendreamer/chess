@@ -26,7 +26,7 @@ public sealed class LibraryServiceTests
         Assert.Equal([0, 1, 2], items.Select(i => i.Index));
         Assert.Contains("e7e4", items[1].Error, StringComparison.Ordinal);
         Assert.Equal(2, await db.LibraryGames.CountAsync());
-        Assert.Equal(3, await db.LibraryPositions.CountAsync());
+        Assert.Equal(5, await db.LibraryPositions.CountAsync()); // each game from its start position (ply 0)
     }
 
     [Fact]
