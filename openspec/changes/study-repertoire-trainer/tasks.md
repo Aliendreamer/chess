@@ -1,29 +1,29 @@
 ## 1. Data
 
-- [ ] 1.1 Migration `TrainerStudyLines`: `trainer_progress."StudyId"` (uuid null, FK `studies` ON DELETE CASCADE),
+- [x] 1.1 Migration `TrainerStudyLines`: `trainer_progress."StudyId"` (uuid null, FK `studies` ON DELETE CASCADE),
       index (UserId, StudyId, Color). Failing test first: a model test asserting the FK and its cascade on
       `TrainerProgress` fails (no `StudyId`). Implement; `./build_migration.sh "TrainerStudyLines"`. The cascade
       itself is proven in 3.4.
 
 ## 2. Lines from a study (pure)
 
-- [ ] 2.1 Failing unit tests for `Trainer/StudyLines`: main line first then variations in tree order; replies for the
+- [x] 2.1 Failing unit tests for `Trainer/StudyLines`: main line first then variations in tree order; replies for the
       other side become separate lines; member-side alternatives become separate lines; a path with no move for the side
       is skipped; the key is stable when variations are reordered or promoted and changes when a move changes or the line
       is extended; a non-standard start FEN. Failure looks like: `StudyLines` does not exist. Implement.
 
 ## 3. Service and API
 
-- [ ] 3.1 Failing unit tests for `TrainerService` study methods: only the owner's study (shared → null/404); lines with
+- [x] 3.1 Failing unit tests for `TrainerService` study methods: only the owner's study (shared → null/404); lines with
       box and due; next uses `TrainerSchedule.Next` over the study's lines; a result for a line not in the study is
       refused; `MineAsync` ignores rows with a `StudyId`. Implement.
-- [ ] 3.2 Failing unit test: `StudyService.UpdateAsync` removes the owner's progress rows whose keys are no longer lines
+- [x] 3.2 Failing unit test: `StudyService.UpdateAsync` removes the owner's progress rows whose keys are no longer lines
       of the saved tree and keeps the rest. Implement in the same `SaveChanges`.
-- [ ] 3.3 `WebApi/Trainer/` `ListStudies`, `GetStudy`, `NextStudyLine`, `RecordStudyResult` (validators: id is a Guid,
+- [x] 3.3 `WebApi/Trainer/` `ListStudies`, `GetStudy`, `NextStudyLine`, `RecordStudyResult` (validators: id is a Guid,
       color white|black, mistakes ≥ 0; `no-store`; page size from `ApiOptions`; the POST has a body). `dotnet build`
       warning-clean (`-m:1 -nr:false -p:EnableSourceControlManagerQueries=false` in the sandbox); unit tests pass.
       Commit: `feat(backend): drill your own studies in the trainer`.
-- [ ] 3.4 🐳 Integration test (`pnpm exec nx integration-test backend`, human-run in the sandbox): a member creates a
+- [ ] 3.4 🐳 Integration test `TrainerStudyFlowTests` (written; `pnpm exec nx integration-test backend`, human-run in the sandbox): a member creates a
       study with a variation, drills it (clean, missed), promotes the variation (progress kept), extends a line (old row
       gone), deletes the study (rows gone); another member gets 404.
 

@@ -186,4 +186,26 @@ public sealed class StudyServiceTests
             Assert.Equal(StatusCodes.Status404NotFound, (await service.FromGameAsync(Guid.CreateVersion7(), Bob, CancellationToken.None)).Status);
         }
     }
+
+    [Fact]
+    public async Task Saving_a_study_drops_the_trainer_progress_of_lines_it_no_longer_has()
+    {
+        (ProjectDbContext db, StudyService service) = Build();
+        using (db)
+        {
+            StudyView study = await CreatedAsync(service); // 1.e4 e5: one line
+            const string Start = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            string kept = Chess.Backend.Trainer.StudyLines.Of(Start, study.Tree, "white").Single().Key;
+            db.TrainerProgress.AddRange(
+                new TrainerProgress { UserId = Ann, LineKey = kept, Color = "white", StudyId = study.Id, Box = 2 },
+                new TrainerProgress { UserId = Ann, LineKey = "study:gone", Color = "black", StudyId = study.Id, Box = 1 },
+                new TrainerProgress { UserId = Ann, LineKey = "named-line", Color = "white", Box = 4 });
+            await db.SaveChangesAsync();
+
+            // A variation added: the old line is unchanged and keeps its progress; the made-up one goes.
+            await service.UpdateAsync(study.Id, Ann, "Ruy", [M("e2e4", M("e7e5"), M("c7c5"))], study.Version, CancellationToken.None);
+
+            Assert.Equal(["named-line", kept], db.TrainerProgress.AsNoTracking().Select(p => p.LineKey).AsEnumerable().Order(StringComparer.Ordinal));
+        }
+    }
 }

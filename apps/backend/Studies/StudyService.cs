@@ -165,6 +165,7 @@ internal sealed class StudyService(ProjectDbContext context, ILogger<StudyServic
 
         study.Title = Clip(title.Trim(), 200)!;
         study.Tree = JsonSerializer.Serialize(completed, Json);
+        await DropStaleTrainingAsync(study, completed!, ct);
         return await SaveAsync(study, userId, ct);
     }
 
@@ -228,6 +229,17 @@ internal sealed class StudyService(ProjectDbContext context, ILogger<StudyServic
             : StudyOutcome<StudyView>.Invalid(created.Value?.Refused is [ImportRefusal first, ..] ? first.Error : "The game could not become a study.");
     }
 
+    /// <summary>
+    /// The owner's trainer progress for lines the saved tree no longer has, either side, goes in the same save
+    /// (study-repertoire-trainer D4); unchanged lines keep theirs.
+    /// </summary>
+    private async Task DropStaleTrainingAsync(Study study, IReadOnlyList<StudyMove> tree, CancellationToken ct)
+    {
+        HashSet<string> lines = [.. ((string[])["white", "black"]).SelectMany(c => Trainer.StudyLines.Of(study.StartFen, tree, c)).Select(l => l.Key)];
+        List<TrainerProgress> rows = await Context.TrainerProgress.Where(p => p.UserId == study.OwnerId && p.StudyId == study.Id).ToListAsync(ct);
+        Context.TrainerProgress.RemoveRange(rows.Where(r => !lines.Contains(r.LineKey)));
+    }
+
     private Task<Study?> OwnedAsync(Guid id, long userId, CancellationToken ct) =>
         Context.Studies.SingleOrDefaultAsync(s => s.Id == id && s.OwnerId == userId, ct);
 
@@ -254,7 +266,7 @@ internal sealed class StudyService(ProjectDbContext context, ILogger<StudyServic
             study.OwnerId == userId, study.CreatedAt, study.UpdatedAt);
     }
 
-    private static List<StudyMove> TreeOf(Study study) => JsonSerializer.Deserialize<List<StudyMove>>(study.Tree, Json) ?? [];
+    internal static List<StudyMove> TreeOf(Study study) => JsonSerializer.Deserialize<List<StudyMove>>(study.Tree, Json) ?? [];
 
     private static StudyListItem ToListItem(Study s) => new(s.Id, s.Title, s.White, s.Black, s.Shared, s.CreatedAt, s.UpdatedAt);
 

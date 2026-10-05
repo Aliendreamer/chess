@@ -12,6 +12,15 @@ internal sealed record RunResult(string LineKey, int Box, DateTimeOffset DueAt, 
 /// <summary>The family a member has trained from one side.</summary>
 internal sealed record TrainedFamily(string Name, string Color, int Lines, int Learned);
 
+/// <summary>One of the member's studies with how many of its lines they have learned from one side.</summary>
+internal sealed record StudyTraining(Guid Id, string Title, int Lines, int Learned, DateTimeOffset CreatedAt);
+
+/// <summary>A study line with the member's state for one side (box null: never trained).</summary>
+internal sealed record StudyLineProgress(string Key, IReadOnlyList<string> Moves, int? Box, DateTimeOffset? DueAt);
+
+/// <summary>A study to drill: its start and its lines in tree order.</summary>
+internal sealed record StudyDrill(Guid Id, string Title, string StartFen, IReadOnlyList<StudyLineProgress> Lines);
+
 /// <summary>The opening list grouped once per process (it is fixed at startup); see <see cref="OpeningFamilies"/>.</summary>
 internal sealed class OpeningFamiliesCache(IServiceScopeFactory scopes) : IDisposable
 {
@@ -61,6 +70,18 @@ internal interface ITrainerService : IService
 
     /// <summary>The families the member has trained, per side.</summary>
     Task<IReadOnlyList<TrainedFamily>> MineAsync(long userId, CancellationToken ct);
+
+    /// <summary>The member's own studies, newest first, with their lines for one side (study-repertoire-trainer D10).</summary>
+    Task<CursorPage<StudyTraining>> StudiesAsync(long userId, string color, (DateTimeOffset At, Guid Id)? after, int limit, CancellationToken ct);
+
+    /// <summary>The member's own study with its lines; null for another's study, shared or not (D6).</summary>
+    Task<StudyDrill?> StudyAsync(long userId, Guid studyId, string color, CancellationToken ct);
+
+    /// <summary>The study line to drill next, or none with when the next is due; null for another's study.</summary>
+    Task<(StudyLineProgress? Line, DateTimeOffset? NextDueAt)?> StudyNextAsync(long userId, Guid studyId, string color, CancellationToken ct);
+
+    /// <summary>Records a run of a study line; null when the study is not the member's or has no such line now.</summary>
+    Task<RunResult?> RecordStudyAsync(long userId, Guid studyId, string lineKey, string color, int mistakes, CancellationToken ct);
 }
 
 /// <summary>The opening trainer (opening-trainer): the member's progress over <see cref="OpeningFamilies"/>, on the primary.</summary>
@@ -110,19 +131,74 @@ internal sealed class TrainerService(
         return (line is null ? null : With(line, mine.GetValueOrDefault(line.Key)), next.NextDueAt);
     }
 
-    public async Task<RunResult?> RecordAsync(long userId, string lineKey, string color, int mistakes, CancellationToken ct)
+    public async Task<RunResult?> RecordAsync(long userId, string lineKey, string color, int mistakes, CancellationToken ct) =>
+        (await families.GetAsync(ct)).Line(lineKey) is null ? null : await RecordRunAsync(userId, lineKey, color, mistakes, null, ct);
+
+    public async Task<CursorPage<StudyTraining>> StudiesAsync(long userId, string color, (DateTimeOffset At, Guid Id)? after, int limit, CancellationToken ct)
     {
-        if ((await families.GetAsync(ct)).Line(lineKey) is null)
+        List<Study> studies = await Context.Studies.AsNoTracking()
+            .Where(s => s.OwnerId == userId)
+            .NewestFirst(s => s.CreatedAt, s => s.Id, after, limit)
+            .ToListAsync(ct);
+        List<Guid> ids = [.. studies.Select(s => s.Id)];
+        HashSet<string> learned = [.. await Context.TrainerProgress
+            .Where(p => p.UserId == userId && p.Color == color && p.StudyId != null && ids.Contains(p.StudyId.Value) && p.Box >= TrainerSchedule.LearnedBox)
+            .Select(p => p.LineKey)
+            .ToListAsync(ct)];
+        List<StudyTraining> items = studies.ConvertAll(s =>
+        {
+            IReadOnlyList<StudyLine> lines = StudyLines.Of(s.StartFen, Studies.StudyService.TreeOf(s), color);
+            return new StudyTraining(s.Id, s.Title, lines.Count, lines.Count(l => learned.Contains(l.Key)), s.CreatedAt);
+        });
+        return Keyset.ToPage(items, limit, s => new KeysetCursor(s.CreatedAt, s.Id.ToString()));
+    }
+
+    public async Task<StudyDrill?> StudyAsync(long userId, Guid studyId, string color, CancellationToken ct)
+    {
+        if (await OwnStudyAsync(userId, studyId, ct) is not { } study)
         {
             return null;
         }
 
+        IReadOnlyList<StudyLine> lines = StudyLines.Of(study.StartFen, Studies.StudyService.TreeOf(study), color);
+        Dictionary<string, TrainerProgress> mine = await StudyProgressAsync(userId, studyId, color, ct);
+        return new StudyDrill(study.Id, study.Title, study.StartFen, [.. lines.Select(l => With(l, mine.GetValueOrDefault(l.Key)))]);
+    }
+
+    public async Task<(StudyLineProgress? Line, DateTimeOffset? NextDueAt)?> StudyNextAsync(long userId, Guid studyId, string color, CancellationToken ct)
+    {
+        if (await OwnStudyAsync(userId, studyId, ct) is not { } study)
+        {
+            return null;
+        }
+
+        IReadOnlyList<StudyLine> lines = StudyLines.Of(study.StartFen, Studies.StudyService.TreeOf(study), color);
+        Dictionary<string, TrainerProgress> mine = await StudyProgressAsync(userId, studyId, color, ct);
+        NextLine next = TrainerSchedule.Next(
+            [.. lines.Select(l => l.Key)],
+            mine.ToDictionary(p => p.Key, p => (p.Value.Box, p.Value.DueAt), StringComparer.Ordinal),
+            clock.GetUtcNow());
+        StudyLine? line = next.Line is null ? null : lines.First(l => l.Key == next.Line);
+        return (line is null ? null : With(line, mine.GetValueOrDefault(line.Key)), next.NextDueAt);
+    }
+
+    public async Task<RunResult?> RecordStudyAsync(long userId, Guid studyId, string lineKey, string color, int mistakes, CancellationToken ct)
+    {
+        // A stale tab after an edit must not write a row for a line the study no longer has (D6).
+        return await OwnStudyAsync(userId, studyId, ct) is { } study
+            && StudyLines.Of(study.StartFen, Studies.StudyService.TreeOf(study), color).Any(l => l.Key == lineKey)
+            ? await RecordRunAsync(userId, lineKey, color, mistakes, studyId, ct)
+            : null;
+    }
+
+    private async Task<RunResult> RecordRunAsync(long userId, string lineKey, string color, int mistakes, Guid? studyId, CancellationToken ct)
+    {
         DateTimeOffset now = clock.GetUtcNow();
         TrainerProgress? row = await Context.TrainerProgress.SingleOrDefaultAsync(p => p.UserId == userId && p.LineKey == lineKey && p.Color == color, ct);
         (int box, DateTimeOffset due) = TrainerSchedule.After(row?.Box, mistakes == 0, now);
         if (row is null)
         {
-            row = new TrainerProgress { UserId = userId, LineKey = lineKey, Color = color };
+            row = new TrainerProgress { UserId = userId, LineKey = lineKey, Color = color, StudyId = studyId };
             Context.TrainerProgress.Add(row);
         }
 
@@ -161,4 +237,15 @@ internal sealed class TrainerService(
 
     private static LineProgress With(TrainerLine line, TrainerProgress? row) =>
         new(line.Key, line.Name, line.Eco, line.Moves, row?.Box, row?.DueAt);
+
+    private static StudyLineProgress With(StudyLine line, TrainerProgress? row) => new(line.Key, line.Moves, row?.Box, row?.DueAt);
+
+    /// <summary>The member's own study: another's is not found, even when shared (D6).</summary>
+    private Task<Study?> OwnStudyAsync(long userId, Guid studyId, CancellationToken ct) =>
+        Context.Studies.AsNoTracking().SingleOrDefaultAsync(s => s.Id == studyId && s.OwnerId == userId, ct);
+
+    private Task<Dictionary<string, TrainerProgress>> StudyProgressAsync(long userId, Guid studyId, string color, CancellationToken ct) =>
+        Context.TrainerProgress.AsNoTracking()
+            .Where(p => p.UserId == userId && p.StudyId == studyId && p.Color == color)
+            .ToDictionaryAsync(p => p.LineKey, StringComparer.Ordinal, ct);
 }

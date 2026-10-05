@@ -688,12 +688,19 @@ namespace Chess.Backend.Data.Migrations
                     b.Property<bool>("LastClean")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("StudyId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("UserId", "LineKey", "Color");
 
+                    b.HasIndex("StudyId");
+
                     b.HasIndex("UserId", "Color", "DueAt");
+
+                    b.HasIndex("UserId", "StudyId", "Color");
 
                     b.ToTable("trainer_progress", (string)null);
                 });
@@ -1034,6 +1041,14 @@ namespace Chess.Backend.Data.Migrations
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Chess.Backend.Data.Models.TrainerProgress", b =>
+                {
+                    b.HasOne("Chess.Backend.Data.Models.Study", null)
+                        .WithMany()
+                        .HasForeignKey("StudyId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 #pragma warning restore 612, 618
         }
