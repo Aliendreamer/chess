@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import type { DeadLetter, ReplayOutcome } from '#/lib/admin'
-import type { ImportAnswer, ImportBatch, ImportGame } from '#/lib/library'
+import type { BroadcastRun, ImportAnswer, ImportBatch, ImportGame } from '#/lib/library'
 import type { CommandOutcome } from '#/lib/games'
 import { IMPORT_BATCH, batches, toImportGame } from '#/lib/library'
 import { parsePgn } from '#/lib/studies'
 import { firstLine } from '#/lib/admin'
-import { Button, ErrorText, buttonClass, useAdoptTyped } from '#/components/ui'
+import { Button, ErrorText, buttonClass, useAdoptTyped, useCommand } from '#/components/ui'
 
 /** The admin screens (admin-screens): parked projection records, each with its error and a Replay. */
 
@@ -250,6 +250,92 @@ export function LibraryImportForm({
           ))}
         </ul>
       ) : null}
+    </div>
+  )
+}
+
+const COUNT = new Intl.NumberFormat('en-GB')
+
+/**
+ * A month of lichess broadcasts into the library (broadcast-explorer D1): pick a published month, start it, and follow
+ * the runs. The server streams the month's file; nothing is uploaded from here.
+ */
+export function BroadcastImportForm({
+  months,
+  runs,
+  onStart,
+}: {
+  months: ReadonlyArray<string>
+  runs: ReadonlyArray<BroadcastRun>
+  onStart: (month: string) => Promise<CommandOutcome<{ runId: string }>>
+}) {
+  const [month, setMonth] = useState(months[0] ?? '')
+  const command = useCommand()
+  return (
+    <div className="flex flex-col gap-3" data-testid="broadcast-import">
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          aria-label="Month"
+          value={month}
+          onChange={(e) => setMonth(e.target.value)}
+          className="rounded-control border border-line-default bg-surface-inset px-3 py-2 font-mono text-fg-primary"
+        >
+          {months.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
+        <Button
+          variant="primary"
+          disabled={command.busy || !month}
+          onClick={() => void command.run(() => onStart(month))}
+        >
+          Import the month
+        </Button>
+      </div>
+      {command.error ? <ErrorText>{command.error}</ErrorText> : null}
+      {runs.length === 0 ? (
+        <p className="m-0 text-sm text-fg-secondary">No month imported yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm" aria-label="Broadcast imports">
+            <thead>
+              <tr className="text-left text-2xs uppercase tracking-wide text-fg-muted">
+                <th className="py-1 pr-3 font-medium">Month</th>
+                <th className="py-1 pr-3 font-medium">State</th>
+                <th className="py-1 pr-3 text-right font-medium">Read</th>
+                <th className="py-1 pr-3 text-right font-medium">Kept</th>
+                <th className="py-1 pr-3 text-right font-medium">Imported</th>
+                <th className="py-1 pr-3 text-right font-medium">Already there</th>
+                <th className="py-1 text-right font-medium">Refused</th>
+              </tr>
+            </thead>
+            <tbody>
+              {runs.map((r) => (
+                <tr key={r.id} className="border-t border-line-divider align-top">
+                  <th scope="row" className="py-1.5 pr-3 text-left font-mono font-normal">
+                    {r.month}
+                  </th>
+                  <td className="py-1.5 pr-3">
+                    <span className={r.state === 'failed' ? 'text-status-loss' : 'text-fg-body'}>
+                      {r.state}
+                    </span>
+                    {r.error ? (
+                      <span className="block text-2xs text-fg-secondary">{r.error}</span>
+                    ) : null}
+                  </td>
+                  {[r.read, r.kept, r.imported, r.duplicate, r.refused].map((n, i) => (
+                    <td key={i} className="py-1.5 pr-3 text-right font-mono text-fg-secondary">
+                      {COUNT.format(n)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

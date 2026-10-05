@@ -77,12 +77,16 @@ describe('PositionPanel', () => {
               event: 'WCh',
               result: '1-0',
               ply: 12,
+              source: 'PGN Mentor',
+              sourceRef: null,
             },
           ],
           moves: [],
         }}
         fen={START}
         onPlay={vi.fn()}
+        source="all"
+        onSource={vi.fn()}
       />,
     )
     expect(screen.getByText('3 games · white 1 · draws 1 · black 1')).toBeTruthy()
@@ -97,6 +101,8 @@ describe('PositionPanel', () => {
         position={{ games: 0, whiteWins: 0, draws: 0, blackWins: 0, items: [], moves: [] }}
         fen={START}
         onPlay={vi.fn()}
+        source="all"
+        onSource={vi.fn()}
       />,
     )
     expect(screen.getByText('No library game reached this position.')).toBeTruthy()
@@ -137,6 +143,8 @@ describe('the explorer (library-explorer)', () => {
         }}
         fen={START}
         onPlay={onPlay}
+        source="all"
+        onSource={vi.fn()}
       />,
     )
     const rows = screen
@@ -149,5 +157,85 @@ describe('the explorer (library-explorer)', () => {
     ).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Play e4' }))
     expect(onPlay).toHaveBeenCalledWith('e2e4')
+  })
+})
+
+describe('the explorer by source (broadcast-explorer)', () => {
+  const broadcastGame = {
+    id: 'b1',
+    white: 'Carlsen',
+    black: 'Nepomniachtchi',
+    year: 2026,
+    event: 'Synthetic Open',
+    result: '1-0',
+    ply: 3,
+    source: 'lichess broadcasts',
+    sourceRef: 'https://lichess.org/broadcast/s/r/abc',
+  }
+  const position = {
+    games: 1,
+    whiteWins: 1,
+    draws: 0,
+    blackWins: 0,
+    items: [broadcastGame],
+    moves: [],
+  }
+
+  it('switches the source and credits what it counts', () => {
+    const onSource = vi.fn()
+    render(
+      <PositionPanel
+        position={position}
+        fen={START}
+        onPlay={vi.fn()}
+        source="all"
+        onSource={onSource}
+      />,
+    )
+    const group = screen.getByRole('group', { name: 'Source' })
+    expect([...group.querySelectorAll('button')].map((b) => b.textContent)).toEqual([
+      'All',
+      'World Championships',
+      'Broadcasts',
+    ])
+    expect(screen.getByRole('button', { name: 'All' }).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: 'Broadcasts' }))
+    expect(onSource).toHaveBeenCalledWith('broadcasts')
+    expect(
+      screen.getByRole('link', { name: 'Lichess broadcasts, CC BY-SA 4.0' }).getAttribute('href'),
+    ).toBe('https://database.lichess.org/#broadcasts')
+    expect(screen.getByRole('link', { name: 'World Championships from PGN Mentor' })).toBeTruthy()
+    expect(screen.getByText(/indexed for their first 20 moves/)).toBeTruthy()
+  })
+
+  it('links a broadcast game to its lichess page', () => {
+    render(
+      <PositionPanel
+        position={position}
+        fen={START}
+        onPlay={vi.fn()}
+        source="broadcasts"
+        onSource={vi.fn()}
+      />,
+    )
+    expect(
+      screen
+        .getByRole('link', { name: 'Carlsen – Nepomniachtchi on lichess' })
+        .getAttribute('href'),
+    ).toBe('https://lichess.org/broadcast/s/r/abc')
+    expect(screen.queryByRole('link', { name: 'World Championships from PGN Mentor' })).toBeNull()
+  })
+
+  it('says nothing about broadcast indexing when only the curated games count', () => {
+    render(
+      <PositionPanel
+        position={position}
+        fen={START}
+        onPlay={vi.fn()}
+        source="wc"
+        onSource={vi.fn()}
+      />,
+    )
+    expect(screen.queryByText(/indexed for their first 20 moves/)).toBeNull()
   })
 })

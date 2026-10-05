@@ -1,7 +1,8 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DeadLetterList, LibraryImportForm } from './admin'
+import { BroadcastImportForm, DeadLetterList, LibraryImportForm } from './admin'
 import type { DeadLetter } from '#/lib/admin'
+import type { BroadcastRun } from '#/lib/library'
 
 afterEach(cleanup)
 
@@ -119,5 +120,57 @@ describe('LibraryImportForm (game-library)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Import to library' }))
     expect(await screen.findByText('No PGN game was found in that text.')).toBeTruthy()
     expect(onImport).not.toHaveBeenCalled()
+  })
+})
+
+describe('BroadcastImportForm', () => {
+  const finished: BroadcastRun = {
+    id: 'r1',
+    month: '2026-08',
+    state: 'finished',
+    read: 48940,
+    kept: 2340,
+    imported: 2300,
+    duplicate: 0,
+    refused: 40,
+    error: null,
+    startedAt: '2026-10-05T10:00:00Z',
+    finishedAt: '2026-10-05T10:04:00Z',
+  }
+
+  it('starts the chosen month and shows what each run did', async () => {
+    const onStart = vi.fn().mockResolvedValue({ ok: true, view: { runId: 'r2' } })
+    render(
+      <BroadcastImportForm months={['2026-09', '2026-08']} runs={[finished]} onStart={onStart} />,
+    )
+    fireEvent.change(screen.getByLabelText('Month'), { target: { value: '2026-08' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Import the month' }))
+    await vi.waitFor(() => expect(onStart).toHaveBeenCalledWith('2026-08'))
+    const row = screen.getByRole('row', { name: /2026-08/ })
+    expect(row.textContent).toContain('finished')
+    expect(row.textContent).toContain('48,940')
+    expect(row.textContent).toContain('2,300')
+  })
+
+  it('shows a refusal, such as another month running', async () => {
+    const onStart = vi.fn().mockResolvedValue({ ok: false, error: 'A month is being imported.' })
+    render(<BroadcastImportForm months={['2026-09']} runs={[]} onStart={onStart} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Import the month' }))
+    expect(await screen.findByRole('alert')).toHaveProperty(
+      'textContent',
+      'A month is being imported.',
+    )
+    expect(screen.getByText('No month imported yet.')).toBeTruthy()
+  })
+
+  it('shows why a run failed', () => {
+    render(
+      <BroadcastImportForm
+        months={['2026-09']}
+        runs={[{ ...finished, state: 'failed', error: 'lichess answered 404 for 2026-08.' }]}
+        onStart={vi.fn()}
+      />,
+    )
+    expect(screen.getByText('lichess answered 404 for 2026-08.')).toBeTruthy()
   })
 })

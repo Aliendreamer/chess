@@ -5,7 +5,7 @@ import { MY_TURN } from '../play'
 import { THINK_LEVELS } from '../analysis'
 import { isPreferences } from '../auth'
 import { isAggregateId, isProjectionGroup } from '../admin'
-import { IMPORT_BATCH, searchQuery } from '../library'
+import { IMPORT_BATCH, isLibrarySource, searchQuery } from '../library'
 import { isColor } from '../trainer'
 import { loadMe, loadPreferences, savePreferences } from './auth'
 import { apiUrl, clientIp, forwardClientIp, isGuid } from './upstream'
@@ -14,7 +14,15 @@ import { telemetryEnabled } from './telemetry'
 import { loadPingLive, sendPing } from './pings'
 import { loadDeadLetters, replayDeadLetters } from './admin'
 import { loadEvents, loadNews, loadNewsSources } from './news'
-import { importLibrary, loadLibrary, loadLibraryGame, loadOpening, loadPosition } from './library'
+import {
+  importLibrary,
+  loadBroadcastRuns,
+  loadLibrary,
+  loadLibraryGame,
+  loadOpening,
+  loadPosition,
+  startBroadcastImport,
+} from './library'
 import { loadPlayer, loadPlayerGames } from './players'
 import { loadFamilies, loadFamily, loadMyTraining, loadNextLine, recordRun } from './trainer'
 import {
@@ -56,7 +64,7 @@ import {
   loadMyGames,
   rematch,
 } from './play'
-import type { ImportBatch, LibrarySearch } from '../library'
+import type { ImportBatch, LibrarySearch, LibrarySource } from '../library'
 import type { Preferences } from '../auth'
 import type { GameCommand } from '../games'
 import type { InviteView, MyTurn } from '../play'
@@ -268,6 +276,7 @@ export const getLibrary = createServerFn({ method: 'GET' })
     if (s.result === '1-0' || s.result === '0-1' || s.result === '1/2-1/2') search.result = s.result
     if (s.wc === true) search.wc = true
     if (typeof s.eco === 'string' && /^[A-Ea-e][0-9]{0,2}$/.test(s.eco)) search.eco = s.eco
+    if (isLibrarySource(s.source)) search.source = s.source
     return searchQuery(search, Math.min(Math.max(Math.trunc(input.limit), 1), 50), input.cursor)
   })
   .handler(({ data }) => loadLibrary(serverFetch(), data))
@@ -277,8 +286,11 @@ export const getLibraryGame = createServerFn({ method: 'GET' })
   .handler(({ data }) => loadLibraryGame(serverFetch(), data))
 
 export const getLibraryPosition = createServerFn({ method: 'GET' })
-  .validator((key: string) => positionKeyOf(key))
-  .handler(({ data }) => loadPosition(serverFetch(), data))
+  .validator((input: { key: string; source: LibrarySource }) => ({
+    key: positionKeyOf(input.key),
+    source: isLibrarySource(input.source) ? input.source : 'all',
+  }))
+  .handler(({ data }) => loadPosition(serverFetch(), data.key, data.source))
 
 export const getOpening = createServerFn({ method: 'GET' })
   .validator((key: string) => positionKeyOf(key))
@@ -299,6 +311,20 @@ export const postImportLibrary = createServerFn({ method: 'POST' })
     return batch
   })
   .handler(({ data }) => importLibrary(serverFetch(), data))
+
+/** The latest lichess broadcast imports (broadcast-explorer; Admin, the API checks the role). */
+export const getBroadcastRuns = createServerFn({ method: 'GET' }).handler(() =>
+  loadBroadcastRuns(serverFetch()),
+)
+
+export const postStartBroadcastImport = createServerFn({ method: 'POST' })
+  .validator((month: string) => {
+    if (typeof month !== 'string' || !/^20\d\d-(0[1-9]|1[0-2])$/.test(month)) {
+      throw new Error('A month as YYYY-MM.')
+    }
+    return month
+  })
+  .handler(({ data }) => startBroadcastImport(serverFetch(), data))
 
 /** Parked projection records (admin-screens); the API answers 403 to anyone without the Admin role. */
 export const getDeadLetters = createServerFn({ method: 'GET' })

@@ -1,6 +1,14 @@
 import { isRedirect } from '@tanstack/react-router'
 import { describe, expect, it } from 'vitest'
-import { importLibrary, loadLibrary, loadLibraryGame, loadOpening, loadPosition } from './library'
+import {
+  importLibrary,
+  loadBroadcastRuns,
+  loadLibrary,
+  loadLibraryGame,
+  loadOpening,
+  loadPosition,
+  startBroadcastImport,
+} from './library'
 
 type Call = { url: string; method: string }
 
@@ -39,6 +47,37 @@ describe('library reads', () => {
     expect(calls.map((c) => c.url)).toEqual([
       `/api/library/positions?key=${encodeURIComponent(KEY)}`,
       `/api/library/openings?key=${encodeURIComponent(KEY)}`,
+    ])
+  })
+
+  it('asks for one source when it is not all', async () => {
+    const calls: Array<Call> = []
+    const empty = { games: 0, whiteWins: 0, draws: 0, blackWins: 0, items: [], moves: [] }
+    await loadPosition(fakeFetch(200, empty, calls), KEY, 'broadcasts')
+    await loadPosition(fakeFetch(200, empty, calls), KEY, 'all')
+    expect(calls.map((c) => c.url)).toEqual([
+      `/api/library/positions?key=${encodeURIComponent(KEY)}&source=broadcasts`,
+      `/api/library/positions?key=${encodeURIComponent(KEY)}`,
+    ])
+  })
+})
+
+describe('broadcast imports', () => {
+  it('lists the runs and starts a month; a busy importer is an outcome', async () => {
+    const calls: Array<Call> = []
+    expect(await loadBroadcastRuns(fakeFetch(200, [], calls))).toEqual([])
+    expect(await startBroadcastImport(fakeFetch(202, { runId: 'r1' }, calls), '2026-08')).toEqual({
+      ok: true,
+      view: { runId: 'r1' },
+    })
+    const busy = await startBroadcastImport(
+      fakeFetch(409, { errors: { generalErrors: ['A month is being imported.'] } }),
+      '2026-07',
+    )
+    expect(busy.ok).toBe(false)
+    expect(calls).toEqual([
+      { url: '/api/admin/library/broadcasts', method: 'GET' },
+      { url: '/api/admin/library/broadcasts', method: 'POST' },
     ])
   })
 })

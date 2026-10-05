@@ -147,7 +147,8 @@ Checked on 2026-10-05:
    - `/library` search takes the same `source`.
 9. **Caching.** Position answers already carry `private, max-age=3600`. A FusionCache entry per `(key, source)` for
    `Library:ExplorerCacheMinutes` (10) is added, because the start position and the first few plies are asked for by
-   every visitor and each one groups up to 120,000 rows.
+   every visitor and each one groups up to 120,000 rows. The entries carry a `library-positions` tag and an import that
+   stores games removes them by tag, so a new game counts at once.
 
 ## Risks / Trade-offs
 

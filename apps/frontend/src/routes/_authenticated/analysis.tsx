@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ParsedGame } from '#/lib/studies'
+import type { LibrarySource } from '#/lib/library'
 import {
   getFinishedGame,
   getLibraryGame,
@@ -23,7 +24,13 @@ import {
   useMoveTree,
 } from '#/lib/studies'
 import { positionKey, useAnalysis } from '#/lib/analysis'
-import { uciLine, useLibraryPosition, useOpeningName } from '#/lib/library'
+import {
+  BROADCAST_SOURCE,
+  isLibrarySource,
+  uciLine,
+  useLibraryPosition,
+  useOpeningName,
+} from '#/lib/library'
 import { PositionPanel } from '#/components/library'
 import { pageTitle } from '#/lib/feedback'
 import { AnalysisBoard } from '#/components/studies'
@@ -43,15 +50,18 @@ import {
 export const Route = createFileRoute('/_authenticated/analysis')({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { fen?: string; game?: string; library?: string; ply?: number } => ({
+  ): { fen?: string; game?: string; library?: string; ply?: number; src?: LibrarySource } => ({
     ...(typeof search['fen'] === 'string' ? { fen: search['fen'] } : {}),
     ...(typeof search['game'] === 'string' ? { game: search['game'] } : {}),
     ...(typeof search['library'] === 'string' ? { library: search['library'] } : {}),
     ...(typeof search['ply'] === 'number' && Number.isInteger(search['ply']) && search['ply'] >= 0
       ? { ply: search['ply'] }
       : {}),
+    // The explorer's source (broadcast-explorer D8); `all` is the default and stays out of the address.
+    ...(isLibrarySource(search['src']) && search['src'] !== 'all' ? { src: search['src'] } : {}),
   }),
-  loaderDeps: ({ search }) => search,
+  // The source only filters the panel: switching it must not reload the board.
+  loaderDeps: ({ search: { fen, game, library, ply } }) => ({ fen, game, library, ply }),
   loader: async ({ deps }) => {
     if (deps.library) {
       const found = await getLibraryGame({ data: deps.library }).catch(() => null)
@@ -71,6 +81,7 @@ export const Route = createFileRoute('/_authenticated/analysis')({
         path: Array.from({ length: plies }, () => 0),
         players: { white: found.game.white, black: found.game.black },
         library: found.game,
+        librarySourceRef: found.sourceRef,
         error: null,
       }
     }
@@ -108,7 +119,8 @@ export const Route = createFileRoute('/_authenticated/analysis')({
 
 /** Defined once, so the hooks' effects do not restart on every render. */
 const loadOpening = (key: string) => getOpening({ data: key })
-const loadPosition = (key: string) => getLibraryPosition({ data: key })
+const loadPosition = (key: string, source: LibrarySource) =>
+  getLibraryPosition({ data: { key, source } })
 
 function AnalysisPage() {
   const start = Route.useLoaderData()
@@ -128,7 +140,8 @@ function Analysis({ start }: { start: ReturnType<typeof Route.useLoaderData> }) 
     positionKey(fenAt(editor.startFen, editor.tree, editor.path.slice(0, i + 1))),
   )
   const opening = useOpeningName(keys, loadOpening)
-  const atPosition = useLibraryPosition(positionKey(editor.fen), loadPosition)
+  const source = Route.useSearch({ select: (search) => search.src ?? 'all' })
+  const atPosition = useLibraryPosition(positionKey(editor.fen), source, loadPosition)
   const analysis = useAnalysis((input) => postAnalysis({ data: input }))
   const navigate = useNavigate()
   const saving = useCommand()
@@ -205,6 +218,18 @@ function Analysis({ start }: { start: ReturnType<typeof Route.useLoaderData> }) 
               const move = playMove(editor.fen, uci)
               if (move) editor.playLine([move])
             }}
+            source={source}
+            onSource={(next) =>
+              void navigate({
+                to: '/analysis',
+                search: (prev) => {
+                  const rest = { ...prev }
+                  delete rest.src
+                  return next === 'all' ? rest : { ...rest, src: next }
+                },
+                replace: true,
+              })
+            }
           />
         ) : null
       }
@@ -225,6 +250,19 @@ function Analysis({ start }: { start: ReturnType<typeof Route.useLoaderData> }) 
               ]
                 .filter(Boolean)
                 .join(' · ')}
+              {start.library.source === BROADCAST_SOURCE && start.librarySourceRef ? (
+                <>
+                  {' · '}
+                  <a
+                    href={start.librarySourceRef}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="text-fg-muted hover:text-fg-accent"
+                  >
+                    the game on lichess
+                  </a>
+                </>
+              ) : null}
             </span>
           ) : null}
           {opening ? (

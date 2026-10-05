@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { LibrarySearch } from '#/lib/library'
+import { LIBRARY_SOURCES, isLibrarySource } from '#/lib/library'
 import { useLoadMore } from '#/lib/play'
 import { getLibrary } from '#/lib/server/api'
 import { pageTitle } from '#/lib/feedback'
@@ -24,6 +25,9 @@ export const Route = createFileRoute('/_authenticated/library')({
       ...(year('to') ? { to: year('to') } : {}),
       ...(result === '1-0' || result === '0-1' || result === '1/2-1/2' ? { result } : {}),
       ...(search['wc'] === true || search['wc'] === 'true' ? { wc: true } : {}),
+      ...(isLibrarySource(search['source']) && search['source'] !== 'all'
+        ? { source: search['source'] }
+        : {}),
     } as LibrarySearch
   },
   loaderDeps: ({ search }) => search,
@@ -82,6 +86,7 @@ function SearchForm({ initial }: { initial: LibrarySearch }) {
     for (const k of ['from', 'to']) if (/^\d{4}$/.test(text(k))) next[k] = Number(text(k))
     if (text('result')) next.result = text('result')
     if (data.get('wc')) next.wc = true
+    if (isLibrarySource(text('source')) && text('source') !== 'all') next.source = text('source')
     void navigate({ to: '/library', search: next as LibrarySearch })
   }
 
@@ -151,6 +156,18 @@ function SearchForm({ initial }: { initial: LibrarySearch }) {
           <option value="1/2-1/2">Draw</option>
           <option value="0-1">Black won</option>
         </select>
+        <select
+          name="source"
+          aria-label="Source"
+          defaultValue={initial.source ?? 'all'}
+          className={FIELD}
+        >
+          {LIBRARY_SOURCES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.value === 'all' ? 'Every source' : s.label}
+            </option>
+          ))}
+        </select>
         <label className="flex items-center gap-2 text-sm text-fg-body">
           <input type="checkbox" name="wc" value="true" defaultChecked={initial.wc ?? false} />
           World Championship only
@@ -169,9 +186,17 @@ function Sources() {
     <Panel variant="quiet" title="About the library" className="gap-2 text-sm text-fg-secondary">
       <p className="m-0">
         Moves and factual headers only — no annotations. Each game names its source and licence.
-        World Championship matches come from PGN Mentor (moves treated as facts); recent title
-        matches from the lichess broadcasts (CC BY-SA 4.0). Opening names: lichess chess-openings
-        (CC0).
+        World Championship matches come from PGN Mentor (moves treated as facts); strong recent
+        games from the{' '}
+        <a
+          href="https://database.lichess.org/#broadcasts"
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          lichess broadcasts
+        </a>{' '}
+        (CC BY-SA 4.0: both players rated 2400 or more, no blitz; indexed for their first 20 moves).
+        Opening names: lichess chess-openings (CC0).
       </p>
     </Panel>
   )

@@ -1,15 +1,21 @@
-import { cleanup, renderHook, waitFor } from '@testing-library/react'
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  BROADCAST_POSITION_MOVES,
   batches,
+  creditsFor,
+  isLibrarySource,
   mainLine,
+  publishedMonths,
   searchQuery,
   toImportGame,
   uciLine,
+  useBroadcastRuns,
   useLibraryPosition,
   useOpeningName,
 } from './library'
 import { parsePgn } from './studies'
+import type { BroadcastRun } from './library'
 
 describe('searchQuery', () => {
   it('sends only the filters that are set', () => {
@@ -17,6 +23,48 @@ describe('searchQuery', () => {
       'limit=20&player=kasparov&from=1984&to=1990&wc=true',
     )
     expect(searchQuery({ player: '  ', eco: 'C67' }, 20, 'abc')).toBe('limit=20&eco=C67&cursor=abc')
+  })
+
+  it('sends a source other than all', () => {
+    expect(searchQuery({ player: 'carlsen', source: 'broadcasts' }, 20)).toBe(
+      'limit=20&player=carlsen&source=broadcasts',
+    )
+    expect(searchQuery({ source: 'all' }, 20)).toBe('limit=20')
+  })
+})
+
+describe('sources', () => {
+  it('knows the three choices', () => {
+    expect(['all', 'wc', 'broadcasts', 'lichess', undefined].map(isLibrarySource)).toEqual([
+      true,
+      true,
+      true,
+      false,
+      false,
+    ])
+  })
+
+  it('credits every source counted, lichess broadcasts with their licence and a link', () => {
+    expect(creditsFor('broadcasts')).toEqual([
+      {
+        label: 'Lichess broadcasts, CC BY-SA 4.0',
+        href: 'https://database.lichess.org/#broadcasts',
+      },
+    ])
+    expect(creditsFor('all').map((c) => c.label)).toEqual([
+      'World Championships from PGN Mentor',
+      'Lichess broadcasts, CC BY-SA 4.0',
+    ])
+    expect(creditsFor('wc')).toHaveLength(1)
+    expect(BROADCAST_POSITION_MOVES).toBe(20)
+  })
+
+  it('lists the published months, newest first, up to last month', () => {
+    const months = publishedMonths(new Date('2026-10-05T12:00:00Z'))
+    expect(months[0]).toBe('2026-09')
+    expect(months.at(-1)).toBe('2020-01')
+    expect(months).toHaveLength(81)
+    expect(publishedMonths(new Date('2026-01-15T00:00:00Z'))[0]).toBe('2025-12')
   })
 })
 
@@ -106,12 +154,63 @@ describe('useLibraryPosition', () => {
   it('asks for the position on the board and keeps the answer per position', async () => {
     const answer = { games: 1, whiteWins: 1, draws: 0, blackWins: 0, items: [], moves: [] }
     const load = vi.fn(() => Promise.resolve(answer))
-    const { result, rerender } = renderHook(({ key }) => useLibraryPosition(key, load), {
-      initialProps: { key: 'k1' },
-    })
+    const { result, rerender } = renderHook(
+      ({ key, source }: { key: string; source: 'all' | 'broadcasts' }) =>
+        useLibraryPosition(key, source, load),
+      { initialProps: { key: 'k1', source: 'all' } },
+    )
     await waitFor(() => expect(result.current).toEqual(answer))
-    rerender({ key: 'k2' })
-    rerender({ key: 'k1' })
+    rerender({ key: 'k2', source: 'all' })
+    rerender({ key: 'k1', source: 'all' })
     await waitFor(() => expect(load).toHaveBeenCalledTimes(2))
+    rerender({ key: 'k1', source: 'broadcasts' })
+    await waitFor(() => expect(load).toHaveBeenCalledTimes(3))
+    expect(load).toHaveBeenLastCalledWith('k1', 'broadcasts')
+  })
+})
+
+describe('useBroadcastRuns', () => {
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+  })
+
+  const run = (state: BroadcastRun['state'], imported = 0): BroadcastRun => ({
+    id: 'r1',
+    month: '2026-08',
+    state,
+    read: 0,
+    kept: 0,
+    imported,
+    duplicate: 0,
+    refused: 0,
+    error: null,
+    startedAt: '2026-10-05T10:00:00Z',
+    finishedAt: null,
+  })
+
+  it('polls while a run is running and stops once none is', async () => {
+    vi.useFakeTimers()
+    const load = vi
+      .fn<() => Promise<Array<BroadcastRun>>>()
+      .mockResolvedValueOnce([run('running', 500)])
+      .mockResolvedValue([run('finished', 900)])
+    const { result } = renderHook(() => useBroadcastRuns([run('running')], load, 2000))
+    await act(() => vi.advanceTimersByTimeAsync(2000))
+    expect(result.current.runs[0]?.imported).toBe(500)
+    await act(() => vi.advanceTimersByTimeAsync(2000))
+    expect(result.current.runs[0]?.state).toBe('finished')
+    await act(() => vi.advanceTimersByTimeAsync(10000))
+    expect(load).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not poll when nothing runs, and refreshes on demand', async () => {
+    vi.useFakeTimers()
+    const load = vi.fn<() => Promise<Array<BroadcastRun>>>().mockResolvedValue([run('running')])
+    const { result } = renderHook(() => useBroadcastRuns([], load, 2000))
+    await act(() => vi.advanceTimersByTimeAsync(6000))
+    expect(load).not.toHaveBeenCalled()
+    await act(() => result.current.refresh())
+    expect(result.current.runs).toHaveLength(1)
   })
 })

@@ -1,12 +1,20 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createFileRoute, notFound, useNavigate, useRouter } from '@tanstack/react-router'
 import type { DeadLetter, ProjectionGroup } from '#/lib/admin'
 import type { CursorPage } from '#/lib/play'
+import type { BroadcastRun } from '#/lib/library'
 import { PROJECTION_GROUPS, isAdmin, isProjectionGroup } from '#/lib/admin'
 import { useLoadMore } from '#/lib/play'
-import { getDeadLetters, postImportLibrary, postReplayDeadLetters } from '#/lib/server/api'
+import {
+  getBroadcastRuns,
+  getDeadLetters,
+  postImportLibrary,
+  postReplayDeadLetters,
+  postStartBroadcastImport,
+} from '#/lib/server/api'
+import { publishedMonths, useBroadcastRuns } from '#/lib/library'
 import { Chip, LoadMore, SectionHeading } from '#/components/ui'
-import { DeadLetterList, LibraryImportForm } from '#/components/admin'
+import { BroadcastImportForm, DeadLetterList, LibraryImportForm } from '#/components/admin'
 import { pageTitle } from '#/lib/feedback'
 
 const PAGE = 50
@@ -25,6 +33,7 @@ export const Route = createFileRoute('/_authenticated/admin')({
     page: await getDeadLetters({
       data: { limit: PAGE, ...(deps.group ? { groupId: deps.group } : {}) },
     }),
+    broadcastRuns: await getBroadcastRuns(),
     // A fresh load (a replay, another filter) starts the pager over.
     loadedAt: Date.now(),
   }),
@@ -33,7 +42,7 @@ export const Route = createFileRoute('/_authenticated/admin')({
 })
 
 function AdminPage() {
-  const { page, loadedAt } = Route.useLoaderData()
+  const { page, loadedAt, broadcastRuns } = Route.useLoaderData()
   const { group } = Route.useSearch()
   const navigate = useNavigate()
   const router = useRouter()
@@ -61,6 +70,16 @@ function AdminPage() {
           shows it. Only moves and factual headers are kept, never annotations.
         </p>
         <LibraryImportForm onImport={(batch) => postImportLibrary({ data: batch })} />
+      </section>
+
+      <section className="flex flex-col gap-3.5" aria-label="Lichess broadcasts">
+        <SectionHeading>Lichess broadcasts</SectionHeading>
+        <p className="m-0 max-w-prose text-sm text-fg-secondary">
+          Import a month of the lichess broadcast games (CC BY-SA 4.0) for the explorer: finished
+          standard games with both players rated 2400 or more, no blitz or bullet, indexed for their
+          first 20 moves. One month at a time; running a month again adds only what is missing.
+        </p>
+        <Broadcasts initial={broadcastRuns} />
       </section>
 
       <SectionHeading>Dead letters</SectionHeading>
@@ -110,5 +129,23 @@ function Letters({
       <DeadLetterList letters={pager.items} onReplay={onReplay} />
       <LoadMore pager={pager} />
     </>
+  )
+}
+
+const loadRuns = () => getBroadcastRuns()
+
+function Broadcasts({ initial }: { initial: Array<BroadcastRun> }) {
+  const { runs, refresh } = useBroadcastRuns(initial, loadRuns)
+  const months = useMemo(() => publishedMonths(new Date()), [])
+  return (
+    <BroadcastImportForm
+      months={months}
+      runs={runs}
+      onStart={async (month) => {
+        const outcome = await postStartBroadcastImport({ data: month })
+        if (outcome.ok) await refresh()
+        return outcome
+      }}
+    />
   )
 }

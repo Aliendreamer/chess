@@ -45,15 +45,15 @@
 
 ## 5. Frontend
 
-- [ ] 5.1 `lib/library.ts`: the source type and its query param, the attribution lines per source (failing vitest
+- [x] 5.1 `lib/library.ts`: the source type and its query param, the attribution lines per source (failing vitest
       first). `lib/server/library.ts` passes `source`, plus the admin runs and start server functions.
-- [ ] 5.2 `/admin` → Game library: a month picker (published range), Start, and the runs table polled every 2 s while a
+- [x] 5.2 `/admin` → Game library: a month picker (published range), Start, and the runs table polled every 2 s while a
       run is running (component test with a fake API). Commit: `feat(frontend): import lichess broadcasts`.
-- [ ] 5.3 The explorer panel's source switch (`?src=`, chips, 44 px under `pointer-coarse`), the attribution lines, and
+- [x] 5.3 The explorer panel's source switch (`?src=`, chips, 44 px under `pointer-coarse`), the attribution lines, and
       the "broadcast games are indexed for the first 20 moves" note.
       `/library` gets the source filter (a plain GET field). A broadcast game's attribution links to its lichess page.
       Component tests. Commit: `feat(frontend): the explorer counts lichess broadcasts`.
-- [ ] 5.4 🐳 Playwright `e2e/library.spec.ts`: with a seeded broadcast game, the switch changes the counts and the
+- [ ] 5.4 🐳 Playwright `e2e/library.spec.ts` (written; human-run): with a broadcast game seeded through the PGN import, the switch changes the counts and the
       credit line appears (`tools/e2e.sh`).
 
 ## 6. Docs and the real import

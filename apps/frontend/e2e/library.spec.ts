@@ -54,3 +54,47 @@ test('an imported game is searched, opened and found at a position', async ({ br
   }).toPass({ timeout: 15_000 })
   await expect(explorer.getByRole('button', { name: 'Play e5' })).toBeVisible()
 })
+
+/**
+ * broadcast-explorer: a game credited to the lichess broadcasts (seeded through the PGN import, since the stack cannot
+ * fetch a month from lichess in a test) is counted under Broadcasts with the CC BY-SA credit, and not under World
+ * Championships; the choice stays in the address.
+ */
+test('the explorer counts one source at a time and credits the lichess broadcasts', async ({
+  browser,
+}) => {
+  test.setTimeout(120_000)
+  const run = Date.now().toString(36)
+  const white = `Broadcaster${run}`
+  const pgn = `[Event "Synthetic Open ${run}"]\n[Date "2026.08.01"]\n[White "${white}"]\n[Black "Opponent"]\n[Result "1-0"]\n\n1. a3 h6 2. h3 a6 3. Nf3 1-0`
+
+  const page = await signedIn(browser, USER)
+  await page.goto('/admin')
+  const form = page.getByTestId('library-import')
+  await expect(async () => {
+    await form.getByRole('textbox', { name: 'Source' }).fill('lichess broadcasts')
+    await expect(form.getByRole('textbox', { name: 'Source' })).toHaveValue('lichess broadcasts', {
+      timeout: 1_000,
+    })
+  }).toPass({ timeout: 15_000 })
+  await form.getByRole('textbox', { name: 'Licence' }).fill('CC BY-SA 4.0')
+  await form.getByRole('textbox', { name: 'PGN' }).fill(pgn)
+  await form.getByRole('button', { name: 'Import to library' }).click()
+  await expect(form.getByText(/Imported 1 · duplicates 0 · refused 0/)).toBeVisible()
+
+  const fen = 'rnbqkbnr/1pppppp1/p6p/8/8/P6P/1PPPPPP1/RNBQKBNR w KQkq - 0 3'
+  await page.goto(`/analysis?fen=${encodeURIComponent(fen)}&src=broadcasts`)
+  const panel = page.getByTestId('library-panel')
+  await expect(panel.getByRole('link', { name: new RegExp(white) })).toBeVisible()
+  await expect(panel.getByRole('button', { name: 'Broadcasts' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(panel.getByRole('link', { name: 'Lichess broadcasts, CC BY-SA 4.0' })).toBeVisible()
+
+  await expect(async () => {
+    await panel.getByRole('button', { name: 'World Championships' }).click()
+    await expect(page).toHaveURL(/src=wc/, { timeout: 1_000 })
+  }).toPass({ timeout: 15_000 })
+  await expect(panel.getByRole('link', { name: new RegExp(white) })).toHaveCount(0)
+})

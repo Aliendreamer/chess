@@ -1,8 +1,14 @@
 import { Link } from '@tanstack/react-router'
-import type { ExplorerMove, LibraryGameItem, LibraryPosition } from '#/lib/library'
+import type { ExplorerMove, LibraryGameItem, LibraryPosition, LibrarySource } from '#/lib/library'
+import {
+  BROADCAST_POSITION_MOVES,
+  BROADCAST_SOURCE,
+  LIBRARY_SOURCES,
+  creditsFor,
+} from '#/lib/library'
 import { scoreShare } from '#/lib/players'
 import { playMove } from '#/lib/studies'
-import { Panel } from '#/components/ui'
+import { Chip, Panel } from '#/components/ui'
 
 /**
  * The game library (game-library): search results, and the games at the analysis board's position. Every game opens
@@ -46,20 +52,32 @@ export function LibraryList({ games }: { games: ReadonlyArray<LibraryGameItem> }
 }
 
 /**
- * "In the library" on the analysis board: the moves played here in the library's games (library-explorer) — click one
- * to play it — then how the games at this position ended, and each one at this move.
+ * "In the library" on the analysis board: which games count (broadcast-explorer: all, the curated ones, or lichess
+ * broadcasts), the moves played here in them (library-explorer) — click one to play it — then how the games at this
+ * position ended, each one at this move, and a credit line per source counted.
  */
 export function PositionPanel({
   position,
   fen,
   onPlay,
+  source,
+  onSource,
 }: {
   position: LibraryPosition
   fen: string
   onPlay: (uci: string) => void
+  source: LibrarySource
+  onSource: (source: LibrarySource) => void
 }) {
   return (
     <Panel variant="outlined" title="In the library" className="gap-2" testId="library-panel">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Source">
+        {LIBRARY_SOURCES.map((s) => (
+          <Chip key={s.value} selected={source === s.value} onClick={() => onSource(s.value)}>
+            {s.label}
+          </Chip>
+        ))}
+      </div>
       {position.moves.length > 0 ? (
         <MovesTable moves={position.moves} fen={fen} onPlay={onPlay} />
       ) : null}
@@ -80,12 +98,43 @@ export function PositionPanel({
                 >
                   {`${g.white} – ${g.black}${g.year ? `, ${g.year}` : ''}`}
                 </Link>
-                <span className="font-mono text-fg-secondary">{RESULT[g.result] ?? g.result}</span>
+                <span className="flex shrink-0 items-baseline gap-2">
+                  {g.source === BROADCAST_SOURCE && g.sourceRef ? (
+                    <a
+                      href={g.sourceRef}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      aria-label={`${g.white} – ${g.black} on lichess`}
+                      className="text-2xs text-fg-secondary hover:text-fg-accent"
+                    >
+                      lichess
+                    </a>
+                  ) : null}
+                  <span className="font-mono text-fg-secondary">
+                    {RESULT[g.result] ?? g.result}
+                  </span>
+                </span>
               </li>
             ))}
           </ul>
         </>
       )}
+      <footer className="flex flex-col gap-0.5 text-2xs text-fg-muted">
+        {creditsFor(source).map((c) => (
+          <a
+            key={c.href}
+            href={c.href}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-fg-muted hover:text-fg-accent"
+          >
+            {c.label}
+          </a>
+        ))}
+        {source !== 'wc' ? (
+          <span>{`Broadcast games are indexed for their first ${BROADCAST_POSITION_MOVES} moves.`}</span>
+        ) : null}
+      </footer>
     </Panel>
   )
 }
