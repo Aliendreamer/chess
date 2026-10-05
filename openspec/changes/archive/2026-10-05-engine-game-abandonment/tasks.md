@@ -28,14 +28,14 @@
 - [x] 2.3 Implement: `DueDeadlines` reads `rm_games` on `ProjectDbContext` (TimeControl `untimed`, Status `playing`,
       `UpdatedAt <= now - UntimedIdle`, oldest first) after the deadline rows; pass `AkkaOptions` timing in. Update the
       `DeadlineSweeper` summary. Commit: `feat(backend): the deadline sweep wakes quiet games against the computer`.
-- [ ] 2.4 🐳 `pnpm exec nx integration-test backend` (human-run in the sandbox): an engine game with a move, its actor
+- [x] 2.4 🐳 `pnpm exec nx integration-test backend` (human-run in the sandbox): an engine game with a move, its actor
       stopped, `rm_games.UpdatedAt` aged → the sweep ends it by abandonment and `rm_games` shows `ended`. Check the
       query plan; add an index only if it scans.
 
 ## 3. Verify on the stack
 
-- [ ] 3.1 🐳 `tools/localdev/verify-part2.sh --quick` still passes (engine games play, restart mid-think).
-- [ ] 3.2 🐳 By hand: start a game against the computer, move, close the tab → after a minute the game page shows
+- [x] 3.1 🐳 `tools/localdev/verify-part2.sh --quick` still passes (engine games play, restart mid-think).
+- [x] 3.2 🐳 By hand: start a game against the computer, move, close the tab → after a minute the game page shows
       "0-1 · Abandonment" and home's in-play count drops; the games stuck before the deploy are gone from `/watch`
       after a few minutes.
 
@@ -43,3 +43,5 @@
 
 - [x] 4.1 CLAUDE.md (engine-play note: presence and abandonment in engine games, the sweep), ROADMAP Part 5 (the
       live-home open note settled) and Part 2, Serena memory. Commit: `docs(repo): engine-game-abandonment`.
+
+Verified 2026-10-05: integration 45/45; verify-part2 --quick passed; on the live stack the sweep ended the 49 stuck engine games (0-1 · Abandonment) within minutes.

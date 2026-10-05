@@ -144,9 +144,11 @@ See `mem:tech_stack`, `mem:suggested_commands`, `mem:conventions`, `mem:task_com
 `openspec/changes/`: `engine-game-abandonment` (built: a person a minute away from an engine game loses by
 Abandonment; the deadline sweep wakes quiet untimed games), `stockfish-pinned-download`, `broadcast-explorer` (lichess
 broadcasts, CC BY-SA 4.0; default filter 2400+/no blitz still the owner's to confirm), `study-repertoire-trainer`.
-Order agreed: abandonment → stockfish → broadcasts → repertoire. Built (2026-10-05, not archived until the owner
-runs the Docker gates): engine-game-abandonment, stockfish-pinned-download, broadcast-explorer,
-study-repertoire-trainer (ZstdSharp reads
+Order agreed: abandonment → stockfish → broadcasts → repertoire. All four built, verified (integration 45/45, e2e 44/44,
+coverage 80.4 %, verify-part2) and archived 2026-10-05: engine-game-abandonment, stockfish-pinned-download,
+broadcast-explorer (2026-08 imported on the local stack), study-repertoire-trainer. The OpenSpec CLI is at
+`~/.nvm/versions/node/v24.12.0/bin/openspec` (not on the default PATH; put that bin dir first). Docker and
+`dotnet format` worked from the agent shell this session (ZstdSharp reads
 pzstd's skippable frames itself; ~1.5 % of kept broadcast games record illegal king moves and are refused). pnpm is not on the agent's PATH: `corepack pnpm` works
 (a shim in the session scratchpad lets the husky hooks run). Actor tests with virtual time: two timers due at the same
 instant re-arm each other at zero delay, which the TestScheduler only fires on the next Advance — keep test timings apart.

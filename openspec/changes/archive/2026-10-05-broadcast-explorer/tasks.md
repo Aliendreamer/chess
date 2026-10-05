@@ -34,7 +34,7 @@
 - [x] 3.2 `WebApi/Admin/ImportBroadcasts/`: POST start (month validator: format, published range → 400; running → 409;
       `Roles(Admin)`) and GET runs. The URL is built from the month only. Commit:
       `feat(backend): import a month of lichess broadcasts`.
-- [ ] 3.3 🐳 Integration test (`BroadcastImportFlowTests`, written; human-run): a synthetic month served in-process in place of lichess → the kept games are imported with
+- [x] 3.3 🐳 Integration test (`BroadcastImportFlowTests`, written; human-run): a synthetic month served in-process in place of lichess → the kept games are imported with
       source, licence and URL; a second run is all duplicates; a non-admin gets 403; "2019-13" gets 400.
 
 ## 4. Sources in the reads
@@ -53,7 +53,7 @@
       the "broadcast games are indexed for the first 20 moves" note.
       `/library` gets the source filter (a plain GET field). A broadcast game's attribution links to its lichess page.
       Component tests. Commit: `feat(frontend): the explorer counts lichess broadcasts`.
-- [ ] 5.4 🐳 Playwright `e2e/library.spec.ts` (written; human-run): with a broadcast game seeded through the PGN import, the switch changes the counts and the
+- [x] 5.4 🐳 Playwright `e2e/library.spec.ts` (written; human-run): with a broadcast game seeded through the PGN import, the switch changes the counts and the
       credit line appears (`tools/e2e.sh`).
 
 ## 6. Docs and the real import
@@ -61,5 +61,7 @@
 - [x] 6.1 `tools/library/SOURCES.md`: the broadcast row (how to import it on `/admin`, the default filter, removal by
       source). `apps/frontend/ATTRIBUTION.md`: lichess broadcasts, CC BY-SA 4.0. Commit:
       `docs(repo): lichess broadcasts as a library source`.
-- [ ] 6.2 👤 Human-run on the live stack: import 2026-08, then check `/analysis` at the start position shows broadcast
+- [x] 6.2 👤 Human-run on the live stack: import 2026-08, then check `/analysis` at the start position shows broadcast
       counts and the credit. Months to import beyond that are the owner's choice.
+
+Verified 2026-10-05: integration 45/45 (BroadcastImportFlowTests); e2e 44/44; real import of 2026-08: 48,940 read, 2,036 kept, 2,033 imported, 1 duplicate, 2 refused; start position all 3,070 = wc 1,037 + broadcasts 2,033.

@@ -23,7 +23,7 @@
       color white|black, mistakes ≥ 0; `no-store`; page size from `ApiOptions`; the POST has a body). `dotnet build`
       warning-clean (`-m:1 -nr:false -p:EnableSourceControlManagerQueries=false` in the sandbox); unit tests pass.
       Commit: `feat(backend): drill your own studies in the trainer`.
-- [ ] 3.4 🐳 Integration test `TrainerStudyFlowTests` (written; `pnpm exec nx integration-test backend`, human-run in the sandbox): a member creates a
+- [x] 3.4 🐳 Integration test `TrainerStudyFlowTests` (written; `pnpm exec nx integration-test backend`, human-run in the sandbox): a member creates a
       study with a variation, drills it (clean, missed), promotes the variation (progress kept), extends a line (old row
       gone), deletes the study (rows gone); another member gets 404.
 
@@ -38,7 +38,7 @@
       progress, the drill's "your other line" message (no mistake counted). Implement `/trainer?source=studies`,
       `/trainer/study/$id`, "Train this study" on the owner's study page; `pnpm generate-routes`; `nx lint frontend` and
       `nx test frontend` pass. Commit: `feat(frontend): drill your own studies in the trainer`.
-- [ ] 4.4 🐳 Playwright `e2e/trainer.spec.ts` (written; `tools/e2e.sh`, human-run): import a study PGN with one variation,
+- [x] 4.4 🐳 Playwright `e2e/trainer.spec.ts` (written; `tools/e2e.sh`, human-run): import a study PGN with one variation,
       train it as White, play the other line's move once (no mistake), finish both lines; both show "learning" (a clean
       line is due again in a day, so "learned" needs three days of clean runs).
 
@@ -46,3 +46,5 @@
 
 - [x] 5.1 CLAUDE.md (trainer note: study lines, key rule, pruning on save), ROADMAP Part 6 (repertoire built), Serena
       memory. Commit: `docs(repo): study-repertoire-trainer`.
+
+Verified 2026-10-05: integration 45/45 (TrainerStudyFlowTests); e2e 44/44 (trainer.spec study drill).
