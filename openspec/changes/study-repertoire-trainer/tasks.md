@@ -44,5 +44,5 @@
 
 ## 5. Docs
 
-- [ ] 5.1 CLAUDE.md (trainer note: study lines, key rule, pruning on save), ROADMAP Part 6 (repertoire built), Serena
+- [x] 5.1 CLAUDE.md (trainer note: study lines, key rule, pruning on save), ROADMAP Part 6 (repertoire built), Serena
       memory. Commit: `docs(repo): study-repertoire-trainer`.

@@ -229,8 +229,8 @@ feeds. Three OpenSpec changes, in this order:
   credit lines; the explorer now counts in the database.
 - **`opening-trainer`** **[built 2026-10-03]**: drill the named lines of the lichess opening list (CC0) by family
   (owner: named openings, the whole family, progress remembered per member): the board plays the other side, a wrong
-  move is shown and replaced, and a Leitner schedule brings missed lines back first. Later: the member's own
-  repertoire (lines from their studies).
+  move is shown and replaced, and a Leitner schedule brings missed lines back first. The member's own repertoire is
+  built too (`study-repertoire-trainer`, 2026-10-05): every line of their own study, drilled from its start.
 - **`game-review`** **[built 2026-10-03]**: on request, the engine reviews a member's finished game (its own
   low-priority topic, the shared evaluation cache, a daily limit): an evaluation graph, inaccuracies, mistakes and
   blunders with the better move, where the game left the book; the member's own mistakes then become practice positions

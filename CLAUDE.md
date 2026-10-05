@@ -314,7 +314,13 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   `GET /api/trainer/families?q&color`, `…/family?name&color`, `…/next`, `POST …/results`, `GET /api/me/trainer`.
   Frontend: `lib/trainer.ts#useDrill` (the board plays the other side after 400 ms, a wrong move is shown with the
   right one and must be replaced, `onDone(mistakes)` once), `/trainer`, `/trainer/$family?color=`, the rail's Trainer
-  and "Openings trained" on the member's own profile only. **Game review (game-review)**: `POST /api/games/{id}/review` (a player of an
+  and "Openings trained" on the member's own profile only. **Study lines (study-repertoire-trainer)**: `Trainer/StudyLines`
+  makes every start-to-leaf path of the member's OWN study a line (main line first; a path with no move for the side
+  is skipped), keyed `study:` + SHA-256 of the start position and its moves, so reordering keeps progress and a
+  changed line starts over; `trainer_progress."StudyId"` (cascade) marks them, and `StudyService.UpdateAsync` drops
+  rows for lines the saved tree lost. `GET /api/trainer/studies`, `…/{id}`, `…/{id}/next`, `POST …/{id}/results`;
+  `/trainer?source=studies`, `/trainer/study/$id` (`useDrill` takes a start FEN and the other lines: another line's
+  move is named, not counted). **Game review (game-review)**: `POST /api/games/{id}/review` (a player of an
   ended game, or an Admin; 409 while played) sends the positions the shared cache lacks to `analysis.review.requests`
   at `Review:ThinkMs` (800 ms, kept apart from the board's think times) — the worker's own review loop
   (`Engine:ReviewProcesses`, `MaxReviewAgeSeconds`) answers on `analysis.results`, so reviews never queue ahead of
