@@ -29,17 +29,18 @@
 
 ## 4. Frontend
 
-- [ ] 4.1 Failing vitest for `lib/trainer.ts`: `fenAfter`/`sanAt`/`lineText`/`isMemberMove` from a start FEN (Black to
+- [x] 4.1 Failing vitest for `lib/trainer.ts`: `fenAfter`/`sanAt`/`lineText`/`isMemberMove` from a start FEN (Black to
       move, move number 23); `otherLineMove` (a move that is another study line's at the same position); the study line
       label from where it leaves the main line. Failure looks like: wrong FEN after one ply from a Black-to-move start.
       Implement; existing opening-drill tests stay green.
-- [ ] 4.2 `lib/server/trainer.ts` server functions (path inputs validated with `isGuid`) + vitest.
-- [ ] 4.3 Component tests (`components/trainer.tsx`): the "Named openings | My studies" switch, the study list with
+- [x] 4.2 `lib/server/trainer.ts` server functions (path inputs validated with `isGuid`) + vitest.
+- [x] 4.3 Component tests (`components/trainer.tsx`): the "Named openings | My studies" switch, the study list with
       progress, the drill's "your other line" message (no mistake counted). Implement `/trainer?source=studies`,
       `/trainer/study/$id`, "Train this study" on the owner's study page; `pnpm generate-routes`; `nx lint frontend` and
       `nx test frontend` pass. Commit: `feat(frontend): drill your own studies in the trainer`.
-- [ ] 4.4 🐳 Playwright `e2e/trainer.spec.ts` (`tools/e2e.sh`, human-run): import a study PGN with one variation, train
-      it as White, play the other line's move once (no mistake), finish both lines, see "2 of 2" after clean runs.
+- [ ] 4.4 🐳 Playwright `e2e/trainer.spec.ts` (written; `tools/e2e.sh`, human-run): import a study PGN with one variation,
+      train it as White, play the other line's move once (no mistake), finish both lines; both show "learning" (a clean
+      line is due again in a day, so "learned" needs three days of clean runs).
 
 ## 5. Docs
 

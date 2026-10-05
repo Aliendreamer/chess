@@ -92,3 +92,49 @@ test('a line is drilled, missed, offered again and played cleanly', async ({ bro
   await page.getByRole('complementary').getByRole('link', { name: 'Profile' }).click()
   await expect(page.getByTestId('player-training')).toContainText(/Sicilian Defense · as Black/)
 })
+
+/**
+ * study-repertoire-trainer: a member imports a study with one variation (1.e4 e5 2.Nf3, 2.f4), trains it as White from
+ * the study page, plays the other line's move once (named, not counted), and finishes both lines cleanly.
+ */
+test("a study's lines are drilled, the other line named without a mistake", async ({ browser }) => {
+  test.setTimeout(150_000)
+  const page = await signedIn(browser, USER)
+  const title = `E2E repertoire ${Date.now()}`
+
+  await page.goto('/studies')
+  await expect(async () => {
+    await page
+      .getByRole('textbox', { name: 'PGN' })
+      .fill(`[Event "${title}"]\n\n1. e4 e5 2. Nf3 (2. f4) *`)
+    await expect(page.getByRole('button', { name: 'Import' })).toBeEnabled({ timeout: 1_000 })
+  }).toPass({ timeout: 15_000 })
+  await page.getByRole('button', { name: 'Import' }).click()
+  await expect(page.getByTestId('import-report')).toContainText('Imported 1 study.')
+  await page.getByRole('link', { name: title }).click()
+  await page.getByTestId('study-train').click()
+  await expect(page).toHaveURL(/\/trainer\/study\/[0-9a-f-]+\?color=white/)
+  await expect(page.getByRole('img', { name: '0 of 2 learned' })).toBeVisible()
+
+  const status = page.getByTestId('drill-status')
+  // The main line first: 1.e4, the board's 1...e5, then 2.f4 is the other line's move here.
+  await expect(status).toHaveText('Your move.', { timeout: 15_000 })
+  await move(page, 'e2', 'e4')
+  await expect(status).toHaveText('Your move.', { timeout: 15_000 })
+  await move(page, 'f2', 'f4')
+  await expect(status).toHaveText('2.f4 is your other line here. This one goes 2.Nf3.')
+  await move(page, 'g1', 'f3')
+  await expect(page.getByTestId('run-outcome')).toContainText('Clean.')
+
+  // The variation next, cleanly.
+  await page.getByRole('button', { name: 'Next line' }).click()
+  await expect(status).toHaveText('Your move.', { timeout: 15_000 })
+  await move(page, 'e2', 'e4')
+  await expect(status).toHaveText('Your move.', { timeout: 15_000 })
+  await move(page, 'f2', 'f4')
+  await expect(page.getByTestId('run-outcome')).toContainText('Clean.')
+
+  const lines = page.getByRole('table', { name: 'Lines' })
+  await expect(lines.getByRole('row', { name: /Main line/ })).toContainText('learning')
+  await expect(lines.getByRole('row', { name: /2\.f4/ })).toContainText('learning')
+})

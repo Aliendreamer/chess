@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { loadFamilies, loadFamily, loadMyTraining, loadNextLine, recordRun } from './trainer'
+import {
+  loadFamilies,
+  loadFamily,
+  loadMyTraining,
+  loadNextLine,
+  loadNextStudyLine,
+  loadStudyDrill,
+  loadTrainerStudies,
+  recordRun,
+  recordStudyRun,
+} from './trainer'
 
 function fakeFetch(
   status: number,
@@ -61,5 +71,41 @@ describe('trainer reads', () => {
     })
     await loadMyTraining(fakeFetch(200, [], calls))
     expect(calls[1]?.url).toBe('/api/me/trainer')
+  })
+})
+
+describe('study drills', () => {
+  const ID = '0199f1c2-a3b4-4c5d-8e9f-0a1b2c3d4e5f'
+
+  it('lists the studies, reads one and its next line, and records a run', async () => {
+    const calls: Array<{ url: string; init?: RequestInit | undefined }> = []
+    await loadTrainerStudies(fakeFetch(200, { items: [], nextCursor: null, limit: 20 }, calls), {
+      color: 'black',
+      limit: 20,
+      cursor: 'c1',
+    })
+    await loadStudyDrill(
+      fakeFetch(200, { id: ID, title: 'T', startFen: 'x', lines: [] }, calls),
+      ID,
+      'white',
+    )
+    await loadNextStudyLine(fakeFetch(200, { line: null, nextDueAt: null }, calls), ID, 'white')
+    await recordStudyRun(fakeFetch(200, {}, calls), ID, {
+      lineKey: 'study:a',
+      color: 'white',
+      mistakes: 0,
+    })
+    expect(calls.map((c) => c.url)).toEqual([
+      '/api/trainer/studies?color=black&limit=20&cursor=c1',
+      `/api/trainer/studies/${ID}?color=white`,
+      `/api/trainer/studies/${ID}/next?color=white`,
+      `/api/trainer/studies/${ID}/results`,
+    ])
+    expect(calls[3]?.init?.method).toBe('POST')
+  })
+
+  it("another's study is null", async () => {
+    expect(await loadStudyDrill(fakeFetch(404, {}), ID, 'white')).toBeNull()
+    expect(await loadNextStudyLine(fakeFetch(404, {}), ID, 'white')).toBeNull()
   })
 })

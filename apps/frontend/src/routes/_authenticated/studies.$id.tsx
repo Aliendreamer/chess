@@ -119,6 +119,17 @@ function Study({ loaded }: { loaded: StudyView }) {
             Download PGN
           </a>
           {editable ? (
+            <Link
+              to="/trainer/study/$id"
+              params={{ id: saved.id }}
+              search={{ color: 'white' }}
+              className="text-sm"
+              data-testid="study-train"
+            >
+              Train this study
+            </Link>
+          ) : null}
+          {editable ? (
             <Button disabled={sharing.busy} onClick={() => void share(!saved.shared)}>
               {saved.shared ? 'Stop sharing' : 'Share'}
             </Button>

@@ -2,15 +2,12 @@ import { useState } from 'react'
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import type { NextLine, RunResult, TrainerColor, TrainerLine } from '#/lib/trainer'
-import { isColor, lineState, lineText, useDrill } from '#/lib/trainer'
+import { isColor, lineState, useDrill } from '#/lib/trainer'
 import { getTrainerFamily, getTrainerNext, postTrainerResult } from '#/lib/server/api'
-import { uciSquares } from '#/lib/board'
-import { legalTargets } from '#/lib/moveInput'
 import { pageTitle } from '#/lib/feedback'
-import { Board, PromotionPicker } from '#/components/games'
 import {
   ColorSwitch,
-  DrillStatus,
+  DrillLayout,
   LearnedBar,
   LinesTable,
   RunOutcome,
@@ -124,36 +121,8 @@ function DrillBoard({
 }) {
   const drill = useDrill(line, color, (mistakes) => onDone(line.key, mistakes))
   return (
-    <div className="grid grid-cols-1 items-start gap-6 shell:grid-cols-[minmax(0,var(--board-max))_minmax(0,360px)] shell:gap-8">
-      <div className="flex max-w-(--board-max) flex-col gap-3" data-testid="drill-board">
-        <Board
-          fen={drill.fen}
-          orientation={color}
-          lastMove={uciSquares(line.moves[drill.ply - 1])}
-          selected={drill.selected}
-          targets={drill.selected ? legalTargets(drill.fen, drill.selected) : []}
-          {...(drill.yourMove ? { onSquareClick: drill.onSquareClick, onDrop: drill.onDrop } : {})}
-        />
-        {drill.promotion ? (
-          <PromotionPicker
-            color={color}
-            onPick={drill.pickPromotion}
-            onCancel={drill.cancelPromotion}
-          />
-        ) : null}
-      </div>
-      <Panel variant="filled" className="gap-3" testId="drill">
-        <p className="m-0 font-display text-display-xs" data-testid="drill-line">
-          {`${line.eco} ${line.name}`}
-        </p>
-        <p className="m-0 min-h-5 font-mono text-sm text-fg-body" data-testid="drill-moves">
-          {lineText(line.moves, drill.ply)}
-        </p>
-        {drill.done ? null : (
-          <DrillStatus line={line} ply={drill.ply} yourMove={drill.yourMove} wrong={drill.wrong} />
-        )}
-        {children}
-      </Panel>
-    </div>
+    <DrillLayout drill={drill} color={color} title={`${line.eco} ${line.name}`} moves={line.moves}>
+      {children}
+    </DrillLayout>
   )
 }

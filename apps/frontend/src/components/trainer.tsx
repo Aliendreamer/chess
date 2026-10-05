@@ -1,17 +1,26 @@
 import { Link } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 import type {
   Drill,
   FamilyProgress,
   RunResult,
+  StudyLine,
+  StudyTraining,
   TrainedFamily,
   TrainerColor,
   TrainerLine,
 } from '#/lib/trainer'
-import { lineState, sanAt } from '#/lib/trainer'
+import { lineState, lineText, sanAt, studyLineLabel } from '#/lib/trainer'
+import { STANDARD_START } from '#/lib/studies'
+import { uciSquares } from '#/lib/board'
+import { legalTargets } from '#/lib/moveInput'
+import { Board, PromotionPicker } from '#/components/games'
+import { Panel } from '#/components/ui'
 
 /**
  * The opening trainer (opening-trainer): families with their progress, the drill's feedback, a family's lines, and the
- * families on the member's own profile. Presentational; the drill itself is `useDrill` in `lib/trainer.ts`.
+ * families on the member's own profile; and the member's own studies as lines (study-repertoire-trainer).
+ * Presentational; the drill itself is `useDrill` in `lib/trainer.ts`.
  */
 
 const COLOR_LABEL: Record<TrainerColor, string> = { white: 'White', black: 'Black' }
@@ -50,41 +59,68 @@ export function LearnedBar({ learned, lines }: { learned: number; lines: number 
 const CHIP =
   'rounded-pill border px-3 py-1.5 text-sm no-underline pointer-coarse:min-h-11 pointer-coarse:inline-flex pointer-coarse:items-center'
 
-/** The colour to train, as links (works before hydration); `family` keeps the family, `q` the search. */
+/**
+ * The colour to train, as links (works before hydration); `family` keeps the family, `study` the study, `q` the search,
+ * `studies` the "My studies" list.
+ */
 export function ColorSwitch({
   color,
   family,
+  study,
   q,
+  studies = false,
 }: {
   color: TrainerColor
   family?: string
+  study?: string
   q?: string
+  studies?: boolean
 }) {
   return (
     <div className="flex gap-2" role="group" aria-label="Train as">
       {(['white', 'black'] as const).map((c) => {
         const className = `${CHIP} ${c === color ? 'border-line-accent bg-surface-accent-tint text-fg-primary' : 'border-line-default text-fg-body hover:bg-surface-hover'}`
         const current = c === color ? ({ 'aria-current': 'page' } as const) : {}
-        return family ? (
-          <Link
-            key={c}
-            to="/trainer/$family"
-            params={{ family }}
-            search={{ color: c }}
-            className={className}
-            {...current}
-          >
-            {`As ${COLOR_LABEL[c]}`}
-          </Link>
-        ) : (
+        const label = `As ${COLOR_LABEL[c]}`
+        if (family)
+          return (
+            <Link
+              key={c}
+              to="/trainer/$family"
+              params={{ family }}
+              search={{ color: c }}
+              className={className}
+              {...current}
+            >
+              {label}
+            </Link>
+          )
+        if (study)
+          return (
+            <Link
+              key={c}
+              to="/trainer/study/$id"
+              params={{ id: study }}
+              search={{ color: c }}
+              className={className}
+              {...current}
+            >
+              {label}
+            </Link>
+          )
+        return (
           <Link
             key={c}
             to="/trainer"
-            search={{ color: c, ...(q ? { q } : {}) }}
+            search={{
+              color: c,
+              ...(q ? { q } : {}),
+              ...(studies ? { source: 'studies' as const } : {}),
+            }}
             className={className}
             {...current}
           >
-            {`As ${COLOR_LABEL[c]}`}
+            {label}
           </Link>
         )
       })}
@@ -124,23 +160,33 @@ export function FamilyList({
   )
 }
 
-/** What the drill wants now: the member's move, the board's, or the right move after a wrong one. */
+/**
+ * What the drill wants now: the member's move, the board's, the right move after a wrong one, or this line's move
+ * after one of the study's other lines (not a mistake).
+ */
 export function DrillStatus({
   line,
   ply,
   yourMove,
   wrong,
+  otherLine = null,
+  startFen = STANDARD_START,
 }: {
-  line: TrainerLine
+  line: { moves: ReadonlyArray<string> }
   ply: number
   yourMove: boolean
   wrong: Drill['wrong']
+  otherLine?: Drill['otherLine']
+  startFen?: string
 }) {
+  const san = (uci?: string) => sanAt(line.moves, ply, uci, startFen)
   const text = wrong
-    ? `${sanAt(line.moves, ply, wrong.played)} is not the line. Play ${sanAt(line.moves, ply)}.`
-    : yourMove
-      ? 'Your move.'
-      : 'The board plays…'
+    ? `${san(wrong.played)} is not the line. Play ${san()}.`
+    : otherLine
+      ? `${san(otherLine.played)} is your other line here. This one goes ${san()}.`
+      : yourMove
+        ? 'Your move.'
+        : 'The board plays…'
   return (
     <p
       className={`m-0 text-sm ${wrong ? 'text-status-loss' : 'text-fg-secondary'}`}
@@ -227,5 +273,187 @@ export function TrainedFamilies({ families }: { families: ReadonlyArray<TrainedF
         </li>
       ))}
     </ul>
+  )
+}
+
+/** The named openings or the member's own studies, as links (works before hydration). */
+export function TrainerSourceSwitch({
+  source,
+  color,
+}: {
+  source: 'named' | 'studies'
+  color: TrainerColor
+}) {
+  const chip = (selected: boolean) =>
+    `${CHIP} ${selected ? 'border-line-accent bg-surface-accent-tint text-fg-primary' : 'border-line-default text-fg-body hover:bg-surface-hover'}`
+  return (
+    <div className="flex gap-2" role="group" aria-label="Train">
+      <Link
+        to="/trainer"
+        search={{ color }}
+        className={chip(source === 'named')}
+        {...(source === 'named' ? { 'aria-current': 'page' as const } : {})}
+      >
+        Named openings
+      </Link>
+      <Link
+        to="/trainer"
+        search={{ color, source: 'studies' }}
+        className={chip(source === 'studies')}
+        {...(source === 'studies' ? { 'aria-current': 'page' as const } : {})}
+      >
+        My studies
+      </Link>
+    </div>
+  )
+}
+
+/** The member's own studies with their lines for the side, each opening its drill. */
+export function StudyList({
+  studies,
+  color,
+}: {
+  studies: ReadonlyArray<StudyTraining>
+  color: TrainerColor
+}) {
+  if (studies.length === 0)
+    return (
+      <p className="m-0 text-sm text-fg-secondary">
+        No studies yet: every line of a study you make can be drilled here.{' '}
+        <Link to="/studies" className="text-fg-accent">
+          Make a study
+        </Link>
+      </p>
+    )
+  return (
+    <ul className="m-0 flex list-none flex-col p-0" data-testid="trainer-studies">
+      {studies.map((s) => (
+        <li
+          key={s.id}
+          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line-divider py-2.5"
+        >
+          <Link
+            to="/trainer/study/$id"
+            params={{ id: s.id }}
+            search={{ color }}
+            className="min-w-0 text-fg-primary no-underline hover:text-fg-accent"
+          >
+            {s.title}
+            <span className="ml-2 text-xs text-fg-muted">{plural(s.lines, 'line', 'lines')}</span>
+          </Link>
+          <LearnedBar learned={s.learned} lines={s.lines} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** Shown open up to this many lines; a bigger study's list is folded. */
+const LINES_OPEN = 50
+
+/** A study's lines, named from where they leave the main line, with their state. */
+export function StudyLinesTable({
+  lines,
+  startFen,
+}: {
+  lines: ReadonlyArray<StudyLine>
+  startFen: string
+}) {
+  const main = lines[0]?.moves ?? []
+  const table = (
+    <table className="w-full border-collapse text-sm" aria-label="Lines">
+      <thead>
+        <tr className="text-left text-2xs uppercase tracking-wide text-fg-muted">
+          <th className="py-1.5 font-medium">Line</th>
+          <th className="py-1.5 font-medium">State</th>
+        </tr>
+      </thead>
+      <tbody>
+        {lines.map((l) => {
+          const state = lineState(l)
+          return (
+            <tr key={l.key} className="border-t border-line-divider">
+              <th scope="row" className="py-2 pr-3 text-left font-mono font-normal">
+                {studyLineLabel(main, l.moves, startFen)}
+              </th>
+              <td
+                className={`py-2 ${state === 'learned' ? 'text-status-win' : state === 'learning' ? 'text-fg-accent' : 'text-fg-muted'}`}
+              >
+                {state}
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
+  return lines.length > LINES_OPEN ? (
+    <details>
+      <summary className="cursor-pointer text-sm text-fg-accent">{`${lines.length} lines`}</summary>
+      {table}
+    </details>
+  ) : (
+    table
+  )
+}
+
+/**
+ * A drill on the board and its panel, for a named line or a study's (study-repertoire-trainer D8: any start). The
+ * route runs `useDrill` and passes the result; the panel adds the run's outcome as `children`.
+ */
+export function DrillLayout({
+  drill,
+  color,
+  title,
+  moves,
+  startFen = STANDARD_START,
+  children,
+}: {
+  drill: Drill
+  color: TrainerColor
+  title: string
+  moves: ReadonlyArray<string>
+  startFen?: string
+  children?: ReactNode
+}) {
+  return (
+    <div className="grid grid-cols-1 items-start gap-6 shell:grid-cols-[minmax(0,var(--board-max))_minmax(0,360px)] shell:gap-8">
+      <div className="flex max-w-(--board-max) flex-col gap-3" data-testid="drill-board">
+        <Board
+          fen={drill.fen}
+          orientation={color}
+          lastMove={uciSquares(moves[drill.ply - 1])}
+          selected={drill.selected}
+          targets={drill.selected ? legalTargets(drill.fen, drill.selected) : []}
+          {...(drill.yourMove ? { onSquareClick: drill.onSquareClick, onDrop: drill.onDrop } : {})}
+        />
+        {drill.promotion ? (
+          <PromotionPicker
+            color={color}
+            onPick={drill.pickPromotion}
+            onCancel={drill.cancelPromotion}
+          />
+        ) : null}
+      </div>
+      <Panel variant="filled" className="gap-3" testId="drill">
+        <p className="m-0 font-display text-display-xs" data-testid="drill-line">
+          {title}
+        </p>
+        <p className="m-0 min-h-5 font-mono text-sm text-fg-body" data-testid="drill-moves">
+          {lineText(moves, drill.ply, startFen)}
+        </p>
+        {drill.done ? null : (
+          <DrillStatus
+            line={{ moves }}
+            ply={drill.ply}
+            yourMove={drill.yourMove}
+            wrong={drill.wrong}
+            otherLine={drill.otherLine}
+            startFen={startFen}
+          />
+        )}
+        {children}
+      </Panel>
+    </div>
   )
 }

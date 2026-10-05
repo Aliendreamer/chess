@@ -6,7 +6,10 @@ import {
   FamilyList,
   LinesTable,
   RunOutcome,
+  StudyLinesTable,
+  StudyList,
   TrainedFamilies,
+  TrainerSourceSwitch,
 } from './trainer'
 import type { ReactNode } from 'react'
 import type { TrainerLine } from '#/lib/trainer'
@@ -145,5 +148,70 @@ describe('TrainedFamilies', () => {
     )
     rerender(<TrainedFamilies families={[]} />)
     expect(screen.getByText(/No openings trained yet/)).toBeTruthy()
+  })
+})
+
+describe('studies in the trainer (study-repertoire-trainer)', () => {
+  const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
+  it('switches between the named openings and my studies with links', () => {
+    render(<TrainerSourceSwitch source="studies" color="black" />)
+    const named = screen.getByRole('link', { name: 'Named openings' })
+    const mine = screen.getByRole('link', { name: 'My studies' })
+    expect(named.getAttribute('href')).toBe('/trainer?color=black')
+    expect(mine.getAttribute('href')).toBe('/trainer?color=black&source=studies')
+    expect(mine.getAttribute('aria-current')).toBe('page')
+    expect(named.getAttribute('aria-current')).toBeNull()
+  })
+
+  it('lists my studies with their lines and progress, each opening its drill', () => {
+    render(
+      <StudyList
+        studies={[
+          { id: 's1', title: 'My e4', lines: 2, learned: 1, createdAt: '2026-10-05T10:00:00Z' },
+        ]}
+        color="black"
+      />,
+    )
+    expect(screen.getByRole('link', { name: /My e4/ }).getAttribute('href')).toBe(
+      '/trainer/study/s1?color=black',
+    )
+    expect(screen.getByRole('img', { name: '1 of 2 learned' })).toBeTruthy()
+  })
+
+  it('points to the studies when there are none', () => {
+    render(<StudyList studies={[]} color="white" />)
+    expect(screen.getByRole('link', { name: 'Make a study' }).getAttribute('href')).toContain(
+      '/studies',
+    )
+  })
+
+  it("names the study's lines from the main line and shows their state", () => {
+    render(
+      <StudyLinesTable
+        startFen={START}
+        lines={[
+          { key: 'a', moves: ['e2e4', 'e7e5', 'g1f3'], box: 4, dueAt: null },
+          { key: 'b', moves: ['e2e4', 'e7e5', 'f2f4'], box: null, dueAt: null },
+        ]}
+      />,
+    )
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(rows.map((r) => r.textContent)).toEqual(['Main linelearned', '… 2.f4new'])
+  })
+
+  it("says a move is the study's other line without calling it wrong", () => {
+    render(
+      <DrillStatus
+        line={{ moves: ['e2e4', 'e7e5', 'g1f3'] }}
+        ply={2}
+        yourMove
+        wrong={null}
+        otherLine={{ played: 'f2f4', expected: 'g1f3' }}
+      />,
+    )
+    expect(screen.getByTestId('drill-status').textContent).toBe(
+      '2.f4 is your other line here. This one goes 2.Nf3.',
+    )
   })
 })

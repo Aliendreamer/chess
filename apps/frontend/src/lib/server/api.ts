@@ -24,7 +24,17 @@ import {
   startBroadcastImport,
 } from './library'
 import { loadPlayer, loadPlayerGames } from './players'
-import { loadFamilies, loadFamily, loadMyTraining, loadNextLine, recordRun } from './trainer'
+import {
+  loadFamilies,
+  loadFamily,
+  loadMyTraining,
+  loadNextLine,
+  loadNextStudyLine,
+  loadStudyDrill,
+  loadTrainerStudies,
+  recordRun,
+  recordStudyRun,
+} from './trainer'
 import {
   loadMyPractice,
   loadPracticeNext,
@@ -414,6 +424,48 @@ export const postTrainerResult = createServerFn({ method: 'POST' })
     }
   })
   .handler(({ data }) => recordRun(serverFetch(), data))
+
+/** The member's own studies to drill (study-repertoire-trainer). */
+export const getTrainerStudies = createServerFn({ method: 'GET' })
+  .validator((input: { color: TrainerColor; limit: number; cursor?: string }) => ({
+    color: trainerColor(input.color),
+    limit: Math.min(Math.max(Math.trunc(input.limit), 1), 50),
+    cursor: typeof input.cursor === 'string' ? input.cursor.slice(0, 200) : undefined,
+  }))
+  .handler(({ data }) => loadTrainerStudies(serverFetch(), data))
+
+export const getStudyDrill = createServerFn({ method: 'GET' })
+  .validator((input: { id: string; color: TrainerColor }) => ({
+    id: guid(input.id),
+    color: trainerColor(input.color),
+  }))
+  .handler(({ data }) => loadStudyDrill(serverFetch(), data.id, data.color))
+
+export const getStudyNext = createServerFn({ method: 'GET' })
+  .validator((input: { id: string; color: TrainerColor }) => ({
+    id: guid(input.id),
+    color: trainerColor(input.color),
+  }))
+  .handler(({ data }) => loadNextStudyLine(serverFetch(), data.id, data.color))
+
+export const postStudyTrainerResult = createServerFn({ method: 'POST' })
+  .validator((input: { id: string; lineKey: string; color: TrainerColor; mistakes: number }) => {
+    if (
+      typeof input.lineKey !== 'string' ||
+      !input.lineKey.startsWith('study:') ||
+      input.lineKey.length > 100
+    )
+      throw new Error('Not a study line.')
+    return {
+      id: guid(input.id),
+      run: {
+        lineKey: input.lineKey,
+        color: trainerColor(input.color),
+        mistakes: Math.min(Math.max(Math.trunc(input.mistakes), 0), 1000),
+      },
+    }
+  })
+  .handler(({ data }) => recordStudyRun(serverFetch(), data.id, data.run))
 
 /** The families the member has trained, for their own profile. */
 export const getMyTraining = createServerFn({ method: 'GET' }).handler(() =>

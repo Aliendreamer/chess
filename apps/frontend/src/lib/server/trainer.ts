@@ -1,9 +1,13 @@
 import { postCommand, readJson } from './upstream'
 import type { CommandOutcome } from '../games'
+import type { CursorPage } from '../play'
 import type {
   FamilyProgress,
   NextLine,
+  NextStudyLine,
   RunResult,
+  StudyDrill,
+  StudyTraining,
   TrainedFamily,
   TrainerColor,
   TrainerLine,
@@ -60,4 +64,48 @@ export function recordRun(
 /** `GET /api/me/trainer`: the families the member has trained (their own profile only). */
 export async function loadMyTraining(fetchImpl: typeof fetch): Promise<Array<TrainedFamily>> {
   return readJson<Array<TrainedFamily>>(await fetchImpl('/api/me/trainer'), 'GET /api/me/trainer')
+}
+
+/** `GET /api/trainer/studies?color=&limit=&cursor=`: the member's own studies with their lines for a side. */
+export async function loadTrainerStudies(
+  fetchImpl: typeof fetch,
+  page: { color: TrainerColor; limit: number; cursor?: string | undefined },
+): Promise<CursorPage<StudyTraining>> {
+  const query = new URLSearchParams({ color: page.color, limit: String(page.limit) })
+  if (page.cursor) query.set('cursor', page.cursor)
+  return readJson<CursorPage<StudyTraining>>(
+    await fetchImpl(`/api/trainer/studies?${query.toString()}`),
+    'GET /api/trainer/studies',
+  )
+}
+
+/** `GET /api/trainer/studies/{id}?color=`: the study's lines; null when it is not the member's own study. */
+export async function loadStudyDrill(
+  fetchImpl: typeof fetch,
+  id: string,
+  color: TrainerColor,
+): Promise<StudyDrill | null> {
+  const res = await fetchImpl(`/api/trainer/studies/${id}?color=${color}`)
+  if (res.status === 404) return null
+  return readJson<StudyDrill>(res, 'GET /api/trainer/studies/{id}')
+}
+
+/** `GET /api/trainer/studies/{id}/next?color=`: the study line to drill next; null for another's study. */
+export async function loadNextStudyLine(
+  fetchImpl: typeof fetch,
+  id: string,
+  color: TrainerColor,
+): Promise<NextStudyLine | null> {
+  const res = await fetchImpl(`/api/trainer/studies/${id}/next?color=${color}`)
+  if (res.status === 404) return null
+  return readJson<NextStudyLine>(res, 'GET /api/trainer/studies/{id}/next')
+}
+
+/** `POST /api/trainer/studies/{id}/results`: one run through a study line (404 when the line changed since). */
+export function recordStudyRun(
+  fetchImpl: typeof fetch,
+  id: string,
+  run: { lineKey: string; color: TrainerColor; mistakes: number },
+): Promise<CommandOutcome<RunResult>> {
+  return postCommand<RunResult>(fetchImpl, `/api/trainer/studies/${id}/results`, run)
 }

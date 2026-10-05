@@ -32,6 +32,7 @@ import { Route as AuthenticatedPlayersIdRouteImport } from './routes/_authentica
 import { Route as AuthenticatedPingsIdRouteImport } from './routes/_authenticated/pings.$id'
 import { Route as AuthenticatedInvitesIdRouteImport } from './routes/_authenticated/invites.$id'
 import { Route as AuthenticatedGamesIdRouteImport } from './routes/_authenticated/games.$id'
+import { Route as AuthenticatedTrainerStudyIdRouteImport } from './routes/_authenticated/trainer.study.$id'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -150,6 +151,12 @@ const AuthenticatedGamesIdRoute = AuthenticatedGamesIdRouteImport.update({
   path: '/games/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedTrainerStudyIdRoute =
+  AuthenticatedTrainerStudyIdRouteImport.update({
+    id: '/trainer/study/$id',
+    path: '/trainer/study/$id',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/games/': typeof AuthenticatedGamesIndexRoute
   '/studies/': typeof AuthenticatedStudiesIndexRoute
   '/trainer/': typeof AuthenticatedTrainerIndexRoute
+  '/trainer/study/$id': typeof AuthenticatedTrainerStudyIdRoute
 }
 export interface FileRoutesByTo {
   '/$': typeof AuthenticatedSplatRoute
@@ -198,6 +206,7 @@ export interface FileRoutesByTo {
   '/games': typeof AuthenticatedGamesIndexRoute
   '/studies': typeof AuthenticatedStudiesIndexRoute
   '/trainer': typeof AuthenticatedTrainerIndexRoute
+  '/trainer/study/$id': typeof AuthenticatedTrainerStudyIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -224,6 +233,7 @@ export interface FileRoutesById {
   '/_authenticated/games/': typeof AuthenticatedGamesIndexRoute
   '/_authenticated/studies/': typeof AuthenticatedStudiesIndexRoute
   '/_authenticated/trainer/': typeof AuthenticatedTrainerIndexRoute
+  '/_authenticated/trainer/study/$id': typeof AuthenticatedTrainerStudyIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/games/'
     | '/studies/'
     | '/trainer/'
+    | '/trainer/study/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/$'
@@ -274,6 +285,7 @@ export interface FileRouteTypes {
     | '/games'
     | '/studies'
     | '/trainer'
+    | '/trainer/study/$id'
   id:
     | '__root__'
     | '/_authenticated'
@@ -299,6 +311,7 @@ export interface FileRouteTypes {
     | '/_authenticated/games/'
     | '/_authenticated/studies/'
     | '/_authenticated/trainer/'
+    | '/_authenticated/trainer/study/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -472,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGamesIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/trainer/study/$id': {
+      id: '/_authenticated/trainer/study/$id'
+      path: '/trainer/study/$id'
+      fullPath: '/trainer/study/$id'
+      preLoaderRoute: typeof AuthenticatedTrainerStudyIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -494,6 +514,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedGamesIndexRoute: typeof AuthenticatedGamesIndexRoute
   AuthenticatedStudiesIndexRoute: typeof AuthenticatedStudiesIndexRoute
   AuthenticatedTrainerIndexRoute: typeof AuthenticatedTrainerIndexRoute
+  AuthenticatedTrainerStudyIdRoute: typeof AuthenticatedTrainerStudyIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -515,6 +536,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedGamesIndexRoute: AuthenticatedGamesIndexRoute,
   AuthenticatedStudiesIndexRoute: AuthenticatedStudiesIndexRoute,
   AuthenticatedTrainerIndexRoute: AuthenticatedTrainerIndexRoute,
+  AuthenticatedTrainerStudyIdRoute: AuthenticatedTrainerStudyIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

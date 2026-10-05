@@ -1,6 +1,16 @@
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fenAfter, isMemberMove, lineState, lineText, matches, sanAt, useDrill } from './trainer'
+import {
+  fenAfter,
+  isMemberMove,
+  lineState,
+  lineText,
+  matches,
+  otherLineMove,
+  sanAt,
+  studyLineLabel,
+  useDrill,
+} from './trainer'
 import type { TrainerLine } from './trainer'
 
 const BERLIN: TrainerLine = {
@@ -117,5 +127,71 @@ describe('labels', () => {
     expect(sanAt(BERLIN.moves, 5, 'a7a6')).toBe('3...a6')
     expect(lineText(BERLIN.moves, 3)).toBe('1.e4 e5 2.Nf3')
     expect(lineText(BERLIN.moves, 0)).toBe('')
+  })
+})
+
+/** A middlegame position with Black to move at move 23 (a study may start anywhere). */
+const BLACK_23 = 'r1bq1rk1/pp2bppp/2n1pn2/3p4/2PP4/2N2N2/PP2BPPP/R1BQ1RK1 b - - 0 23'
+
+describe('drills from any start (study-repertoire-trainer)', () => {
+  it('takes the side to move and the move numbers from the start position', () => {
+    expect(isMemberMove(0, 'black', BLACK_23)).toBe(true)
+    expect(isMemberMove(1, 'black', BLACK_23)).toBe(false)
+    expect(fenAfter(['d5c4'], 1, BLACK_23).split(' ').slice(1, 2)).toEqual(['w'])
+    expect(sanAt(['d5c4', 'e2c4'], 0, undefined, BLACK_23)).toBe('23...dxc4')
+    expect(sanAt(['d5c4', 'e2c4'], 1, undefined, BLACK_23)).toBe('24.Bxc4')
+    expect(lineText(['d5c4', 'e2c4'], 2, BLACK_23)).toBe('23...dxc4 24.Bxc4')
+  })
+
+  it('knows a move that is another line of the study at this point', () => {
+    const lines = [
+      ['e2e4', 'e7e5', 'g1f3'],
+      ['e2e4', 'e7e5', 'f2f4'],
+      ['d2d4', 'd7d5'],
+    ]
+    expect(otherLineMove(lines, lines[0]!, 2, 'f2f4')).toBe(true)
+    expect(otherLineMove(lines, lines[0]!, 0, 'd2d4')).toBe(true)
+    expect(otherLineMove(lines, lines[0]!, 2, 'b1c3')).toBe(false)
+    expect(otherLineMove(lines, lines[2]!, 1, 'e7e5')).toBe(false) // another line, but not from this position
+  })
+
+  it('names a study line from where it leaves the main line', () => {
+    const main = ['e2e4', 'e7e5', 'g1f3', 'b8c6']
+    expect(studyLineLabel(main, main)).toBe('Main line')
+    expect(studyLineLabel(main, ['e2e4', 'e7e5', 'g1f3', 'g8f6', 'f3e5'])).toBe('… 2...Nf6 3.Nxe5')
+    expect(studyLineLabel(main, ['e2e4', 'c7c5'])).toBe('… 1...c5')
+    expect(studyLineLabel(main, ['e2e4', 'e7e5'])).toBe('… 1...e5')
+  })
+})
+
+describe('useDrill with other lines', () => {
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+  })
+
+  it("says a move is the study's other line, without counting a mistake", () => {
+    const line = { key: 'l1', moves: ['e2e4', 'e7e5', 'g1f3'] }
+    const others = [line.moves, ['e2e4', 'e7e5', 'f2f4']]
+    const { result } = renderHook(() => useDrill(line, 'white', vi.fn(), 300, undefined, others))
+    act(() => result.current.play('e2e4'))
+    act(() => result.current.play('b1c3')) // not its turn: ignored
+    expect(result.current.ply).toBe(1)
+  })
+
+  it("shows the other line and goes on only with this line's move", async () => {
+    vi.useFakeTimers()
+    const line = { key: 'l1', moves: ['e2e4', 'e7e5', 'g1f3'] }
+    const others = [line.moves, ['e2e4', 'e7e5', 'f2f4']]
+    const { result } = renderHook(() => useDrill(line, 'white', vi.fn(), 300, undefined, others))
+    act(() => result.current.play('e2e4'))
+    await act(() => vi.advanceTimersByTimeAsync(300))
+    act(() => result.current.play('f2f4'))
+    expect(result.current.otherLine).toEqual({ played: 'f2f4', expected: 'g1f3' })
+    expect(result.current.mistakes).toBe(0)
+    expect(result.current.wrong).toBeNull()
+    act(() => result.current.play('g1f3'))
+    expect(result.current.otherLine).toBeNull()
+    expect(result.current.done).toBe(true)
   })
 })
