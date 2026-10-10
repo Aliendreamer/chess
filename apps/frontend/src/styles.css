@@ -111,6 +111,8 @@
 
   /* Layout (responsive-layout): the rail beside the content from here up, a top bar below (`shell:` variants). */
   --breakpoint-shell: 56.25rem;
+  /* Room for three columns beside the rail: the analysis board, its moves and engine, the library's games. */
+  --breakpoint-wide: 100rem;
 
   /* Shape */
   --radius-board: 4px;

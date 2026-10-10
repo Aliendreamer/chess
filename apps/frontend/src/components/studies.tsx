@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import type { MoveTreeEditor, StudyListItem, StudyMove, TreePath } from '#/lib/studies'
@@ -146,9 +146,9 @@ export function StudyList({ studies }: { studies: ReadonlyArray<StudyListItem> }
 }
 
 /**
- * The engine on the study board (engine-analysis D5): the think time and Evaluate for the position on the board, then
- * its score, depth and best lines in SAN. Clicking a line plays it into the tree as a variation when the study is
- * editable.
+ * The engine on the study board (engine-analysis D5): the think time for the position on the board, which is evaluated
+ * as it is shown ({@link useAutoEvaluate}), then its score, depth and best lines in SAN. Clicking a line plays it into
+ * the tree as a variation when the study is editable.
  */
 export function AnalysisPanel({
   analysis,
@@ -161,7 +161,7 @@ export function AnalysisPanel({
   evaluation: Evaluation | null
   onPlayLine?: ((moves: Array<StudyMove>) => void) | undefined
 }) {
-  const { think, setThink, analyse, thinking, error } = analysis
+  const { think, setThink, error } = analysis
   return (
     <Panel
       title="Engine"
@@ -183,9 +183,6 @@ export function AnalysisPanel({
             </Button>
           ))}
         </div>
-        <Button size="sm" onClick={() => analyse(fen)}>
-          Evaluate
-        </Button>
       </div>
       {evaluation ? (
         <ol className="m-0 flex list-none flex-col gap-1.5 p-0" data-testid="analysis-lines">
@@ -217,9 +214,9 @@ export function AnalysisPanel({
             )
           })}
         </ol>
-      ) : (
+      ) : error ? null : (
         <p className="m-0 text-sm text-fg-muted" data-testid="analysis-status" aria-live="polite">
-          {thinking ? 'The engine is thinking…' : 'Not evaluated yet.'}
+          The engine is thinking…
         </p>
       )}
       {error ? <ErrorText testId="analysis-error">{error}</ErrorText> : null}
@@ -227,10 +224,27 @@ export function AnalysisPanel({
   )
 }
 
+/** How long a position must stay on the board before the engine is asked: stepping through a game asks only once. */
+const SETTLE_MS = 300
+
+/**
+ * Asks the engine for the position on the board once it settles, and again when the think time changes. Positions
+ * already known answer from the shared cache, so stepping back and forth costs nothing.
+ */
+export function useAutoEvaluate(analysis: Analysis, fen: string) {
+  const ask = useRef(analysis.analyse)
+  ask.current = analysis.analyse
+  useEffect(() => {
+    const timer = setTimeout(() => ask.current(fen), SETTLE_MS)
+    return () => clearTimeout(timer)
+  }, [fen, analysis.think])
+}
+
 /**
  * A board with its move tree and the engine (analysis-board): the study page and the analysis page both draw this and
  * add their own header (title, starting point) and tools (save, share). `editable` lets moves be played; a read-only
- * shared study only navigates. `aside` sits under the engine (the library's games at this position).
+ * shared study only navigates. `aside` is a third column (the library's games at this position). From `shell:` up the
+ * page fits the screen and each column scrolls on its own (`wide fill`).
  */
 export function AnalysisBoard({
   editor,
@@ -248,13 +262,23 @@ export function AnalysisBoard({
   children?: ReactNode
 }) {
   const { fen, selected, promotion, tree, path } = editor
+  useAutoEvaluate(analysis, fen)
   const scoreOf = (at: string) => {
     const best = analysis.evaluationOf(at)?.lines[0]
     return best ? scoreText(best) : null
   }
+  const column = 'flex min-w-0 flex-col gap-4 shell:min-h-0 shell:overflow-y-auto shell:pr-1'
+  // The board as large as the screen's height allows (its buttons under it); two columns from `shell:` (the library's
+  // games under the engine), three from `wide:` with the moves and engine kept narrow.
+  const grid = aside
+    ? 'shell:grid-cols-[min(var(--board-max),calc(100dvh_-_9rem))_minmax(0,1fr)] shell:grid-rows-[minmax(0,3fr)_minmax(0,2fr)] wide:grid-cols-[min(var(--board-max),calc(100dvh_-_9rem))_minmax(18rem,28rem)_minmax(18rem,1fr)] wide:grid-rows-1'
+    : 'shell:grid-cols-[min(var(--board-max),calc(100dvh_-_9rem))_minmax(0,1fr)]'
   return (
-    <div className="grid grid-cols-1 items-start gap-6 shell:grid-cols-[minmax(0,var(--board-max))_minmax(0,420px)] shell:gap-8">
-      <div className="flex max-w-(--board-max) flex-col gap-3">
+    <div
+      data-layout="wide fill"
+      className={`grid grid-cols-1 gap-6 shell:h-full shell:gap-8 ${grid}`}
+    >
+      <div className="flex max-w-(--board-max) flex-col gap-3 shell:row-span-2 wide:row-span-1">
         <Board
           fen={fen}
           orientation={editor.orientation}
@@ -282,7 +306,7 @@ export function AnalysisBoard({
         </MoveNav>
       </div>
 
-      <div className="flex min-w-0 flex-col gap-4 shell:max-w-[420px]">
+      <div className={column}>
         {header}
         <MoveTree
           tree={tree}
@@ -297,9 +321,10 @@ export function AnalysisBoard({
           evaluation={analysis.evaluationOf(fen)}
           onPlayLine={editable ? editor.playLine : undefined}
         />
-        {aside}
         {children}
       </div>
+
+      {aside ? <div className={column}>{aside}</div> : null}
     </div>
   )
 }

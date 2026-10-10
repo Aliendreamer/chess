@@ -89,7 +89,7 @@ export function PositionPanel({
           <p className="m-0 text-sm text-fg-body">
             {`${position.games} ${position.games === 1 ? 'game' : 'games'} · white ${position.whiteWins} · draws ${position.draws} · black ${position.blackWins}`}
           </p>
-          <ul className="m-0 flex max-h-64 list-none flex-col gap-1 overflow-y-auto p-0">
+          <ul className="m-0 flex max-h-64 list-none flex-col gap-1 overflow-y-auto p-0 shell:max-h-none shell:overflow-visible">
             {position.items.map((g) => {
               const onLichess = g.source === BROADCAST_SOURCE ? lichessUrl(g.sourceRef) : null
               return (

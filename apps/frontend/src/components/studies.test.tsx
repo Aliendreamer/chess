@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AnalysisBoard, MoveTree, StudyList } from './studies'
 import type { ReactNode } from 'react'
@@ -132,5 +132,23 @@ describe('AnalysisBoard (analysis-board)', () => {
     render(<Harness editable={false} />)
     fireEvent.click(screen.getByRole('button', { name: /e4/ }))
     expect(screen.getByRole('button', { name: /e4/ }).getAttribute('aria-current')).toBe('step')
+  })
+
+  it('asks the engine for the position once it settles on the board', () => {
+    vi.mocked(analysis.analyse).mockClear()
+    vi.useFakeTimers()
+    try {
+      render(<Harness editable={false} />)
+      fireEvent.click(screen.getByRole('button', { name: /e4/ }))
+      fireEvent.click(screen.getByRole('button', { name: /e5/ }))
+      expect(analysis.analyse).not.toHaveBeenCalled()
+      act(() => vi.advanceTimersByTime(300))
+      expect(analysis.analyse).toHaveBeenCalledTimes(1)
+      expect(analysis.analyse).toHaveBeenCalledWith(
+        playMove(playMove(STANDARD_START, 'e2e4')!.fen, 'e7e5')!.fen,
+      )
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

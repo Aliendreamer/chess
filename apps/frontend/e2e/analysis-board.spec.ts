@@ -28,7 +28,6 @@ test('a position from a link is analysed and a broken FEN is refused', async ({ 
       },
     )
   }).toPass({ timeout: 15_000 })
-  await panel.getByRole('button', { name: 'Evaluate' }).click()
   await expect(panel.getByTestId('analysis-lines').getByRole('button').first()).toHaveText(
     /[+-]?\d+\.\d\d|#-?\d+/,
     { timeout: 60_000 },

@@ -25,7 +25,7 @@ test('a position of a study is evaluated, scored in the tree, and an engine line
   const tree = owner.getByTestId('move-tree')
   await expect(tree).toHaveText('1.e4e52.Nf3')
 
-  // The position after 2.Nf3, at the quick think time.
+  // The position after 2.Nf3, at the quick think time (asked as it is shown).
   const panel = owner.getByTestId('analysis-panel')
   await expect(async () => {
     await tree.getByRole('button', { name: 'Nf3' }).click()
@@ -38,7 +38,6 @@ test('a position of a study is evaluated, scored in the tree, and an engine line
       },
     )
   }).toPass({ timeout: 15_000 })
-  await panel.getByRole('button', { name: 'Evaluate' }).click()
 
   const score = /[+-]?\d+\.\d\d|#-?\d+/
   const lines = panel.getByTestId('analysis-lines').getByRole('button')
@@ -47,7 +46,7 @@ test('a position of a study is evaluated, scored in the tree, and an engine line
   await expect(
     tree.getByRole('button', { name: 'Nf3' }).locator('xpath=following-sibling::span[1]'),
   ).toHaveText(score)
-  // Only the position asked about is evaluated.
+  // Only the positions shown are evaluated.
   await expect(
     tree.getByRole('button', { name: 'e5' }).locator('xpath=following-sibling::span[1]'),
   ).not.toHaveText(score)
