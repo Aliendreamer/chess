@@ -16,22 +16,4 @@ public sealed class MatchmakingValidatorsTests
         Assert.Equal(ok, new JoinQueueRequestValidator().TestValidate(new JoinQueueRequest { TimeControl = tc }).IsValid);
         Assert.Equal(ok, new LeaveQueueRequestValidator().TestValidate(new LeaveQueueRequest { TimeControl = tc }).IsValid);
     }
-
-    [Fact]
-    public void An_invite_needs_a_preset_and_a_colour()
-    {
-        CreateInviteRequestValidator v = new();
-        v.TestValidate(new CreateInviteRequest { TimeControl = "10+5", Color = "purple" }).ShouldHaveValidationErrorFor(r => r.Color);
-        v.TestValidate(new CreateInviteRequest { TimeControl = "4+2", Color = "white" }).ShouldHaveValidationErrorFor(r => r.TimeControl);
-        v.TestValidate(new CreateInviteRequest { TimeControl = "10+5", Color = "random" }).ShouldNotHaveAnyValidationErrors();
-        v.TestValidate(new CreateInviteRequest { TimeControl = "7d", Color = "white" }).ShouldHaveValidationErrorFor(r => r.TimeControl); // no correspondence games
-        v.TestValidate(new CreateInviteRequest { TimeControl = "untimed", Color = "white" }).ShouldHaveValidationErrorFor(r => r.TimeControl);
-    }
-
-    [Theory]
-    [InlineData("7c9e6679742540de944be07fc1f90ae7", true)]
-    [InlineData("7c9e6679-7425-40de-944b-e07fc1f90ae7", true)]
-    [InlineData("nope", false)]
-    public void An_invite_route_needs_a_lower_case_guid(string id, bool ok) =>
-        Assert.Equal(ok, new InviteRouteRequestValidator().TestValidate(new InviteRouteRequest { Id = id }).IsValid);
 }

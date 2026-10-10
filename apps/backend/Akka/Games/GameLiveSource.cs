@@ -65,7 +65,7 @@ internal sealed partial class GameLiveSource(IRequiredActor<GameActor> region, I
     private static partial System.Text.RegularExpressions.Regex IdPattern();
 }
 
-/// <summary>How games come into being (design D6). Matchmaking and invites (change 3) are its callers; no endpoint yet.</summary>
+/// <summary>How games come into being (design D6). Matchmaking, rematches and engine games are its callers.</summary>
 internal interface IGameStarter
 {
     /// <summary>Starts a game; <paramref name="engine"/> seats the engine in a game against it (engine-play D3).</summary>

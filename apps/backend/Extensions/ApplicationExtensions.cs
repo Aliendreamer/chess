@@ -153,7 +153,7 @@ internal sealed class ApiOptions : ISettings
     /// <summary>How long an endpoint waits for an actor's answer before a 504.</summary>
     public int AskTimeoutSeconds { get; set; } = 5;
 
-    /// <summary>Accepting an invite starts a game, so its answer may take longer.</summary>
+    /// <summary>Accepting a rematch starts a game, so its answer may take longer.</summary>
     public int InviteAskTimeoutSeconds { get; set; } = 10;
 
     /// <summary>The page a list endpoint returns when the request names no <c>limit</c>.</summary>

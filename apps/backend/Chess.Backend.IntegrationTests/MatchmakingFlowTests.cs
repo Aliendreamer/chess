@@ -1,18 +1,22 @@
 using System.Net;
 using System.Net.Http.Json;
+using Chess.Backend.Akka.Games;
+using Chess.Backend.Games;
 using Chess.Backend.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Chess.Backend.IntegrationTests;
 
 /// <summary>
-/// Matchmaking and invites end to end over HTTP on real Postgres: two seekers paired into a live game, and an invite
-/// accepted once (the creator's colour honoured), refused a second time, and its acceptance pushed on the live hub.
+/// Matchmaking and rematches end to end over HTTP on real Postgres: two seekers paired into a live game, and a rematch
+/// offered by one player, accepted by the other with the colours swapped, and its acceptance pushed on the live hub.
 /// </summary>
 [Collection(StackFixture.Collection)]
 public sealed class MatchmakingFlowTests(StackFixture stack)
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeControl Blitz = TimeControl.Presets.Single(tc => tc.ToString() == "3+2");
 
     private sealed record Queue(string Status, string TimeControl, int? Position, int? Waiting, Guid? GameId, long? WhiteId, long? BlackId);
 
@@ -52,76 +56,6 @@ public sealed class MatchmakingFlowTests(StackFixture stack)
     }
 
     [Fact]
-    public async Task An_invite_is_accepted_once_honours_the_colour_and_is_pushed_live()
-    {
-        using CancellationTokenSource cts = new(TestTimeout);
-        CancellationToken ct = cts.Token;
-        await using PingApiFactory app = new();
-        using HttpClient client = await app.CreateReadyClientAsync(ct);
-        string run = Guid.NewGuid().ToString("N")[..8];
-        long creator = await Api.ProvisionAsync(client, $"it-creator-{run}", ct);
-        long friend = await Api.ProvisionAsync(client, $"it-friend-{run}", ct);
-        await Api.ProvisionAsync(client, $"it-late-{run}", ct);
-
-        Invite created = await ReadAsync<Invite>(
-            await SendAsync(client, HttpMethod.Post, "/api/invites", $"it-creator-{run}", new { timeControl = "10+5", color = "black" }, ct),
-            HttpStatusCode.Created,
-            ct);
-        Assert.Equal(("open", creator), (created.Status, created.CreatorId));
-        string path = $"/api/invites/{created.InviteId:N}";
-
-        await using HubConnection hub = app.ConnectHub("Relay");
-        TaskCompletionSource<Frame> accepted = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        hub.On<Frame>("frame", f =>
-        {
-            if (f.Payload.Status == "accepted")
-            {
-                accepted.TrySetResult(f);
-            }
-        });
-        await hub.StartAsync(ct);
-        Frame? snapshot = await hub.InvokeAsync<Frame?>("Subscribe", $"invite:{created.InviteId:N}", ct);
-        Assert.Equal("open", snapshot!.Payload.Status);
-
-        Invite taken = await ReadAsync<Invite>(await SendAsync(client, HttpMethod.Post, $"{path}/accept", $"it-friend-{run}", null, ct), HttpStatusCode.OK, ct);
-        Assert.Equal("accepted", taken.Status);
-
-        // The creator chose black, so the friend is White.
-        Game game = await ReadAsync<Game>(await Api.GetAsync(client, $"/api/games/{taken.GameId:N}/live", $"it-friend-{run}", ct), HttpStatusCode.OK, ct);
-        Assert.Equal((friend, creator, "10+5"), (game.WhiteId, game.BlackId, game.TimeControl));
-
-        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Post, $"{path}/accept", $"it-late-{run}", null, ct)).StatusCode);
-        Assert.Equal(taken.GameId, (await accepted.Task.WaitAsync(TimeSpan.FromSeconds(15), ct)).Payload.GameId);
-
-        Invite read = await ReadAsync<Invite>(await Api.GetAsync(client, path, $"it-late-{run}", ct), HttpStatusCode.OK, ct);
-        Assert.Equal(("accepted", taken.GameId), (read.Status, read.GameId));
-    }
-
-    [Fact]
-    public async Task Only_the_creator_cancels_and_a_cancelled_invite_cannot_be_accepted()
-    {
-        using CancellationTokenSource cts = new(TestTimeout);
-        CancellationToken ct = cts.Token;
-        await using PingApiFactory app = new();
-        using HttpClient client = await app.CreateReadyClientAsync(ct);
-        string run = Guid.NewGuid().ToString("N")[..8];
-        await Api.ProvisionAsync(client, $"it-creator-{run}", ct);
-        await Api.ProvisionAsync(client, $"it-friend-{run}", ct);
-
-        Invite created = await ReadAsync<Invite>(
-            await SendAsync(client, HttpMethod.Post, "/api/invites", $"it-creator-{run}", new { timeControl = "5+3", color = "random" }, ct),
-            HttpStatusCode.Created,
-            ct);
-        string path = $"/api/invites/{created.InviteId:N}";
-
-        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, $"{path}/cancel", $"it-friend-{run}", null, ct)).StatusCode);
-        Invite cancelled = await ReadAsync<Invite>(await SendAsync(client, HttpMethod.Post, $"{path}/cancel", $"it-creator-{run}", null, ct), HttpStatusCode.OK, ct);
-        Assert.Equal("cancelled", cancelled.Status);
-        Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Post, $"{path}/accept", $"it-friend-{run}", null, ct)).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await Api.GetAsync(client, $"/api/invites/{Guid.NewGuid():N}", $"it-friend-{run}", ct)).StatusCode);
-    }
-
-    [Fact]
     public async Task Both_players_asking_for_a_rematch_start_it_with_the_colours_swapped()
     {
         using CancellationTokenSource cts = new(TestTimeout);
@@ -134,24 +68,34 @@ public sealed class MatchmakingFlowTests(StackFixture stack)
         await Api.ProvisionAsync(client, $"it-watcher-{run}", ct);
 
         // A game the creator plays as White, aborted before any move.
-        Invite created = await ReadAsync<Invite>(
-            await SendAsync(client, HttpMethod.Post, "/api/invites", $"it-creator-{run}", new { timeControl = "3+2", color = "white" }, ct),
-            HttpStatusCode.Created,
-            ct);
-        Invite taken = await ReadAsync<Invite>(await SendAsync(client, HttpMethod.Post, $"/api/invites/{created.InviteId:N}/accept", $"it-friend-{run}", null, ct), HttpStatusCode.OK, ct);
-        string game = $"/api/games/{taken.GameId:N}";
+        GameView started = await app.Services.GetRequiredService<IGameStarter>().StartAsync(creator, friend, Blitz, ct);
+        string game = $"/api/games/{started.GameId:N}";
         Assert.Equal(HttpStatusCode.Conflict, (await SendAsync(client, HttpMethod.Post, $"{game}/rematch", $"it-creator-{run}", null, ct)).StatusCode);
         (await SendAsync(client, HttpMethod.Post, $"{game}/abort", $"it-creator-{run}", null, ct)).EnsureSuccessStatusCode();
 
         Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, $"{game}/rematch", $"it-watcher-{run}", null, ct)).StatusCode);
         Invite offered = await ReadAsync<Invite>(await SendAsync(client, HttpMethod.Post, $"{game}/rematch", $"it-creator-{run}", null, ct), HttpStatusCode.OK, ct);
-        Assert.Equal((taken.GameId, "open", "black"), (offered.InviteId, offered.Status, offered.Color));
-        Assert.Equal(HttpStatusCode.Forbidden, (await SendAsync(client, HttpMethod.Post, $"/api/invites/{taken.GameId:N}/accept", $"it-watcher-{run}", null, ct)).StatusCode);
+        Assert.Equal((started.GameId, "open", "black"), (offered.InviteId, offered.Status, offered.Color));
+
+        // The game page watches invite:{gameId}: the snapshot is the open offer, the agreement is pushed.
+        await using HubConnection hub = app.ConnectHub("Relay");
+        TaskCompletionSource<Frame> accepted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        hub.On<Frame>("frame", f =>
+        {
+            if (f.Payload.Status == "accepted")
+            {
+                accepted.TrySetResult(f);
+            }
+        });
+        await hub.StartAsync(ct);
+        Frame? snapshot = await hub.InvokeAsync<Frame?>("Subscribe", $"invite:{started.GameId:N}", ct);
+        Assert.Equal("open", snapshot!.Payload.Status);
 
         Invite agreed = await ReadAsync<Invite>(await SendAsync(client, HttpMethod.Post, $"{game}/rematch", $"it-friend-{run}", null, ct), HttpStatusCode.OK, ct);
         Assert.Equal("accepted", agreed.Status);
         Game rematch = await ReadAsync<Game>(await Api.GetAsync(client, $"/api/games/{agreed.GameId:N}/live", $"it-friend-{run}", ct), HttpStatusCode.OK, ct);
         Assert.Equal((friend, creator, "3+2"), (rematch.WhiteId, rematch.BlackId, rematch.TimeControl));
+        Assert.Equal(agreed.GameId, (await accepted.Task.WaitAsync(TimeSpan.FromSeconds(15), ct)).Payload.GameId);
     }
 
     private static Task<HttpResponseMessage> SendAsync(HttpClient client, HttpMethod method, string url, string subject, object? body, CancellationToken ct)

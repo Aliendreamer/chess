@@ -36,17 +36,8 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
 
     private FakeStarter Starter { get; } = new();
 
-    private Props InviteProps(Guid id, IActorRef? mediator = null, int seed = 7) =>
-        Props.Create(() => new InviteActor(id, Starter, mediator, Clock, new Random(seed)));
-
-    private (Guid Id, IActorRef Actor) Created(string color = "black", string tc = "10+5", IActorRef? mediator = null)
-    {
-        Guid id = Guid.NewGuid();
-        IActorRef actor = Sys.ActorOf(InviteProps(id, mediator));
-        InviteView view = Assert.IsType<InviteView>(Send(actor, new CreateInvite(id, Creator, tc, color)));
-        Assert.Equal(InviteStatus.Open, view.Status);
-        return (id, actor);
-    }
+    private Props InviteProps(Guid id, IActorRef? mediator = null) =>
+        Props.Create(() => new InviteActor(id, Starter, mediator, Clock, new Random(7)));
 
     private object Send(IActorRef actor, object command)
     {
@@ -57,10 +48,24 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
     private static void AssertRejected(object reply, string code) =>
         Assert.Equal(code, Assert.IsType<InviteRejected>(reply).Code.ToString());
 
-    [Fact]
-    public void A_created_invite_is_open_for_24_hours()
+    // Rematch (game-feedback) is the only way an invite is made: its id is the finished game's, reserved for the
+    // other player. Invite links (create/accept/cancel by id) are gone.
+
+    private (Guid Id, IActorRef Actor) Rematch(string creatorColor = "white", string tc = "3+2", IActorRef? mediator = null)
     {
-        (Guid id, IActorRef actor) = Created();
+        Guid id = Guid.CreateVersion7();
+        IActorRef actor = Sys.ActorOf(InviteProps(id, mediator));
+        InviteView view = Assert.IsType<InviteView>(Send(actor, new OfferRematch(id, Creator, Friend, tc, creatorColor)));
+        Assert.Equal((InviteStatus.Open, Creator, (long?)Friend), (view.Status, view.CreatorId, view.ForId));
+        return (id, actor);
+    }
+
+    private object Accept(IActorRef actor, Guid id) => Send(actor, new OfferRematch(id, Friend, Creator, "3+2", "white"));
+
+    [Fact]
+    public void An_offered_rematch_is_open_for_24_hours()
+    {
+        (Guid id, IActorRef actor) = Rematch(creatorColor: "black", tc: "10+5");
 
         InviteView view = Assert.IsType<InviteView>(Send(actor, new GetInvite(id)));
 
@@ -69,51 +74,33 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
     }
 
     [Fact]
-    public void Accepting_starts_the_game_with_the_creators_colour_honoured()
+    public void The_guests_rematch_offer_accepts_it_with_the_creators_colour()
     {
-        (Guid id, IActorRef actor) = Created(color: "black");
+        (Guid id, IActorRef actor) = Rematch(creatorColor: "black");
 
-        InviteView accepted = Assert.IsType<InviteView>(Send(actor, new AcceptInvite(id, Friend)));
+        InviteView accepted = Assert.IsType<InviteView>(Accept(actor, id));
 
         (long white, long black, string tc, Guid gameId) = Assert.Single(Starter.Started);
-        Assert.Equal((Friend, Creator, "10+5"), (white, black, tc)); // creator chose black, so the friend is White
+        Assert.Equal((Friend, Creator, "3+2"), (white, black, tc)); // the creator is on black, so the guest is White
         Assert.Equal((InviteStatus.Accepted, (Guid?)gameId), (accepted.Status, accepted.GameId));
     }
 
     [Fact]
-    public void A_white_invite_makes_the_creator_white() =>
-        Assert.Equal(Creator, Accepted("white").White);
-
-    [Fact]
-    public void A_random_colour_is_resolved_once_and_both_outcomes_occur()
+    public void A_white_rematch_makes_the_creator_white()
     {
-        long[] whites = [.. new[] { 1, 2, 3, 4, 5, 6 }.Select(seed =>
-        {
-            Guid id = Guid.NewGuid();
-            IActorRef actor = Sys.ActorOf(InviteProps(id, seed: seed));
-            Send(actor, new CreateInvite(id, Creator, "5+3", "random"));
-            Send(actor, new AcceptInvite(id, Friend));
-            return Starter.Started[^1].White;
-        })];
+        (Guid id, IActorRef actor) = Rematch(creatorColor: "white");
+        Accept(actor, id);
 
-        Assert.Equal([Creator, Friend], whites.Distinct().Order());
-    }
-
-    private (long White, long Black) Accepted(string color)
-    {
-        (Guid id, IActorRef actor) = Created(color: color);
-        Send(actor, new AcceptInvite(id, Friend));
-        (long white, long black, _, _) = Starter.Started[^1];
-        return (white, black);
+        Assert.Equal((Creator, Friend), (Starter.Started[^1].White, Starter.Started[^1].Black));
     }
 
     [Fact]
     public void A_second_accept_is_a_conflict_and_starts_nothing()
     {
-        (Guid id, IActorRef actor) = Created();
-        Send(actor, new AcceptInvite(id, Friend));
+        (Guid id, IActorRef actor) = Rematch();
+        Accept(actor, id);
 
-        AssertRejected(Send(actor, new AcceptInvite(id, Stranger)), "Conflict");
+        AssertRejected(Accept(actor, id), "Conflict");
 
         Assert.Single(Starter.Started);
     }
@@ -121,10 +108,10 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
     [Fact]
     public void Two_accepts_sent_back_to_back_start_one_game()
     {
-        (Guid id, IActorRef actor) = Created();
+        (Guid id, IActorRef actor) = Rematch();
 
-        actor.Tell(new AcceptInvite(id, Friend));
-        actor.Tell(new AcceptInvite(id, Stranger)); // arrives while the first start is in flight
+        actor.Tell(new OfferRematch(id, Friend, Creator, "3+2", "white"));
+        actor.Tell(new OfferRematch(id, Friend, Creator, "3+2", "white")); // arrives while the first start is in flight
         object first = ExpectMsg<object>();
         object second = ExpectMsg<object>();
 
@@ -134,27 +121,13 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
     }
 
     [Fact]
-    public void The_creator_cannot_accept_their_own_invite() =>
-        AssertRejected(Send(Created().Actor, new AcceptInvite(Guid.Empty, Creator)), "Conflict");
-
-    [Fact]
-    public void Only_the_creator_can_cancel_and_a_cancelled_invite_refuses_accept()
-    {
-        (Guid id, IActorRef actor) = Created();
-
-        AssertRejected(Send(actor, new CancelInvite(id, Stranger)), "Forbidden");
-        Assert.Equal(InviteStatus.Cancelled, Assert.IsType<InviteView>(Send(actor, new CancelInvite(id, Creator))).Status);
-        AssertRejected(Send(actor, new AcceptInvite(id, Friend)), "Conflict");
-    }
-
-    [Fact]
     public void After_24_hours_it_is_expired_and_refuses_accept()
     {
-        (Guid id, IActorRef actor) = Created();
+        (Guid id, IActorRef actor) = Rematch();
         Clock.Advance(TimeSpan.FromHours(24));
 
         Assert.Equal(InviteStatus.Expired, Assert.IsType<InviteView>(Send(actor, new GetInvite(id))).Status);
-        AssertRejected(Send(actor, new AcceptInvite(id, Friend)), "Conflict");
+        AssertRejected(Accept(actor, id), "Conflict");
         Assert.Empty(Starter.Started);
     }
 
@@ -168,17 +141,16 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
         Guid id = Guid.NewGuid();
         IActorRef actor = Sys.ActorOf(InviteProps(id));
 
-        AssertRejected(Send(actor, new CreateInvite(id, Creator, "5+3", "purple")), "Illegal");
-        AssertRejected(Send(actor, new CreateInvite(id, Creator, "4+2", "white")), "Illegal");
-        AssertRejected(Send(actor, new CreateInvite(id, Creator, "7d", "white")), "Illegal"); // no correspondence games
+        AssertRejected(Send(actor, new OfferRematch(id, Creator, Friend, "5+3", "purple")), "Illegal");
+        AssertRejected(Send(actor, new OfferRematch(id, Creator, Friend, "4+2", "white")), "Illegal");
+        AssertRejected(Send(actor, new OfferRematch(id, Creator, Friend, "7d", "white")), "Illegal"); // no correspondence games
     }
 
-
     [Fact]
-    public void An_accepted_invite_survives_a_restart_with_its_game()
+    public void An_accepted_rematch_survives_a_restart_with_its_game()
     {
-        (Guid id, IActorRef actor) = Created();
-        Guid? gameId = Assert.IsType<InviteView>(Send(actor, new AcceptInvite(id, Friend))).GameId;
+        (Guid id, IActorRef actor) = Rematch();
+        Guid? gameId = Assert.IsType<InviteView>(Accept(actor, id)).GameId;
 
         Watch(actor);
         Sys.Stop(actor);
@@ -189,50 +161,17 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
     }
 
     [Fact]
-    public void Accepting_publishes_an_invite_frame_with_the_game()
+    public void Offering_and_accepting_publish_invite_frames_with_the_game()
     {
         TestProbe mediator = CreateTestProbe();
-        (Guid id, IActorRef actor) = Created(mediator: mediator.Ref);
-        mediator.ExpectMsg<Publish>(); // the creation
+        (Guid id, IActorRef actor) = Rematch(mediator: mediator.Ref);
+        Assert.Equal(InviteStatus.Open, ((InviteView)((LiveFrame)mediator.ExpectMsg<Publish>().Message).Payload).Status);
 
-        InviteView accepted = Assert.IsType<InviteView>(Send(actor, new AcceptInvite(id, Friend)));
+        InviteView accepted = Assert.IsType<InviteView>(Accept(actor, id));
 
         LiveFrame frame = Assert.IsType<LiveFrame>(mediator.ExpectMsg<Publish>().Message);
         Assert.Equal($"invite:{id:N}", frame.Topic);
         Assert.Equal((InviteStatus.Accepted, accepted.GameId), (((InviteView)frame.Payload).Status, ((InviteView)frame.Payload).GameId));
-    }
-
-    // Rematch (game-feedback): an invite whose id is the finished game's, reserved for the other player.
-
-    private (Guid Id, IActorRef Actor) Rematch(string creatorColor = "white", string tc = "3+2")
-    {
-        Guid id = Guid.CreateVersion7();
-        IActorRef actor = Sys.ActorOf(InviteProps(id));
-        InviteView view = Assert.IsType<InviteView>(Send(actor, new OfferRematch(id, Creator, Friend, tc, creatorColor)));
-        Assert.Equal((InviteStatus.Open, Creator, (long?)Friend), (view.Status, view.CreatorId, view.ForId));
-        return (id, actor);
-    }
-
-    [Fact]
-    public void A_reserved_invite_refuses_anyone_but_its_guest()
-    {
-        (Guid id, IActorRef actor) = Rematch();
-
-        AssertRejected(Send(actor, new AcceptInvite(id, Stranger)), "Forbidden");
-
-        Assert.Empty(Starter.Started);
-    }
-
-    [Fact]
-    public void The_guests_rematch_offer_accepts_it_with_the_creators_colour()
-    {
-        (Guid id, IActorRef actor) = Rematch(creatorColor: "black");
-
-        InviteView accepted = Assert.IsType<InviteView>(Send(actor, new OfferRematch(id, Friend, Creator, "3+2", "white")));
-
-        (long white, long black, string tc, Guid gameId) = Assert.Single(Starter.Started);
-        Assert.Equal((Friend, Creator, "3+2"), (white, black, tc));
-        Assert.Equal((InviteStatus.Accepted, (Guid?)gameId), (accepted.Status, accepted.GameId));
     }
 
     [Fact]
@@ -253,6 +192,8 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
         (Guid id, IActorRef actor) = Rematch();
 
         AssertRejected(Send(actor, new OfferRematch(id, Stranger, Creator, "3+2", "white")), "Forbidden");
+
+        Assert.Empty(Starter.Started);
     }
 
     [Fact]
@@ -263,6 +204,6 @@ public sealed class InviteActorTests() : TestKit(AkkaConfig.InMemoryPersistence)
         Sys.Stop(actor);
         ExpectTerminated(actor);
 
-        AssertRejected(Send(Sys.ActorOf(InviteProps(id)), new AcceptInvite(id, Stranger)), "Forbidden");
+        AssertRejected(Send(Sys.ActorOf(InviteProps(id)), new OfferRematch(id, Stranger, Creator, "3+2", "white")), "Forbidden");
     }
 }

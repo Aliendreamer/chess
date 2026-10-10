@@ -14,7 +14,6 @@
 @sid2 = paste-player-mp_sid-here
 @tc = 5+3
 @gameId = 00000000000000000000000000000000
-@inviteId = 00000000000000000000000000000000
 @studyId = 00000000000000000000000000000000
 @aggregateId = paste-from-dead-letter-list
 
@@ -100,27 +99,6 @@ Cookie: mp_sid={{sid}}
 POST {{host}}/api/games/{{gameId}}/study
 Cookie: mp_sid={{sid}}
 
-### ---------- invites ----------
-
-### Create (color: white | black | random) → 201
-POST {{host}}/api/invites
-Cookie: mp_sid={{sid}}
-Content-Type: application/json
-
-{ "timeControl": "{{tc}}", "color": "white" }
-
-### Read → open | accepted (with gameId) | cancelled | expired
-GET {{host}}/api/invites/{{inviteId}}
-Cookie: mp_sid={{sid2}}
-
-### Accept (anyone but the creator) → the game starts; a second accept is 409
-POST {{host}}/api/invites/{{inviteId}}/accept
-Cookie: mp_sid={{sid2}}
-
-### Cancel (creator only, while open)
-POST {{host}}/api/invites/{{inviteId}}/cancel
-Cookie: mp_sid={{sid}}
-
 ### ---------- games: commands (the actor) ----------
 
 ### Move (UCI; promotion as e7e8q)
@@ -148,6 +126,10 @@ Cookie: mp_sid={{sid2}}
 
 ### Abort (before your first move)
 POST {{host}}/api/games/{{gameId}}/abort
+Cookie: mp_sid={{sid}}
+
+### Rematch of a finished game: the first player's call offers it, the other player's call accepts (live on invite:{id})
+POST {{host}}/api/games/{{gameId}}/rematch
 Cookie: mp_sid={{sid}}
 
 ### Live view (the actor while playing; the replica once ended)

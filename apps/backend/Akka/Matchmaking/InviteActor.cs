@@ -15,12 +15,6 @@ internal interface IInviteCommand
     Guid InviteId { get; }
 }
 
-internal sealed record CreateInvite(Guid InviteId, long CreatorId, string TimeControl, string Color) : IInviteCommand;
-
-internal sealed record AcceptInvite(Guid InviteId, long UserId) : IInviteCommand;
-
-internal sealed record CancelInvite(Guid InviteId, long UserId) : IInviteCommand;
-
 internal sealed record GetInvite(Guid InviteId) : IInviteCommand;
 
 /// <summary>
@@ -70,7 +64,7 @@ internal enum InviteStatus
 internal sealed record InviteRejected(Guid InviteId, RejectionCode Code, string Reason);
 
 /// <summary>
-/// An invite as the creator, the friend and the <c>invite:{id}</c> live topic see it; <see cref="GameId"/> once
+/// An invite as the two players and the <c>invite:{id}</c> live topic see it; <see cref="GameId"/> once
 /// <see cref="InviteStatus.Accepted"/>.
 /// </summary>
 internal sealed record InviteView(
@@ -86,10 +80,12 @@ internal sealed record InviteView(
     long? ForId = null);
 
 /// <summary>
-/// One invite link (ROADMAP D17, game-matchmaking): sharded and persistent, keyed by a random v4 id because the link
-/// is a bearer secret. Expiry is derived from the clock on every command and read, so no timer has to survive
-/// passivation. Accepting starts the game through <see cref="IGameStarter"/>; while that is in flight every other
-/// command is stashed, so two accepts can never start two games.
+/// One invite (ROADMAP D17, game-matchmaking): sharded and persistent. Invite links are gone; the only invites made now
+/// are rematches (game-feedback), keyed by the finished game's id and reserved for the other player. Older invites in
+/// the journal (random v4 ids, possibly cancelled or with a random colour) still recover and read. Expiry is derived
+/// from the clock on every command and read, so no timer has to survive passivation. Accepting starts the game
+/// through <see cref="IGameStarter"/>; while that is in flight every other command is stashed, so two accepts can
+/// never start two games.
 /// </summary>
 internal sealed class InviteActor : ReceivePersistentActor
 {
@@ -141,10 +137,7 @@ internal sealed class InviteActor : ReceivePersistentActor
         Recover<InviteAccepted>(Apply);
         Recover<InviteCancelled>(Apply);
 
-        Command<CreateInvite>(HandleCreate);
         Command<GetInvite>(_ => Sender.Tell(_created ? View() : NotFound()));
-        Command<AcceptInvite>(HandleAccept);
-        Command<CancelInvite>(HandleCancel);
         Command<OfferRematch>(HandleOfferRematch);
     }
 
@@ -155,17 +148,6 @@ internal sealed class InviteActor : ReceivePersistentActor
         : _cancelled ? InviteStatus.Cancelled
         : _clock.GetUtcNow() >= _createdAt + Lifetime ? InviteStatus.Expired
         : InviteStatus.Open;
-
-    private void HandleCreate(CreateInvite cmd)
-    {
-        if (_created)
-        {
-            Sender.Tell(Rejected(RejectionCode.Conflict, "This invite already exists."));
-            return;
-        }
-
-        Create(new InviteCreated(cmd.CreatorId, cmd.TimeControl, cmd.Color, _clock.GetUtcNow()));
-    }
 
     private void HandleOfferRematch(OfferRematch cmd)
     {
@@ -179,7 +161,7 @@ internal sealed class InviteActor : ReceivePersistentActor
         }
         else if (cmd.UserId == _forId)
         {
-            HandleAccept(new AcceptInvite(cmd.InviteId, cmd.UserId));
+            Accept(cmd.UserId);
         }
         else
         {
@@ -203,45 +185,28 @@ internal sealed class InviteActor : ReceivePersistentActor
         }));
     }
 
-    private void HandleAccept(AcceptInvite cmd)
+    /// <summary>The guest takes the reserved invite: the game starts with the creator's colour honoured.</summary>
+    private void Accept(long userId)
     {
-        if (!_created)
-        {
-            Sender.Tell(NotFound());
-            return;
-        }
-
         if (Status != InviteStatus.Open)
         {
             Sender.Tell(Rejected(RejectionCode.Conflict, $"This invite is {Status.WireName()}."));
             return;
         }
 
-        if (cmd.UserId == _creator)
-        {
-            Sender.Tell(Rejected(RejectionCode.Conflict, "You can't accept your own invite; share the link instead."));
-            return;
-        }
-
-        if (_forId is not null && cmd.UserId != _forId)
-        {
-            Sender.Tell(Rejected(RejectionCode.Forbidden, "This invite is for someone else."));
-            return;
-        }
-
-        // The random colour is resolved once, here, and never again.
+        // A random colour (only in invites recorded before links were removed) is resolved once, here.
         bool creatorIsWhite = _color switch
         {
             SideNames.White => true,
             SideNames.Black => false,
             _ => _random.Next(2) == 0,
         };
-        long white = creatorIsWhite ? _creator : cmd.UserId;
-        long black = creatorIsWhite ? cmd.UserId : _creator;
+        long white = creatorIsWhite ? _creator : userId;
+        long black = creatorIsWhite ? userId : _creator;
         IActorRef replyTo = Sender;
         _starter.StartAsync(white, black, _tc, CancellationToken.None).PipeTo(
             Self,
-            success: view => ActorTracing.Wrap(new Started(cmd.UserId, view.GameId, replyTo)),
+            success: view => ActorTracing.Wrap(new Started(userId, view.GameId, replyTo)),
             failure: ex => ActorTracing.Wrap(new StartFailed(replyTo, ex)));
         BecomeStacked(Starting);
     }
@@ -264,34 +229,6 @@ internal sealed class InviteActor : ReceivePersistentActor
             Stash.UnstashAll();
         });
         CommandAny(_ => Stash.Stash());
-    }
-
-    private void HandleCancel(CancelInvite cmd)
-    {
-        if (!_created)
-        {
-            Sender.Tell(NotFound());
-            return;
-        }
-
-        if (cmd.UserId != _creator)
-        {
-            Sender.Tell(Rejected(RejectionCode.Forbidden, "Only the creator can cancel an invite."));
-            return;
-        }
-
-        if (Status != InviteStatus.Open)
-        {
-            Sender.Tell(Rejected(RejectionCode.Conflict, $"This invite is {Status.WireName()}."));
-            return;
-        }
-
-        IActorRef replyTo = Sender;
-        Persist(ActorTracing.Stamp(new InviteCancelled(_clock.GetUtcNow())), ActorTracing.Persisting<InviteCancelled>(ActorNames.Invite, 1, e =>
-        {
-            Apply(e);
-            Published(replyTo, e);
-        }));
     }
 
     private void Apply(InviteCreated e)
