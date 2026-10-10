@@ -66,9 +66,17 @@ as "$SID_P" "http://$API_HOST/api/studies/$STUDY/pgn" | grep -q '1\. e4 e5 (1\.\
 echo "ok"
 
 step "a finished game becomes a study"
-INVITE="$(send "$SID_T" POST -d '{"timeControl":"5+3","color":"white"}' "http://$API_HOST/api/invites" | field inviteId)"
-GAME="$(send "$SID_P" POST "http://$API_HOST/api/invites/$INVITE/accept" | field gameId)"
-for mv in "$SID_T f2f3" "$SID_P e7e5" "$SID_T g2g4" "$SID_P d8h4"; do
+# Both take the 5+3 queue; the colours are drawn, so the moves go to whoever plays White.
+send "$SID_T" POST "http://$API_HOST/api/matchmaking/5+3" | grep -q '"status":"waiting"' || fail "testuser not waiting"
+paired="$(send "$SID_P" POST "http://$API_HOST/api/matchmaking/5+3")"
+GAME="$(field gameId <<<"$paired")"
+[[ -n "$GAME" ]] || fail "player not matched: $paired"
+if [[ "$(num whiteId <<<"$paired")" == "$(as "$SID_T" "http://$API_HOST/api/me" | num id)" ]]; then
+  SID_W="$SID_T"; SID_B="$SID_P"
+else
+  SID_W="$SID_P"; SID_B="$SID_T"
+fi
+for mv in "$SID_W f2f3" "$SID_B e7e5" "$SID_W g2g4" "$SID_B d8h4"; do
   read -r sid uci <<<"$mv"
   [[ "$(code "$sid" POST -d "{\"uci\":\"$uci\"}" "http://$API_HOST/api/games/$GAME/moves")" == "200" ]] || fail "move $uci refused"
 done

@@ -62,7 +62,7 @@ pnpm build && API_URL=http://127.0.0.1:8080 pnpm start   # prod SSR server on :3
 tools/localdev/verify-auth.sh                  # curl-only login→/me→logout→revocation check vs the live stack
 tools/localdev/verify-stack.sh                 # replica streaming + write→read, redpanda health/topics/round-trip, console
 tools/localdev/verify-part0.sh [--cluster]     # login→ping→live→list→hub gate; --cluster kills backend-1 and re-checks
-tools/localdev/verify-part1.sh [--cluster]     # two logins → queue pairing → invite → fool's mate → ended 0-1 + PGN;
+tools/localdev/verify-part1.sh [--cluster]     # two logins → queue pairing → fool's mate → ended 0-1 + PGN;
                                                # --cluster: 6 games, SIGTERM backend-1, all answer from the survivor
 tools/localdev/verify-part2.sh [--quick]       # vs Stockfish: 10 moves at 1320/2000/max, engine restart mid-think, a full game
 tools/localdev/verify-part4a.sh                # studies: import, variation saved, 409 on stale save, share, PGN, from a game
@@ -189,8 +189,8 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   `<details>` menu below (works without JS; the rail keeps the only `identity-name`); game and study pages stack, the
   move list becomes one scrolling line, history rows take two lines, grids use `minmax(min(Npx,100%),1fr)`, and
   buttons/chips are 44px tall under `pointer-coarse`. The Playwright `mobile` project (390×844) runs
-  `e2e/responsive.spec.ts` only: two-browser specs open their own contexts, which ignore a project's viewport. Screens: `/` (quick pairing, invite, recent
-  games, news), `/invites/$id`, `/games/$id`, `/games`, and the `/pgn/$id` download route. **Lobby
+  `e2e/responsive.spec.ts` only: two-browser specs open their own contexts, which ignore a project's viewport. Screens: `/` (quick pairing, the computer, recent
+  games, news), `/games/$id`, `/games`, and the `/pgn/$id` download route. **Lobby
   (live-home)**: `GET /api/lobby` (`WebApi/Lobby/`, one FusionCache answer for `Lobby:CacheSeconds`; queue sizes from
   `GetQueues` on the matchmaking singleton, null on a timeout) is polled by home every 10 s while visible (`useLobby`)
   for the "n waiting" on the quick-pairing tiles; there is no Club TV or Watch page (remove-watch-tv: a club, not a
@@ -239,9 +239,9 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   the flag ends the game; recovery restores the side to move's clock as of the last event (D14). The `games`
   region has idle passivation OFF (Akka default 120 s would kill clocks); `PassivationPolicy` passivates 1 min
   after the end. Games start only through `IGameStarter`: from matchmaking (`Akka/Matchmaking/MatchmakingActor`, a cluster singleton;
-  `POST|DELETE /api/matchmaking/{tc}`; `?heartbeat=true` every ~25 s keeps your place, 60 s silence drops you) or an invite
-  (`Akka/Matchmaking/InviteActor`, sharded `invites`, 24 h; `POST /api/invites`, `GET /api/invites/{id}`, `…/accept`,
-  `…/cancel`). Live kinds `queue:{tc}` and `invite:{id}`. **Rematch (game-feedback)**: `POST /api/games/{id}/rematch`
+  `POST|DELETE /api/matchmaking/{tc}`; `?heartbeat=true` every ~25 s keeps your place, 60 s silence drops you) or a
+  rematch — there are no invite links (remove-friend-invites); `Akka/Matchmaking/InviteActor` (sharded `invites`, 24 h)
+  serves rematches only. Live kinds `queue:{tc}` and `invite:{id}`. **Rematch (game-feedback)**: `POST /api/games/{id}/rematch`
   (`Rematch.Offer` + `OfferRematch`) is an invite whose id IS the finished game's id, reserved for the other player
   (`InviteCreated.ForId`, optional, so old rows read), colours swapped; first call offers, the guest's call accepts. The
   game page watches `invite:{gameId}` once the game ends (`useLiveTopic({ enabled })`). The tab title/favicon signals
@@ -309,7 +309,8 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   0–5 and a due time (`TrainerSchedule`: clean = up a box, due after 0/1/3/7/14/30 days; a mistake = box 0, due now;
   next = lowest due box, then oldest due, then new; learned from box 3), on the primary and only the member's own.
   `GET /api/trainer/families?q&color`, `…/family?name&color`, `…/next`, `POST …/results`, `GET /api/me/trainer`.
-  Frontend: `lib/trainer.ts#useDrill` (the board plays the other side after 400 ms, a wrong move is shown with the
+  `/trainer` shows the families in columns by kind (`lib/trainer.ts#openingKind`: gambits, defences, openings,
+  games), each scrolling inside the `wide fill` page (trainer-columns). Frontend: `lib/trainer.ts#useDrill` (the board plays the other side after 400 ms, a wrong move is shown with the
   right one and must be replaced, `onDone(mistakes)` once), `/trainer`, `/trainer/$family?color=`, the rail's Trainer
   and "Openings trained" on the member's own profile only. **Study lines (study-repertoire-trainer)**: `Trainer/StudyLines`
   makes every start-to-leaf path of the member's OWN study a line (main line first; a path with no move for the side
