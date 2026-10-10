@@ -8,7 +8,6 @@ import {
   Flame,
   Handshake,
   Hourglass,
-  Mail,
   Microscope,
   Repeat,
   Timer,
@@ -28,7 +27,7 @@ import type {
   PgnResult,
 } from '#/lib/games'
 import type { Piece } from '#/lib/moveInput'
-import type { MyGameItem, TvGame } from '#/lib/play'
+import type { MyGameItem } from '#/lib/play'
 import { PreferencesContext, animationMs as animationMsOf } from '#/lib/auth'
 import { Button, Panel } from '#/components/ui'
 import { outcomeFor } from '#/lib/play'
@@ -39,10 +38,9 @@ import {
   reasonLabel,
   reasonText,
   resultText,
-  timeLeft,
 } from '#/lib/games'
 import { squaresFor } from '#/lib/moveInput'
-import { boardSquares, pieceSrc, squareStyles, uciSquares } from '#/lib/board'
+import { pieceSrc, squareStyles } from '#/lib/board'
 
 // Static class strings per game type (site-themes), so Tailwind sees every one.
 const TC_BG: Record<Category, string> = {
@@ -50,7 +48,6 @@ const TC_BG: Record<Category, string> = {
   blitz: 'bg-tc-blitz',
   rapid: 'bg-tc-rapid',
   classical: 'bg-tc-classical',
-  correspondence: 'bg-tc-correspondence',
   computer: 'bg-tc-computer',
 }
 
@@ -64,7 +61,6 @@ const TC_TEXT: Record<Category, string> = {
   blitz: 'text-tc-blitz',
   rapid: 'text-tc-rapid',
   classical: 'text-tc-classical',
-  correspondence: 'text-tc-correspondence',
   computer: 'text-tc-computer',
 }
 
@@ -73,7 +69,6 @@ const TC_ICON: Record<Category, typeof Zap> = {
   blitz: Flame,
   rapid: Timer,
   classical: Hourglass,
-  correspondence: Mail,
   computer: Cpu,
 }
 
@@ -166,6 +161,8 @@ export interface BoardProps {
   onRightClick?: () => void
   /** Piece slide time (default: the user's preference); 0 under prefers-reduced-motion whatever is set. */
   animationMs?: number
+  /** Arrows the page draws (the review's better move), beside any the user draws. */
+  arrows?: ReadonlyArray<SquarePair>
 }
 
 /** The board's frame: one size for the placeholder and the live board, so nothing moves when it appears. */
@@ -188,6 +185,7 @@ export function Board({
   canDrag,
   onRightClick,
   animationMs,
+  arrows = [],
 }: BoardProps) {
   const id = `board${useId().replace(/[^a-zA-Z0-9]/g, '')}`
   const prefs = use(PreferencesContext)
@@ -231,6 +229,11 @@ export function Board({
     allowDragOffBoard: false,
     allowDrawingArrows: true,
     arrowOptions: ARROW_OPTIONS,
+    arrows: arrows.map((a) => ({
+      startSquare: a.from,
+      endSquare: a.to,
+      color: ARROW_OPTIONS.colors.default,
+    })),
     clearArrowsOnPositionChange: true,
     ...(canDrag ? { canDragPiece: ({ square }) => square !== null && canDrag(square) } : {}),
     ...(onSquareClick ? { onSquareClick: ({ square }) => onSquareClick(square) } : {}),
@@ -269,46 +272,6 @@ export function BoardPlaceholder({ orientation }: { orientation: Color }) {
             data-square={square}
             className={`aspect-square ${light ? 'bg-board-light' : 'bg-board-dark'}`}
           />
-        )
-      })}
-    </div>
-  )
-}
-
-/**
- * A small static board (live-home): the position drawn on the server in the board theme's colours, the last move
- * tinted, nothing to click — the link around it opens the game. One picture, named by `label`.
- */
-export function MiniBoard({
-  fen,
-  lastUci,
-  label,
-  orientation = 'white',
-}: {
-  fen: string
-  lastUci?: string | null
-  label: string
-  orientation?: Color
-}) {
-  const last = uciSquares(lastUci)
-  return (
-    <div
-      role="img"
-      aria-label={label}
-      className="grid aspect-square w-full grid-cols-8 overflow-hidden rounded-board"
-    >
-      {boardSquares(fen, orientation).map(({ square, light, piece }) => {
-        const isLast = square === last?.from || square === last?.to
-        return (
-          <div
-            key={square}
-            data-square={square}
-            data-last={isLast ? '' : undefined}
-            className={`relative aspect-square ${light ? 'bg-board-light' : 'bg-board-dark'}`}
-          >
-            {isLast ? <span className="absolute inset-0 bg-(--board-last)" /> : null}
-            {piece ? <PieceImage piece={piece} className="absolute inset-0 size-full" /> : null}
-          </div>
         )
       })}
     </div>
@@ -837,96 +800,6 @@ export function GameControls({
         Resign
       </Button>
     </div>
-  )
-}
-
-/**
- * The games waiting for my move (correspondence-games D5): the opponent, the time control and, for a correspondence
- * game, how long is left. `nowMs` is passed in so the list is pure and the page decides when time moves.
- */
-export function YourTurnList({
-  games,
-  nowMs,
-}: {
-  games: ReadonlyArray<MyGameItem>
-  nowMs: number
-}) {
-  return (
-    <ul className="m-0 flex list-none flex-col p-0" data-testid="your-turn">
-      {games.map((game) => (
-        <li
-          key={game.gameId}
-          className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-4 border-b border-line-divider py-2.5"
-        >
-          <Link
-            to="/games/$id"
-            params={{ id: game.gameId }}
-            className="truncate text-fg-primary no-underline hover:text-fg-accent"
-          >
-            vs {game.opponent}
-          </Link>
-          <span className="flex items-center gap-2 font-mono text-fg-secondary">
-            <CategoryMark timeControl={game.timeControl} />
-            {game.timeControl}
-          </span>
-          <span className="text-sm text-fg-accent">
-            {game.deadlineAt ? timeLeft(game.deadlineAt, nowMs) : 'your move'}
-          </span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-/**
- * Club TV and the Watch page (live-home): a mini board per game, Black's name above it and White's below, each board
- * opening the game for a spectator (D20).
- */
-export function TvGrid({
-  games,
-  empty = 'No games on right now.',
-}: {
-  games: ReadonlyArray<TvGame>
-  empty?: string
-}) {
-  if (games.length === 0) return <p className="m-0 text-sm text-fg-secondary">{empty}</p>
-  return (
-    <ul
-      className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(150px,100%),1fr))] gap-4 p-0"
-      data-testid="tv"
-    >
-      {games.map((game) => (
-        <li key={game.gameId} className="flex min-w-0 flex-col gap-1.5">
-          <TvName id={game.blackId} name={game.black} />
-          <Link
-            to="/games/$id"
-            params={{ id: game.gameId }}
-            className="block rounded-board outline-offset-2 transition-transform motion-safe:hover:scale-[1.02]"
-          >
-            <MiniBoard
-              fen={game.fen}
-              lastUci={game.lastUci}
-              label={`${game.white} vs ${game.black}, ${game.timeControl}`}
-            />
-          </Link>
-          <span className="flex items-center justify-between gap-2">
-            <TvName id={game.whiteId} name={game.white} />
-            <span className="flex shrink-0 items-center gap-1.5 font-mono text-xs text-fg-secondary">
-              <CategoryMark timeControl={game.timeControl} />
-              {game.timeControl}
-            </span>
-          </span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function TvName({ id, name }: { id: number; name: string }) {
-  return (
-    <span className="truncate text-sm text-fg-primary">
-      <PlayerLink id={id} name={name} />
-    </span>
   )
 }
 

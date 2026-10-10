@@ -6,7 +6,6 @@ import {
   isQueueView,
   outcomeFor,
   pairingGame,
-  toTvGame,
   useLoadMore,
   useLobby,
   waitingIn,
@@ -89,7 +88,6 @@ describe('waitingIn', () => {
       { timeControl: '3+2', waiting: 1 },
       { timeControl: '5+0', waiting: 0 },
     ],
-    tv: [],
   }
 
   it('reads one queue, and knows nothing without the queues', () => {
@@ -101,8 +99,8 @@ describe('waitingIn', () => {
 })
 
 describe('useLobby', () => {
-  const first: Lobby = { gamesInPlay: 1, queues: null, tv: [] }
-  const second: Lobby = { gamesInPlay: 2, queues: null, tv: [] }
+  const first: Lobby = { gamesInPlay: 1, queues: null }
+  const second: Lobby = { gamesInPlay: 2, queues: null }
 
   afterEach(() => {
     vi.useRealTimers()
@@ -140,31 +138,6 @@ describe('useLobby', () => {
     expect(load).toHaveBeenCalledTimes(1)
     expect(result.current).toBe(first)
     hidden.mockRestore()
-  })
-})
-
-describe('toTvGame', () => {
-  it('draws a game from the read side, the start position before its first move', () => {
-    const row = {
-      gameId: GAME,
-      whiteId: 1,
-      white: 'testuser',
-      blackId: 2,
-      black: 'player',
-      timeControl: '3+2',
-      ply: 0,
-      updatedAt: '2026-10-02T10:00:00Z',
-      lastFen: null,
-      lastUci: null,
-    }
-    expect(toTvGame(row).fen).toBe('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
-    expect(
-      toTvGame({ ...row, lastFen: '8/8/8/8/8/8/8/8 w - - 0 1', lastUci: 'e2e4' }),
-    ).toMatchObject({
-      fen: '8/8/8/8/8/8/8/8 w - - 0 1',
-      lastUci: 'e2e4',
-      white: 'testuser',
-    })
   })
 })
 

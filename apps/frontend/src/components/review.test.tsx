@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { EvalGraph, PracticeFeedback, ReviewPanel } from './review'
+import { EvalGraph, ReviewPanel } from './review'
 import type { ReactNode } from 'react'
 import type { ReviewView, ReviewedMove } from '#/lib/review'
 
@@ -76,8 +76,8 @@ const panel = (props: Partial<Parameters<typeof ReviewPanel>[0]> = {}) => (
     onStart={vi.fn()}
     current={4}
     onSelect={vi.fn()}
-    practice={{ busy: false, added: null, error: null }}
-    onPractise={vi.fn()}
+    preview={null}
+    onPreview={vi.fn()}
     {...props}
   />
 )
@@ -97,11 +97,32 @@ describe('ReviewPanel', () => {
     expect(screen.getByTestId('review-progress').textContent).toBe('Reviewing: 3 of 4 positions')
   })
 
-  it('names the current move’s mistake with the better move and line', () => {
+  it('names the current move’s mistake with its score and the better line', () => {
     render(panel({ current: 3 }))
+    expect(screen.getByTestId('review-score').textContent).toBe('#−1')
+    expect(screen.getByTestId('review-move').textContent).toContain('Black mates')
+    expect(screen.getByTestId('review-move').textContent).toContain('2.g4 is a blunder.')
+    const line = screen.getByRole('group', { name: 'Better line' })
+    expect(line.textContent).toBe('Better:2.Nc3Nc6')
+  })
+
+  it('shows a move of the better line on the board when clicked, and goes back', () => {
+    const onPreview = vi.fn()
+    const { rerender } = render(panel({ current: 3, onPreview }))
+    fireEvent.click(screen.getByRole('button', { name: 'Nc6' }))
+    expect(onPreview).toHaveBeenCalledWith({ ply: 3, upTo: 2 })
+    rerender(panel({ current: 3, onPreview, preview: { ply: 3, upTo: 1 } }))
+    expect(screen.getByRole('button', { name: '2.Nc3' }).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: 'Back to the game' }))
+    expect(onPreview).toHaveBeenLastCalledWith(null)
+  })
+
+  it('a move that is not marked shows only its score', () => {
+    render(panel({ current: 2 }))
     expect(screen.getByTestId('review-move').textContent).toBe(
-      '2.g4 is a blunder. Better: 2.Nc3 (Nc3 Nc6) · #−1',
+      '−0.60Black is slightly better1...e5',
     )
+    expect(screen.queryByRole('group', { name: 'Better line' })).toBeNull()
   })
 
   it('counts each player’s marks and links the trainer for the opening the member left', () => {
@@ -115,14 +136,11 @@ describe('ReviewPanel', () => {
     )
   })
 
-  it('adds the member’s mistakes to practice', () => {
-    const onPractise = vi.fn()
-    const { rerender } = render(panel({ onPractise }))
-    fireEvent.click(screen.getByRole('button', { name: 'Practise my mistakes' }))
-    expect(onPractise).toHaveBeenCalled()
-    rerender(panel({ practice: { busy: false, added: 1, error: null } }))
-    expect(screen.getByTestId('practice-added').textContent).toBe(
-      '1 position added to your practice.',
+  it('no longer offers to practise the mistakes: finished games join training on their own', () => {
+    render(panel())
+    expect(screen.queryByRole('button', { name: 'Practise my mistakes' })).toBeNull()
+    expect(screen.getByRole('link', { name: 'Open training' }).getAttribute('href')).toBe(
+      '/training',
     )
   })
 })
@@ -136,29 +154,5 @@ describe('EvalGraph', () => {
     ).toBeTruthy()
     fireEvent.click(screen.getByTestId('graph-ply-3'))
     expect(onSelect).toHaveBeenCalledWith(3)
-  })
-})
-
-describe('PracticeFeedback', () => {
-  it('confirms a right answer and shows the engine’s line after a wrong one', () => {
-    const fen = 'rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2'
-    const { rerender } = render(
-      <PracticeFeedback
-        fen={fen}
-        answer={{ uci: 'b1c3', correct: true }}
-        bestLine={['b1c3', 'b8c6']}
-      />,
-    )
-    expect(screen.getByTestId('practice-feedback').textContent).toBe('Right: Nc3.')
-    rerender(
-      <PracticeFeedback
-        fen={fen}
-        answer={{ uci: 'g2g4', correct: false }}
-        bestLine={['b1c3', 'b8c6']}
-      />,
-    )
-    expect(screen.getByTestId('practice-feedback').textContent).toBe(
-      'Not this time. The engine plays Nc3 (Nc3 Nc6).',
-    )
   })
 })

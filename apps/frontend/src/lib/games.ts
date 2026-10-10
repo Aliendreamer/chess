@@ -68,8 +68,6 @@ export interface GameView {
   /** In a game against the computer: its side and level (engine-play D3); absent between people. */
   engineSide?: Color | null
   engineLevel?: string | null
-  /** A correspondence game's deadline for the player to move; absent otherwise. */
-  deadlineAt?: string | null
 }
 
 /** A level the computer plays at, as `GET /api/engine-levels` lists it. */
@@ -83,26 +81,9 @@ export interface EngineLevel {
 /** Games against the computer have no clocks (engine-play D4). */
 export const UNTIMED = 'untimed'
 
-/** A correspondence game: a week per move, reset after every move (correspondence-games D1). */
-export const CORRESPONDENCE = '7d'
-
-/** A running clock with flag and increment; untimed and correspondence games have none. */
+/** A running clock with flag and increment; untimed games have none. */
 export function hasClock(timeControl: string): boolean {
-  return timeControl !== UNTIMED && timeControl !== CORRESPONDENCE
-}
-
-/**
- * How long until a deadline: "7 days left" (days to the nearest, so a fresh week is not "6 days"), then "5 hours left"
- * and "12 minutes left" rounded down, so the last day never promises more than there is.
- */
-export function timeLeft(deadline: string, nowMs: number): string {
-  const ms = Date.parse(deadline) - nowMs
-  if (ms <= 60_000) return 'less than a minute left'
-  const minutes = Math.floor(ms / 60_000)
-  const hours = Math.floor(minutes / 60)
-  const days = Math.round(ms / 86_400_000)
-  const [n, unit] = hours >= 24 ? [days, 'day'] : hours >= 1 ? [hours, 'hour'] : [minutes, 'minute']
-  return `${n} ${unit}${n === 1 ? '' : 's'} left`
+  return timeControl !== UNTIMED
 }
 
 /** The computer's turn in a game against it: the page shows it thinking and takes no clicks. */
@@ -292,14 +273,7 @@ export const PRESETS = [
   '90+30',
 ] as const
 
-export const CATEGORIES = [
-  'bullet',
-  'blitz',
-  'rapid',
-  'classical',
-  'correspondence',
-  'computer',
-] as const
+export const CATEGORIES = ['bullet', 'blitz', 'rapid', 'classical', 'computer'] as const
 export type Category = (typeof CATEGORIES)[number]
 
 const CATEGORY_LABELS: Record<Category, string> = {
@@ -307,17 +281,15 @@ const CATEGORY_LABELS: Record<Category, string> = {
   blitz: 'Blitz',
   rapid: 'Rapid',
   classical: 'Classical',
-  correspondence: 'Correspondence',
   computer: 'Untimed',
 }
 
 /**
- * Bullet under 3 minutes, blitz under 10, rapid under 30, classical beyond (by the base time); `7d` is
- * correspondence and `untimed` is a game against the computer. The key picks the game type's colour (site-themes).
+ * Bullet under 3 minutes, blitz under 10, rapid under 30, classical beyond (by the base time); `untimed` is a game
+ * against the computer. The key picks the game type's colour (site-themes).
  */
 export function categoryOf(timeControl: string): Category {
   if (timeControl === UNTIMED) return 'computer'
-  if (timeControl === CORRESPONDENCE) return 'correspondence'
   const base = Number(timeControl.split('+')[0])
   if (base < 3) return 'bullet'
   if (base < 10) return 'blitz'

@@ -40,7 +40,7 @@ function LibraryPage() {
   const search = Route.useSearch()
   const first = Route.useLoaderData()
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 shell:h-full" data-layout="wide fill">
       <SectionHeading size="xl">Library</SectionHeading>
       <SearchForm initial={search} />
       {/* A new search starts the list over. */}
@@ -61,7 +61,10 @@ function Results({
     getLibrary({ data: { search, limit: PAGE, cursor } }),
   )
   return (
-    <section className="flex flex-col gap-3" aria-label="Results">
+    <section
+      className="flex flex-col gap-3 shell:min-h-0 shell:flex-1 shell:overflow-y-auto shell:pr-1"
+      aria-label="Results"
+    >
       <LibraryList games={pager.items} />
       <LoadMore pager={pager} />
     </section>

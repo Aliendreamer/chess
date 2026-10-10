@@ -9,6 +9,7 @@ describe('admin helpers', () => {
 
   it('accepts only the projections the API has and safe aggregate ids', () => {
     expect(PROJECTION_GROUPS).toContain('chess.rm-games')
+    expect(PROJECTION_GROUPS).toContain('chess.auto-review')
     expect(isProjectionGroup('chess.rm-games')).toBe(true)
     expect(isProjectionGroup('chess.rm-games/../x')).toBe(false)
     expect(isAggregateId('0199f1c2a3b47c5d8e9f0a1b2c3d4e5f')).toBe(true)

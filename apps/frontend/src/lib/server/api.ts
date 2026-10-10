@@ -1,12 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader, getRequestIP } from '@tanstack/react-start/server'
-import { CLAIM_OUTCOMES, CORRESPONDENCE, PRESETS } from '../games'
-import { MY_TURN } from '../play'
+import { CLAIM_OUTCOMES, PRESETS } from '../games'
 import { THINK_LEVELS } from '../analysis'
 import { isPreferences } from '../auth'
 import { isAggregateId, isProjectionGroup } from '../admin'
 import { IMPORT_BATCH, isLibrarySource, searchQuery } from '../library'
 import { isColor } from '../trainer'
+import { MAX_EXCLUDE, UCI_MOVE, cleanFilters, isTrainingId, isTrainingMode } from '../training'
 import { loadMe, loadPreferences, savePreferences } from './auth'
 import { apiUrl, clientIp, forwardClientIp, isGuid } from './upstream'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
@@ -35,14 +35,8 @@ import {
   recordRun,
   recordStudyRun,
 } from './trainer'
-import {
-  loadMyPractice,
-  loadPracticeNext,
-  loadReview,
-  practiseGame,
-  recordPractice,
-  startReview,
-} from './review'
+import { loadReview, startReview } from './review'
+import { answerTraining, loadTrainingNext, loadTrainingSummary } from './training'
 import {
   loadEngineLevels,
   loadFinishedGame,
@@ -69,7 +63,6 @@ import {
   joinQueue,
   leaveQueue,
   loadInvite,
-  loadLiveGames,
   loadLobby,
   loadMyGames,
   rematch,
@@ -77,10 +70,11 @@ import {
 import type { ImportBatch, LibrarySearch, LibrarySource } from '../library'
 import type { Preferences } from '../auth'
 import type { GameCommand } from '../games'
-import type { InviteView, MyTurn } from '../play'
+import type { InviteView } from '../play'
 import type { StudyInput, StudyMoveInput } from '../studies'
 import type { Think } from '../analysis'
 import type { TrainerColor } from '../trainer'
+import type { TrainingFilters, TrainingMode } from '../training'
 
 /**
  * A `fetch` bound to the internal API that re-attaches the caller's session cookie under its API name and tells the API
@@ -137,11 +131,6 @@ function preset(tc: string): string {
   if (!(PRESETS as ReadonlyArray<string>).includes(tc))
     throw new Error(`not a preset time control: ${tc}`)
   return tc
-}
-
-/** An invite may also be a correspondence game (correspondence-games D1); the queue may not. */
-function inviteTimeControl(tc: string): string {
-  return tc === CORRESPONDENCE ? tc : preset(tc)
 }
 
 function guid(id: string): string {
@@ -218,7 +207,7 @@ export const postLeaveQueue = createServerFn({ method: 'POST' })
 export const postCreateInvite = createServerFn({ method: 'POST' })
   .validator((input: { timeControl: string; color: InviteView['color'] }) => {
     if (!COLORS.includes(input.color)) throw new Error(`not a colour: ${input.color}`)
-    return { timeControl: inviteTimeControl(input.timeControl), color: input.color }
+    return { timeControl: preset(input.timeControl), color: input.color }
   })
   .handler(({ data }) => createInvite(serverFetch(), data))
 
@@ -482,43 +471,49 @@ export const postStartReview = createServerFn({ method: 'POST' })
   .validator((id: string) => guid(id))
   .handler(({ data }) => startReview(serverFetch(), data))
 
-/** The caller's mistakes of a reviewed game into their practice. */
-export const postPractiseGame = createServerFn({ method: 'POST' })
-  .validator((id: string) => guid(id))
-  .handler(({ data }) => practiseGame(serverFetch(), data))
+// ---- training (training D4) ------------------------------------------------------------------------------------
 
-export const getPracticeNext = createServerFn({ method: 'GET' }).handler(() =>
-  loadPracticeNext(serverFetch()),
-)
+function trainingMode(mode: TrainingMode): TrainingMode {
+  if (!isTrainingMode(mode)) throw new Error('Not a training mode.')
+  return mode
+}
 
-export const postPracticeResult = createServerFn({ method: 'POST' })
-  .validator((input: { gameId: string; ply: number; correct: boolean }) => {
-    if (!Number.isInteger(input.ply) || input.ply < 1 || input.ply > 2000)
-      throw new Error('Not a move.')
-    return { gameId: guid(input.gameId), ply: input.ply, correct: input.correct === true }
+/** The next position of a session: the mode, the master-game filters and the ids already seen (at most 100). */
+export const getTrainingNext = createServerFn({ method: 'GET' })
+  .validator(
+    (input: { mode: TrainingMode; filters?: TrainingFilters; exclude?: Array<string> }) => {
+      const mode = trainingMode(input.mode)
+      const exclude = Array.isArray(input.exclude) ? input.exclude : []
+      if (exclude.length > MAX_EXCLUDE || !exclude.every((id) => isTrainingId(mode, id)))
+        throw new Error('Not a list of positions.')
+      return { mode, filters: mode === 'library' ? cleanFilters(input.filters) : {}, exclude }
+    },
+  )
+  .handler(({ data }) => loadTrainingNext(serverFetch(), data))
+
+/** One answer; the API judges it and moves the position in the member's boxes. */
+export const postTrainingAnswer = createServerFn({ method: 'POST' })
+  .validator((input: { mode: TrainingMode; id: string; uci: string }) => {
+    const mode = trainingMode(input.mode)
+    if (!isTrainingId(mode, input.id)) throw new Error('Not a position.')
+    if (typeof input.uci !== 'string' || !UCI_MOVE.test(input.uci))
+      throw new Error('Not a UCI move.')
+    return { mode, id: input.id, uci: input.uci }
   })
-  .handler(({ data }) => recordPractice(serverFetch(), data))
+  .handler(({ data }) => answerTraining(serverFetch(), data))
 
-export const getMyPractice = createServerFn({ method: 'GET' }).handler(() =>
-  loadMyPractice(serverFetch()),
+/** The member's own training counts (the start panel, their own profile). */
+export const getTrainingSummary = createServerFn({ method: 'GET' }).handler(() =>
+  loadTrainingSummary(serverFetch()),
 )
 
 /** The lobby (live-home): polled by home every 10 s, answered from a cache the API shares between callers. */
 export const getLobby = createServerFn({ method: 'GET' }).handler(() => loadLobby(serverFetch()))
 
-/** Games in play for the Watch page, newest move first. */
-export const getLiveGames = createServerFn({ method: 'GET' })
+export const getMyGames = createServerFn({ method: 'GET' })
   .validator((input: { limit: number; cursor?: string }) => ({
     limit: Math.min(Math.max(Math.trunc(input.limit), 1), 50),
     cursor: input.cursor,
-  }))
-  .handler(({ data }) => loadLiveGames(serverFetch(), data))
-
-export const getMyGames = createServerFn({ method: 'GET' })
-  .validator((input: { limit: number; cursor?: string; turn?: MyTurn }) => ({
-    limit: Math.min(Math.max(Math.trunc(input.limit), 1), 50),
-    cursor: input.cursor,
-    turn: input.turn === MY_TURN ? MY_TURN : undefined,
   }))
   .handler(({ data }) => loadMyGames(serverFetch(), data))
 

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  boardSquares,
   checkSquare,
   material,
   pieceSrc,
@@ -156,24 +155,6 @@ describe('replay', () => {
 
   it('stops at a move it cannot read', () => {
     expect(replay(['e4', 'Ke7??', 'Nf3'])).toHaveLength(2)
-  })
-})
-
-describe('boardSquares', () => {
-  it('lists a8 to h1 for White with the colour and piece of each square', () => {
-    const squares = boardSquares(START, 'white')
-    expect(squares).toHaveLength(64)
-    expect(squares[0]).toEqual({ square: 'a8', light: true, piece: { color: 'b', type: 'r' } })
-    expect(squares[63]).toEqual({ square: 'h1', light: true, piece: { color: 'w', type: 'r' } })
-    expect(squares.find((s) => s.square === 'a1')?.light).toBe(false)
-    expect(squares.find((s) => s.square === 'e4')?.piece).toBeNull()
-    expect(squares.filter((s) => s.piece !== null)).toHaveLength(32)
-  })
-
-  it('turns the board round for Black', () => {
-    const squares = boardSquares(START, 'black')
-    expect(squares[0]?.square).toBe('h1')
-    expect(squares[63]?.square).toBe('a8')
   })
 })
 

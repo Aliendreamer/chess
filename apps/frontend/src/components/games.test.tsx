@@ -8,15 +8,12 @@ import {
   GameControls,
   GameOverCard,
   GameResultPanel,
-  MiniBoard,
   MoveList,
   MoveNav,
   PlayerStrip,
   PromotionPicker,
   RecentGames,
   RematchOffer,
-  TvGrid,
-  YourTurnList,
 } from './games'
 import type { ReactNode } from 'react'
 import type { GameView } from '#/lib/games'
@@ -323,116 +320,6 @@ describe('GameControls against the computer', () => {
     expect(screen.queryByRole('button', { name: 'Offer draw' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Resign' }))
     expect(onCommand).toHaveBeenCalledWith({ kind: 'resign' })
-  })
-})
-
-describe('YourTurnList', () => {
-  it('lists each game with the time left, or just "your move" without a deadline', () => {
-    const base = {
-      color: 'white' as const,
-      opponentId: 2,
-      status: 'playing' as const,
-      result: null,
-      reason: null,
-      createdAt: '2026-09-27T09:00:00Z',
-      yourTurn: true,
-    }
-    render(
-      <YourTurnList
-        nowMs={Date.parse('2026-09-27T10:00:00Z')}
-        games={[
-          {
-            ...base,
-            gameId: 'g1',
-            opponent: 'bob',
-            timeControl: '7d',
-            deadlineAt: '2026-10-03T10:00:00Z',
-          },
-          { ...base, gameId: 'g2', opponent: 'ann', timeControl: '5+3', deadlineAt: null },
-        ]}
-      />,
-    )
-    const rows = screen.getByTestId('your-turn').querySelectorAll('li')
-    expect(rows[0]?.textContent).toBe('vs bob7d6 days left')
-    expect(rows[1]?.textContent).toBe('vs ann5+3your move')
-  })
-
-  it('marks each game with its type colour (site-themes)', () => {
-    const { container } = render(
-      <YourTurnList
-        nowMs={0}
-        games={[
-          {
-            color: 'white',
-            opponentId: 2,
-            status: 'playing',
-            result: null,
-            reason: null,
-            createdAt: '2026-09-27T09:00:00Z',
-            yourTurn: true,
-            gameId: 'g1',
-            opponent: 'bob',
-            timeControl: '7d',
-            deadlineAt: null,
-          },
-        ]}
-      />,
-    )
-    const mark = container.querySelector('[data-category]')
-    expect(mark?.getAttribute('data-category')).toBe('correspondence')
-    expect(mark?.className).toContain('bg-tc-correspondence')
-  })
-})
-
-describe('MiniBoard', () => {
-  const AFTER_E4 = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'
-
-  it('is drawn on the server: every square and piece is in the HTML', () => {
-    const html = renderToString(<MiniBoard fen={START} label="testuser vs player" />)
-    expect(html.match(/data-square=/g)).toHaveLength(64)
-    expect(html.match(/<img/g)).toHaveLength(32)
-  })
-
-  it('tints the last move and names the board', () => {
-    render(<MiniBoard fen={AFTER_E4} lastUci="e2e4" label="testuser vs player" />)
-    const board = screen.getByRole('img', { name: 'testuser vs player' })
-    expect(board.querySelectorAll('[data-last]')).toHaveLength(2)
-    expect(board.querySelector('[data-square="e4"] img')).not.toBeNull()
-    expect(board.querySelector('[data-square="e2"] img')).toBeNull()
-    expect(board.querySelector('[data-square="a8"]')).toBe(board.firstElementChild)
-  })
-})
-
-describe('TvGrid', () => {
-  const tv = (gameId: string, white: string, black: string) => ({
-    gameId,
-    whiteId: 1,
-    white,
-    blackId: 2,
-    black,
-    timeControl: '3+2',
-    fen: START,
-    lastUci: null,
-    ply: 0,
-    updatedAt: '2026-10-02T10:00:00Z',
-  })
-
-  it('opens each game from its board and names both players', () => {
-    render(
-      <TvGrid games={[tv('g1', 'testuser', 'player'), tv('g2', 'anna', 'Stockfish (Club)')]} />,
-    )
-    const links = screen.getAllByRole('link')
-    const games = links.map((a) => a.getAttribute('href')).filter((h) => h?.startsWith('/games/'))
-    expect(games).toEqual(['/games/g1', '/games/g2'])
-    expect(screen.getByRole('img', { name: 'testuser vs player, 3+2' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Stockfish (Club)' }).getAttribute('href')).toBe(
-      '/players/2',
-    )
-  })
-
-  it('says so when no game is on', () => {
-    render(<TvGrid games={[]} empty="No games on right now." />)
-    expect(screen.getByText('No games on right now.')).toBeTruthy()
   })
 })
 

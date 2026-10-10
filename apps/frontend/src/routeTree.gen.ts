@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as PgnIdRouteImport } from './routes/pgn/$id'
-import { Route as AuthenticatedWatchRouteImport } from './routes/_authenticated/watch'
+import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated/training'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedPracticeRouteImport } from './routes/_authenticated/practice'
 import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
@@ -48,9 +48,9 @@ const PgnIdRoute = PgnIdRouteImport.update({
   path: '/pgn/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedWatchRoute = AuthenticatedWatchRouteImport.update({
-  id: '/watch',
-  path: '/watch',
+const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -167,7 +167,7 @@ export interface FileRoutesByFullPath {
   '/news': typeof AuthenticatedNewsRoute
   '/practice': typeof AuthenticatedPracticeRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/watch': typeof AuthenticatedWatchRoute
+  '/training': typeof AuthenticatedTrainingRoute
   '/pgn/$id': typeof PgnIdRoute
   '/games/$id': typeof AuthenticatedGamesIdRoute
   '/invites/$id': typeof AuthenticatedInvitesIdRoute
@@ -191,7 +191,7 @@ export interface FileRoutesByTo {
   '/news': typeof AuthenticatedNewsRoute
   '/practice': typeof AuthenticatedPracticeRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/watch': typeof AuthenticatedWatchRoute
+  '/training': typeof AuthenticatedTrainingRoute
   '/pgn/$id': typeof PgnIdRoute
   '/': typeof AuthenticatedIndexRoute
   '/games/$id': typeof AuthenticatedGamesIdRoute
@@ -218,7 +218,7 @@ export interface FileRoutesById {
   '/_authenticated/news': typeof AuthenticatedNewsRoute
   '/_authenticated/practice': typeof AuthenticatedPracticeRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/watch': typeof AuthenticatedWatchRoute
+  '/_authenticated/training': typeof AuthenticatedTrainingRoute
   '/pgn/$id': typeof PgnIdRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/games/$id': typeof AuthenticatedGamesIdRoute
@@ -246,7 +246,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/practice'
     | '/settings'
-    | '/watch'
+    | '/training'
     | '/pgn/$id'
     | '/games/$id'
     | '/invites/$id'
@@ -270,7 +270,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/practice'
     | '/settings'
-    | '/watch'
+    | '/training'
     | '/pgn/$id'
     | '/'
     | '/games/$id'
@@ -296,7 +296,7 @@ export interface FileRouteTypes {
     | '/_authenticated/news'
     | '/_authenticated/practice'
     | '/_authenticated/settings'
-    | '/_authenticated/watch'
+    | '/_authenticated/training'
     | '/pgn/$id'
     | '/_authenticated/'
     | '/_authenticated/games/$id'
@@ -345,11 +345,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PgnIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/watch': {
-      id: '/_authenticated/watch'
-      path: '/watch'
-      fullPath: '/watch'
-      preLoaderRoute: typeof AuthenticatedWatchRouteImport
+    '/_authenticated/training': {
+      id: '/_authenticated/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof AuthenticatedTrainingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings': {
@@ -503,7 +503,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
   AuthenticatedPracticeRoute: typeof AuthenticatedPracticeRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedWatchRoute: typeof AuthenticatedWatchRoute
+  AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedGamesIdRoute: typeof AuthenticatedGamesIdRoute
   AuthenticatedInvitesIdRoute: typeof AuthenticatedInvitesIdRoute
@@ -525,7 +525,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedNewsRoute: AuthenticatedNewsRoute,
   AuthenticatedPracticeRoute: AuthenticatedPracticeRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedWatchRoute: AuthenticatedWatchRoute,
+  AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedGamesIdRoute: AuthenticatedGamesIdRoute,
   AuthenticatedInvitesIdRoute: AuthenticatedInvitesIdRoute,

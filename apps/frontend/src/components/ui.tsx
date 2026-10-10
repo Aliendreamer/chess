@@ -105,8 +105,16 @@ export interface OptionTileProps {
   label?: string
   /** A background class for a coloured bar along the top: the game type (site-themes). */
   bar?: string
+  /** Tighter padding, for a tile in a column of the wide home rather than across the page. */
+  compact?: boolean
   onClick?: () => void
 }
+
+/** Figure size by `figureSize`, normal then compact: a word (an engine level) must fit a fifth of a column. */
+const FIGURE_SIZES = {
+  md: ['text-display-sm', 'text-display-xs'],
+  sm: ['text-display-xs', 'text-note'],
+} as const
 
 export function OptionTile({
   figure,
@@ -117,9 +125,17 @@ export function OptionTile({
   disabled = false,
   label,
   bar,
+  compact = false,
   onClick,
 }: OptionTileProps) {
   const center = align === 'center'
+  const padding = center
+    ? compact
+      ? 'items-center py-2.5'
+      : 'items-center py-3.5'
+    : compact
+      ? 'items-start px-2.5 py-2.5 whitespace-nowrap'
+      : 'items-start px-3.5 py-[18px]'
   return (
     <button
       type="button"
@@ -129,7 +145,7 @@ export function OptionTile({
       onClick={onClick}
       className={[
         'relative flex cursor-pointer flex-col gap-1 overflow-hidden rounded-card border text-left text-fg-primary transition-colors duration-[120ms] disabled:cursor-not-allowed disabled:opacity-45',
-        center ? 'items-center py-3.5' : 'items-start px-3.5 py-[18px]',
+        padding,
         selected
           ? 'border-line-accent bg-surface-accent-tint'
           : 'border-line-default bg-surface-raised enabled:hover:border-line-accent',
@@ -137,7 +153,7 @@ export function OptionTile({
     >
       {bar ? <span aria-hidden className={`absolute inset-x-0 top-0 h-[3px] ${bar}`} /> : null}
       <span
-        className={`max-w-full font-display break-words ${figureSize === 'sm' ? 'text-display-xs' : 'text-display-sm'}`}
+        className={`max-w-full font-display break-words ${FIGURE_SIZES[figureSize][compact ? 1 : 0]}`}
       >
         {figure}
       </span>
@@ -204,7 +220,7 @@ export function Panel({
 export interface SectionHeadingProps {
   /** `xl` is the page title (an h1); `sm` a section heading (an h2). */
   size?: 'sm' | 'xl'
-  /** A count, a status, or a link such as "Watch all". */
+  /** A count, a status, or a link such as "View all". */
   meta?: ReactNode
   className?: string
   children: ReactNode

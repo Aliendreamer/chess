@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Chess } from 'chess.js'
-import { clickSquare, legalTargets, needsPromotion } from './moveInput'
 import type { CommandOutcome } from './games'
 
 /**
- * Game review (game-review): the API's shapes, the marks and scores as shown, the graph's points, the review's polling,
- * and the practice answer check. Client-safe; the reads are in `lib/server/review.ts`.
+ * Game review (game-review): the API's shapes, the marks and scores as shown, the graph's points and the review's
+ * polling. Client-safe; the reads are in `lib/server/review.ts`.
  */
 
 export type MoveClass = 'none' | 'inaccuracy' | 'mistake' | 'blunder'
@@ -51,38 +50,6 @@ export interface ReviewView {
   bookExit: BookExit | null
 }
 
-export interface PracticeItem {
-  gameId: string
-  ply: number
-  fen: string
-  playedUci: string
-  playedSan: string
-  acceptedUci: Array<string>
-  bestLine: Array<string>
-  class: 'mistake' | 'blunder'
-  box: number
-  white: string
-  black: string
-  playedAt: string | null
-}
-
-export interface PracticeNext {
-  item: PracticeItem | null
-  nextDueAt: string | null
-}
-
-export interface PracticeResult {
-  box: number
-  dueAt: string
-  learned: boolean
-}
-
-export interface PracticeSummary {
-  positions: number
-  learned: number
-  due: number
-}
-
 /** How often a running review is asked again. */
 export const REVIEW_POLL_MS = 2000
 
@@ -116,6 +83,51 @@ export function lineSans(fen: string, ucis: ReadonlyArray<string>): Array<string
     }
   }
   return sans
+}
+
+/** Which of the engine's moves is on the board: the reviewed ply and how many of its line's moves are played. */
+export interface PreviewState {
+  ply: number
+  upTo: number
+}
+
+export interface LinePreview {
+  fen: string
+  lastMove: { from: string; to: string } | null
+}
+
+/**
+ * The engine's better line on the board (game-review): from the position before the reviewed move, its first `upTo`
+ * SAN moves played (as far as they are legal). The board shows this instead of the game while the user looks at it.
+ */
+export function previewLine(
+  fenBefore: string,
+  line: ReadonlyArray<string>,
+  upTo: number,
+): LinePreview {
+  const board = new Chess(fenBefore)
+  let lastMove: LinePreview['lastMove'] = null
+  for (const san of line.slice(0, upTo)) {
+    try {
+      const move = board.move(san)
+      lastMove = { from: move.from, to: move.to }
+    } catch {
+      break
+    }
+  }
+  return { fen: board.fen(), lastMove }
+}
+
+/** "White is better", "Black is winning", "Equal": the score in words, for the review's evaluation line. */
+export function advantageText(m: Pick<ReviewedMove, 'cp' | 'mate'>): string {
+  if (m.mate !== null) return m.mate > 0 ? 'White mates' : 'Black mates'
+  if (m.cp === null) return ''
+  const side = m.cp > 0 ? 'White' : 'Black'
+  const pawns = Math.abs(m.cp)
+  if (pawns < 30) return 'Equal'
+  if (pawns < 100) return `${side} is slightly better`
+  if (pawns < 300) return `${side} is better`
+  return `${side} is winning`
 }
 
 /** A move as written in text: "7.Nf3", "7...Bd6". */
@@ -168,15 +180,6 @@ export function bookLink(
 ): { family: string; color: 'white' | 'black' } | null {
   if (exit.color !== mine) return null
   return { family: exit.name.split(':')[0]!.trim(), color: exit.color }
-}
-
-export function isAccepted(uci: string, accepted: ReadonlyArray<string>): boolean {
-  return accepted.some((a) => a.toLowerCase() === uci.toLowerCase())
-}
-
-/** The side the member plays in a practice position: the side to move. */
-export function practiceSide(fen: string): 'white' | 'black' {
-  return fen.split(' ')[1] === 'b' ? 'black' : 'white'
 }
 
 /**
@@ -247,70 +250,5 @@ export function useReview(
         setBusy(false)
       }
     },
-  }
-}
-
-export interface PracticeBoard {
-  /** The member's move and whether the engine accepts it; null until they play (or ask for the answer). */
-  answer: { uci: string | null; correct: boolean } | null
-  selected: string | null
-  promotion: { from: string; to: string } | null
-  onSquareClick: (square: string) => void
-  onDrop: (from: string, to: string) => boolean
-  pickPromotion: (piece: 'q' | 'r' | 'b' | 'n') => void
-  cancelPromotion: () => void
-  /** "Show answer": counts as a wrong answer. */
-  reveal: () => void
-}
-
-/**
- * One practice position on the board: the first move played is the answer (checked against the engine's accepted
- * moves) and `onAnswer` is called once with it. A new position needs a new hook (key the component by it).
- */
-export function usePracticeBoard(
-  item: Pick<PracticeItem, 'fen' | 'acceptedUci'>,
-  onAnswer: (correct: boolean) => void,
-): PracticeBoard {
-  const [answer, setAnswer] = useState<PracticeBoard['answer']>(null)
-  const [selected, setSelected] = useState<string | null>(null)
-  const [promotion, setPromotion] = useState<PracticeBoard['promotion']>(null)
-  const mine = practiceSide(item.fen) === 'white' ? 'w' : 'b'
-
-  function play(uci: string | null) {
-    if (answer) return
-    const correct = uci !== null && isAccepted(uci, item.acceptedUci)
-    setAnswer({ uci, correct })
-    onAnswer(correct)
-  }
-
-  return {
-    answer,
-    selected,
-    promotion,
-    onSquareClick: (square) => {
-      if (answer) return
-      const result = clickSquare(item.fen, mine, selected, square)
-      setSelected(result.selected)
-      if (!result.move) return
-      if (needsPromotion(item.fen, result.move.from, result.move.to)) setPromotion(result.move)
-      else play(`${result.move.from}${result.move.to}`)
-    },
-    onDrop: (from, to) => {
-      setSelected(null)
-      if (answer || !legalTargets(item.fen, from).includes(to)) return false
-      if (needsPromotion(item.fen, from, to)) {
-        setPromotion({ from, to })
-        return false
-      }
-      play(`${from}${to}`)
-      return false // the board keeps the position: the answer is shown beside it
-    },
-    pickPromotion: (piece) => {
-      if (!promotion) return
-      setPromotion(null)
-      play(`${promotion.from}${promotion.to}${piece}`)
-    },
-    cancelPromotion: () => setPromotion(null),
-    reveal: () => play(null),
   }
 }

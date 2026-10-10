@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js'
-import { applyOptimistic, needsPromotion, placement, squaresFor } from './moveInput'
+import { applyOptimistic, needsPromotion, placement } from './moveInput'
 import type { CSSProperties } from 'react'
 import type { Color } from './games'
 import type { Piece } from './moveInput'
@@ -156,23 +156,6 @@ export function replay(sans: ReadonlyArray<string>): Array<Position> {
     }
   }
   return positions
-}
-
-export interface BoardSquare {
-  square: string
-  light: boolean
-  piece: Piece | null
-}
-
-/** Every square in drawing order for `orientation` (top-left first), with its colour and piece: a static board's cells. */
-export function boardSquares(fen: string, orientation: Color): Array<BoardSquare> {
-  const pieces = placement(fen)
-  return squaresFor(orientation).map((square) => ({
-    square,
-    // a1 is dark, h1 light: file index + rank is odd on the dark squares.
-    light: (square.charCodeAt(0) - 97 + Number(square[1])) % 2 === 0,
-    piece: pieces[square] ?? null,
-  }))
 }
 
 const UCI = /^([a-h][1-8])([a-h][1-8])[qrbn]?$/

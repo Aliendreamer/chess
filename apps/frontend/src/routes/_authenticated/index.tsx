@@ -13,8 +13,8 @@ import {
   postLeaveQueue,
   postStartEngineGame,
 } from '#/lib/server/api'
-import { CORRESPONDENCE, PRESETS, category } from '#/lib/games'
-import { MY_TURN, isQueueView, pairingGame, useLobby, waitingIn } from '#/lib/play'
+import { PRESETS, category } from '#/lib/games'
+import { isQueueView, pairingGame, useLobby, waitingIn } from '#/lib/play'
 import { liveStatusText, useLiveTopic } from '#/lib/live'
 import {
   Button,
@@ -27,7 +27,7 @@ import {
   buttonClass,
   useCommand,
 } from '#/components/ui'
-import { CategoryIcon, RecentGames, TvGrid, YourTurnList, categoryBar } from '#/components/games'
+import { CategoryIcon, RecentGames, categoryBar } from '#/components/games'
 import { EventsNow, NewsList } from '#/components/news'
 import { pageTitle } from '#/lib/feedback'
 
@@ -43,16 +43,15 @@ function validateSearch(search: Record<string, unknown>): { seek?: string } {
 export const Route = createFileRoute('/_authenticated/')({
   validateSearch,
   loader: async () => {
-    const [games, yourTurn, levels, lobby, news, events] = await Promise.all([
+    const [games, levels, lobby, news, events] = await Promise.all([
       getMyGames({ data: { limit: 8 } }),
-      getMyGames({ data: { limit: 20, turn: MY_TURN } }),
       getEngineLevels(),
       // The lobby, the news and the events are niceties: home still works when they cannot be read.
       getLobby().catch(() => null),
-      getNews({ data: { limit: 8 } }).catch(() => null),
+      getNews({ data: { limit: 6 } }).catch(() => null),
       getEvents().catch(() => []),
     ])
-    return { games, yourTurn, levels, lobby, news, events }
+    return { games, levels, lobby, news, events }
   },
   head: () => ({ meta: [{ title: pageTitle('Home') }] }),
   component: HomePage,
@@ -64,7 +63,7 @@ const FOUND_MS = 600
 
 function HomePage() {
   const { me } = Route.useRouteContext()
-  const { games, yourTurn, levels, lobby: lobbyAtLoad, news, events } = Route.useLoaderData()
+  const { games, levels, lobby: lobbyAtLoad, news, events } = Route.useLoaderData()
   const lobby = useLobby(lobbyAtLoad, loadLobby)
   const navigate = useNavigate()
   const [seek, setSeek] = useState<QueueStatus | null>(null)
@@ -88,11 +87,12 @@ function HomePage() {
   }, [])
 
   return (
-    <div className="flex flex-col gap-8">
+    // A dashboard on a wide screen (home-layout): play | friend and your games | the club and the news, side by side
+    // without scrolling; two columns, then one, as the room shrinks. Container queries, so the rail is accounted for.
+    <div className="@container flex flex-col gap-6" data-layout="wide">
       <header className="flex flex-wrap items-end justify-between gap-6">
         <div className="flex flex-col gap-1">
           <SectionHeading size="xl">{`Hello, ${me.username}.`}</SectionHeading>
-          {lobby ? <ClubPulse gamesInPlay={lobby.gamesInPlay} /> : null}
         </div>
         {current ? (
           <Link
@@ -103,102 +103,82 @@ function HomePage() {
         ) : null}
       </header>
 
-      <section className="flex flex-col gap-3.5">
-        <SectionHeading>Quick pairing</SectionHeading>
-        {seek ? (
-          <Seek
-            key={seek.timeControl}
-            seek={seek}
-            meId={me.id}
-            onMatched={goToGame}
-            onCancel={() => setSeek(null)}
-          />
-        ) : null}
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2.5">
-          {PRESETS.map((tc) => (
-            <OptionTile
-              key={tc}
-              figure={tc}
-              caption={
-                <span className="flex items-center gap-1.5">
-                  <CategoryIcon timeControl={tc} />
-                  {category(tc)}
-                  <Waiting count={waitingIn(lobby, tc)} />
-                </span>
-              }
-              label={`Play ${tc} (${category(tc)})`}
-              bar={categoryBar(tc)}
-              selected={seek?.timeControl === tc}
-              disabled={joining.busy}
-              onClick={() => void join(tc)}
-            />
-          ))}
-        </div>
-        {joining.error ? <ErrorText>{joining.error}</ErrorText> : null}
-      </section>
+      <div className="grid items-start gap-x-8 gap-y-8 @4xl:grid-cols-2 @7xl:grid-cols-[1.2fr_1fr_1fr]">
+        <div className="flex min-w-0 flex-col gap-6">
+          <section className="flex flex-col gap-3">
+            <SectionHeading>Quick pairing</SectionHeading>
+            {seek ? (
+              <Seek
+                key={seek.timeControl}
+                seek={seek}
+                meId={me.id}
+                onMatched={goToGame}
+                onCancel={() => setSeek(null)}
+              />
+            ) : null}
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2 @7xl:grid-cols-6">
+              {PRESETS.map((tc) => (
+                <OptionTile
+                  key={tc}
+                  compact
+                  figure={tc}
+                  caption={
+                    <span className="flex items-center gap-1.5">
+                      <CategoryIcon timeControl={tc} />
+                      {category(tc)}
+                      <Waiting count={waitingIn(lobby, tc)} />
+                    </span>
+                  }
+                  label={`Play ${tc} (${category(tc)})`}
+                  bar={categoryBar(tc)}
+                  selected={seek?.timeControl === tc}
+                  disabled={joining.busy}
+                  onClick={() => void join(tc)}
+                />
+              ))}
+            </div>
+            {joining.error ? <ErrorText>{joining.error}</ErrorText> : null}
+          </section>
 
-      <section className="flex flex-col gap-3.5">
-        <SectionHeading>Play the computer</SectionHeading>
-        <EngineForm levels={levels} onStarted={goToGame} />
-      </section>
-
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))] gap-6">
-        <section className="flex flex-col gap-3.5">
-          <SectionHeading>Play a friend</SectionHeading>
-          <InviteForm
-            onCreated={(invite) =>
-              void navigate({ to: '/invites/$id', params: { id: invite.inviteId } })
-            }
-          />
-        </section>
-        <section className="flex flex-col gap-3.5">
-          {yourTurn.items.length > 0 ? (
-            <>
-              <SectionHeading meta={`${yourTurn.items.length}`}>Your turn</SectionHeading>
-              <YourTurnList games={yourTurn.items} nowMs={Date.now()} />
-            </>
-          ) : null}
-          <SectionHeading meta={<Link to="/games">View all</Link>}>Recent games</SectionHeading>
-          <RecentGames
-            games={games.items}
-            empty="No games yet: pick a time control under Quick pairing, or play the computer."
-          />
-        </section>
-      </div>
-
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))] gap-6">
-        <section className="flex flex-col gap-3.5" aria-label="News">
-          <SectionHeading meta={<Link to="/news">All news</Link>}>News</SectionHeading>
-          <NewsList items={news?.items ?? []} nowMs={Date.now()} />
-        </section>
-        <div className="flex flex-col gap-3.5">
+          <section className="flex flex-col gap-3">
+            <SectionHeading>Play the computer</SectionHeading>
+            <EngineForm levels={levels} onStarted={goToGame} />
+          </section>
           <EventsNow events={events} />
         </div>
-      </div>
 
-      {lobby ? (
-        <section className="flex flex-col gap-3.5" aria-label="Club TV">
-          <SectionHeading meta={<Link to="/watch">Watch all</Link>}>Club TV</SectionHeading>
-          <TvGrid games={lobby.tv} />
-        </section>
-      ) : null}
+        <div className="flex min-w-0 flex-col gap-6">
+          <section className="flex flex-col gap-3">
+            <SectionHeading>Play a friend</SectionHeading>
+            <InviteForm
+              onCreated={(invite) =>
+                void navigate({ to: '/invites/$id', params: { id: invite.inviteId } })
+              }
+            />
+          </section>
+          <section className="flex flex-col gap-3">
+            <SectionHeading meta={<Link to="/games">View all</Link>}>Recent games</SectionHeading>
+            <RecentGames
+              games={games.items}
+              empty="No games yet: pick a time control under Quick pairing, or play the computer."
+            />
+          </section>
+        </div>
+
+        {/* Two columns: this one spans both below them, its parts side by side; three: the third column. */}
+        <div className="grid min-w-0 items-start gap-x-8 gap-y-6 @4xl:col-span-2 @4xl:grid-cols-2 @7xl:col-span-1 @7xl:grid-cols-1">
+          <section className="flex flex-col gap-3" aria-label="News">
+            <SectionHeading meta={<Link to="/news">All news</Link>}>News</SectionHeading>
+            <NewsList items={news?.items ?? []} nowMs={Date.now()} />
+          </section>
+        </div>
+      </div>
     </div>
   )
 }
 
 /** Polled by `useLobby`; defined once so the hook's effect does not restart on every render. */
 const loadLobby = () => getLobby()
-
-/** "3 games in play · Watch" under the greeting (live-home). */
-function ClubPulse({ gamesInPlay }: { gamesInPlay: number }) {
-  return (
-    <p className="m-0 text-sm text-fg-secondary" data-testid="club-pulse">
-      {gamesInPlay === 1 ? '1 game in play' : `${gamesInPlay} games in play`}
-      {' · '}
-      <Link to="/watch">Watch</Link>
-    </p>
-  )
-}
 
 /** "· 2 waiting" on a quick-pairing tile, only when someone is. */
 function Waiting({ count }: { count: number | null }) {
@@ -310,7 +290,7 @@ function InviteForm({ onCreated }: { onCreated: (invite: InviteView) => void }) 
   return (
     <Panel variant="filled" className="gap-4" testId="invite-form">
       <div className="flex flex-wrap gap-2" role="group" aria-label="Time control">
-        {[...PRESETS, CORRESPONDENCE].map((tc) => (
+        {PRESETS.map((tc) => (
           <Chip
             key={tc}
             shape="square"
@@ -318,7 +298,7 @@ function InviteForm({ onCreated }: { onCreated: (invite: InviteView) => void }) 
             selected={tc === timeControl}
             onClick={() => setTimeControl(tc)}
           >
-            {tc === CORRESPONDENCE ? '7 days' : tc}
+            {tc}
           </Chip>
         ))}
       </div>
@@ -354,13 +334,14 @@ function EngineForm({
   return (
     <Panel variant="filled" className="gap-4" testId="engine-form">
       <div
-        className="grid grid-cols-[repeat(auto-fill,minmax(110px,1fr))] gap-2.5"
+        className="grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] gap-2 @4xl:grid-cols-5"
         role="group"
         aria-label="Level"
       >
         {levels.map((l) => (
           <OptionTile
             key={l.level}
+            compact
             figure={l.label}
             figureSize="sm"
             label={`Level ${l.label}`}

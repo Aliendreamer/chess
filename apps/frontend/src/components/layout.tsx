@@ -11,7 +11,6 @@ import {
   Newspaper,
   Settings,
   Shield,
-  Tv,
   UserRound,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -53,8 +52,12 @@ export function Shell({
             <Account me={me} testId="identity-name" />
           </div>
         </aside>
-        <main className="min-w-0 px-4 py-5 shell:px-10 shell:py-8">
-          <div className="mx-auto max-w-(--content-max)">{children}</div>
+        {/* A page opts in with `data-layout`: "wide" may use --content-wide; "fill" gets exactly the screen's height
+            from the rail breakpoint up, so its lists scroll inside it and the page itself never does. */}
+        <main className="min-w-0 px-4 py-5 shell:px-10 shell:py-8 shell:has-[[data-layout~=fill]]:h-dvh">
+          <div className="mx-auto max-w-(--content-max) has-[[data-layout~=wide]]:max-w-(--content-wide) shell:has-[[data-layout~=fill]]:h-full">
+            {children}
+          </div>
         </main>
       </div>
     </PreferencesContext>
@@ -98,7 +101,6 @@ function Navigation({ me }: { me: Me }) {
     <>
       <NavGroup label="Play">
         <NavItem to="/" exact label="Home" icon={<House size={16} />} />
-        <NavItem to="/watch" label="Watch" icon={<Tv size={16} />} />
       </NavGroup>
       <NavGroup label="Games">
         <NavItem to="/games" exact label="History" icon={<History size={16} />} />
@@ -106,7 +108,7 @@ function Navigation({ me }: { me: Me }) {
         <NavItem to="/analysis" label="Analysis" icon={<Microscope size={16} />} />
         <NavItem to="/library" label="Library" icon={<Library size={16} />} />
         <NavItem to="/trainer" label="Trainer" icon={<GraduationCap size={16} />} />
-        <NavItem to="/practice" label="Practice" icon={<Crosshair size={16} />} />
+        <NavItem to="/training" label="Training" icon={<Crosshair size={16} />} />
         <NavItem to="/news" label="News" icon={<Newspaper size={16} />} />
       </NavGroup>
       <NavGroup label="You">
@@ -167,7 +169,7 @@ function NavGroup({ label, children }: { label: string; children: ReactNode }) {
 interface NavItemProps {
   to: NonNullable<LinkProps['to']>
   params?: LinkProps['params']
-  /** Only this page, not its sub-pages: Home (everything is under /) and History (a game may come from Watch). */
+  /** Only this page, not its sub-pages: Home (everything is under /) and History (a game opens from many places). */
   exact?: boolean
   label: string
   /** A Lucide icon (site-themes), decorative: the label names the link. */

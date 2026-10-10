@@ -1,7 +1,14 @@
-import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
-import { EventsNow, NewsList } from './news'
+import { cleanup, render, screen, within } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { EventsNow, NewsColumns, NewsGrid, NewsList } from './news'
+import type { ReactNode } from 'react'
 import type { ChessEvent, NewsItem } from '#/lib/news'
+
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children, search }: { children: ReactNode; search?: { source?: string } }) => (
+    <a href={`/news?source=${search?.source ?? ''}`}>{children}</a>
+  ),
+}))
 
 afterEach(cleanup)
 
@@ -67,5 +74,46 @@ describe('EventsNow', () => {
     )
     rerender(<EventsNow events={[]} />)
     expect(container.textContent).toBe('')
+  })
+})
+
+describe('NewsColumns and NewsGrid', () => {
+  const item = (id: string, source: string, sourceName: string): NewsItem => ({
+    id,
+    source,
+    sourceName,
+    title: `Headline ${id}`,
+    url: `https://example.org/${id}`,
+    publishedAt: '2026-10-02T14:00:00Z',
+  })
+
+  it('gives every source a column of its own headlines, with a link to the rest', () => {
+    render(
+      <NewsColumns
+        nowMs={NOW}
+        columns={[
+          { source: { id: 'fide', name: 'FIDE' }, items: [item('a', 'fide', 'FIDE')] },
+          { source: { id: 'ecf', name: 'ECF' }, items: [] },
+        ]}
+      />,
+    )
+    const fide = screen.getByRole('region', { name: 'FIDE' })
+    expect(
+      within(fide)
+        .getByRole('link', { name: /Headline a/ })
+        .getAttribute('target'),
+    ).toBe('_blank')
+    expect(within(fide).getByText('1 h ago')).toBeTruthy()
+    expect(within(fide).getByRole('link', { name: 'More' }).getAttribute('href')).toBe(
+      '/news?source=fide',
+    )
+    expect(
+      within(screen.getByRole('region', { name: 'ECF' })).getByText('No news yet.'),
+    ).toBeTruthy()
+  })
+
+  it('names the source on each card of one source’s grid', () => {
+    render(<NewsGrid items={[item('b', 'fide', 'FIDE')]} nowMs={NOW} />)
+    expect(screen.getByText('FIDE · 1 h ago')).toBeTruthy()
   })
 })

@@ -1,11 +1,11 @@
 import { Link } from '@tanstack/react-router'
-import type { MoveClass, ReviewCounts, ReviewView, ReviewedMove } from '#/lib/review'
-import { bookLink, graphPoints, lineSans, moveLabel, scoreLabel } from '#/lib/review'
+import type { MoveClass, PreviewState, ReviewCounts, ReviewView, ReviewedMove } from '#/lib/review'
+import { advantageText, bookLink, graphPoints, moveLabel, scoreLabel } from '#/lib/review'
 import { Button, ErrorText, Panel } from '#/components/ui'
 
 /**
- * Game review (game-review): the evaluation graph, the review panel beside a finished game, and the practice
- * feedback. Presentational; the review's polling and the practice board are in `lib/review.ts`.
+ * Game review (game-review): the evaluation graph and the review panel beside a finished game. Presentational;
+ * the review's polling is in `lib/review.ts`.
  */
 
 const W = 300
@@ -81,23 +81,65 @@ export function EvalGraph({
   )
 }
 
-/** The move on the board as the review sees it: its mark and the better move, or its score. */
-function MoveVerdict({ move }: { move: ReviewedMove | undefined }) {
+/**
+ * The move on the board as the review sees it: the evaluation in numbers and words, its mark, and the engine's
+ * better line — each of its moves a button that shows the line up to there on the board.
+ */
+function MoveVerdict({
+  move,
+  preview,
+  onPreview,
+}: {
+  move: ReviewedMove | undefined
+  preview: PreviewState | null
+  onPreview: (preview: PreviewState | null) => void
+}) {
   if (!move) return <p className="m-0 text-sm text-fg-secondary">Start position.</p>
   const label = moveLabel(move.ply, move.san)
   const score = scoreLabel(move)
+  const words = advantageText(move)
   const marked = move.class && move.class !== 'none' ? move.class : null
-  const text =
-    marked && move.bestSan
-      ? `${label} is ${ARTICLE[marked]}. Better: ${moveLabel(move.ply, move.bestSan)} (${move.line.join(' ')}) · ${score}`
-      : `${label} · ${score}`
+  const line = marked && move.bestSan ? move.line : []
+  const showing = preview?.ply === move.ply ? preview.upTo : 0
   return (
-    <p
-      className={`m-0 text-sm ${marked === 'blunder' || marked === 'mistake' ? 'text-status-loss' : 'text-fg-primary'}`}
-      data-testid="review-move"
-    >
-      {text}
-    </p>
+    <div className="flex flex-col gap-2" data-testid="review-move">
+      <p className="m-0 flex items-baseline gap-2 text-sm">
+        <span className="font-mono text-base text-fg-primary" data-testid="review-score">
+          {score}
+        </span>
+        {words ? <span className="text-fg-secondary">{words}</span> : null}
+      </p>
+      <p
+        className={`m-0 text-sm ${marked === 'blunder' || marked === 'mistake' ? 'text-status-loss' : 'text-fg-primary'}`}
+      >
+        {marked ? `${label} is ${ARTICLE[marked]}.` : label}
+      </p>
+      {line.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Better line">
+          <span className="text-sm text-fg-secondary">Better:</span>
+          {line.map((san, i) => (
+            <button
+              key={`${i}-${san}`}
+              type="button"
+              aria-pressed={showing === i + 1}
+              onClick={() => onPreview({ ply: move.ply, upTo: i + 1 })}
+              className={`cursor-pointer rounded-control border px-1.5 py-0.5 font-mono text-sm ${showing === i + 1 ? 'border-line-accent bg-surface-accent-tint text-fg-primary' : 'border-line-default bg-surface-raised text-fg-primary hover:border-line-accent'} ${i === 0 ? 'font-semibold' : ''}`}
+            >
+              {i === 0 ? moveLabel(move.ply, san) : san}
+            </button>
+          ))}
+          {showing > 0 ? (
+            <button
+              type="button"
+              onClick={() => onPreview(null)}
+              className="cursor-pointer text-sm text-fg-accent underline-offset-2 hover:underline"
+            >
+              Back to the game
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   )
 }
 
@@ -141,8 +183,9 @@ export interface ReviewPanelProps {
   /** The ply on the board (0 = the start). */
   current: number
   onSelect: (ply: number) => void
-  practice: { busy: boolean; added: number | null; error: string | null }
-  onPractise: () => void
+  /** The engine's better line on the board, when the user clicked one of its moves. */
+  preview: PreviewState | null
+  onPreview: (preview: PreviewState | null) => void
 }
 
 /** The engine review beside a finished game (game-review D8). */
@@ -155,8 +198,8 @@ export function ReviewPanel({
   onStart,
   current,
   onSelect,
-  practice,
-  onPractise,
+  preview,
+  onPreview,
 }: ReviewPanelProps) {
   const status = review?.status ?? 'none'
   const exit = review?.bookExit ?? null
@@ -192,7 +235,7 @@ export function ReviewPanel({
       {review && status !== 'none' ? (
         <>
           <EvalGraph moves={review.moves} current={current} onSelect={onSelect} />
-          <MoveVerdict move={review.moves[current - 1]} />
+          <MoveVerdict move={review.moves[current - 1]} preview={preview} onPreview={onPreview} />
         </>
       ) : null}
       {review && status === 'complete' ? (
@@ -217,51 +260,15 @@ export function ReviewPanel({
             </p>
           ) : null}
           {mine ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <Button disabled={practice.busy} onClick={onPractise}>
-                Practise my mistakes
-              </Button>
-              {practice.added !== null ? (
-                <>
-                  <span className="text-sm text-fg-secondary" data-testid="practice-added">
-                    {`${practice.added} ${practice.added === 1 ? 'position' : 'positions'} added to your practice.`}
-                  </span>
-                  <Link to="/practice" className="text-sm text-fg-accent">
-                    Open practice
-                  </Link>
-                </>
-              ) : null}
-            </div>
+            <p className="m-0 text-sm text-fg-secondary" data-testid="review-training">
+              Your mistakes from this game join your training on their own.{' '}
+              <Link to="/training" className="text-fg-accent">
+                Open training
+              </Link>
+            </p>
           ) : null}
-          {practice.error ? <ErrorText>{practice.error}</ErrorText> : null}
         </>
       ) : null}
     </Panel>
-  )
-}
-
-/** After a practice answer: right, or the engine's move and line. */
-export function PracticeFeedback({
-  fen,
-  answer,
-  bestLine,
-}: {
-  fen: string
-  answer: { uci: string | null; correct: boolean }
-  bestLine: ReadonlyArray<string>
-}) {
-  const line = lineSans(fen, bestLine)
-  const played = answer.uci ? lineSans(fen, [answer.uci])[0] : undefined
-  const text = answer.correct
-    ? `Right: ${played ?? line[0] ?? ''}.`
-    : `Not this time. The engine plays ${line[0] ?? '?'} (${line.join(' ')}).`
-  return (
-    <p
-      className={`m-0 text-sm ${answer.correct ? 'text-status-win' : 'text-status-loss'}`}
-      data-testid="practice-feedback"
-      aria-live="polite"
-    >
-      {text}
-    </p>
   )
 }

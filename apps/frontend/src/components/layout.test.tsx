@@ -57,20 +57,19 @@ describe('Shell', () => {
     const rail = screen.getByRole('complementary')
     for (const name of [
       'Home',
-      'Watch',
       'History',
       'Studies',
       'Analysis',
       'Library',
       'Trainer',
-      'Practice',
+      'Training',
       'Profile',
       'Settings',
     ]) {
       expect(within(rail).getByRole('link', { name })).toBeDefined()
     }
     const icons = [...rail.querySelectorAll('svg')]
-    expect(icons.length).toBe(11)
+    expect(icons.length).toBe(10)
     expect(icons.every((svg) => svg.closest('[aria-hidden]') !== null)).toBe(true)
   })
 
@@ -86,7 +85,6 @@ describe('Shell', () => {
     const menu = within(bar)
     for (const name of [
       'Home',
-      'Watch',
       'History',
       'Studies',
       'Analysis',
@@ -152,7 +150,7 @@ describe('shell details (ui-polish)', () => {
     const exact = (name: string) =>
       within(rail).getByRole('link', { name }).getAttribute('data-exact')
     expect([exact('Home'), exact('History')]).toEqual(['true', 'true'])
-    expect([exact('Studies'), exact('Watch'), exact('Settings')]).toEqual([
+    expect([exact('Studies'), exact('Library'), exact('Settings')]).toEqual([
       'false',
       'false',
       'false',

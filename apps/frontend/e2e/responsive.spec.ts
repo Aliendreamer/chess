@@ -14,7 +14,7 @@ async function fitsTheWidth(page: Page) {
   expect(scroll, `${page.url()} scrolls sideways`).toBeLessThanOrEqual(viewport)
 }
 
-for (const path of ['/', '/games', '/studies', '/settings']) {
+for (const path of ['/', '/games', '/studies', '/training', '/settings']) {
   test(`${path} has no horizontal scroll`, async ({ page }) => {
     await page.goto(path)
     await expect(page.getByTestId('shell')).toBeVisible()
@@ -30,11 +30,12 @@ test('the top bar menu reaches every page', async ({ page }) => {
   const menu = page.locator('header details')
   for (const name of [
     'Home',
-    'Watch',
     'History',
     'Studies',
     'Analysis',
     'Library',
+    'Trainer',
+    'Training',
     'News',
     'Profile',
     'Settings',

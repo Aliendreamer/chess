@@ -6,10 +6,6 @@ import { useEffect, useRef, useState } from 'react'
 import { PGN_RESULT } from './games'
 import type { Color, ColourChoice, EndReason, ListStatus, PgnResult } from './games'
 
-/** `GET /api/me/games?turn=` value that keeps only the games where it is my move. */
-export const MY_TURN = 'mine' as const
-export type MyTurn = typeof MY_TURN
-
 /** Mirrors `POST /api/matchmaking/{tc}`'s answer. */
 export interface QueueStatus {
   status: 'waiting' | 'matched'
@@ -58,10 +54,6 @@ export interface MyGameItem {
   result: PgnResult | null
   reason: EndReason | null
   createdAt: string
-  /** Being played and it is my move. */
-  yourTurn?: boolean
-  /** A correspondence game's deadline for the player to move. */
-  deadlineAt?: string | null
 }
 
 export interface CursorPage<T> {
@@ -76,58 +68,10 @@ export interface QueueCount {
   waiting: number
 }
 
-/** A Club TV game: a mini board and both names (live-home). */
-export interface TvGame {
-  gameId: string
-  whiteId: number
-  white: string
-  blackId: number
-  black: string
-  timeControl: string
-  fen: string
-  lastUci: string | null
-  ply: number
-  updatedAt: string
-}
-
 /** `GET /api/lobby`: shared by every caller for a couple of seconds; `queues` is null when matchmaking did not answer. */
 export interface Lobby {
   gamesInPlay: number
   queues: Array<QueueCount> | null
-  tv: Array<TvGame>
-}
-
-/** A row of `GET /api/games?status=playing`: the Watch page's games. */
-export interface LiveGameItem {
-  gameId: string
-  whiteId: number
-  white: string
-  blackId: number
-  black: string
-  timeControl: string
-  ply: number
-  updatedAt: string
-  lastFen: string | null
-  lastUci: string | null
-}
-
-/** The start position, for a game listed before its first move reached the read side. */
-const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-
-/** A Watch-page row as a TV card. */
-export function toTvGame(g: LiveGameItem): TvGame {
-  return {
-    gameId: g.gameId,
-    whiteId: g.whiteId,
-    white: g.white,
-    blackId: g.blackId,
-    black: g.black,
-    timeControl: g.timeControl,
-    fen: g.lastFen ?? START_FEN,
-    lastUci: g.lastUci,
-    ply: g.ply,
-    updatedAt: g.updatedAt,
-  }
 }
 
 /** "n waiting" for a preset tile, or null when the queues are unknown. */

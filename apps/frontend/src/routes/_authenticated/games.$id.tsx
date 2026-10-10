@@ -5,19 +5,18 @@ import type { LiveFrame } from '#/lib/live'
 import type { Me } from '#/lib/auth'
 import type { SquarePair } from '#/lib/board'
 import type { InviteView } from '#/lib/play'
+import type { PreviewState } from '#/lib/review'
 import {
   getGameMoves,
   getGamePage,
   getGameSummary,
   getReview,
   postGameCommand,
-  postPractiseGame,
   postRematch,
   postStartEngineGame,
   postStartReview,
 } from '#/lib/server/api'
 import {
-  CORRESPONDENCE,
   PRESETS,
   UNTIMED,
   category,
@@ -27,7 +26,6 @@ import {
   mergeMoves,
   myColor,
   orientation,
-  timeLeft,
   topicId,
   useLocalClocks,
 } from '#/lib/games'
@@ -42,7 +40,7 @@ import {
 import { material, premoveClick, replay, resolvePremove, uciSquares } from '#/lib/board'
 import { pageTitle, rematchState, tabState, useTabSignals } from '#/lib/feedback'
 import { isInviteView } from '#/lib/play'
-import { REVIEW_POLL_MS, marksFor, useReview } from '#/lib/review'
+import { REVIEW_POLL_MS, marksFor, previewLine, useReview } from '#/lib/review'
 import { ReviewPanel } from '#/components/review'
 import {
   Board,
@@ -320,7 +318,12 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   const [viewPly, setViewPly] = useState<number | null>(null)
   const viewing = viewPly !== null && viewPly < positions.length - 1 ? viewPly : null
   const shown = viewing !== null ? positions[viewing] : undefined
-  const go = (ply: number) => setViewPly(ply >= sans.length ? null : Math.max(0, ply))
+  // The review's better line on the board (game-review): any navigation goes back to the game's own moves.
+  const [preview, setPreview] = useState<PreviewState | null>(null)
+  const go = (ply: number) => {
+    setPreview(null)
+    setViewPly(ply >= sans.length ? null : Math.max(0, ply))
+  }
   const step = (by: number) => go((viewing ?? sans.length) + by)
   const keys = useRef({ step, go })
   keys.current = { step, go }
@@ -347,12 +350,11 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   const startReview = useCallback(() => postStartReview({ data: topic }), [topic])
   const reviewing = useReview(null, loadReview, startReview, REVIEW_POLL_MS, !playing)
   const reviewed = reviewing.view && reviewing.view.status !== 'none' ? reviewing.view : null
-  const practising = useCommand()
-  const [added, setAdded] = useState<number | null>(null)
-  async function practise() {
-    const answer = await practising.run(() => postPractiseGame({ data: topic }))
-    if (answer) setAdded(answer.added)
-  }
+  const previewMove = preview ? reviewed?.moves[preview.ply - 1] : undefined
+  const lined =
+    preview && previewMove
+      ? previewLine(positions[preview.ply - 1]?.fen ?? fen, previewMove.line, preview.upTo)
+      : null
 
   const top = side === 'white' ? 'black' : 'white'
   const strip = (color: 'white' | 'black') => {
@@ -378,14 +380,15 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
         {strip(top)}
         <div data-my-turn={myTurn} className="relative">
           <Board
-            fen={shown?.fen ?? fen}
+            fen={lined?.fen ?? shown?.fen ?? fen}
             orientation={side}
-            lastMove={shown ? shown.lastMove : lastMove}
+            lastMove={lined ? lined.lastMove : shown ? shown.lastMove : lastMove}
+            {...(lined?.lastMove ? { arrows: [lined.lastMove] } : {})}
             selected={shown ? null : selected}
             targets={shown ? [] : targets}
             premove={shown ? null : premove}
-            {...(shown
-              ? { onSquareClick: () => setViewPly(null) }
+            {...(shown || lined
+              ? { onSquareClick: () => go(Number.MAX_SAFE_INTEGER) }
               : myTurn || premoves
                 ? { onSquareClick, onDrop, canDrag }
                 : {})}
@@ -409,13 +412,13 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
           onStart={() => go(0)}
           onBack={() => step(-1)}
           onForward={() => step(1)}
-          onEnd={() => setViewPly(null)}
+          onEnd={() => go(Number.MAX_SAFE_INTEGER)}
         >
           <Button aria-label="Flip board" onClick={() => setFlipped((f) => !f)}>
             <FlipIcon />
           </Button>
-          {shown ? (
-            <Button variant="outline" onClick={() => setViewPly(null)}>
+          {shown || lined ? (
+            <Button variant="outline" onClick={() => go(Number.MAX_SAFE_INTEGER)}>
               Back to the game
             </Button>
           ) : null}
@@ -436,11 +439,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
         <div>
           <div className="flex items-center gap-2 text-xs text-fg-secondary">
             <CategoryMark timeControl={current.timeControl} />
-            {untimed
-              ? 'Untimed · '
-              : current.timeControl === CORRESPONDENCE
-                ? 'Correspondence · 7 days per move · '
-                : `${category(current.timeControl)} ${current.timeControl} · `}
+            {untimed ? 'Untimed · ' : `${category(current.timeControl)} ${current.timeControl} · `}
             <span className="font-mono" aria-live="polite" data-testid="game-relay">
               {liveStatusText(live.status)}
             </span>
@@ -469,8 +468,8 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
             onStart={() => void reviewing.start()}
             current={viewing ?? sans.length}
             onSelect={go}
-            practice={{ busy: practising.busy, added, error: practising.error }}
-            onPractise={() => void practise()}
+            preview={preview}
+            onPreview={setPreview}
           />
         ) : null}
 
@@ -492,12 +491,6 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
             onClaim={(outcome) => void send({ kind: 'claim', outcome })}
             onWait={() => setWaiting(true)}
           />
-        ) : null}
-
-        {playing && current.deadlineAt ? (
-          <p className="m-0 text-sm text-fg-secondary" data-testid="deadline">
-            {`${mine !== null && current.sideToMove === mine ? 'Your move' : `Waiting for ${current.sideToMove === 'white' ? white : black}`} · ${timeLeft(current.deadlineAt, Date.parse(current.clockAt))}`}
-          </p>
         ) : null}
 
         {engineToMove(current) ? (

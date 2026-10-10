@@ -9,11 +9,10 @@ import type { Me } from './auth'
 export const PROJECTION_GROUPS = [
   'chess.rm-games',
   'chess.rm-pings',
-  'chess.deadlines',
-  'chess.notifications',
   'chess.engine-requests',
   'chess.engine-moves-apply',
   'chess.analysis-results',
+  'chess.auto-review',
 ] as const
 export type ProjectionGroup = (typeof PROJECTION_GROUPS)[number]
 

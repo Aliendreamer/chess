@@ -1,14 +1,13 @@
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  advantageText,
   bookLink,
   graphPoints,
-  isAccepted,
   markOf,
   marksFor,
-  practiceSide,
+  previewLine,
   scoreLabel,
-  usePracticeBoard,
   useReview,
 } from './review'
 import type { ReviewView, ReviewedMove } from './review'
@@ -55,6 +54,33 @@ describe('marks and scores', () => {
   })
 })
 
+describe('the better line', () => {
+  const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
+  it('plays the line from the position before the move, as far as asked', () => {
+    expect(previewLine(START, ['e4', 'e5', 'Nf3'], 2)).toEqual({
+      fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2',
+      lastMove: { from: 'e7', to: 'e5' },
+    })
+  })
+
+  it('stops at an illegal move and shows the position itself for none', () => {
+    expect(previewLine(START, ['e4', 'Ke2'], 2).lastMove).toEqual({ from: 'e2', to: 'e4' })
+    expect(previewLine(START, ['e4'], 0)).toEqual({ fen: START, lastMove: null })
+  })
+
+  it('puts the score in words', () => {
+    expect([10, 50, -150, 400].map((cp) => advantageText(move({ cp })))).toEqual([
+      'Equal',
+      'White is slightly better',
+      'Black is better',
+      'White is winning',
+    ])
+    expect(advantageText(move({ cp: null, mate: -2 }))).toBe('Black mates')
+    expect(advantageText(move({ cp: null, mate: null }))).toBe('')
+  })
+})
+
 describe('graphPoints', () => {
   it('runs from the start at the middle, White up, and skips moves not evaluated yet', () => {
     const points = graphPoints(
@@ -70,7 +96,7 @@ describe('graphPoints', () => {
   })
 })
 
-describe('book and practice', () => {
+describe('book exit', () => {
   it('links the trainer for the opening the member left, as their colour', () => {
     expect(
       bookLink(
@@ -87,14 +113,6 @@ describe('book and practice', () => {
     expect(
       bookLink({ ply: 7, san: 'Bd6', color: 'black', eco: 'D30', name: 'X' }, 'white'),
     ).toBeNull()
-  })
-
-  it('accepts any of the engine’s moves, promotion included, and plays from the side to move', () => {
-    expect(isAccepted('b1c3', ['b1c3', 'd2d4'])).toBe(true)
-    expect(isAccepted('e7e8n', ['e7e8q'])).toBe(false)
-    expect(practiceSide('rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2')).toBe(
-      'white',
-    )
   })
 })
 
@@ -145,41 +163,5 @@ describe('useReview', () => {
     expect(result.current.view?.status).toBe('running')
     await act(() => vi.advanceTimersByTimeAsync(2000))
     expect(result.current.view?.evaluated).toBe(2)
-  })
-})
-
-describe('usePracticeBoard', () => {
-  afterEach(cleanup)
-  const AFTER_E5 = 'rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2'
-
-  it('judges the first move played, once', () => {
-    const onAnswer = vi.fn()
-    const { result } = renderHook(() =>
-      usePracticeBoard({ fen: AFTER_E5, acceptedUci: ['b1c3', 'd2d4'] }, onAnswer),
-    )
-    act(() => result.current.onSquareClick('d2'))
-    act(() => result.current.onSquareClick('d4'))
-    expect(result.current.answer).toEqual({ uci: 'd2d4', correct: true })
-    act(() => {
-      result.current.onDrop('g2', 'g4')
-    })
-    expect(onAnswer).toHaveBeenCalledTimes(1)
-    expect(onAnswer).toHaveBeenCalledWith(true)
-  })
-
-  it('a wrong move or asking for the answer is a wrong answer', () => {
-    const onAnswer = vi.fn()
-    const { result } = renderHook(() =>
-      usePracticeBoard({ fen: AFTER_E5, acceptedUci: ['b1c3'] }, onAnswer),
-    )
-    act(() => {
-      result.current.onDrop('g2', 'g4')
-    })
-    expect(result.current.answer).toEqual({ uci: 'g2g4', correct: false })
-    const other = renderHook(() =>
-      usePracticeBoard({ fen: AFTER_E5, acceptedUci: ['b1c3'] }, onAnswer),
-    )
-    act(() => other.result.current.reveal())
-    expect(other.result.current.answer).toEqual({ uci: null, correct: false })
   })
 })

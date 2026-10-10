@@ -80,7 +80,6 @@
   --color-tc-blitz: oklch(0.8 0.14 75);
   --color-tc-rapid: oklch(0.76 0.14 150);
   --color-tc-classical: oklch(0.72 0.12 245);
-  --color-tc-correspondence: oklch(0.72 0.13 300);
   --color-tc-computer: oklch(0.72 0.03 250);
 
   /* Type */
@@ -145,6 +144,8 @@
   --board-circle: rgba(21, 120, 27, 0.8);
   --rail-width: 248px;
   --content-max: 1120px;
+  /* A page whose `data-layout` names `wide` (home, news, library, profiles) may use this much: its columns need the room. */
+  --content-wide: 1720px;
   --board-max: 600px;
 }
 
@@ -184,7 +185,6 @@
   --color-tc-blitz: oklch(0.62 0.14 70);
   --color-tc-rapid: oklch(0.55 0.14 150);
   --color-tc-classical: oklch(0.52 0.13 245);
-  --color-tc-correspondence: oklch(0.52 0.14 300);
   --color-tc-computer: oklch(0.5 0.03 250);
 }
 

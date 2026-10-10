@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CORRESPONDENCE,
   UNTIMED,
   category,
   categoryOf,
@@ -15,7 +14,6 @@ import {
   pairMoves,
   reasonText,
   resultText,
-  timeLeft,
   topicId,
 } from './games'
 import type { EndReason, GameView } from './games'
@@ -168,7 +166,6 @@ describe('categoryOf (site-themes)', () => {
     ['3+2', 'blitz'],
     ['10+0', 'rapid'],
     ['30+20', 'classical'],
-    ['7d', 'correspondence'],
     ['untimed', 'computer'],
   ])('%s is %s', (tc, key) => {
     expect(categoryOf(tc)).toBe(key)
@@ -207,23 +204,9 @@ describe('games against the computer', () => {
   })
 })
 
-describe('correspondence games', () => {
-  it('have no clock and their own category', () => {
-    expect(hasClock(CORRESPONDENCE)).toBe(false)
+describe('hasClock', () => {
+  it('is false only for a game against the computer', () => {
     expect(hasClock(UNTIMED)).toBe(false)
     expect(hasClock('5+3')).toBe(true)
-    expect(category(CORRESPONDENCE)).toBe('Correspondence')
-  })
-
-  it('say how long is left in the largest whole unit', () => {
-    const now = Date.parse('2026-09-27T10:00:00Z')
-    expect(timeLeft('2026-10-04T10:00:00Z', now)).toBe('7 days left')
-    expect(timeLeft('2026-10-04T09:59:00Z', now)).toBe('7 days left') // a fresh week, a minute in
-    expect(timeLeft('2026-10-03T21:00:00Z', now)).toBe('6 days left')
-    expect(timeLeft('2026-09-28T11:00:00Z', now)).toBe('1 day left')
-    expect(timeLeft('2026-09-27T15:30:00Z', now)).toBe('5 hours left')
-    expect(timeLeft('2026-09-27T10:12:00Z', now)).toBe('12 minutes left')
-    expect(timeLeft('2026-09-27T10:00:30Z', now)).toBe('less than a minute left')
-    expect(timeLeft('2026-09-27T09:00:00Z', now)).toBe('less than a minute left')
   })
 })
