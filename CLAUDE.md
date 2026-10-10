@@ -355,8 +355,9 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   mirrors it). The worker's analysis loop (`Engine:AnalysisProcesses`, own consumer group, full strength, MultiPV
   `Analysis:Lines`, scores turned to White's side) answers on `analysis.results`; `AnalysisResultConsumer` stores it,
   keeping the deeper of two answers. Scale with `Engine:AnalysisProcesses` or worker replicas (one group: total
-  consumers ≤ the topic's 3 partitions). The study board (`AnalysisPanel`, `useAnalysis`) asks, then polls every 1.5 s until
-  the evaluation is there; scores of the positions evaluated follow their moves in the tree, and a line clicked is played into the study.
+  consumers ≤ the topic's 3 partitions). The study and analysis boards (`AnalysisPanel`, `useAnalysis`) ask for the position on the board
+  once it settles (`useAutoEvaluate`, 300 ms; no button), then poll every 1.5 s until the evaluation is there; both pages
+  are `wide fill` columns (board | moves + engine | library games from `wide:`, 1600px); scores of the positions evaluated follow their moves in the tree, and a line clicked is played into the study.
 
 - **Observability (observability, tail-sampling)** — `tools/localdev/observability/`: every app sends OTLP to
   `otel-collector`, which writes traces to Tempo, metrics to Prometheus's OTLP receiver (7 d) and logs to Loki; it
