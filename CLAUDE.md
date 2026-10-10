@@ -65,7 +65,6 @@ tools/localdev/verify-part0.sh [--cluster]     # login→ping→live→list→hu
 tools/localdev/verify-part1.sh [--cluster]     # two logins → queue pairing → invite → fool's mate → ended 0-1 + PGN;
                                                # --cluster: 6 games, SIGTERM backend-1, all answer from the survivor
 tools/localdev/verify-part2.sh [--quick]       # vs Stockfish: 10 moves at 1320/2000/max, engine restart mid-think, a full game
-tools/localdev/verify-part3.sh                 # correspondence: 7d invite, deadline, your-turn list, mails in Mailpit
 tools/localdev/verify-part4a.sh                # studies: import, variation saved, 409 on stale save, share, PGN, from a game
 tools/localdev/verify-part4b.sh                # engine analysis: a random position evaluated, then served from the shared cache
 tools/localdev/verify-observability.sh         # a move's trace in Tempo, its logs in Loki (once), metrics from both nodes, profiles
@@ -95,7 +94,7 @@ collector (`Observability:OtlpEndpoint`), as `chess-backend` with the Akka hostn
 through Serilog's OTLP sink with their trace ids. `Observability:SampleRatio` (1.0) is a parent-based head sampler.
 
 Local URLs (Traefik on :80, dashboard on 127.0.0.1:8090): `app.chess.localhost`, `api.chess.localhost`,
-`keycloak.chess.localhost` (admin/admin), `redisinsight.chess.localhost`, `mail.chess.localhost` (Mailpit), `console.chess.localhost`
+`keycloak.chess.localhost` (admin/admin), `redisinsight.chess.localhost`, `console.chess.localhost`
 (Redpanda), `grafana.chess.localhost` (admin/Admin123! edits, viewer/Viewer123! views; no anonymous access). Postgres primary `127.0.0.1:5432`, replica `127.0.0.1:5433` (`chess`/`chess`/`chess`);
 Redpanda Kafka API `127.0.0.1:19092`.
 
@@ -191,11 +190,15 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   move list becomes one scrolling line, history rows take two lines, grids use `minmax(min(Npx,100%),1fr)`, and
   buttons/chips are 44px tall under `pointer-coarse`. The Playwright `mobile` project (390×844) runs
   `e2e/responsive.spec.ts` only: two-browser specs open their own contexts, which ignore a project's viewport. Screens: `/` (quick pairing, invite, recent
-  games, Club TV), `/watch`, `/invites/$id`, `/games/$id`, `/games`, and the `/pgn/$id` download route. **Lobby
+  games, news), `/invites/$id`, `/games/$id`, `/games`, and the `/pgn/$id` download route. **Lobby
   (live-home)**: `GET /api/lobby` (`WebApi/Lobby/`, one FusionCache answer for `Lobby:CacheSeconds`; queue sizes from
-  `GetQueues` on the matchmaking singleton, null on a timeout) is polled by home every 10 s while visible (`useLobby`);
-  Club TV and `/watch` draw `components/games.tsx#MiniBoard`, a static server-rendered board (never react-chessboard,
-  never a socket per board). Paged lists use `useLoadMore` + `<LoadMore>`. **Page shell (ui-polish)**: every route sets `head` with
+  `GetQueues` on the matchmaking singleton, null on a timeout) is polled by home every 10 s while visible (`useLobby`)
+  for the "n waiting" on the quick-pairing tiles; there is no Club TV or Watch page (remove-watch-tv: a club, not a
+  public site; a game is still opened by its link).
+  Page width/height opt-in (`data-layout` on the page root, read by the Shell via `has-[]`): `wide` = `--content-wide`;
+  `fill` = exactly the screen's height from `shell:` up, lists scroll inside (`min-h-0 flex-1 overflow-y-auto`), the
+  page never does — news (a column per source), library, profiles. Home is a container-query dashboard (`@4xl` two
+  columns, `@7xl` three: play | friend + your games | events + news), sized to fit 1920×960 unscrolled. Paged lists use `useLoadMore` + `<LoadMore>`. **Page shell (ui-polish)**: every route sets `head` with
   `lib/feedback.ts#pageTitle` ("History · Chess"); `router.tsx` has the default pending bar, error panel (`RouterError`)
   and not-found page from `components/layout.tsx`, and `_authenticated/$.tsx` keeps unknown addresses inside the shell;
   `useTabSignals` never resets the title on the way out (the next page set it). **Profiles
@@ -260,7 +263,8 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   queue or invites; the first-move abort only while a person is to move; idle passivation after
   `Akka:UntimedIdleMinutes`) and refuse draw offers. Presence counts only the person, from their first move, reported
   or not (engine-game-abandonment): a minute away ends the game, the engine winning by `Abandonment` (no claim), and the
-  `DeadlineSweeper` also wakes untimed games quiet for `UntimedIdleMinutes` so a game nobody is at still ends. The
+  `IdleGameSweeper` singleton (`Akka/Games/`) sends `WakeIdle` every `Akka:IdleSweepSeconds` to untimed games quiet for
+  `UntimedIdleMinutes` so a game nobody is at still ends. The
   engine's stall timer is due from the start of its turn (`_stallDue`), so presence re-arming never pushes it back. `Engine/`:
   `EngineRequestConsumer` (on `game.events`, watermark on its `engine_games` row, kept after the end) produces to
   `engine.moves.requests` whenever the engine is to move, with a think time from `Engine:MinThinkMs`–`MaxThinkMs`
@@ -270,16 +274,9 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   `IEngineRequests` — the one actor-side producer, owned by that service. Endpoints: `POST /api/engine-games`,
   `GET /api/engine-levels`.
 
-- **Correspondence games (correspondence-games)** — `7d` (`TimeControl.Correspondence7`, invites only, never the
-  queue): the player to move has `Correspondence:MoveDeadline` (7 days) from the previous move, reset every move; no
-  clock, presence ignored, the game passivates when idle. The deadline is derived in the actor, never stored there;
-  `DeadlineProjection` keeps `game_deadlines` from `game.events` and the `DeadlineSweeper` cluster singleton sends
-  `CheckDeadline` every `Correspondence:SweepSeconds` to games past due — the actor judges (an abort before both first
-  moves, else a loss on time; a late move ends it too). `NotificationConsumer` (row per game in `notification_games`)
-  mails the player to move and both at the end through `IMailer`: MailKit when `Smtp:Host` is set (Mailpit in the
-  stack), otherwise only logged. `GET /api/me/games?turn=mine` (+ `yourTurn`, `deadlineAt`, derived from `rm_games`:
-  White moves on even plies) feeds "Your turn" on home. Playwright runs 2 workers: every spec drives two browsers
-  against one dev server.
+- **No correspondence games (remove-correspondence)** — there is no `7d` time control, no move deadlines and no mail:
+  games are live (presets) or against the computer (`untimed`). Playwright runs 2 workers: every spec drives two
+  browsers against one dev server.
 
 - **Studies (studies)** — plain rows on the primary (`studies`, tree as jsonb; no actor, no events), owned, shareable
   by link (random v4 id; a private study is 404 for others), `Version` as the concurrency token (a stale save is 409).
@@ -326,13 +323,23 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   (`Engine:ReviewProcesses`, `MaxReviewAgeSeconds`) answers on `analysis.results`, so reviews never queue ahead of
   interactive analysis. `GET …/review` computes the review on read (`Review/GameReviewer`, pure: lichess's winning
   chances, 0.1/0.2/0.3 = ?!/?/??, the engine's own move never marked, a board ending judged from the result, the book
-  exit from `openings`); `none` until a player asks (`game_reviews`). `POST …/review/practice` copies the player's
-  mistakes and blunders into `mistake_drills`, drilled at `/practice` (`/api/practice/next|results`,
-  `/api/me/practice`) on `TrainerSchedule`. Frontend: `lib/review.ts` (`useReview` polls every 2 s while running,
-  `usePracticeBoard`), `components/review.tsx` (`EvalGraph`, `ReviewPanel` on the ended game page, move-list marks).
+  exit from `openings`); a finished game is reviewed automatically (`Training/AutoReview.cs`, group
+  `chess.auto-review`; not aborted, ply ≥ 2). Frontend: `lib/review.ts` (`useReview` polls every 2 s while running),
+  `components/review.tsx` (`EvalGraph`, `ReviewPanel` on the ended game page with the clickable better line,
+  move-list marks). **Training (training-sessions)**: `/training` (`/practice` redirects), two modes. _My games_:
+  `mistake_drills`, filled lazily by `TrainingService.SyncAsync` from complete reviews (once per member and game,
+  `training_synced`). _Master games_: `training_positions`, critical moments mined from `library_positions` by the
+  `training-miner` singleton (`Training/TrainingMiner.cs`: candidates in `training_candidates`, evaluated through the
+  shared `ReviewQueue` at `Review:ThinkMs`, kept when best − second ≥ `Training:MinGap` in winning chances, from
+  `Training:MinPly`, ≤ `Training:PerGame` per game, ≤ `Training:InFlight` waiting; runs only with Kafka). Stateless
+  sessions: `GET /api/training/next?mode&eco&phase&player&from&to&exclude` (ids `g:{gameId:N}:{ply}` /
+  `p:{positionId:N}`), `POST /api/training/answer` (the server judges: master's move or engine-accepted, verdict
+  `master|engine|both|none`; Leitner via `TrainerSchedule`, progress in `training_progress`), `GET
+/api/training/summary`. Frontend: `lib/training.ts` (session reducer, verdict text, `useAnswerBoard`),
+  `components/training.tsx`; 10-position sets or endless.
   The local stack allows `RateLimit__PermitLimit=1200` (the e2e suite's pace). **Chess news (chess-news)**: the
   `news-fetcher` cluster singleton (`News/`) runs `INewsRounds` every `News:FetchMinutes` over `News:Feeds` (FIDE,
-  ChessBase, Lichess blog, TWIC with its `Accept` header, ECF — never chess.com: its terms) and every
+  ChessBase, Lichess blog, TWIC with its `Accept` header — never chess.com: its terms; only enabled feeds are listed) and every
   `News:EventsMinutes` over lichess's broadcast list (`chess_events`, replaced whole; 60 s pause after a 429;
   `News__LichessToken` env var only). `FeedParser` refuses DTDs, keeps plain-text titles and https links only — never
   article text or images (no third-party requests from the browser). `GET /api/news`, `/news/sources`, `/news/events`;
