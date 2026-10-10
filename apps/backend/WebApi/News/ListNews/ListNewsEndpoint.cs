@@ -27,10 +27,12 @@ internal sealed class ListNewsEndpoint(ReadDbContext read, NewsOptions news, IOp
         HttpContext.Response.Headers[HeaderNames.CacheControl] = NewsHttp.CacheControl;
         (DateTimeOffset At, Guid Id)? after = KeysetCursor.TryDecodeGuid(req.Cursor, out KeysetCursor c, out Guid id) ? (c.At, id) : null;
         int limit = GameReadEndpointBase<object>.PageSize(req.Limit, options.Value);
-        Dictionary<string, string> names = news.Feeds.ToDictionary(f => f.Id, f => f.Name, StringComparer.Ordinal);
+        Dictionary<string, string> names = news.Feeds.Where(f => f.Enabled).ToDictionary(f => f.Id, f => f.Name, StringComparer.Ordinal);
+        List<string> sources = [.. names.Keys];
         try
         {
-            IQueryable<NewsItem> items = read.NewsItems;
+            // Only the feeds followed now: a feed removed or disabled stops showing at once, not after KeepDays.
+            IQueryable<NewsItem> items = read.NewsItems.Where(n => sources.Contains(n.Source));
             if (req.Source is { } source)
             {
                 items = items.Where(n => n.Source == source);

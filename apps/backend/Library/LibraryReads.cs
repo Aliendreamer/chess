@@ -254,7 +254,7 @@ internal static class LibraryReads
     }
 
     /// <summary><c>%text%</c> for ILIKE with the user's wildcards escaped; null when there is nothing to match.</summary>
-    private static string? Pattern(string? text) =>
+    internal static string? Pattern(string? text) =>
         string.IsNullOrWhiteSpace(text)
             ? null
             : $"%{text.Trim().Replace("\\", "\\\\", StringComparison.Ordinal).Replace("%", "\\%", StringComparison.Ordinal).Replace("_", "\\_", StringComparison.Ordinal)}%";

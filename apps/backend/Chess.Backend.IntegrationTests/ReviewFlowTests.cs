@@ -12,7 +12,8 @@ namespace Chess.Backend.IntegrationTests;
 
 /// <summary>
 /// game-review on real Postgres and Redpanda: a finished fool's mate is reviewed with a fake engine on the review topic
-/// (never the interactive one), its blunder marked, and the loser's mistake practised.
+/// (never the interactive one), its blunder marked, and the loser's mistake in their training pool without asking
+/// (training D2).
 /// </summary>
 [Collection(StackFixture.Collection)]
 public sealed class ReviewFlowTests(StackFixture stack)
@@ -23,13 +24,13 @@ public sealed class ReviewFlowTests(StackFixture stack)
 
     private sealed record Review(string Status, int Evaluated, int Positions, IReadOnlyList<Move> Moves);
 
-    private sealed record AddedView(int Added);
+    private sealed record Item(string Id, string Mode, string SideToMove, int? Box);
 
-    private sealed record Item(Guid GameId, int Ply, string PlayedSan, IReadOnlyList<string> AcceptedUci);
+    private sealed record Next(Item? Item, int Pool);
 
-    private sealed record Next(Item? Item);
+    private sealed record Source(string Kind, Guid GameId, int Ply, string Opponent);
 
-    private sealed record Result(int Box);
+    private sealed record Answer(bool Correct, string Verdict, string? PlayedUci, IReadOnlyList<string> AcceptedUci, Source Source, int Box);
 
     private static HttpRequestMessage As(HttpMethod method, string url, string subject, object? body = null)
     {
@@ -71,7 +72,7 @@ public sealed class ReviewFlowTests(StackFixture stack)
     }
 
     [Fact]
-    public async Task A_finished_game_is_reviewed_and_its_blunder_practised()
+    public async Task A_finished_game_is_reviewed_and_its_blunder_trained()
     {
         using CancellationTokenSource cts = new(TestTimeout);
         CancellationToken ct = cts.Token;
@@ -158,14 +159,18 @@ public sealed class ReviewFlowTests(StackFixture stack)
             TimeSpan.FromMilliseconds(500));
         Assert.Equal(["inaccuracy", "none", "blunder", "none"], complete!.Moves.Select(m => m.Class));
 
-        // White practises the blunder: added once, offered, a wrong answer keeps it at box 0.
-        Assert.Equal(1, (await ReadAsync<AddedView>(client, As(HttpMethod.Post, $"{review}/practice", white), ct)).Added);
-        Assert.Equal(0, (await ReadAsync<AddedView>(client, As(HttpMethod.Post, $"{review}/practice", white), ct)).Added);
-        Item item = (await ReadAsync<Next>(client, As(HttpMethod.Get, "/api/practice/next", white), ct)).Item!;
-        Assert.Equal((game.GameId, 3, "g4"), (item.GameId, item.Ply, item.PlayedSan));
-        Assert.Equal(["b1c3"], item.AcceptedUci);
-        Result wrong = await ReadAsync<Result>(client, As(HttpMethod.Post, "/api/practice/results", white, new { gameId = game.GameId, ply = 3, correct = false }), ct);
-        Assert.Equal(0, wrong.Box);
-        Assert.Null((await ReadAsync<Next>(client, As(HttpMethod.Get, "/api/practice/next", black), ct)).Item);
+        // White's blunder is in their pool without a button (training D2), once; Black's pool has none of it.
+        Next next = await ReadAsync<Next>(client, As(HttpMethod.Get, "/api/training/next?mode=games", white), ct);
+        Assert.Equal(($"g:{game.GameId:N}:3", "games", "white", 0, 1), (next.Item!.Id, next.Item.Mode, next.Item.SideToMove, next.Item.Box, next.Pool));
+        Assert.Equal(1, (await ReadAsync<Next>(client, As(HttpMethod.Get, "/api/training/next?mode=games", white), ct)).Pool);
+        Assert.Null((await ReadAsync<Next>(client, As(HttpMethod.Get, "/api/training/next?mode=games", black), ct)).Item);
+
+        Answer wrong = await ReadAsync<Answer>(client, As(HttpMethod.Post, "/api/training/answer", white, new { mode = "games", id = next.Item.Id, uci = "g2g4" }), ct);
+        Assert.Equal((false, "none", "g2g4", 0), (wrong.Correct, wrong.Verdict, wrong.PlayedUci, wrong.Box));
+        Assert.Equal(["b1c3"], wrong.AcceptedUci);
+        Assert.Equal(("game", game.GameId, 3), (wrong.Source.Kind, wrong.Source.GameId, wrong.Source.Ply));
+        Answer right = await ReadAsync<Answer>(client, As(HttpMethod.Post, "/api/training/answer", white, new { mode = "games", id = next.Item.Id, uci = "b1c3" }), ct);
+        Assert.Equal((true, "engine", 1), (right.Correct, right.Verdict, right.Box));
+        Assert.Equal(HttpStatusCode.NotFound, await StatusAsync(client, As(HttpMethod.Post, "/api/training/answer", black, new { mode = "games", id = next.Item.Id, uci = "b1c3" }), ct));
     }
 }

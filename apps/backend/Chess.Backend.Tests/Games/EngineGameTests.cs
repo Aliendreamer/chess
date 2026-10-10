@@ -183,14 +183,14 @@ public sealed class EngineGameTests() : GameActorTestBase(virtualTime: true)
     }
 
     [Fact]
-    public void The_sweeps_check_wakes_a_game_nobody_is_at_and_it_ends_by_abandonment()
+    public void The_sweeps_wake_up_call_wakes_a_game_nobody_is_at_and_it_ends_by_abandonment()
     {
         (Guid id, IActorRef actor) = EngineGame();
         Play(actor, id, "e2e4 e7e5");
         StopAndWait(actor);
 
         IActorRef woken = Spawn(id);
-        woken.Tell(new CheckDeadline(id));
+        woken.Tell(new WakeIdle(id));
         Assert.Equal(GameStatus.Playing, View(woken, id).Status); // recovered and judged: nothing due yet
         Advance(GameTimings.Default.Lease + TimeSpan.FromSeconds(1));
         AwaitAssert(() => Assert.Equal((long?)White, View(woken, id).AbsentId));
@@ -200,7 +200,7 @@ public sealed class EngineGameTests() : GameActorTestBase(virtualTime: true)
     }
 
     [Fact]
-    public void The_sweeps_check_changes_nothing_while_the_person_is_there()
+    public void The_sweeps_wake_up_call_changes_nothing_while_the_person_is_there()
     {
         (Guid id, IActorRef actor) = EngineGame();
         long seq = Play(actor, id, "e2e4 e7e5").Seq;
@@ -208,7 +208,7 @@ public sealed class EngineGameTests() : GameActorTestBase(virtualTime: true)
         for (int i = 0; i < 6; i++)
         {
             Report(actor, id, White, present: true);
-            actor.Tell(new CheckDeadline(id));
+            actor.Tell(new WakeIdle(id));
             Advance(TimeSpan.FromSeconds(30));
         }
 

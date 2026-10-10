@@ -83,6 +83,8 @@ public sealed class KafkaRegistrationTests
         services.AddSingleton(Options.Create(new ApiOptions()));
         services.AddSingleton(Options.Create(new Chess.Backend.Authentication.KeycloakOptions()));
         services.AddSingleton(TimeProvider.System);
+        // A convention service (AddConventionServices) the automatic review starts reviews through (training D2).
+        services.AddSingleton(Mock.Of<Chess.Backend.Review.IReviewService>());
 
         using ServiceProvider provider = services.BuildServiceProvider();
         using IServiceScope scope = provider.CreateScope();

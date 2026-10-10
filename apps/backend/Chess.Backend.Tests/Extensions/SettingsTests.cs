@@ -1,7 +1,6 @@
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Analysis;
-using Chess.Backend.Correspondence;
 using Chess.Backend.Engine;
 using Chess.Backend.Extensions;
 using Chess.Backend.Library;
@@ -9,6 +8,7 @@ using Chess.Backend.Messaging;
 using Chess.Backend.News;
 using Chess.Backend.Projections;
 using Chess.Backend.Review;
+using Chess.Backend.Training;
 using Chess.Backend.WebApi.Lobby;
 using Microsoft.Extensions.Configuration;
 
@@ -42,10 +42,9 @@ public sealed class SettingsTests
         Assert.Equivalent(new SessionStoreOptions(), Bound<SessionStoreOptions>(SessionStoreOptions.SectionName), strict: true);
         Assert.Equivalent(new SessionCookieOptions(), Bound<SessionCookieOptions>(SessionCookieOptions.SectionName), strict: true);
         Assert.Equivalent(new EngineOptions(), Bound<EngineOptions>(EngineOptions.SectionName), strict: true);
-        Assert.Equivalent(new CorrespondenceOptions(), Bound<CorrespondenceOptions>(CorrespondenceOptions.SectionName), strict: true);
-        Assert.Equivalent(new SmtpOptions(), Bound<SmtpOptions>(SmtpOptions.SectionName), strict: true);
         Assert.Equivalent(new AnalysisOptions(), Bound<AnalysisOptions>(AnalysisOptions.SectionName), strict: true);
         Assert.Equivalent(new ReviewOptions(), Bound<ReviewOptions>(ReviewOptions.SectionName), strict: true);
+        Assert.Equivalent(new TrainingOptions(), Bound<TrainingOptions>(TrainingOptions.SectionName), strict: true);
         Assert.Equivalent(new ObservabilityOptions(), Bound<ObservabilityOptions>(ObservabilityOptions.SectionName), strict: true);
 
         Assert.Equivalent(new LobbyOptions(), Bound<LobbyOptions>(LobbyOptions.SectionName), strict: true);
@@ -86,6 +85,7 @@ public sealed class SettingsTests
         new SessionStoreOptions().Validate();
         new LobbyOptions().Validate();
         new NewsOptions().Validate();
+        new TrainingOptions().Validate();
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public sealed class SettingsTests
     {
         NewsOptions news = Bound<NewsOptions>(NewsOptions.SectionName);
         news.Validate();
-        Assert.Equal(["fide", "chessbase", "lichess", "twic", "ecf"], news.Feeds.Select(f => f.Id));
+        Assert.Equal(["fide", "chessbase", "lichess", "twic"], news.Feeds.Select(f => f.Id));
         Assert.Equal("application/rss+xml", news.Feeds.Single(f => f.Id == "twic").Accept);
         // chess.com's terms forbid displaying its content (not theweekinchess.com, which only ends alike).
         Assert.DoesNotContain(news.Feeds, f => new Uri(f.Url).Host is "chess.com" or "www.chess.com");
@@ -108,6 +108,7 @@ public sealed class SettingsTests
         { "Database:ReplicaMaxLagSeconds", () => new DatabaseOptions { ReplicaMaxLagSeconds = 0 }.Validate() },
         { "Kafka:HealthTimeoutSeconds", () => new KafkaOptions { HealthTimeoutSeconds = 0 }.Validate() },
         { "Akka:MatchmakingSweepSeconds", () => new AkkaOptions { MatchmakingSweepSeconds = 0 }.Validate() },
+        { "Akka:IdleSweepSeconds", () => new AkkaOptions { IdleSweepSeconds = 0 }.Validate() },
         { "Keycloak:HttpTimeoutSeconds", () => new KeycloakOptions { HttpTimeoutSeconds = 0 }.Validate() },
         { "Outbox:BatchSize", () => new JournalPublisherOptions { BatchSize = 0 }.Validate() },
         { "Outbox:DegradedAfter", () => new PublisherLagOptions { DegradedAfter = TimeSpan.Zero }.Validate() },
@@ -115,10 +116,13 @@ public sealed class SettingsTests
         { "SessionStore:CleanupInterval", () => new SessionStoreOptions { CleanupInterval = TimeSpan.Zero }.Validate() },
         { "Engine:MinThinkMs", () => new EngineOptions { MinThinkMs = 8_000, MaxThinkMs = 5_000 }.Validate() },
         { "Engine:StallSeconds", () => new EngineOptions { StallSeconds = 5 }.Validate() },
-        { "Correspondence:MoveDeadline", () => new CorrespondenceOptions { MoveDeadline = TimeSpan.Zero }.Validate() },
-        { "Smtp:Port", () => new SmtpOptions { Host = "mail", Port = 0 }.Validate() },
         { "Analysis:QuickMs", () => new AnalysisOptions { QuickMs = 5_000, NormalMs = 3_000 }.Validate() },
         { "Review:ThinkMs", () => new ReviewOptions { ThinkMs = 0 }.Validate() },
+        { "Training:MinPly", () => new TrainingOptions { MinPly = -1 }.Validate() },
+        { "Training:MineSeconds", () => new TrainingOptions { MineSeconds = 0 }.Validate() },
+        { "Training:InFlight", () => new TrainingOptions { InFlight = 0 }.Validate() },
+        { "Training:PerGame", () => new TrainingOptions { PerGame = 0 }.Validate() },
+        { "Training:MinGap", () => new TrainingOptions { MinGap = 0 }.Validate() },
         { "Observability:SampleRatio", () => new ObservabilityOptions { SampleRatio = 1.5 }.Validate() },
         { "Observability:MetricExportSeconds", () => new ObservabilityOptions { MetricExportSeconds = 0 }.Validate() },
         { "Observability:OtlpEndpoint", () => new ObservabilityOptions { Enabled = true, OtlpEndpoint = "collector" }.Validate() },

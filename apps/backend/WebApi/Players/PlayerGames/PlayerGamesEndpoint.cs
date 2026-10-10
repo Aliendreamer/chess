@@ -1,4 +1,3 @@
-using Chess.Backend.Correspondence;
 using Chess.Backend.Extensions;
 using Chess.Backend.WebApi.Games;
 using Microsoft.Net.Http.Headers;
@@ -8,7 +7,7 @@ namespace Chess.Backend.WebApi.Players;
 
 /// <summary>Any player's games, newest first: <c>me/games</c> for someone else (player-profiles; D20).</summary>
 [ExcludeFromCodeCoverage]
-internal sealed class PlayerGamesEndpoint(ReadDbContext read, IOptions<ApiOptions> options, IOptions<CorrespondenceOptions> correspondence)
+internal sealed class PlayerGamesEndpoint(ReadDbContext read, IOptions<ApiOptions> options)
     : Endpoint<PlayerGamesRequest, CursorPage<MyGameItem>>
 {
     public override void Configure()
@@ -35,7 +34,7 @@ internal sealed class PlayerGamesEndpoint(ReadDbContext read, IOptions<ApiOption
                 .Join(read.RmGames, p => p.GameId, g => g.GameId, (p, g) => new { P = p, G = g })
                 .NewestFirst(x => x.P.CreatedAt, x => x.P.GameId, after, limit)
                 .ToListAsync(ct);
-            List<MyGameItem> items = rows.ConvertAll(x => GameReads.ToMyGame(x.P, x.G, correspondence.Value.MoveDeadline));
+            List<MyGameItem> items = rows.ConvertAll(x => GameReads.ToMyGame(x.P, x.G));
             await Send.OkAsync(Keyset.ToPage(items, limit, i => new KeysetCursor(i.CreatedAt, i.GameId.ToString())), ct);
         }
         catch (NpgsqlException)

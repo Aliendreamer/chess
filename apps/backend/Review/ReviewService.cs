@@ -55,7 +55,6 @@ internal enum ReviewRefusal
     NotFound,
     InPlay,
     NotPlayer,
-    NotComplete,
 }
 
 internal interface IReviewService : IService
@@ -66,8 +65,70 @@ internal interface IReviewService : IService
     /// <summary>Asks the engine for every position the review lacks: a player of a finished game, or an Admin.</summary>
     Task<(ReviewRefusal Refusal, ReviewView? View)> StartAsync(Guid gameId, long userId, bool admin, CancellationToken ct);
 
-    /// <summary>Adds the player's own mistakes and blunders of a complete review to their practice (once each).</summary>
-    Task<(ReviewRefusal Refusal, int Added)> AddPracticeAsync(Guid gameId, long userId, CancellationToken ct);
+    /// <summary>
+    /// The automatic review of a game that ended (training D2), from the primary's read model: started as a player's
+    /// button would, requested by the game's human player; false when the game does not qualify (aborted, fewer than 2
+    /// moves). Throws while the read model has not reached <paramref name="endedSeq"/> yet, so the consumer retries.
+    /// </summary>
+    Task<bool> StartAutomaticAsync(Guid gameId, long endedSeq, CancellationToken ct);
+
+    /// <summary>
+    /// The player's own mistakes and blunders of the game's complete review (training D2); null while the review is not
+    /// complete — then the positions lost on the way are asked for again.
+    /// </summary>
+    Task<IReadOnlyList<PracticePosition>?> MistakesAsync(Guid gameId, long userId, CancellationToken ct);
+}
+
+/// <summary>
+/// The review queue (game-review D2): a position is asked for on the review topic at <c>Review:ThinkMs</c> once, and again
+/// only when its request has gone stale (lost). Shared by reviews and the training miner (training D3).
+/// </summary>
+internal static class ReviewQueue
+{
+    /// <summary>
+    /// Stages a request row for each of <paramref name="missing"/> (positions with no finished evaluation) that is not on
+    /// its way, and returns what to send once the caller has saved: send after <c>SaveChanges</c>, never before.
+    /// </summary>
+    public static async Task<List<AnalysisRequestMessage>> StageAsync(
+        ProjectDbContext db,
+        IReadOnlyList<ReviewPosition> missing,
+        ReviewOptions review,
+        AnalysisOptions analysis,
+        DateTimeOffset now,
+        CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(missing);
+        ArgumentNullException.ThrowIfNull(review);
+        ArgumentNullException.ThrowIfNull(analysis);
+        List<string> keys = [.. missing.Select(p => p.Key)];
+        int thinkMs = review.ThinkMs;
+        Dictionary<string, PositionEvaluation> pending = await db.PositionEvaluations
+            .Where(e => e.ThinkMs == thinkMs && keys.Contains(e.PositionKey))
+            .ToDictionaryAsync(e => e.PositionKey, StringComparer.Ordinal, ct);
+
+        List<AnalysisRequestMessage> ask = [];
+        foreach (ReviewPosition position in missing.DistinctBy(p => p.Key, StringComparer.Ordinal))
+        {
+            if (pending.TryGetValue(position.Key, out PositionEvaluation? row))
+            {
+                if (row.Status == PositionEvaluation.Done || now - row.RequestedAt < TimeSpan.FromSeconds(review.RetryAfterSeconds))
+                {
+                    continue; // on its way
+                }
+
+                row.RequestedAt = now; // lost: ask again
+            }
+            else
+            {
+                db.PositionEvaluations.Add(new PositionEvaluation { PositionKey = position.Key, ThinkMs = thinkMs, Status = PositionEvaluation.Requested, RequestedAt = now });
+            }
+
+            ask.Add(new AnalysisRequestMessage(position.Key, position.Fen, thinkMs, analysis.Lines, now));
+        }
+
+        return ask;
+    }
 }
 
 /// <summary>
@@ -91,7 +152,7 @@ internal sealed class ReviewService(
             return null;
         }
 
-        return game.Status == RmGame.Ended ? await ViewAsync(game, await InputAsync(game, ct), ct) : ReviewView.Nothing;
+        return game.Status == RmGame.Ended ? await ViewAsync(game, await InputAsync(game, read.RmMoves, ct), ct) : ReviewView.Nothing;
     }
 
     public async Task<(ReviewRefusal Refusal, ReviewView? View)> StartAsync(Guid gameId, long userId, bool admin, CancellationToken ct)
@@ -102,35 +163,54 @@ internal sealed class ReviewService(
             return (refusal, null);
         }
 
-        ReviewInput input = await InputAsync(game!, ct);
-        DateTimeOffset now = clock.GetUtcNow();
-        IReadOnlyList<ReviewPosition> missing = GameReviewer.Missing(input);
-        List<string> keys = [.. missing.Select(p => p.Key)];
-        int thinkMs = options.Value.ThinkMs;
-        Dictionary<string, PositionEvaluation> pending = await Context.PositionEvaluations
-            .Where(e => e.ThinkMs == thinkMs && keys.Contains(e.PositionKey))
-            .ToDictionaryAsync(e => e.PositionKey, StringComparer.Ordinal, ct);
+        ReviewInput input = await InputAsync(game!, read.RmMoves, ct);
+        await AskAsync(gameId, userId, input, ct);
+        return (ReviewRefusal.None, await ViewAsync(game!, input, ct));
+    }
 
-        List<AnalysisRequestMessage> ask = [];
-        foreach (ReviewPosition position in missing)
+    public async Task<bool> StartAutomaticAsync(Guid gameId, long endedSeq, CancellationToken ct)
+    {
+        // The primary, not the replica: GameProjection writes it on the same topic, so it is at most a moment behind.
+        RmGame? game = await Context.RmGames.AsNoTracking().SingleOrDefaultAsync(g => g.GameId == gameId, ct);
+        if (game is null || game.LastSeq < endedSeq)
         {
-            if (pending.TryGetValue(position.Key, out PositionEvaluation? row))
-            {
-                if (now - row.RequestedAt < TimeSpan.FromSeconds(options.Value.RetryAfterSeconds))
-                {
-                    continue; // on its way
-                }
-
-                row.RequestedAt = now; // lost: ask again
-            }
-            else
-            {
-                Context.PositionEvaluations.Add(new PositionEvaluation { PositionKey = position.Key, ThinkMs = thinkMs, Status = PositionEvaluation.Requested, RequestedAt = now });
-            }
-
-            ask.Add(new AnalysisRequestMessage(position.Key, position.Fen, thinkMs, analysis.Value.Lines, now));
+            throw new InvalidOperationException($"Game {gameId:N} has not reached its end in the read model yet; trying again.");
         }
 
+        if (game.Status != RmGame.Ended || EndReasons.Parse(game.Reason) == EndReason.Aborted || game.Ply < 2)
+        {
+            return false;
+        }
+
+        long player = game.WhiteId > 0 ? game.WhiteId : game.BlackId; // engine players have negative ids
+        await AskAsync(gameId, player, await InputAsync(game, Context.RmMoves.AsNoTracking(), ct), ct);
+        return true;
+    }
+
+    public async Task<IReadOnlyList<PracticePosition>?> MistakesAsync(Guid gameId, long userId, CancellationToken ct)
+    {
+        RmGame? game = await read.RmGames.AsNoTracking().SingleOrDefaultAsync(g => g.GameId == gameId, ct);
+        if (Refuse(game, userId, admin: false) is not null)
+        {
+            return [];
+        }
+
+        ReviewInput input = await InputAsync(game!, read.RmMoves, ct);
+        ReviewResult review = GameReviewer.Review(input);
+        if (review.Evaluated < review.Positions)
+        {
+            await AskAsync(gameId, userId, input, ct); // re-asks only what was lost on the way
+            return null;
+        }
+
+        return GameReviewer.Practice(input, game!.WhiteId == userId ? SideNames.White : SideNames.Black);
+    }
+
+    /// <summary>Asks for the positions the review lacks and records that the review was asked for.</summary>
+    private async Task AskAsync(Guid gameId, long userId, ReviewInput input, CancellationToken ct)
+    {
+        DateTimeOffset now = clock.GetUtcNow();
+        List<AnalysisRequestMessage> ask = await ReviewQueue.StageAsync(Context, GameReviewer.Missing(input), options.Value, analysis.Value, now, ct);
         if (await Context.GameReviews.SingleOrDefaultAsync(r => r.GameId == gameId, ct) is null)
         {
             Context.GameReviews.Add(new GameReview { GameId = gameId, RequestedBy = userId, RequestedAt = now });
@@ -141,55 +221,6 @@ internal sealed class ReviewService(
         {
             await requests.RequestReviewAsync(ask, ct);
         }
-
-        return (ReviewRefusal.None, await ViewAsync(game!, input, ct));
-    }
-
-    public async Task<(ReviewRefusal Refusal, int Added)> AddPracticeAsync(Guid gameId, long userId, CancellationToken ct)
-    {
-        RmGame? game = await read.RmGames.SingleOrDefaultAsync(g => g.GameId == gameId, ct);
-        if (Refuse(game, userId, admin: false) is { } refusal)
-        {
-            return (refusal, 0);
-        }
-
-        ReviewInput input = await InputAsync(game!, ct);
-        ReviewResult review = GameReviewer.Review(input);
-        if (review.Evaluated < review.Positions)
-        {
-            return (ReviewRefusal.NotComplete, 0);
-        }
-
-        string color = game!.WhiteId == userId ? "white" : "black";
-        HashSet<int> known = [.. await Context.MistakeDrills
-            .Where(d => d.UserId == userId && d.GameId == gameId)
-            .Select(d => d.Ply)
-            .ToListAsync(ct)];
-        DateTimeOffset now = clock.GetUtcNow();
-        int added = 0;
-        foreach (PracticePosition position in GameReviewer.Practice(input, color).Where(p => !known.Contains(p.Ply)))
-        {
-            Context.MistakeDrills.Add(new MistakeDrill
-            {
-                UserId = userId,
-                GameId = gameId,
-                Ply = position.Ply,
-                Fen = position.Fen,
-                PlayedUci = position.PlayedUci,
-                PlayedSan = position.PlayedSan,
-                AcceptedUci = [.. position.AcceptedUci],
-                BestLine = [.. position.BestLine],
-                Class = position.Class,
-                Box = 0,
-                DueAt = now,
-                CreatedAt = now,
-                UpdatedAt = now,
-            });
-            added++;
-        }
-
-        await Context.SaveChangesAsync(ct);
-        return (ReviewRefusal.None, added);
     }
 
     /// <summary>Who may ask: a player of a finished game (or an Admin, for any finished game).</summary>
@@ -214,9 +245,9 @@ internal sealed class ReviewService(
         return new ReviewView(status, review.Evaluated, review.Positions, review.Moves, review.White, review.Black, review.BookExit);
     }
 
-    private async Task<ReviewInput> InputAsync(RmGame game, CancellationToken ct)
+    private async Task<ReviewInput> InputAsync(RmGame game, IQueryable<RmMove> source, CancellationToken ct)
     {
-        List<RmMove> rows = await read.RmMoves.Where(m => m.GameId == game.GameId).OrderBy(m => m.Ply).ToListAsync(ct);
+        List<RmMove> rows = await source.Where(m => m.GameId == game.GameId).OrderBy(m => m.Ply).ToListAsync(ct);
         List<ReviewMove> moves = rows.ConvertAll(m => new ReviewMove(m.Ply, m.Uci, m.San, m.FenAfter));
         List<string> keys = [.. moves.Select(m => PositionKey.Of(m.FenAfter)!).Append(PositionKey.Of(ChessRules.StartFen)!).Distinct(StringComparer.Ordinal)];
 

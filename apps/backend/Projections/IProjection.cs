@@ -10,11 +10,10 @@ internal static class ConsumerGroups
 {
     public const string RmGames = "chess.rm-games";
     public const string RmPings = "chess.rm-pings";
-    public const string Deadlines = "chess.deadlines";
-    public const string Notifications = "chess.notifications";
     public const string EngineRequests = "chess.engine-requests";
     public const string EngineMovesApply = "chess.engine-moves-apply";
     public const string AnalysisResults = "chess.analysis-results";
+    public const string AutoReview = "chess.auto-review";
 }
 
 internal interface IProjection
@@ -39,7 +38,7 @@ internal interface IProjection
 }
 
 /// <summary>
-/// Base for a consumer with no per-aggregate row to hold its own watermark (notifications, analysis requests,
+/// Base for a consumer with no per-aggregate row to hold its own watermark (analysis requests,
 /// fan-out). Tracks the position in <c>consumer_positions</c>; <see cref="StageAsync"/> only stages changes on
 /// <see cref="Db"/> and the base saves them together with the new position in one SaveChanges.
 /// </summary>

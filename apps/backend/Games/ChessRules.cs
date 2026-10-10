@@ -36,6 +36,9 @@ internal sealed partial class ChessRules
 
     public string Fen => _board.ToFen();
 
+    /// <summary>How many legal moves the side to move has (a promotion counts once): training D3's "only move" check.</summary>
+    public int LegalMoveCount => _board.IsEndGame ? 0 : _board.Moves(false, false).Length;
+
     /// <summary>Every accepted move, as UCI, in order: the game's canonical record.</summary>
     public IReadOnlyList<string> Moves => _moves;
 

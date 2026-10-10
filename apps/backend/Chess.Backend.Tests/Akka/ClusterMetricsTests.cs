@@ -38,12 +38,12 @@ public sealed class ClusterMetricsTests() : TestKit("""
             cluster.State,
             cluster.SelfMember,
             "backend",
-            ["matchmaking", "deadline-sweeper"],
+            ["matchmaking", "idle-game-sweeper"],
             new Dictionary<string, CurrentShardRegionState> { ["games"] = Region(("7", ["g1", "g2"]), ("12", ["g3"])) });
 
         Assert.Equal(1, snapshot.MembersByStatus["Up"]);
         Assert.Equal(0, snapshot.Unreachable);
-        Assert.Equal(["matchmaking", "deadline-sweeper"], snapshot.Singletons);
+        Assert.Equal(["matchmaking", "idle-game-sweeper"], snapshot.Singletons);
         Assert.Equal([("games", "12", 1), ("games", "7", 2)], snapshot.Shards.OrderBy(s => s.Shard, StringComparer.Ordinal));
     }
 

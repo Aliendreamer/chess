@@ -29,10 +29,10 @@ internal sealed record AbortGame(Guid GameId, long UserId) : IGameCommand;
 internal sealed record GetGameView(Guid GameId) : IGameCommand;
 
 /// <summary>
-/// From the deadline sweeper (correspondence-games D3): end the game if its player to move is past the deadline.
-/// The game is the judge; a check that is early, late or repeated changes nothing. No reply.
+/// From the idle-game sweeper (engine-game-abandonment D4): wake a quiet untimed game so its recovery and timers judge
+/// it. Waking is the whole effect; one that is early, late or repeated changes nothing. No reply.
 /// </summary>
-internal sealed record CheckDeadline(Guid GameId) : IGameCommand;
+internal sealed record WakeIdle(Guid GameId) : IGameCommand;
 
 /// <summary>
 /// From the BFF through the hub (presence-and-abandonment D1–D2): <paramref name="UserId"/> has (or no longer has) a
@@ -90,8 +90,7 @@ internal sealed record GameView(
     long? AbsentId = null,
     long? ClaimableBy = null,
     string? EngineSide = null,
-    string? EngineLevel = null,
-    DateTimeOffset? DeadlineAt = null);
+    string? EngineLevel = null);
 
 /// <summary>
 /// Journal snapshot: the UCI move list, not a FEN, because threefold repetition needs the history (design D2).

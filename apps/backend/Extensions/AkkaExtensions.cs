@@ -18,12 +18,12 @@ using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Akka.Ping;
-using Chess.Backend.Correspondence;
 using Chess.Backend.Engine;
 using Chess.Backend.Games;
 using Chess.Backend.Library;
 using Chess.Backend.Messaging;
 using Chess.Backend.News;
+using Chess.Backend.Training;
 using Confluent.Kafka;
 using LinqToDB;
 using Microsoft.AspNetCore.SignalR;
@@ -126,18 +126,18 @@ internal static class PingShardingExtensions
 
 internal static class MatchmakingRegistration
 {
-    /// <summary>The matchmaking singleton on the backend role, with a proxy so every node's endpoints reach it.</summary>
-    /// <summary>The correspondence deadline sweeper (correspondence-games D3): one per cluster, on the backend role.</summary>
-    public static AkkaConfigurationBuilder WithDeadlineSweeper(this AkkaConfigurationBuilder akka)
+    /// <summary>The idle-game sweeper (engine-game-abandonment D4): one per cluster, on the backend role.</summary>
+    public static AkkaConfigurationBuilder WithIdleGameSweeper(this AkkaConfigurationBuilder akka, AkkaOptions options)
     {
         ArgumentNullException.ThrowIfNull(akka);
-        return akka.WithSingleton<DeadlineSweeper>(
-            DeadlineSweeper.SingletonName,
-            (_, registry, resolver) => Props.Create(() => new DeadlineSweeper(
+        ArgumentNullException.ThrowIfNull(options);
+        return akka.WithSingleton<IdleGameSweeper>(
+            IdleGameSweeper.SingletonName,
+            (_, registry, resolver) => Props.Create(() => new IdleGameSweeper(
                 registry.Get<GameActor>(),
-                resolver.GetService<IDueDeadlines>(),
+                resolver.GetService<IIdleGames>(),
                 resolver.GetService<TimeProvider>(),
-                TimeSpan.FromSeconds(resolver.GetService<CorrespondenceOptions>().SweepSeconds))),
+                TimeSpan.FromSeconds(options.IdleSweepSeconds))),
             new ClusterSingletonOptions { Role = AkkaOptions.BackendRole },
             createProxyToo: false);
     }
@@ -151,6 +151,21 @@ internal static class MatchmakingRegistration
             (_, _, resolver) => Props.Create(() => new LibraryImporter(resolver.GetService<IBroadcastImports>())),
             new ClusterSingletonOptions { Role = AkkaOptions.BackendRole },
             createProxyToo: true);
+    }
+
+    /// <summary>The critical-moment miner (training D3): one per cluster, on the backend role.</summary>
+    public static AkkaConfigurationBuilder WithTrainingMiner(this AkkaConfigurationBuilder akka)
+    {
+        ArgumentNullException.ThrowIfNull(akka);
+        return akka.WithSingleton<TrainingMiner>(
+            TrainingMiner.SingletonName,
+            (_, _, resolver) =>
+            {
+                TrainingOptions training = resolver.GetService<TrainingOptions>();
+                return Props.Create(() => new TrainingMiner(resolver.GetService<ITrainingMining>(), TimeSpan.FromSeconds(training.MineSeconds)));
+            },
+            new ClusterSingletonOptions { Role = AkkaOptions.BackendRole },
+            createProxyToo: false);
     }
 
     /// <summary>The news schedule (chess-news D1): one per cluster, on the backend role.</summary>
@@ -173,6 +188,7 @@ internal static class MatchmakingRegistration
             createProxyToo: false);
     }
 
+    /// <summary>The matchmaking singleton on the backend role, with a proxy so every node's endpoints reach it.</summary>
     public static AkkaConfigurationBuilder WithMatchmaking(this AkkaConfigurationBuilder akka, AkkaOptions options)
     {
         ArgumentNullException.ThrowIfNull(akka);
@@ -215,7 +231,7 @@ internal static class GameShardingExtensions
                 Guid.ParseExact(id, "N"),
                 DistributedPubSub.Get(system).Mediator,
                 resolver.GetService<TimeProvider>(),
-                options.GameTimings(resolver.GetService<EngineOptions>().Stall, resolver.GetService<CorrespondenceOptions>().MoveDeadline),
+                options.GameTimings(resolver.GetService<EngineOptions>().Stall),
                 resolver.GetService<IEngineRequests>())),
             new GameMessageExtractor(options.ShardCount),
             ShardOptions());
@@ -303,10 +319,11 @@ internal static class ClusterMetricsRegistration
                 [InviteShardingExtensions.ShardTypeName] = registry.Get<InviteActor>(),
                 [PingTopics.ShardTypeName] = registry.Get<PingActor>(),
             };
-            List<string> singletons = [MatchmakingActor.SingletonName, DeadlineSweeper.SingletonName, NewsFetcher.SingletonName, LibraryImporter.SingletonName];
+            List<string> singletons = [MatchmakingActor.SingletonName, IdleGameSweeper.SingletonName, NewsFetcher.SingletonName, LibraryImporter.SingletonName];
             if (publisher)
             {
                 singletons.Add(JournalPublisher.SingletonName);
+                singletons.Add(TrainingMiner.SingletonName); // runs only with Kafka, like the publisher
             }
 
             system.ActorOf(Props.Create(() => new ClusterMetricsActor(regions, singletons, AkkaOptions.BackendRole, every)), ActorNames.ClusterMetrics);

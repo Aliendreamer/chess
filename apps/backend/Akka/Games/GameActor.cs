@@ -137,7 +137,8 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         Command<FlagCheck>(_ => HandleFlagCheck());
         Command<AbortCheck>(_ => HandleAbortCheck());
         Command<EngineStall>(_ => HandleEngineStall());
-        Command<CheckDeadline>(_ => HandleCheckDeadline());
+        // From the idle-game sweeper (engine-game-abandonment D4): being woken is the point; recovery and Rearm judge.
+        Command<WakeIdle>(_ => { });
         Command<PassivateNow>(_ =>
         {
             ActorMetrics.Passivated(ActorNames.Game);
@@ -244,13 +245,6 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         {
             // The flag fell before this move arrived; the timer just hadn't fired yet.
             PersistAndReply([TimedOut(now)]);
-            return;
-        }
-
-        if (DeadlineAt is { } deadline && now >= deadline)
-        {
-            // Past the correspondence deadline, before the sweeper got to it: the move comes too late.
-            PersistAndReply([MissedDeadline(now)]);
             return;
         }
 
@@ -397,10 +391,9 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
 
     private void HandlePresence(ReportPresence report)
     {
-        // Fire-and-forget from the hub: spectators and finished games are simply ignored, and so is every report in a
-        // correspondence game, where the missed deadline is the only abandonment (correspondence-games D2). In a game
-        // against the engine only the person counts: the engine never connects (engine-game-abandonment D1).
-        if (!_created || _timeControl.IsCorrespondence || _status == GameStatus.Ended
+        // Fire-and-forget from the hub: spectators and finished games are simply ignored. In a game against the engine
+        // only the person counts: the engine never connects (engine-game-abandonment D1).
+        if (!_created || _status == GameStatus.Ended
             || (report.UserId != _white && report.UserId != _black) || report.UserId == EngineId)
         {
             return;
@@ -536,24 +529,6 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         }
 
         PersistAll(ActorTracing.StampAll<object>([Ended(GameResult.None, EndReason.Aborted, now)]), ActorTracing.Persisting<object>(ActorNames.Game, 1, e =>
-        {
-            ApplyLive(e);
-            Publish(e);
-            MaybeSnapshot();
-            Rearm();
-        }));
-    }
-
-    /// <summary>A correspondence game past its deadline ends: aborted before both first moves, else lost on time.</summary>
-    private void HandleCheckDeadline()
-    {
-        DateTimeOffset now = _clock.GetUtcNow();
-        if (_status == GameStatus.Ended || DeadlineAt is not { } deadline || now < deadline)
-        {
-            return;
-        }
-
-        PersistAll(ActorTracing.StampAll<object>([MissedDeadline(now)]), ActorTracing.Persisting<object>(ActorNames.Game, 1, e =>
         {
             ApplyLive(e);
             Publish(e);
@@ -758,10 +733,6 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     private GameEnded Ended(GameResult result, EndReason reason, DateTimeOffset at) =>
         new(result.ToPgn(), reason.ToString(), CurrentMs(Side.White, at), CurrentMs(Side.Black, at), at);
 
-    /// <summary>A missed correspondence deadline: an abort before both first moves (like D15), else a loss on time.</summary>
-    private GameEnded MissedDeadline(DateTimeOffset at) =>
-        Ply < 2 ? Ended(GameResult.None, EndReason.Aborted, at) : TimedOut(at);
-
     private GameEnded TimedOut(DateTimeOffset at)
     {
         GameOutcome outcome = TimeoutOutcome(_rules, _rules.SideToMove);
@@ -769,15 +740,6 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
     }
 
     private bool ClocksRunning => _status == GameStatus.Playing && _turnStartedAt is not null;
-
-    /// <summary>
-    /// A correspondence game's deadline for the player to move (correspondence-games D1): a move-deadline after the
-    /// previous move, or after the start for the first move. Derived, never stored; null when the game has none.
-    /// </summary>
-    private DateTimeOffset? DeadlineAt =>
-        _created && _timeControl.IsCorrespondence && _status != GameStatus.Ended
-            ? (Ply == 0 ? _createdAt : _lastMoveAt) + _timings.MoveDeadline
-            : null;
 
     /// <summary>A game against the engine, not over, with the engine's side to move.</summary>
     private bool EngineToMove =>
@@ -828,7 +790,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         {
             Timers.StartSingleTimer(FlagTimer, FlagCheck.Instance, TimeSpan.FromMilliseconds(RemainingMs(now)));
         }
-        else if (Ply < 2 && !EngineToMove && !_timeControl.IsCorrespondence)
+        else if (Ply < 2 && !EngineToMove)
         {
             // The first-move abort is for people; the engine's first move is covered by its stall timer (engine-play D4).
             TimeSpan untilAbort = FirstMoveDeadline - now;
@@ -974,7 +936,7 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
         _gameId, _white, _black, _timeControl.ToString(), _status, _rules.Fen, Ply, _rules.SideToMove,
         _rules.Moves.Count > 0 ? _rules.Moves[^1] : null, _lastSan,
         CurrentMs(Side.White, _clock.GetUtcNow()), CurrentMs(Side.Black, _clock.GetUtcNow()), _clock.GetUtcNow(),
-        _drawOfferedBy, _result, EndReasons.Parse(_reason), LastSequenceNr, AbsentId, ClaimableBy(_clock.GetUtcNow()), _engine?.Side, _engine?.Level, DeadlineAt);
+        _drawOfferedBy, _result, EndReasons.Parse(_reason), LastSequenceNr, AbsentId, ClaimableBy(_clock.GetUtcNow()), _engine?.Side, _engine?.Level);
 
     /// <summary>The engine's seat is valid when its side is white or black and that side's player is its level's user.</summary>
     private static bool IsEngineSeat(EnginePlayer engine, long whiteId, long blackId) =>
@@ -1024,12 +986,11 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
 
 /// <summary>
 /// The actor's configurable timings: presence (presence-and-abandonment D2–D3), how long an untimed game may sit idle
-/// before it passivates (engine-play D4), how long the engine may stay silent before the game asks again (D6), and a
-/// correspondence game's time per move (correspondence-games D1).
+/// before it passivates (engine-play D4), and how long the engine may stay silent before the game asks again (D6).
 /// Configurable so integration tests need not wait minutes.
 /// </summary>
-internal sealed record GameTimings(TimeSpan AbandonAfter, TimeSpan Lease, TimeSpan UntimedIdle, TimeSpan EngineStall, TimeSpan MoveDeadline)
+internal sealed record GameTimings(TimeSpan AbandonAfter, TimeSpan Lease, TimeSpan UntimedIdle, TimeSpan EngineStall)
 {
     public static readonly GameTimings Default =
-        new(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(75), TimeSpan.FromMinutes(30), TimeSpan.FromSeconds(60), TimeSpan.FromDays(7));
+        new(TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(75), TimeSpan.FromMinutes(30), TimeSpan.FromSeconds(60));
 }

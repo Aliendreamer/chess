@@ -79,7 +79,7 @@ public sealed class NewsFlowTests(StackFixture stack)
         using (HttpResponseMessage r = await Api.GetAsync(client, "/api/news/sources", "reader", ct))
         {
             List<Source> sources = (await r.Content.ReadFromJsonAsync<List<Source>>(Api.Json, ct))!;
-            Assert.Equal(["fide", "chessbase", "lichess", "twic", "ecf"], sources.Select(s => s.Id));
+            Assert.Equal(["fide", "chessbase", "lichess", "twic"], sources.Select(s => s.Id));
         }
 
         using (HttpResponseMessage r = await Api.GetAsync(client, "/api/news/events", "reader", ct))

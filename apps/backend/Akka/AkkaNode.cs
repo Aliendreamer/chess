@@ -43,9 +43,12 @@ internal sealed class AkkaOptions : Extensions.ISettings
     /// <summary>Idle time after which an untimed game under way is passivated; it recovers unchanged (engine-play D4).</summary>
     public int UntimedIdleMinutes { get; set; } = 30;
 
-    /// <summary>The game actor's timings; the engine stall and the move deadline come from their own sections.</summary>
-    public Games.GameTimings GameTimings(TimeSpan engineStall, TimeSpan moveDeadline) =>
-        new(TimeSpan.FromSeconds(AbandonAfterSeconds), TimeSpan.FromSeconds(PresenceLeaseSeconds), TimeSpan.FromMinutes(UntimedIdleMinutes), engineStall, moveDeadline);
+    /// <summary>How often the idle-game sweeper wakes untimed games quiet for <see cref="UntimedIdleMinutes"/> (engine-game-abandonment D4).</summary>
+    public int IdleSweepSeconds { get; set; } = 60;
+
+    /// <summary>The game actor's timings; the engine stall comes from its own section.</summary>
+    public Games.GameTimings GameTimings(TimeSpan engineStall) =>
+        new(TimeSpan.FromSeconds(AbandonAfterSeconds), TimeSpan.FromSeconds(PresenceLeaseSeconds), TimeSpan.FromMinutes(UntimedIdleMinutes), engineStall);
 
     public string SelfAddress => $"akka.tcp://{SystemName}@{Hostname}:{Port}";
 
@@ -54,11 +57,11 @@ internal sealed class AkkaOptions : Extensions.ISettings
     public void Validate()
     {
         if (AbandonAfterSeconds <= 0 || PresenceLeaseSeconds <= 0 || MatchmakingSweepSeconds <= 0 || IdlePassivationMinutes <= 0
-            || UntimedIdleMinutes <= 0)
+            || UntimedIdleMinutes <= 0 || IdleSweepSeconds <= 0)
         {
             throw new InvalidOperationException(
-                "Akka:AbandonAfterSeconds, Akka:PresenceLeaseSeconds, Akka:MatchmakingSweepSeconds, Akka:IdlePassivationMinutes and "
-                + "Akka:UntimedIdleMinutes must be positive.");
+                "Akka:AbandonAfterSeconds, Akka:PresenceLeaseSeconds, Akka:MatchmakingSweepSeconds, Akka:IdlePassivationMinutes, "
+                + "Akka:UntimedIdleMinutes and Akka:IdleSweepSeconds must be positive.");
         }
 
         if (string.IsNullOrWhiteSpace(Hostname))

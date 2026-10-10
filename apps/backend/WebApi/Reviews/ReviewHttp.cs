@@ -10,7 +10,6 @@ internal static class ReviewHttp
         ReviewRefusal.NotFound => (StatusCodes.Status404NotFound, "No such game."),
         ReviewRefusal.InPlay => (StatusCodes.Status409Conflict, "The game is still being played: it can be reviewed once it ends."),
         ReviewRefusal.NotPlayer => (StatusCodes.Status403Forbidden, "Only the game's players can do that."),
-        ReviewRefusal.NotComplete => (StatusCodes.Status409Conflict, "The review is not complete yet."),
         _ => (StatusCodes.Status400BadRequest, "Refused."),
     };
 }

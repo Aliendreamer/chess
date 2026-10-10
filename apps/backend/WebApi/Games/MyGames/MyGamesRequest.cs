@@ -11,13 +11,6 @@ internal sealed class MyGamesRequest
     /// <summary>The previous page's <c>nextCursor</c>.</summary>
     [QueryParam]
     public string? Cursor { get; init; }
-
-    /// <summary>The <see cref="Turn"/> that keeps only the games being played where it is your move.</summary>
-    public const string MineTurn = "mine";
-
-    /// <summary><see cref="MineTurn"/>: only the games being played where it is your move.</summary>
-    [QueryParam]
-    public string? Turn { get; init; }
 }
 
 internal sealed class MyGamesRequestValidator : Validator<MyGamesRequest>
@@ -26,6 +19,5 @@ internal sealed class MyGamesRequestValidator : Validator<MyGamesRequest>
     {
         RuleFor(r => r.Limit).GreaterThan(0).When(r => r.Limit is not null);
         RuleFor(r => r.Cursor).Must(c => GameCursor.TryDecode(c, out _)).WithMessage("Invalid cursor.");
-        RuleFor(r => r.Turn).Must(t => t is null or MyGamesRequest.MineTurn).WithMessage($"Turn must be {MyGamesRequest.MineTurn}.");
     }
 }

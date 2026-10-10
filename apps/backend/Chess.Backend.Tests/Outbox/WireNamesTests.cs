@@ -43,8 +43,8 @@ public sealed class WireNamesTests
     public void Consumer_groups_keep_their_names()
     {
         Assert.Equal(
-            ["chess.rm-games", "chess.rm-pings", "chess.deadlines", "chess.notifications", "chess.engine-requests", "chess.engine-moves-apply", "chess.analysis-results"],
-            [ConsumerGroups.RmGames, ConsumerGroups.RmPings, ConsumerGroups.Deadlines, ConsumerGroups.Notifications, ConsumerGroups.EngineRequests, ConsumerGroups.EngineMovesApply, ConsumerGroups.AnalysisResults]);
+            ["chess.rm-games", "chess.rm-pings", "chess.engine-requests", "chess.engine-moves-apply", "chess.analysis-results"],
+            [ConsumerGroups.RmGames, ConsumerGroups.RmPings, ConsumerGroups.EngineRequests, ConsumerGroups.EngineMovesApply, ConsumerGroups.AnalysisResults]);
     }
 
     [Fact]

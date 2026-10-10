@@ -27,10 +27,6 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
 
     public DbSet<EngineGame> EngineGames => Set<EngineGame>();
 
-    public DbSet<GameDeadline> GameDeadlines => Set<GameDeadline>();
-
-    public DbSet<NotificationGame> NotificationGames => Set<NotificationGame>();
-
     public DbSet<Study> Studies => Set<Study>();
 
     public DbSet<PositionEvaluation> PositionEvaluations => Set<PositionEvaluation>();
@@ -52,6 +48,14 @@ internal sealed class ProjectDbContext(DbContextOptions<ProjectDbContext> option
     public DbSet<GameReview> GameReviews => Set<GameReview>();
 
     public DbSet<MistakeDrill> MistakeDrills => Set<MistakeDrill>();
+
+    public DbSet<TrainingPosition> TrainingPositions => Set<TrainingPosition>();
+
+    public DbSet<TrainingCandidate> TrainingCandidates => Set<TrainingCandidate>();
+
+    public DbSet<TrainingProgress> TrainingProgress => Set<TrainingProgress>();
+
+    public DbSet<TrainingSynced> TrainingSynced => Set<TrainingSynced>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

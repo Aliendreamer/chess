@@ -1,6 +1,5 @@
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Matchmaking;
-using Chess.Backend.Data.ReadModels;
 using Chess.Backend.Extensions;
 using Microsoft.Net.Http.Headers;
 using Npgsql;
@@ -9,8 +8,8 @@ using ZiggyCreatures.Caching.Fusion;
 namespace Chess.Backend.WebApi.Lobby;
 
 /// <summary>
-/// The lobby, one answer shared by every caller for <see cref="LobbyOptions.CacheSeconds"/>: a count and the Club TV
-/// games from the replica, the queue sizes from the matchmaking singleton (live-home).
+/// The lobby, one answer shared by every caller for <see cref="LobbyOptions.CacheSeconds"/>: the count of games in play
+/// from the replica, the queue sizes from the matchmaking singleton (live-home).
 /// </summary>
 [ExcludeFromCodeCoverage]
 internal sealed class GetLobbyEndpoint(
@@ -38,7 +37,7 @@ internal sealed class GetLobbyEndpoint(
         {
             LobbyResponse answer = await cache.GetOrSetAsync(
                 Constants.Cache.Lobby,
-                async (FusionCacheFactoryExecutionContext<LobbyResponse> _, CancellationToken token) => await BuildAsync(options, token),
+                async (FusionCacheFactoryExecutionContext<LobbyResponse> _, CancellationToken token) => await BuildAsync(token),
                 o => o.SetDuration(TimeSpan.FromSeconds(options.CacheSeconds)),
                 ct);
             await Send.OkAsync(answer, ct);
@@ -49,10 +48,9 @@ internal sealed class GetLobbyEndpoint(
         }
     }
 
-    private async Task<LobbyResponse> BuildAsync(LobbyOptions options, CancellationToken ct)
+    private async Task<LobbyResponse> BuildAsync(CancellationToken ct)
     {
         int inPlay = await LobbyReads.InPlay(read.RmGames).CountAsync(ct);
-        List<RmGame> tv = await LobbyReads.Tv(read.RmGames, options.TvGames).ToListAsync(ct);
         QueueCounts? queues;
         try
         {
@@ -63,6 +61,6 @@ internal sealed class GetLobbyEndpoint(
             queues = null; // the lobby still answers; home just shows no queue sizes
         }
 
-        return LobbyReads.Compose(inPlay, tv, queues);
+        return LobbyReads.Compose(inPlay, queues);
     }
 }

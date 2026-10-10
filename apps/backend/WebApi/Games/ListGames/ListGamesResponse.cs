@@ -3,8 +3,8 @@ using Chess.Backend.Games;
 namespace Chess.Backend.WebApi.Games;
 
 /// <summary>
-/// A row of <c>GET /api/games</c>: the response is a <c>CursorPage</c> of these. The position and last move draw the
-/// Watch page's mini boards (live-home).
+/// A row of <c>GET /api/games</c>: the response is a <c>CursorPage</c> of these, with the position and last move of
+/// each game.
 /// </summary>
 internal sealed record GameListItem(
     Guid GameId,

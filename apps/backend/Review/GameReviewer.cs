@@ -49,7 +49,7 @@ internal sealed record ReviewResult(
 /// <summary>A position the review still needs from the engine.</summary>
 internal sealed record ReviewPosition(string Key, string Fen);
 
-/// <summary>A player's mistake, as practice keeps it (game-review D7).</summary>
+/// <summary>A player's mistake, as training keeps it (game-review D7, training D2).</summary>
 internal sealed record PracticePosition(
     int Ply,
     string Fen,
@@ -100,6 +100,28 @@ internal static class GameReviewer
         return (2 / (1 + Math.Exp(-0.00368208 * (line.Cp ?? 0)))) - 1;
     }
 
+    /// <summary>
+    /// The side to move's winning chances on 0-centred −1…1 (<see cref="Chances"/> turned to the mover's side): what the
+    /// gap between two lines and the tolerance of an answer are measured in.
+    /// </summary>
+    public static double ChancesFor(EvaluationLine line, bool white) => (white ? 1 : -1) * Chances(line);
+
+    /// <summary>
+    /// The engine's lines' first moves that are as good as its best (within <see cref="Tolerance"/>) for the side to move:
+    /// every one of them is a right answer. <paramref name="lines"/> are best first.
+    /// </summary>
+    public static IReadOnlyList<string> Accepted(IReadOnlyList<EvaluationLine> lines, bool white)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+        if (lines.Count == 0)
+        {
+            return [];
+        }
+
+        double best = ChancesFor(lines[0], white);
+        return [.. lines.Where(l => l.Pv.Count > 0 && best - ChancesFor(l, white) < Tolerance).Select(l => l.Pv[0]).Distinct(StringComparer.Ordinal)];
+    }
+
     /// <summary>The positions the engine has yet to evaluate, once each.</summary>
     public static IReadOnlyList<ReviewPosition> Missing(ReviewInput input)
     {
@@ -141,14 +163,12 @@ internal static class GameReviewer
         {
             string before = FenBefore(input, move.Ply - 1);
             IReadOnlyList<EvaluationLine> lines = input.Evaluations[PositionKey.Of(before)!].Lines;
-            double sign = parity == 1 ? 1 : -1;
-            double best = sign * Chances(lines[0]);
             practice.Add(new PracticePosition(
                 move.Ply,
                 before,
                 move.Uci,
                 move.San,
-                [.. lines.Where(l => l.Pv.Count > 0 && best - (sign * Chances(l)) < Tolerance).Select(l => l.Pv[0]).Distinct(StringComparer.Ordinal)],
+                Accepted(lines, white: parity == 1),
                 [.. lines[0].Pv],
                 move.Class!));
         }

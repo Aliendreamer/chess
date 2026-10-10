@@ -33,8 +33,6 @@ public sealed class ReviewServiceTests
         public ReviewService Review() => new(
             Primary(), Replica(), Requests, Options.Create(new ReviewOptions()), Options.Create(new AnalysisOptions()), Clock, NullLogger<ReviewService>.Instance);
 
-        public PracticeService Practice() => new(Primary(), Replica(), Clock, NullLogger<PracticeService>.Instance);
-
         /// <summary>Fool's mate between White (1) and Black (2), ended or still played.</summary>
         public List<string> Game(bool ended = true)
         {
@@ -174,43 +172,58 @@ public sealed class ReviewServiceTests
     }
 
     [Fact]
-    public async Task A_players_mistakes_are_added_to_practice_once_and_only_from_a_complete_review()
+    public async Task A_finished_game_is_reviewed_automatically_once_the_read_model_has_its_end()
     {
         Stack stack = new();
-        List<string> fens = stack.Game();
-        await stack.Review().StartAsync(GameId, White, admin: false, CancellationToken.None);
+        stack.Game();
+        using (ProjectDbContext db = stack.Primary())
+        {
+            db.RmGames.Single().LastSeq = 5;
+            db.SaveChanges();
+        }
 
-        Assert.Equal(ReviewRefusal.NotComplete, (await stack.Review().AddPracticeAsync(GameId, White, CancellationToken.None)).Refusal);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => stack.Review().StartAutomaticAsync(GameId, 6, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => stack.Review().StartAutomaticAsync(Guid.CreateVersion7(), 1, CancellationToken.None));
+        Assert.Empty(stack.Requests.Reviewed);
 
-        stack.Evaluated(fens);
-        Assert.Equal((ReviewRefusal.None, 1), await stack.Review().AddPracticeAsync(GameId, White, CancellationToken.None));
-        Assert.Equal((ReviewRefusal.None, 0), await stack.Review().AddPracticeAsync(GameId, White, CancellationToken.None));
-        Assert.Equal((ReviewRefusal.None, 0), await stack.Review().AddPracticeAsync(GameId, Black, CancellationToken.None));
-        Assert.Equal(ReviewRefusal.NotPlayer, (await stack.Review().AddPracticeAsync(GameId, Stranger, CancellationToken.None)).Refusal);
+        Assert.True(await stack.Review().StartAutomaticAsync(GameId, 5, CancellationToken.None));
+        Assert.Equal(4, stack.Requests.Reviewed.Count);
+        using ProjectDbContext check = stack.Primary();
+        Assert.Equal(White, check.GameReviews.Single().RequestedBy);
+        Assert.Equal(ReviewView.Running, (await stack.Review().ReadAsync(GameId, CancellationToken.None))!.Status);
+    }
+
+    [Theory]
+    [InlineData("Aborted", 4)]
+    [InlineData("Resignation", 1)]
+    public async Task An_aborted_game_or_one_of_a_single_move_is_not_reviewed_automatically(string reason, int ply)
+    {
+        Stack stack = new();
+        stack.Game();
+        using (ProjectDbContext db = stack.Primary())
+        {
+            RmGame game = db.RmGames.Single();
+            (game.Reason, game.Ply, game.LastSeq) = (reason, ply, 9);
+            db.SaveChanges();
+        }
+
+        Assert.False(await stack.Review().StartAutomaticAsync(GameId, 9, CancellationToken.None));
+        Assert.Empty(stack.Requests.Reviewed);
     }
 
     [Fact]
-    public async Task Practice_brings_a_wrong_answer_back_first_and_spaces_out_a_right_one()
+    public async Task A_players_mistakes_come_only_from_a_complete_review()
     {
         Stack stack = new();
         List<string> fens = stack.Game();
         await stack.Review().StartAsync(GameId, White, admin: false, CancellationToken.None);
+
+        Assert.Null(await stack.Review().MistakesAsync(GameId, White, CancellationToken.None));
+
         stack.Evaluated(fens);
-        await stack.Review().AddPracticeAsync(GameId, White, CancellationToken.None);
-
-        PracticeItem item = (await stack.Practice().NextAsync(White, CancellationToken.None)).Item!;
-        Assert.Equal((3, "g4", "blunder", "white", "black"), (item.Ply, item.PlayedSan, item.Class, item.White, item.Black));
-        Assert.Equal(["b1c3"], item.AcceptedUci);
-        Assert.Null((await stack.Practice().NextAsync(Black, CancellationToken.None)).Item); // private to its member
-
-        Assert.Equal(0, (await stack.Practice().RecordAsync(White, GameId, 3, correct: false, CancellationToken.None))!.Box);
-        Assert.NotNull((await stack.Practice().NextAsync(White, CancellationToken.None)).Item); // back at once
-
-        PracticeResult right = (await stack.Practice().RecordAsync(White, GameId, 3, correct: true, CancellationToken.None))!;
-        Assert.Equal((1, stack.Clock.Now.AddDays(1)), (right.Box, right.DueAt));
-        PracticeNext later = await stack.Practice().NextAsync(White, CancellationToken.None);
-        Assert.Equal((null, stack.Clock.Now.AddDays(1)), (later.Item, later.NextDueAt));
-        Assert.Equal(new PracticeSummary(1, 0, 0), await stack.Practice().MineAsync(White, CancellationToken.None));
-        Assert.Null(await stack.Practice().RecordAsync(White, GameId, 4, correct: true, CancellationToken.None));
+        PracticePosition g4 = Assert.Single((await stack.Review().MistakesAsync(GameId, White, CancellationToken.None))!);
+        Assert.Equal((3, "g4", "blunder"), (g4.Ply, g4.PlayedSan, g4.Class));
+        Assert.Empty((await stack.Review().MistakesAsync(GameId, Black, CancellationToken.None))!);
+        Assert.Empty((await stack.Review().MistakesAsync(GameId, Stranger, CancellationToken.None))!);
     }
 }

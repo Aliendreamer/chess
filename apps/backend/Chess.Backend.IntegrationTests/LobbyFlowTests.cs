@@ -8,8 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Chess.Backend.IntegrationTests;
 
 /// <summary>
-/// live-home end to end: a game in play reaches the lobby's Club TV and count through Kafka and the projection, and the
-/// in-play list carries its position for the Watch page's mini boards. The lobby lists every preset queue.
+/// live-home end to end: a game in play reaches the in-play list with its position through Kafka and the projection, and
+/// the lobby counts it. The lobby lists every preset queue.
 /// </summary>
 [Collection(StackFixture.Collection)]
 public sealed class LobbyFlowTests(StackFixture stack)
@@ -26,12 +26,10 @@ public sealed class LobbyFlowTests(StackFixture stack)
 
     private sealed record Queue(string TimeControl, int Waiting);
 
-    private sealed record Tv(Guid GameId, string White, string Black, string TimeControl, string Fen, string? LastUci, int Ply);
-
-    private sealed record Lobby(int GamesInPlay, IReadOnlyList<Queue>? Queues, IReadOnlyList<Tv> Tv);
+    private sealed record Lobby(int GamesInPlay, IReadOnlyList<Queue>? Queues);
 
     [Fact]
-    public async Task A_game_in_play_is_on_club_tv_and_in_the_watch_list_with_its_position()
+    public async Task A_game_in_play_is_in_the_in_play_list_with_its_position_and_counted_by_the_lobby()
     {
         ArgumentNullException.ThrowIfNull(stack);
         using CancellationTokenSource cts = new(TestTimeout);
@@ -50,8 +48,24 @@ public sealed class LobbyFlowTests(StackFixture stack)
             Assert.Equal(HttpStatusCode.OK, r.StatusCode);
         }
 
-        // Eventually consistent: the move reaches rm_games through Kafka, and the lobby's shared answer expires.
-        Tv? tv = null;
+        // Eventually consistent: the move reaches rm_games through Kafka.
+        ListItem? item = null;
+        await Api.EventuallyAsync(
+            async () =>
+            {
+                using HttpResponseMessage r = await Api.GetAsync(client, "/api/games?status=playing&limit=200", white, ct);
+                Page<ListItem> page = (await r.Content.ReadFromJsonAsync<Page<ListItem>>(Api.Json, ct))!;
+                item = page.Items.SingleOrDefault(i => i.GameId == id && i.LastUci == "e2e4");
+                return item is not null;
+            },
+            "the game in the in-play list after its first move",
+            ProjectionTimeout,
+            ct,
+            TimeSpan.FromMilliseconds(500));
+        Assert.Equal("playing", item!.Status);
+        Assert.StartsWith(AfterE4, item.LastFen, StringComparison.Ordinal);
+
+        // The lobby's shared answer expires within Lobby:CacheSeconds.
         Lobby? lobby = null;
         await Api.EventuallyAsync(
             async () =>
@@ -60,23 +74,12 @@ public sealed class LobbyFlowTests(StackFixture stack)
                 Assert.Equal(HttpStatusCode.OK, r.StatusCode);
                 Assert.Equal("no-store", r.Headers.CacheControl?.ToString());
                 lobby = await r.Content.ReadFromJsonAsync<Lobby>(Api.Json, ct);
-                tv = lobby!.Tv.SingleOrDefault(g => g.GameId == id && g.Ply == 1);
-                return tv is not null;
+                return lobby!.GamesInPlay >= 1;
             },
-            "the game on Club TV after its first move",
+            "the lobby counting the game",
             ProjectionTimeout,
             ct,
             TimeSpan.FromMilliseconds(500));
-        Assert.Equal((white, black, "10+5", "e2e4"), (tv!.White, tv.Black, tv.TimeControl, tv.LastUci));
-        Assert.StartsWith(AfterE4, tv.Fen, StringComparison.Ordinal);
-        Assert.True(lobby!.GamesInPlay >= 1);
-        Assert.Equal(TimeControl.Presets.Select(p => p.ToString()), lobby.Queues!.Select(q => q.TimeControl));
-
-        using (HttpResponseMessage r = await Api.GetAsync(client, "/api/games?status=playing&limit=200", white, ct))
-        {
-            Page<ListItem> page = (await r.Content.ReadFromJsonAsync<Page<ListItem>>(Api.Json, ct))!;
-            ListItem item = Assert.Single(page.Items, i => i.GameId == id);
-            Assert.Equal(("playing", tv.Fen, "e2e4"), (item.Status, item.LastFen, item.LastUci));
-        }
+        Assert.Equal(TimeControl.Presets.Select(p => p.ToString()), lobby!.Queues!.Select(q => q.TimeControl));
     }
 }

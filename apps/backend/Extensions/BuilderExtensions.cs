@@ -6,7 +6,6 @@ using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Akka.Ping;
 using Chess.Backend.Analysis;
-using Chess.Backend.Correspondence;
 using Chess.Backend.Engine;
 using Chess.Backend.Library;
 using Chess.Backend.Messaging;
@@ -14,6 +13,7 @@ using Chess.Backend.News;
 using Chess.Backend.Projections;
 using Chess.Backend.Review;
 using Chess.Backend.Trainer;
+using Chess.Backend.Training;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -71,7 +71,7 @@ internal static class BuilderExtension
             akka.WithGameSharding(sp.GetRequiredService<AkkaOptions>());
             akka.WithMatchmaking(sp.GetRequiredService<AkkaOptions>());
             akka.WithInviteSharding(sp.GetRequiredService<AkkaOptions>());
-            akka.WithDeadlineSweeper();
+            akka.WithIdleGameSweeper(sp.GetRequiredService<AkkaOptions>());
             akka.WithLibraryImporter();
             if (sp.GetRequiredService<NewsOptions>().Enabled)
             {
@@ -80,6 +80,7 @@ internal static class BuilderExtension
             if (sp.GetRequiredService<KafkaOptions>().Enabled)
             {
                 akka.WithJournalPublisher();
+                akka.WithTrainingMiner(); // without Kafka no engine answers it
             }
 
             akka.WithClusterMetrics(
@@ -143,7 +144,6 @@ internal static class BuilderExtension
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<GameProjection>());
         // Games against the engine (engine-play D6): one consumer asks for moves, the other applies the answers.
         EngineOptions engine = services.AddSettings<EngineOptions>(configuration, EngineOptions.SectionName);
-        services.AddSettings<CorrespondenceOptions>(configuration, CorrespondenceOptions.SectionName);
         // Chess news (chess-news): one HTTP client for every feed (redirects followed: FIDE moved its feed to /feed/).
         services.AddSettings<NewsOptions>(configuration, NewsOptions.SectionName);
         services.AddHttpClient(NewsRounds.HttpClientName);
@@ -155,28 +155,18 @@ internal static class BuilderExtension
         services.AddSingleton<IBroadcastImports, BroadcastImports>();
         // The opening trainer (opening-trainer): the named lines grouped once per process.
         services.AddSingleton<OpeningFamiliesCache>();
-        // Correspondence deadlines (correspondence-games D3): the projection fills game_deadlines, the sweeper reads it.
-        services.AddScoped<DeadlineProjection>();
-        services.AddScoped<IProjection>(sp => sp.GetRequiredService<DeadlineProjection>());
-        services.AddSingleton<IDueDeadlines, DueDeadlines>();
-        // Mail for correspondence games (correspondence-games D4): SMTP when Smtp:Host is set, otherwise only logged.
-        SmtpOptions smtp = services.AddSettings<SmtpOptions>(configuration, SmtpOptions.SectionName);
-        if (smtp.Enabled)
-        {
-            services.AddSingleton<IMailer>(new SmtpMailer(smtp));
-        }
-        else
-        {
-            services.AddSingleton<IMailer, LogMailer>();
-        }
-
-        services.AddScoped<NotificationConsumer>();
-        services.AddScoped<IProjection>(sp => sp.GetRequiredService<NotificationConsumer>());
+        // Wakes quiet untimed games so nobody's game against the computer runs forever (engine-game-abandonment D4).
+        services.AddSingleton<IIdleGames, IdleGames>();
         // Shared position analysis (engine-analysis): requests to the engine worker, results into the cache.
         services.AddSettings<AnalysisOptions>(configuration, AnalysisOptions.SectionName);
         services.AddSettings<ReviewOptions>(configuration, ReviewOptions.SectionName);
         services.AddScoped<AnalysisResultConsumer>();
         services.AddScoped<IProjection>(sp => sp.GetRequiredService<AnalysisResultConsumer>());
+        // Training (training D2, D3): every finished game reviewed without asking, and the critical-moment miner.
+        services.AddSettings<TrainingOptions>(configuration, TrainingOptions.SectionName);
+        services.AddScoped<AutoReviewConsumer>();
+        services.AddScoped<IProjection>(sp => sp.GetRequiredService<AutoReviewConsumer>());
+        services.AddSingleton<ITrainingMining, TrainingMining>();
         if (kafka.Enabled)
         {
             services.AddSingleton<IAnalysisRequests>(_ => new KafkaAnalysisRequests(kafka.BootstrapServers));

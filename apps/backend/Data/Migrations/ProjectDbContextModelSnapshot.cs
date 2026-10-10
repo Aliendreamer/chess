@@ -126,26 +126,6 @@ namespace Chess.Backend.Data.Migrations
                     b.ToTable("engine_games", (string)null);
                 });
 
-            modelBuilder.Entity("Chess.Backend.Data.Models.GameDeadline", b =>
-                {
-                    b.Property<Guid>("GameId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset?>("DueAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("LastSeq")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint");
-
-                    b.HasKey("GameId");
-
-                    b.HasIndex("DueAt");
-
-                    b.ToTable("game_deadlines", (string)null);
-                });
-
             modelBuilder.Entity("Chess.Backend.Data.Models.GameReview", b =>
                 {
                     b.Property<Guid>("GameId")
@@ -452,37 +432,6 @@ namespace Chess.Backend.Data.Migrations
                     b.ToTable("news_items", (string)null);
                 });
 
-            modelBuilder.Entity("Chess.Backend.Data.Models.NotificationGame", b =>
-                {
-                    b.Property<Guid>("GameId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<long>("BlackId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("BlackName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<long>("LastSeq")
-                        .IsConcurrencyToken()
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("WhiteId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("WhiteName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.HasKey("GameId");
-
-                    b.ToTable("notification_games", (string)null);
-                });
-
             modelBuilder.Entity("Chess.Backend.Data.Models.Opening", b =>
                 {
                     b.Property<string>("PositionKey")
@@ -703,6 +652,196 @@ namespace Chess.Backend.Data.Migrations
                     b.HasIndex("UserId", "StudyId", "Color");
 
                     b.ToTable("trainer_progress", (string)null);
+                });
+
+            modelBuilder.Entity("Chess.Backend.Data.Models.TrainingCandidate", b =>
+                {
+                    b.Property<string>("PositionKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Fen")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset?>("JudgedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LibraryGameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MasterUci")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)");
+
+                    b.Property<int>("Ply")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.HasKey("PositionKey");
+
+                    b.HasIndex("LibraryGameId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("training_candidates", (string)null);
+                });
+
+            modelBuilder.Entity("Chess.Backend.Data.Models.TrainingPosition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.PrimitiveCollection<List<string>>("AcceptedUci")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.PrimitiveCollection<List<string>>("BestLine")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<string>("Black")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Eco")
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<string>("Event")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Fen")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<float>("Gap")
+                        .HasColumnType("real");
+
+                    b.Property<Guid>("LibraryGameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MasterUci")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)");
+
+                    b.Property<string>("OpeningName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Phase")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<int>("Ply")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PositionKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("SideToMove")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)");
+
+                    b.Property<string>("White")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int?>("Year")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Black");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Black"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Black"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("Eco");
+
+                    b.HasIndex("LibraryGameId");
+
+                    b.HasIndex("OpeningName");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("OpeningName"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("OpeningName"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("Phase");
+
+                    b.HasIndex("PositionKey")
+                        .IsUnique();
+
+                    b.HasIndex("White");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("White"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("White"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("Year");
+
+                    b.ToTable("training_positions", (string)null);
+                });
+
+            modelBuilder.Entity("Chess.Backend.Data.Models.TrainingProgress", b =>
+                {
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("PositionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Box")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("DueAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId", "PositionId");
+
+                    b.HasIndex("PositionId");
+
+                    b.HasIndex("UserId", "DueAt");
+
+                    b.ToTable("training_progress", (string)null);
+                });
+
+            modelBuilder.Entity("Chess.Backend.Data.Models.TrainingSynced", b =>
+                {
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("SyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId", "GameId");
+
+                    b.ToTable("training_synced", (string)null);
                 });
 
             modelBuilder.Entity("Chess.Backend.Data.Models.User", b =>
@@ -1049,6 +1188,33 @@ namespace Chess.Backend.Data.Migrations
                         .WithMany()
                         .HasForeignKey("StudyId")
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Chess.Backend.Data.Models.TrainingCandidate", b =>
+                {
+                    b.HasOne("Chess.Backend.Data.Models.LibraryGame", null)
+                        .WithMany()
+                        .HasForeignKey("LibraryGameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Chess.Backend.Data.Models.TrainingPosition", b =>
+                {
+                    b.HasOne("Chess.Backend.Data.Models.LibraryGame", null)
+                        .WithMany()
+                        .HasForeignKey("LibraryGameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Chess.Backend.Data.Models.TrainingProgress", b =>
+                {
+                    b.HasOne("Chess.Backend.Data.Models.TrainingPosition", null)
+                        .WithMany()
+                        .HasForeignKey("PositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

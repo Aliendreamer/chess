@@ -1,4 +1,3 @@
-using Chess.Backend.Correspondence;
 using Chess.Backend.Data.ReadModels;
 using Chess.Backend.Extensions;
 using Npgsql;
@@ -7,7 +6,7 @@ namespace Chess.Backend.WebApi.Games;
 
 /// <summary>The signed-in user's games as either colour, newest first. Eventually consistent: replica.</summary>
 [ExcludeFromCodeCoverage]
-internal sealed class MyGamesEndpoint(ReadDbContext read, ICurrentUser user, IOptions<ApiOptions> options, IOptions<CorrespondenceOptions> correspondence)
+internal sealed class MyGamesEndpoint(ReadDbContext read, ICurrentUser user, IOptions<ApiOptions> options)
     : Endpoint<MyGamesRequest, CursorPage<MyGameItem>>
 {
     public override void Configure()
@@ -33,15 +32,8 @@ internal sealed class MyGamesEndpoint(ReadDbContext read, ICurrentUser user, IOp
             var joined = read.RmGamePlayers
                 .Where(p => p.UserId == me)
                 .Join(read.RmGames, p => p.GameId, g => g.GameId, (p, g) => new { P = p, G = g });
-            if (req.Turn == MyGamesRequest.MineTurn)
-            {
-                // Being played and my move: White on even plies, Black on odd ones.
-                joined = joined.Where(x => x.G.Status == RmGame.Playing
-                    && ((x.P.Color == RmGamePlayer.White && x.G.Ply % 2 == 0) || (x.P.Color == RmGamePlayer.Black && x.G.Ply % 2 == 1)));
-            }
-
             var rows = await joined.NewestFirst(x => x.P.CreatedAt, x => x.P.GameId, after, limit).ToListAsync(ct);
-            List<MyGameItem> items = rows.ConvertAll(x => GameReads.ToMyGame(x.P, x.G, correspondence.Value.MoveDeadline));
+            List<MyGameItem> items = rows.ConvertAll(x => GameReads.ToMyGame(x.P, x.G));
             await Send.OkAsync(Keyset.ToPage(items, limit, i => new KeysetCursor(i.CreatedAt, i.GameId.ToString())), ct);
         }
         catch (NpgsqlException)
