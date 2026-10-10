@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { InviteView, QueueStatus } from '#/lib/play'
+import type { QueueStatus } from '#/lib/play'
 import type { ColourChoice, EngineLevel } from '#/lib/games'
 import {
   getEngineLevels,
@@ -8,7 +8,6 @@ import {
   getLobby,
   getMyGames,
   getNews,
-  postCreateInvite,
   postJoinQueue,
   postLeaveQueue,
   postStartEngineGame,
@@ -18,7 +17,6 @@ import { isQueueView, pairingGame, useLobby, waitingIn } from '#/lib/play'
 import { liveStatusText, useLiveTopic } from '#/lib/live'
 import {
   Button,
-  Chip,
   ColourPicker,
   ErrorText,
   OptionTile,
@@ -31,7 +29,7 @@ import { CategoryIcon, RecentGames, categoryBar } from '#/components/games'
 import { EventsNow, NewsList } from '#/components/news'
 import { pageTitle } from '#/lib/feedback'
 
-/** Home: quick pairing on a preset, an invite link for a friend, and your recent games. */
+/** Home: quick pairing on a preset, a game against the computer, and your recent games. */
 /** `?seek=3+2` joins that queue on arrival: the game-over card's "New opponent" (game-feedback). */
 function validateSearch(search: Record<string, unknown>): { seek?: string } {
   const seek = search['seek']
@@ -44,7 +42,7 @@ export const Route = createFileRoute('/_authenticated/')({
   validateSearch,
   loader: async () => {
     const [games, levels, lobby, news, events] = await Promise.all([
-      getMyGames({ data: { limit: 8 } }),
+      getMyGames({ data: { limit: 12 } }),
       getEngineLevels(),
       // The lobby, the news and the events are niceties: home still works when they cannot be read.
       getLobby().catch(() => null),
@@ -87,7 +85,7 @@ function HomePage() {
   }, [])
 
   return (
-    // A dashboard on a wide screen (home-layout): play | friend and your games | the club and the news, side by side
+    // A dashboard on a wide screen (home-layout): play | your games | the club and the news, side by side
     // without scrolling; two columns, then one, as the room shrinks. Container queries, so the rail is accounted for.
     <div className="@container flex flex-col gap-6" data-layout="wide">
       <header className="flex flex-wrap items-end justify-between gap-6">
@@ -148,14 +146,6 @@ function HomePage() {
         </div>
 
         <div className="flex min-w-0 flex-col gap-6">
-          <section className="flex flex-col gap-3">
-            <SectionHeading>Play a friend</SectionHeading>
-            <InviteForm
-              onCreated={(invite) =>
-                void navigate({ to: '/invites/$id', params: { id: invite.inviteId } })
-              }
-            />
-          </section>
           <section className="flex flex-col gap-3">
             <SectionHeading meta={<Link to="/games">View all</Link>}>Recent games</SectionHeading>
             <RecentGames
@@ -273,43 +263,6 @@ function Seek({ seek, meId, onMatched, onCancel }: SeekProps) {
         </div>
         <Button onClick={onCancel}>Cancel</Button>
       </div>
-    </Panel>
-  )
-}
-
-function InviteForm({ onCreated }: { onCreated: (invite: InviteView) => void }) {
-  const [timeControl, setTimeControl] = useState<string>('10+5')
-  const [color, setColor] = useState<ColourChoice>('random')
-  const creating = useCommand()
-
-  async function create() {
-    const invite = await creating.run(() => postCreateInvite({ data: { timeControl, color } }))
-    if (invite) onCreated(invite)
-  }
-
-  return (
-    <Panel variant="filled" className="gap-4" testId="invite-form">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Time control">
-        {PRESETS.map((tc) => (
-          <Chip
-            key={tc}
-            shape="square"
-            mono
-            selected={tc === timeControl}
-            onClick={() => setTimeControl(tc)}
-          >
-            {tc}
-          </Chip>
-        ))}
-      </div>
-      <ColourPicker value={color} onChange={setColor} />
-      <div className="flex items-center justify-between gap-4">
-        <span className="text-sm text-fg-secondary">The link is open for 24 hours.</span>
-        <Button variant="primary" disabled={creating.busy} onClick={() => void create()}>
-          Create invite link
-        </Button>
-      </div>
-      {creating.error ? <ErrorText>{creating.error}</ErrorText> : null}
     </Panel>
   )
 }

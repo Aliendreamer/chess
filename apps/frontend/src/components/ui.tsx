@@ -188,7 +188,7 @@ export interface PanelProps {
   children?: ReactNode
 }
 
-/** A card. Accent is for the one thing per view that is "yours right now" (your seek, your invite). */
+/** A card. Accent is for the one thing per view that is "yours right now" (your seek, your rematch). */
 export function Panel({
   title,
   meta,

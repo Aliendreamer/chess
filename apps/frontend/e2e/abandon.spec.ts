@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { PLAYER, USER, move, sessionFile, signedIn } from './support'
+import { move, pairedGame } from './support'
 import type { Browser, Page } from '@playwright/test'
 
 /**
@@ -9,28 +9,7 @@ import type { Browser, Page } from '@playwright/test'
 
 test('a player who leaves loses by abandonment when the other claims it', async ({ browser }) => {
   test.setTimeout(180_000)
-  const white = await signedIn(browser, USER)
-  const black = await signedIn(browser, PLAYER)
-
-  await expect(async () => {
-    await white
-      .getByTestId('invite-form')
-      .getByRole('button', { name: 'White', exact: true })
-      .click()
-    await expect(
-      white.getByTestId('invite-form').getByRole('button', { name: 'White', exact: true }),
-    ).toHaveAttribute('aria-pressed', 'true', {
-      timeout: 1_000,
-    })
-  }).toPass({ timeout: 15_000 })
-  await white.getByRole('button', { name: 'Create invite link' }).click()
-  await expect(white.getByTestId('invite-link')).toContainText('http')
-  await black.goto((await white.getByTestId('invite-link').textContent()) ?? '')
-  await expect(async () => {
-    await black.getByRole('button', { name: 'Accept and play' }).click({ timeout: 1_000 })
-    await expect(black).toHaveURL(/\/games\//, { timeout: 2_000 })
-  }).toPass({ timeout: 20_000 })
-  await expect(white).toHaveURL(black.url())
+  const { white, black } = await pairedGame(browser)
   await expect(white.getByTestId('game-relay')).toHaveText('live', { timeout: 15_000 })
   await expect(black.getByTestId('game-relay')).toHaveText('live', { timeout: 15_000 })
 

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { inviteGame, move } from './support'
+import { move, pairedGame } from './support'
 
 /**
  * game-review against the real engine worker: after a fool's mate the game is reviewed (on its own since training, or
@@ -7,7 +7,7 @@ import { inviteGame, move } from './support'
  */
 test('a finished game is reviewed and points to training', async ({ browser }) => {
   test.setTimeout(180_000)
-  const { white, black } = await inviteGame(browser)
+  const { white, black } = await pairedGame(browser)
   await move(white, 'f2', 'f3')
   await move(black, 'e7', 'e5')
   await move(white, 'g2', 'g4')

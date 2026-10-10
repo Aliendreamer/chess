@@ -24,34 +24,6 @@ export async function leaveQueue(fetchImpl: typeof fetch, timeControl: string): 
   if (res.status === 401) throw redirect({ href: LOGIN_REDIRECT })
 }
 
-export function createInvite(
-  fetchImpl: typeof fetch,
-  input: { timeControl: string; color: InviteView['color'] },
-): Promise<CommandOutcome<InviteView>> {
-  return postCommand<InviteView>(fetchImpl, '/api/invites', input)
-}
-
-/** `GET /api/invites/{id}`: null when there is no such invite (or the id is not one). */
-export async function loadInvite(fetchImpl: typeof fetch, id: string): Promise<InviteView | null> {
-  const res = await fetchImpl(`/api/invites/${id}`)
-  if (res.status === 404 || res.status === 400) return null
-  return readJson<InviteView>(res, `GET /api/invites/${id}`)
-}
-
-export function acceptInvite(
-  fetchImpl: typeof fetch,
-  id: string,
-): Promise<CommandOutcome<InviteView>> {
-  return postCommand<InviteView>(fetchImpl, `/api/invites/${id}/accept`)
-}
-
-export function cancelInvite(
-  fetchImpl: typeof fetch,
-  id: string,
-): Promise<CommandOutcome<InviteView>> {
-  return postCommand<InviteView>(fetchImpl, `/api/invites/${id}/cancel`)
-}
-
 /** `POST /api/games/{id}/rematch`: offers the rematch of a finished game, or accepts the opponent's (game-feedback). */
 export function rematch(
   fetchImpl: typeof fetch,

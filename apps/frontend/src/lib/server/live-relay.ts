@@ -27,7 +27,7 @@ const KINDS: Record<LiveKind, RegExp> = {
   ping: /^[a-z0-9-]{1,64}$/, // PingIds.Pattern
   game: /^[0-9a-f]{32}$/, // GameLiveSource: a Guid v7 in N form (ROADMAP D11)
   queue: /^\d{1,2}\+\d{1,2}$/, // QueueLiveSource: a time control; the backend checks it is a preset
-  invite: /^[0-9a-f]{32}$/, // InviteLiveSource: a random Guid v4 in N form
+  invite: /^[0-9a-f]{32}$/, // InviteLiveSource: a rematch, keyed by the finished game's Guid in N form
 }
 
 const isLiveKind = (kind: string): kind is LiveKind =>

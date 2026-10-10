@@ -1,5 +1,5 @@
 /**
- * Matchmaking, invites and "my games": the wire shapes and the pure rules Home and the invite page use.
+ * Matchmaking, rematch invites and "my games": the wire shapes and the pure rules Home and the game page use.
  * Client-safe (no `lib/server` import).
  */
 import { useEffect, useRef, useState } from 'react'
@@ -27,7 +27,7 @@ export interface QueueView {
   seq: number
 }
 
-/** Mirrors the API's `InviteView`, also the `invite` live kind's payload. */
+/** Mirrors the API's `InviteView` (a rematch offer, game-feedback), also the `invite` live kind's payload. */
 export interface InviteView {
   inviteId: string
   creatorId: number
@@ -39,7 +39,7 @@ export interface InviteView {
   createdAt: string
   expiresAt: string
   seq: number
-  /** The one user who may accept it (a rematch, game-feedback); absent or null for an ordinary invite. */
+  /** The one user who may accept it (the other player); absent or null only in invites from before rematches. */
   forId?: number | null
 }
 
@@ -114,13 +114,6 @@ export function outcomeFor(result: PgnResult | null, color: Color): 'win' | 'los
   if (result === PGN_RESULT.whiteWins) return color === 'white' ? 'win' : 'loss'
   if (result === PGN_RESULT.blackWins) return color === 'black' ? 'win' : 'loss'
   return null
-}
-
-/** The side the person accepting an invite plays. */
-export function guestColor(creatorColor: InviteView['color']): InviteView['color'] {
-  if (creatorColor === 'white') return 'black'
-  if (creatorColor === 'black') return 'white'
-  return 'random'
 }
 
 /** How often home asks for the lobby again (live-home D1). */

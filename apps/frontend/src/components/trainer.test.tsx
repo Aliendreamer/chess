@@ -1,9 +1,9 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ColorSwitch,
   DrillStatus,
-  FamilyList,
+  FamilyColumns,
   LinesTable,
   RunOutcome,
   StudyLinesTable,
@@ -51,18 +51,38 @@ const line = (over: Partial<TrainerLine> = {}): TrainerLine => ({
   ...over,
 })
 
-describe('FamilyList', () => {
-  it('links each family for the colour with its progress', () => {
-    render(<FamilyList families={[{ name: 'Ruy Lopez', lines: 41, learned: 23 }]} color="black" />)
-    expect(screen.getByRole('link', { name: /Ruy Lopez/ }).getAttribute('href')).toBe(
-      '/trainer/Ruy Lopez?color=black',
+describe('FamilyColumns', () => {
+  it('puts each family in its kind’s column, linked for the colour, learned ones first', () => {
+    render(
+      <FamilyColumns
+        families={[
+          { name: 'Ruy Lopez', lines: 41, learned: 0 },
+          { name: 'Alekhine Defense', lines: 36, learned: 0 },
+          { name: 'Caro-Kann Defense', lines: 73, learned: 3 },
+          { name: 'Danish Gambit', lines: 1, learned: 0 },
+        ]}
+        color="black"
+      />,
     )
-    expect(screen.getByRole('img', { name: '23 of 41 learned' })).toBeTruthy()
-    expect(screen.getByText('23 of 41 learned', { selector: 'span' })).toBeTruthy()
+    const defences = screen.getByRole('region', { name: 'Defences' })
+    expect(
+      within(defences)
+        .getAllByRole('link')
+        .map((a) => a.textContent),
+    ).toEqual(['Caro-Kann Defense', 'Alekhine Defense'])
+    expect(within(defences).getByText('3/73 learned')).toBeTruthy()
+    expect(within(defences).getByText('36 lines')).toBeTruthy()
+    expect(
+      within(screen.getByRole('region', { name: 'Games and others' }))
+        .getByRole('link', { name: 'Ruy Lopez' })
+        .getAttribute('href'),
+    ).toBe('/trainer/Ruy Lopez?color=black')
+    expect(screen.getByRole('region', { name: 'Gambits' })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'Openings and attacks' })).toBeNull()
   })
 
   it('says when no family matches', () => {
-    render(<FamilyList families={[]} color="white" />)
+    render(<FamilyColumns families={[]} color="white" />)
     expect(screen.getByText('No opening matches.')).toBeTruthy()
   })
 })
@@ -176,7 +196,7 @@ describe('studies in the trainer (study-repertoire-trainer)', () => {
     expect(screen.getByRole('link', { name: /My e4/ }).getAttribute('href')).toBe(
       '/trainer/study/s1?color=black',
     )
-    expect(screen.getByRole('img', { name: '1 of 2 learned' })).toBeTruthy()
+    expect(screen.getByText('1/2 learned')).toBeTruthy()
   })
 
   it('points to the studies when there are none', () => {

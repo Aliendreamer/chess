@@ -2,10 +2,12 @@ import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   fenAfter,
+  groupFamilies,
   isMemberMove,
   lineState,
   lineText,
   matches,
+  openingKind,
   otherLineMove,
   sanAt,
   studyLineLabel,
@@ -193,5 +195,47 @@ describe('useDrill with other lines', () => {
     act(() => result.current.play('g1f3'))
     expect(result.current.otherLine).toBeNull()
     expect(result.current.done).toBe(true)
+  })
+})
+
+describe('opening kinds', () => {
+  it('reads the kind from the family name', () => {
+    expect(
+      [
+        'Benko Gambit Accepted',
+        'Blumenfeld Countergambit',
+        'Alekhine Defense',
+        'Old Defence',
+        'London System',
+        'Bird Opening',
+        'Amazon Attack',
+        'Ruy Lopez',
+        'Italian Game',
+      ].map(openingKind),
+    ).toEqual([
+      'gambit',
+      'gambit',
+      'defence',
+      'defence',
+      'opening',
+      'opening',
+      'opening',
+      'game',
+      'game',
+    ])
+  })
+
+  it('groups in the columns’ order, learned families first, then by name', () => {
+    const groups = groupFamilies([
+      { name: 'French Defense', lines: 128, learned: 0 },
+      { name: 'Alekhine Defense', lines: 36, learned: 0 },
+      { name: 'Sicilian Defense', lines: 300, learned: 4 },
+    ])
+    expect(groups.map((g) => g.kind)).toEqual(['gambit', 'defence', 'opening', 'game'])
+    expect(groups[1]?.families.map((f) => f.name)).toEqual([
+      'Sicilian Defense',
+      'Alekhine Defense',
+      'French Defense',
+    ])
   })
 })

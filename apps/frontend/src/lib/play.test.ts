@@ -1,7 +1,6 @@
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  guestColor,
   isInviteView,
   isQueueView,
   outcomeFor,
@@ -60,14 +59,6 @@ describe('outcomeFor', () => {
     [null, 'white', null],
   ] as const)('%s as %s is %s', (result, color, outcome) => {
     expect(outcomeFor(result, color)).toBe(outcome)
-  })
-})
-
-describe('guestColor', () => {
-  it('is the other side, or random', () => {
-    expect(guestColor('white')).toBe('black')
-    expect(guestColor('black')).toBe('white')
-    expect(guestColor('random')).toBe('random')
   })
 })
 

@@ -5,7 +5,7 @@ import { isColor } from '#/lib/trainer'
 import { useLoadMore } from '#/lib/play'
 import { getTrainerFamilies, getTrainerStudies } from '#/lib/server/api'
 import { pageTitle } from '#/lib/feedback'
-import { ColorSwitch, FamilyList, StudyList, TrainerSourceSwitch } from '#/components/trainer'
+import { ColorSwitch, FamilyColumns, StudyList, TrainerSourceSwitch } from '#/components/trainer'
 import { Button, LoadMore, Panel, SectionHeading } from '#/components/ui'
 
 const PAGE = 30
@@ -42,7 +42,7 @@ function TrainerPage() {
   const { families, studies } = Route.useLoaderData()
   const navigate = useNavigate()
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-4 shell:h-full" data-layout="wide fill">
       <header className="flex flex-col gap-2">
         <SectionHeading size="xl">Opening trainer</SectionHeading>
         <p className="m-0 text-sm text-fg-secondary">
@@ -58,13 +58,17 @@ function TrainerPage() {
         </>
       ) : (
         <>
-          <Panel variant="filled" className="gap-3" testId="trainer-search">
+          <Panel
+            variant="filled"
+            className="gap-3 shell:flex-row shell:items-center"
+            testId="trainer-search"
+          >
             <ColorSwitch color={color} {...(q ? { q } : {})} />
             {/* A plain GET form: before hydration the browser submits it itself. */}
             <form
               method="get"
               action="/trainer"
-              className="flex flex-wrap gap-3"
+              className="flex flex-1 flex-wrap gap-3"
               onSubmit={(e) => {
                 e.preventDefault()
                 const text = String(new FormData(e.currentTarget).get('q') ?? '').trim()
@@ -83,7 +87,7 @@ function TrainerPage() {
               <Button type="submit">Search</Button>
             </form>
           </Panel>
-          <FamilyList families={families} color={color} />
+          <FamilyColumns families={families} color={color} />
         </>
       )}
     </div>
@@ -95,7 +99,7 @@ function Studies({ first, color }: { first: CursorPage<StudyTraining>; color: Tr
     getTrainerStudies({ data: { color, limit: PAGE, cursor } }),
   )
   return (
-    <section className="flex flex-col gap-3" aria-label="My studies">
+    <section className="flex flex-col gap-3 shell:min-h-0 shell:flex-1" aria-label="My studies">
       <StudyList studies={pager.items} color={color} />
       <LoadMore pager={pager} />
     </section>

@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 
 export type Color = 'white' | 'black'
 
-/** A colour someone may ask for: yours in an invite or a game against the computer. */
+/** A colour someone may ask for: yours in a game against the computer. */
 export type ColourChoice = Color | 'random'
 
 /** A result as PGN writes it, which is how the API carries it. */

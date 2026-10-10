@@ -56,21 +56,10 @@ import {
   shareStudy,
   studyFromGame,
 } from './studies'
-import {
-  acceptInvite,
-  cancelInvite,
-  createInvite,
-  joinQueue,
-  leaveQueue,
-  loadInvite,
-  loadLobby,
-  loadMyGames,
-  rematch,
-} from './play'
+import { joinQueue, leaveQueue, loadLobby, loadMyGames, rematch } from './play'
 import type { ImportBatch, LibrarySearch, LibrarySource } from '../library'
 import type { Preferences } from '../auth'
-import type { GameCommand } from '../games'
-import type { InviteView } from '../play'
+import type { ColourChoice, GameCommand } from '../games'
 import type { StudyInput, StudyMoveInput } from '../studies'
 import type { Think } from '../analysis'
 import type { TrainerColor } from '../trainer'
@@ -125,7 +114,7 @@ export const postPing = createServerFn({ method: 'POST' })
   .handler(({ data }) => sendPing(serverFetch(), data.id, data.text))
 
 // Inputs that become part of an API path are checked here, so nothing a browser sends can change the path.
-const COLORS: ReadonlyArray<InviteView['color']> = ['white', 'black', 'random']
+const COLORS: ReadonlyArray<ColourChoice> = ['white', 'black', 'random']
 
 function preset(tc: string): string {
   if (!(PRESETS as ReadonlyArray<string>).includes(tc))
@@ -203,25 +192,6 @@ export const postJoinQueue = createServerFn({ method: 'POST' })
 export const postLeaveQueue = createServerFn({ method: 'POST' })
   .validator((timeControl: string) => preset(timeControl))
   .handler(({ data }) => leaveQueue(serverFetch(), data))
-
-export const postCreateInvite = createServerFn({ method: 'POST' })
-  .validator((input: { timeControl: string; color: InviteView['color'] }) => {
-    if (!COLORS.includes(input.color)) throw new Error(`not a colour: ${input.color}`)
-    return { timeControl: preset(input.timeControl), color: input.color }
-  })
-  .handler(({ data }) => createInvite(serverFetch(), data))
-
-export const getInvite = createServerFn({ method: 'GET' })
-  .validator((id: string) => id)
-  .handler(({ data }) => (isGuid(data) ? loadInvite(serverFetch(), data) : null))
-
-export const postAcceptInvite = createServerFn({ method: 'POST' })
-  .validator((id: string) => guid(id))
-  .handler(({ data }) => acceptInvite(serverFetch(), data))
-
-export const postCancelInvite = createServerFn({ method: 'POST' })
-  .validator((id: string) => guid(id))
-  .handler(({ data }) => cancelInvite(serverFetch(), data))
 
 export const postRematch = createServerFn({ method: 'POST' })
   .validator((gameId: string) => guid(gameId))
@@ -530,7 +500,7 @@ export const getEngineLevels = createServerFn({ method: 'GET' }).handler(() =>
 const ENGINE_LEVEL = /^(\d{4}|max)$/
 
 export const postStartEngineGame = createServerFn({ method: 'POST' })
-  .validator((input: { level: string; color: InviteView['color'] }) => {
+  .validator((input: { level: string; color: ColourChoice }) => {
     if (!ENGINE_LEVEL.test(input.level)) throw new Error(`not an engine level: ${input.level}`)
     if (!COLORS.includes(input.color)) throw new Error(`not a colour: ${input.color}`)
     return { level: input.level, color: input.color }

@@ -10,7 +10,7 @@ import type {
   TrainerColor,
   TrainerLine,
 } from '#/lib/trainer'
-import { lineState, lineText, sanAt, studyLineLabel } from '#/lib/trainer'
+import { groupFamilies, lineState, lineText, sanAt, studyLineLabel } from '#/lib/trainer'
 import { STANDARD_START } from '#/lib/studies'
 import { uciSquares } from '#/lib/board'
 import { legalTargets } from '#/lib/moveInput'
@@ -53,6 +53,15 @@ export function LearnedBar({ learned, lines }: { learned: number; lines: number 
       </span>
       <span className="font-mono text-xs text-fg-secondary">{label}</span>
     </span>
+  )
+}
+
+/** In a list: "36 lines" until something is learned, then "3/36 learned" in the accent colour. */
+export function LearnedCount({ learned, lines }: { learned: number; lines: number }) {
+  return learned > 0 ? (
+    <span className="shrink-0 font-mono text-xs text-fg-accent">{`${learned}/${lines} learned`}</span>
+  ) : (
+    <span className="shrink-0 text-xs text-fg-muted">{plural(lines, 'line', 'lines')}</span>
   )
 }
 
@@ -128,7 +137,11 @@ export function ColorSwitch({
   )
 }
 
-export function FamilyList({
+/**
+ * The families as columns by kind (gambits, defences, openings, games), side by side, each scrolling on its own so the
+ * page fits the screen; a kind the search left empty is not shown.
+ */
+export function FamilyColumns({
   families,
   color,
 }: {
@@ -138,25 +151,43 @@ export function FamilyList({
   if (families.length === 0)
     return <p className="m-0 text-sm text-fg-secondary">No opening matches.</p>
   return (
-    <ul className="m-0 flex list-none flex-col p-0" data-testid="trainer-families">
-      {families.map((f) => (
-        <li
-          key={f.name}
-          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line-divider py-2.5"
-        >
-          <Link
-            to="/trainer/$family"
-            params={{ family: f.name }}
-            search={{ color }}
-            className="min-w-0 text-fg-primary no-underline hover:text-fg-accent"
+    <div
+      className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-6 shell:min-h-0 shell:flex-1"
+      data-testid="trainer-families"
+    >
+      {groupFamilies(families)
+        .filter((g) => g.families.length > 0)
+        .map((g) => (
+          <section
+            key={g.kind}
+            className="flex min-h-0 min-w-0 flex-col gap-2"
+            aria-label={g.label}
           >
-            {f.name}
-            <span className="ml-2 text-xs text-fg-muted">{plural(f.lines, 'line', 'lines')}</span>
-          </Link>
-          <LearnedBar learned={f.learned} lines={f.lines} />
-        </li>
-      ))}
-    </ul>
+            <h2 className="m-0 flex items-baseline justify-between gap-2 font-display text-lg font-normal">
+              {g.label}
+              <span className="font-sans text-xs text-fg-muted">{g.families.length}</span>
+            </h2>
+            <ul className="m-0 flex list-none flex-col p-0 shell:min-h-0 shell:overflow-y-auto shell:pr-1">
+              {g.families.map((f) => (
+                <li
+                  key={f.name}
+                  className="flex items-baseline justify-between gap-3 border-b border-line-divider py-2"
+                >
+                  <Link
+                    to="/trainer/$family"
+                    params={{ family: f.name }}
+                    search={{ color }}
+                    className="min-w-0 truncate text-sm text-fg-primary no-underline hover:text-fg-accent"
+                  >
+                    {f.name}
+                  </Link>
+                  <LearnedCount learned={f.learned} lines={f.lines} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+    </div>
   )
 }
 
@@ -326,7 +357,10 @@ export function StudyList({
       </p>
     )
   return (
-    <ul className="m-0 flex list-none flex-col p-0" data-testid="trainer-studies">
+    <ul
+      className="m-0 flex list-none flex-col p-0 shell:min-h-0 shell:flex-1 shell:overflow-y-auto shell:pr-1"
+      data-testid="trainer-studies"
+    >
       {studies.map((s) => (
         <li
           key={s.id}
@@ -339,9 +373,8 @@ export function StudyList({
             className="min-w-0 text-fg-primary no-underline hover:text-fg-accent"
           >
             {s.title}
-            <span className="ml-2 text-xs text-fg-muted">{plural(s.lines, 'line', 'lines')}</span>
           </Link>
-          <LearnedBar learned={s.learned} lines={s.lines} />
+          <LearnedCount learned={s.learned} lines={s.lines} />
         </li>
       ))}
     </ul>

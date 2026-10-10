@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { DRAG_STEPS, PLAYER, USER, drag, inviteGame, move, sessionFile, signedIn } from './support'
+import { DRAG_STEPS, PLAYER, USER, drag, move, pairedGame, sessionFile, signedIn } from './support'
 import type { Browser, Page } from '@playwright/test'
 
 /**
- * Part 1 end to end, as two people would do it: testuser creates an invite as White, player opens the link and
- * accepts, and the game is played by clicking squares — to a checkmate, a resignation and an agreed draw. Both
+ * Part 1 end to end, as two people would do it: testuser and player both take the 3+2 quick pairing and are paired
+ * into one game, which is played by clicking squares — to a checkmate, a resignation and an agreed draw. Both
  * boards show the ending with a PGN to download.
  */
 
@@ -17,9 +17,9 @@ async function bothEnded(pages: Array<Page>, result: string, reason: string) {
   }
 }
 
-test('two players meet through an invite and play the fool’s mate', async ({ browser }) => {
+test('two players meet through quick pairing and play the fool’s mate', async ({ browser }) => {
   test.setTimeout(120_000)
-  const { white, black } = await inviteGame(browser)
+  const { white, black } = await pairedGame(browser)
 
   await move(white, 'f2', 'f3')
   await move(black, 'e7', 'e5')
@@ -32,7 +32,7 @@ test('two players meet through an invite and play the fool’s mate', async ({ b
 
 test('a player resigns after the opening moves', async ({ browser }) => {
   test.setTimeout(120_000)
-  const { white, black } = await inviteGame(browser)
+  const { white, black } = await pairedGame(browser)
 
   await move(white, 'e2', 'e4')
   await move(black, 'e7', 'e5')
@@ -44,7 +44,7 @@ test('a player resigns after the opening moves', async ({ browser }) => {
 
 test('a draw is offered and accepted', async ({ browser }) => {
   test.setTimeout(120_000)
-  const { white, black } = await inviteGame(browser)
+  const { white, black } = await pairedGame(browser)
 
   await move(white, 'e2', 'e4')
   await move(black, 'e7', 'e5')
@@ -61,7 +61,7 @@ test('pieces can be dragged, a premove plays itself, and the game can be looked 
   browser,
 }) => {
   test.setTimeout(120_000)
-  const { white, black } = await inviteGame(browser)
+  const { white, black } = await pairedGame(browser)
 
   await drag(white, 'e2', 'e4')
   await drag(black, 'e7', 'e5')
@@ -98,7 +98,7 @@ test('after a game, both players agree to a rematch with the colours swapped (ga
   browser,
 }) => {
   test.setTimeout(120_000)
-  const { white, black } = await inviteGame(browser)
+  const { white, black } = await pairedGame(browser)
   const first = white.url()
 
   // White is to move, so the tab says so; then the game is aborted while both pages are open.

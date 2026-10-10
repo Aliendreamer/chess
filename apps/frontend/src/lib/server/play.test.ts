@@ -1,18 +1,8 @@
 import { isRedirect } from '@tanstack/react-router'
 import { describe, expect, it } from 'vitest'
-import {
-  acceptInvite,
-  cancelInvite,
-  createInvite,
-  joinQueue,
-  leaveQueue,
-  loadInvite,
-  loadLobby,
-  loadMyGames,
-  rematch,
-} from './play'
+import { joinQueue, leaveQueue, loadLobby, loadMyGames, rematch } from './play'
 
-const INVITE = '7c9e6679742540de944be07fc1f90ae7'
+const GAME = '7c9e6679742540de944be07fc1f90ae7'
 
 type Call = { url: string; method: string; body: string | null }
 
@@ -69,33 +59,11 @@ describe('queue', () => {
   })
 })
 
-describe('invites', () => {
-  it('creates with the time control and colour', async () => {
+describe('rematch', () => {
+  it('posts to the finished game rematch path', async () => {
     const calls: Array<Call> = []
-    await createInvite(fakeFetch(201, { inviteId: INVITE }, calls), {
-      timeControl: '10+5',
-      color: 'black',
-    })
-    expect(calls).toEqual([
-      { url: '/api/invites', method: 'POST', body: '{"timeControl":"10+5","color":"black"}' },
-    ])
-  })
-
-  it('accept and cancel post to their paths', async () => {
-    const calls: Array<Call> = []
-    await acceptInvite(fakeFetch(200, {}, calls), INVITE)
-    await cancelInvite(fakeFetch(200, {}, calls), INVITE)
-    await rematch(fakeFetch(200, {}, calls), INVITE)
-    expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual([
-      `POST /api/invites/${INVITE}/accept`,
-      `POST /api/invites/${INVITE}/cancel`,
-      `POST /api/games/${INVITE}/rematch`,
-    ])
-  })
-
-  it('an unknown or malformed invite reads as null', async () => {
-    expect(await loadInvite(fakeFetch(404, ''), INVITE)).toBeNull()
-    expect(await loadInvite(fakeFetch(400, ''), 'nope')).toBeNull()
+    await rematch(fakeFetch(200, {}, calls), GAME)
+    expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual([`POST /api/games/${GAME}/rematch`])
   })
 })
 
