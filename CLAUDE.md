@@ -67,6 +67,7 @@ tools/localdev/verify-part1.sh [--cluster]     # two logins → queue pairing �
 tools/localdev/verify-part2.sh [--quick]       # vs Stockfish: 10 moves at 1320/2000/max, engine restart mid-think, a full game
 tools/localdev/verify-part4a.sh                # studies: import, variation saved, 409 on stale save, share, PGN, from a game
 tools/localdev/verify-part4b.sh                # engine analysis: a random position evaluated, then served from the shared cache
+tools/localdev/verify-members.sh               # member admin: create, first sign-in, deactivate → 401, reactivate, reset
 tools/localdev/verify-observability.sh         # a move's trace in Tempo, its logs in Loki (once), metrics from both nodes, profiles
 tools/localdev/stack.sh up --cluster            # adds backend-2 (down/ps/logs always include it)
 tools/localdev/stack.sh up --tail-sampling      # collectors as in production: gateway + 2 samplers (combinable)
@@ -198,7 +199,7 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   Page width/height opt-in (`data-layout` on the page root, read by the Shell via `has-[]`): `wide` = `--content-wide`;
   `fill` = exactly the screen's height from `shell:` up, lists scroll inside (`min-h-0 flex-1 overflow-y-auto`), the
   page never does — news (a column per source), library, profiles. Home is a container-query dashboard (`@4xl` two
-  columns, `@7xl` three: play | friend + your games | events + news), sized to fit 1920×960 unscrolled. Paged lists use `useLoadMore` + `<LoadMore>`. **Page shell (ui-polish)**: every route sets `head` with
+  columns, `@7xl` three: play | your games | events + news), sized to fit 1920×960 unscrolled. Paged lists use `useLoadMore` + `<LoadMore>`. **Page shell (ui-polish)**: every route sets `head` with
   `lib/feedback.ts#pageTitle` ("History · Chess"); `router.tsx` has the default pending bar, error panel (`RouterError`)
   and not-found page from `components/layout.tsx`, and `_authenticated/$.tsx` keeps unknown addresses inside the shell;
   `useTabSignals` never resets the title on the way out (the next page set it). **Profiles
@@ -240,8 +241,8 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   region has idle passivation OFF (Akka default 120 s would kill clocks); `PassivationPolicy` passivates 1 min
   after the end. Games start only through `IGameStarter`: from matchmaking (`Akka/Matchmaking/MatchmakingActor`, a cluster singleton;
   `POST|DELETE /api/matchmaking/{tc}`; `?heartbeat=true` every ~25 s keeps your place, 60 s silence drops you) or a
-  rematch — there are no invite links (remove-friend-invites); `Akka/Matchmaking/InviteActor` (sharded `invites`, 24 h)
-  serves rematches only. Live kinds `queue:{tc}` and `invite:{id}`. **Rematch (game-feedback)**: `POST /api/games/{id}/rematch`
+  rematch or a challenge — there are no invite links (remove-friend-invites); `Akka/Matchmaking/InviteActor` (sharded
+  `invites`) serves rematches (24 h) and challenges (60 s, club-members). Live kinds `queue:{tc}` and `invite:{id}`. **Rematch (game-feedback)**: `POST /api/games/{id}/rematch`
   (`Rematch.Offer` + `OfferRematch`) is an invite whose id IS the finished game's id, reserved for the other player
   (`InviteCreated.ForId`, optional, so old rows read), colours swapped; first call offers, the guest's call accepts. The
   game page watches `invite:{gameId}` once the game ends (`useLiveTopic({ enabled })`). The tab title/favicon signals
@@ -273,6 +274,22 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   duplicate answers are refused. A game whose engine is silent for `Engine:StallSeconds` asks again through
   `IEngineRequests` — the one actor-side producer, owned by that service. Endpoints: `POST /api/engine-games`,
   `GET /api/engine-levels`.
+
+- **Club members (club-members)** — accounts come only from an Admin (`/admin` Members: `WebApi/Admin/Members/`,
+  `Authentication/MemberAdmin.cs` + `KeycloakAdmin.cs`, the `chess_api` service account's admin REST API with
+  `manage-users` + `view-realm` from `keycloak-init`): create (a temporary password shown once, changed at first
+  sign-in; the `users` row is made at once), deactivate (Keycloak disabled, `users."Active"` false, every session
+  revoked, challenges and queue places dropped; the provisioning pre-processor answers 401, cached `user-active:{id}`),
+  reactivate, reset password, Admin on/off (never your own off). Keycloak first, then the database: a Keycloak failure
+  is a 502 with nothing changed. Presence: the Shell subscribes `user:{me}` on every page (the relay allows only your
+  own id) and the BFF reports Present/Absent for it as for `game:`; the `presence` singleton (`Akka/Presence/`) holds
+  the leases, who is playing (`GameActor` announces person-vs-person games on pub/sub `presence`; reloaded from
+  `rm_games` after a failover), `users."LastSeenAt"` and the challenge reservations. Live kinds `members:all` and
+  `user:{id}` (open challenges to you). `GET /api/members`; `/members` lists them with Challenge:
+  `POST /api/challenges {opponentId, timeControl, color}` (refused when offline, playing or already challenged),
+  `…/{id}/accept|decline|cancel`; a challenge is an invite with `Kind` and `LifetimeSeconds` (optional fields: old rows
+  read) and a 60 s actor timer (`InviteExpired`), shown on any page by `ChallengeBanner`. Profiles link Analyse on
+  finished games.
 
 - **No correspondence games (remove-correspondence)** — there is no `7d` time control, no move deadlines and no mail:
   games are live (presets) or against the computer (`untimed`). Playwright runs 2 workers: every spec drives two
@@ -403,7 +420,9 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   Keycloak's issuer must resolve identically inside containers and in the browser (`extra_hosts`
   on the backend). Postgres is built (`postgres.dev.Dockerfile`) to include `pg_cron` +
   `pg_partman`. `tools/localdev/keycloak/` expects a realm export named `chess` with client
-  `chess_api`; `keycloak-init` grants that client's service account realm-management roles.
+  `chess_api`; `keycloak-init` grants that client's service account realm-management roles and turns the
+  `VERIFY_PROFILE` required action off (members have optional e-mail and maybe one-word names; a deployment's realm
+  needs the same, or a new member is stuck on "update profile" at first sign-in).
 - **Proxy** — `apps/proxy/files/nginx.conf` on `nginxinc/nginx-unprivileged` (port 8080, pid in
   `/tmp`). Upstreams are Docker service names `chess-backend:8080` / `chess-frontend:3000`, set as
   variables with `resolver 127.0.0.11` so resolution is per request and `nginx -t` passes outside
