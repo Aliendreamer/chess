@@ -37,6 +37,9 @@ internal sealed class AkkaOptions : Extensions.ISettings
     /// <summary>How often the matchmaking singleton drops queue entries whose heartbeat stopped.</summary>
     public int MatchmakingSweepSeconds { get; set; } = 5;
 
+    /// <summary>How often the presence singleton drops leases that ran out and challenges nobody ended (club-members D1).</summary>
+    public int PresenceSweepSeconds { get; set; } = 5;
+
     /// <summary>Idle time after which a ping or invite entity is passivated (timed games never passivate while playing).</summary>
     public int IdlePassivationMinutes { get; set; } = 5;
 
@@ -56,12 +59,12 @@ internal sealed class AkkaOptions : Extensions.ISettings
 
     public void Validate()
     {
-        if (AbandonAfterSeconds <= 0 || PresenceLeaseSeconds <= 0 || MatchmakingSweepSeconds <= 0 || IdlePassivationMinutes <= 0
-            || UntimedIdleMinutes <= 0 || IdleSweepSeconds <= 0)
+        if (AbandonAfterSeconds <= 0 || PresenceLeaseSeconds <= 0 || MatchmakingSweepSeconds <= 0 || PresenceSweepSeconds <= 0
+            || IdlePassivationMinutes <= 0 || UntimedIdleMinutes <= 0 || IdleSweepSeconds <= 0)
         {
             throw new InvalidOperationException(
-                "Akka:AbandonAfterSeconds, Akka:PresenceLeaseSeconds, Akka:MatchmakingSweepSeconds, Akka:IdlePassivationMinutes, "
-                + "Akka:UntimedIdleMinutes and Akka:IdleSweepSeconds must be positive.");
+                "Akka:AbandonAfterSeconds, Akka:PresenceLeaseSeconds, Akka:MatchmakingSweepSeconds, Akka:PresenceSweepSeconds, "
+                + "Akka:IdlePassivationMinutes, Akka:UntimedIdleMinutes and Akka:IdleSweepSeconds must be positive.");
         }
 
         if (string.IsNullOrWhiteSpace(Hostname))

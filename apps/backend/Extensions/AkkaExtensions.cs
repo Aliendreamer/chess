@@ -18,6 +18,7 @@ using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Akka.Ping;
+using Chess.Backend.Akka.Presence;
 using Chess.Backend.Engine;
 using Chess.Backend.Games;
 using Chess.Backend.Library;
@@ -188,6 +189,23 @@ internal static class MatchmakingRegistration
             createProxyToo: false);
     }
 
+    /// <summary>The presence singleton (club-members D1) on the backend role, with a proxy so every node reaches it.</summary>
+    public static AkkaConfigurationBuilder WithPresence(this AkkaConfigurationBuilder akka, AkkaOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(akka);
+        ArgumentNullException.ThrowIfNull(options);
+        return akka.WithSingleton<PresenceActor>(
+            PresenceActor.SingletonName,
+            (system, _, resolver) => Props.Create(() => new PresenceActor(
+                resolver.GetService<IMemberDirectory>(),
+                DistributedPubSub.Get(system).Mediator,
+                resolver.GetService<TimeProvider>(),
+                TimeSpan.FromSeconds(options.PresenceLeaseSeconds),
+                TimeSpan.FromSeconds(options.PresenceSweepSeconds))),
+            new ClusterSingletonOptions { Role = AkkaOptions.BackendRole },
+            createProxyToo: true);
+    }
+
     /// <summary>The matchmaking singleton on the backend role, with a proxy so every node's endpoints reach it.</summary>
     public static AkkaConfigurationBuilder WithMatchmaking(this AkkaConfigurationBuilder akka, AkkaOptions options)
     {
@@ -242,19 +260,23 @@ internal static class InviteShardingExtensions
 {
     public const string ShardTypeName = "invites";
 
-    /// <summary>The `invites` region; default idle passivation is fine, since expiry needs no timer.</summary>
+    /// <summary>
+    /// The `invites` region. Idle passivation (5 min) outlasts a challenge's 60 s expiry timer; a rematch's expiry needs
+    /// no timer. Each invite reaches the presence singleton through its proxy, looked up when the entity starts.
+    /// </summary>
     public static AkkaConfigurationBuilder WithInviteSharding(this AkkaConfigurationBuilder akka, AkkaOptions options)
     {
         ArgumentNullException.ThrowIfNull(akka);
         ArgumentNullException.ThrowIfNull(options);
         return akka.WithShardRegion<InviteActor>(
             ShardTypeName,
-            (system, _, resolver) => id => Props.Create(() => new InviteActor(
+            (system, registry, resolver) => id => Props.Create(() => new InviteActor(
                 Guid.ParseExact(id, "N"),
                 resolver.GetService<IGameStarter>(),
                 DistributedPubSub.Get(system).Mediator,
                 resolver.GetService<TimeProvider>(),
-                Random.Shared)),
+                Random.Shared,
+                registry.Get<PresenceActor>())),
             new InviteMessageExtractor(options.ShardCount),
             new ShardOptions
             {
@@ -319,7 +341,7 @@ internal static class ClusterMetricsRegistration
                 [InviteShardingExtensions.ShardTypeName] = registry.Get<InviteActor>(),
                 [PingTopics.ShardTypeName] = registry.Get<PingActor>(),
             };
-            List<string> singletons = [MatchmakingActor.SingletonName, IdleGameSweeper.SingletonName, NewsFetcher.SingletonName, LibraryImporter.SingletonName];
+            List<string> singletons = [MatchmakingActor.SingletonName, PresenceActor.SingletonName, IdleGameSweeper.SingletonName, NewsFetcher.SingletonName, LibraryImporter.SingletonName];
             if (publisher)
             {
                 singletons.Add(JournalPublisher.SingletonName);

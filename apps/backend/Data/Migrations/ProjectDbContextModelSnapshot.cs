@@ -852,6 +852,9 @@ namespace Chess.Backend.Data.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
 
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -862,6 +865,9 @@ namespace Chess.Backend.Data.Migrations
                     b.Property<string>("FullName")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
+
+                    b.Property<DateTimeOffset?>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Preferences")
                         .HasColumnType("jsonb");
@@ -893,6 +899,7 @@ namespace Chess.Backend.Data.Migrations
                         new
                         {
                             Id = -1L,
+                            Active = true,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Sub = "engine:1320",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -902,6 +909,7 @@ namespace Chess.Backend.Data.Migrations
                         new
                         {
                             Id = -2L,
+                            Active = true,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Sub = "engine:1600",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -911,6 +919,7 @@ namespace Chess.Backend.Data.Migrations
                         new
                         {
                             Id = -3L,
+                            Active = true,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Sub = "engine:2000",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -920,6 +929,7 @@ namespace Chess.Backend.Data.Migrations
                         new
                         {
                             Id = -4L,
+                            Active = true,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Sub = "engine:2400",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
@@ -929,6 +939,7 @@ namespace Chess.Backend.Data.Migrations
                         new
                         {
                             Id = -5L,
+                            Active = true,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Sub = "engine:max",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 9, 27, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),

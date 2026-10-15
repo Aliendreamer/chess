@@ -1,6 +1,7 @@
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Event;
 using Akka.Persistence;
+using Chess.Backend.Akka.Presence;
 using Chess.Backend.Engine;
 using Chess.Backend.Events;
 using Chess.Backend.Games;
@@ -724,9 +725,29 @@ internal sealed class GameActor : ReceivePersistentActor, IWithTimers
             _drawOfferedBy, _drawBlocked, _result, _reason, _createdAt, _lastMoveAt, [.. _absentSince.Keys], _engine));
     }
 
-    /// <summary>The game's new view on its live topic, carrying the trace of the event that changed it.</summary>
-    private void Publish(object cause) =>
+    /// <summary>
+    /// The game's new view on its live topic, carrying the trace of the event that changed it. A game between people
+    /// also tells the presence singleton when it starts and ends (club-members D1): untraced, fire and forget.
+    /// </summary>
+    private void Publish(object cause)
+    {
         _mediator?.Tell(new Publish(LiveTopics.PubSub, new LiveFrame(Topic, LastSequenceNr, View(), ActorTracing.TraceOf(cause))));
+        if (_engine is not null)
+        {
+            return;
+        }
+
+        object? announcement = cause switch
+        {
+            GameCreated => new PlayerGameStarted(_gameId, _white, _black),
+            GameEnded => new PlayerGameEnded(_gameId, _white, _black),
+            _ => null,
+        };
+        if (announcement is not null)
+        {
+            _mediator?.Tell(new Publish(PresenceTopics.PubSub, announcement));
+        }
+    }
 
     // ---- helpers -----------------------------------------------------------------------------------------------
 

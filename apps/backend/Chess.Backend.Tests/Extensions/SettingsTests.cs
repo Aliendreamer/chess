@@ -1,5 +1,6 @@
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Outbox;
+using Chess.Backend.Akka.Presence;
 using Chess.Backend.Analysis;
 using Chess.Backend.Engine;
 using Chess.Backend.Extensions;
@@ -46,6 +47,8 @@ public sealed class SettingsTests
         Assert.Equivalent(new ReviewOptions(), Bound<ReviewOptions>(ReviewOptions.SectionName), strict: true);
         Assert.Equivalent(new TrainingOptions(), Bound<TrainingOptions>(TrainingOptions.SectionName), strict: true);
         Assert.Equivalent(new ObservabilityOptions(), Bound<ObservabilityOptions>(ObservabilityOptions.SectionName), strict: true);
+        Assert.Equivalent(new KeycloakAdminOptions(), Bound<KeycloakAdminOptions>(KeycloakAdminOptions.SectionName), strict: true);
+        Assert.Equivalent(new MembersOptions(), Bound<MembersOptions>(MembersOptions.SectionName), strict: true);
 
         Assert.Equivalent(new LobbyOptions(), Bound<LobbyOptions>(LobbyOptions.SectionName), strict: true);
         Assert.Equivalent(new LibraryOptions(), Bound<LibraryOptions>(LibraryOptions.SectionName), strict: true);
@@ -86,6 +89,8 @@ public sealed class SettingsTests
         new LobbyOptions().Validate();
         new NewsOptions().Validate();
         new TrainingOptions().Validate();
+        new KeycloakAdminOptions().Validate();
+        new MembersOptions().Validate();
     }
 
     [Fact]
@@ -109,6 +114,9 @@ public sealed class SettingsTests
         { "Kafka:HealthTimeoutSeconds", () => new KafkaOptions { HealthTimeoutSeconds = 0 }.Validate() },
         { "Akka:MatchmakingSweepSeconds", () => new AkkaOptions { MatchmakingSweepSeconds = 0 }.Validate() },
         { "Akka:IdleSweepSeconds", () => new AkkaOptions { IdleSweepSeconds = 0 }.Validate() },
+        { "Akka:PresenceSweepSeconds", () => new AkkaOptions { PresenceSweepSeconds = 0 }.Validate() },
+        { "KeycloakAdmin:MaxRoleMembers", () => new KeycloakAdminOptions { MaxRoleMembers = 0 }.Validate() },
+        { "Members:PresenceTimeoutMs", () => new MembersOptions { PresenceTimeoutMs = 0 }.Validate() },
         { "Keycloak:HttpTimeoutSeconds", () => new KeycloakOptions { HttpTimeoutSeconds = 0 }.Validate() },
         { "Outbox:BatchSize", () => new JournalPublisherOptions { BatchSize = 0 }.Validate() },
         { "Outbox:DegradedAfter", () => new PublisherLagOptions { DegradedAfter = TimeSpan.Zero }.Validate() },

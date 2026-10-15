@@ -5,6 +5,7 @@ using Chess.Backend.Akka.Games;
 using Chess.Backend.Akka.Matchmaking;
 using Chess.Backend.Akka.Outbox;
 using Chess.Backend.Akka.Ping;
+using Chess.Backend.Akka.Presence;
 using Chess.Backend.Analysis;
 using Chess.Backend.Engine;
 using Chess.Backend.Library;
@@ -63,12 +64,21 @@ internal static class BuilderExtension
         services.AddSingleton<ILiveTopicSource, GameLiveSource>();
         services.AddSingleton<ILiveTopicSource, QueueLiveSource>();
         services.AddSingleton<ILiveTopicSource, InviteLiveSource>();
+        services.AddSingleton<ILiveTopicSource, UserLiveSource>();
+        services.AddSingleton<ILiveTopicSource, MembersLiveSource>();
+        services.AddSingleton<IMemberDirectory, MemberDirectory>();
+        services.AddSingleton<IMemberEviction, MemberEviction>();
+        // Member admin (member-admin D3): the realm's admin API as the chess_api service account.
+        services.AddSettings<KeycloakAdminOptions>(configuration, KeycloakAdminOptions.SectionName);
+        services.AddSettings<MembersOptions>(configuration, MembersOptions.SectionName);
+        services.AddSingleton<IKeycloakAdmin, KeycloakAdminClient>();
         services.AddSingleton<IGameStarter, GameStarter>();
         services.AddSingleton<LiveTopicResolver>();
         builder.AddActorSystem((akka, sp) =>
         {
             akka.WithPingSharding(sp.GetRequiredService<AkkaOptions>());
             akka.WithGameSharding(sp.GetRequiredService<AkkaOptions>());
+            akka.WithPresence(sp.GetRequiredService<AkkaOptions>());
             akka.WithMatchmaking(sp.GetRequiredService<AkkaOptions>());
             akka.WithInviteSharding(sp.GetRequiredService<AkkaOptions>());
             akka.WithIdleGameSweeper(sp.GetRequiredService<AkkaOptions>());

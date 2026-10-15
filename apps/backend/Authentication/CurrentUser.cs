@@ -87,6 +87,12 @@ internal sealed class UserProvisioningPreProcessor : IGlobalPreProcessor
         IUserProvisioningService provisioning = http.RequestServices.GetRequiredService<IUserProvisioningService>();
         string? username = principal.FindFirstValue(Constants.Claims.PreferredUsername);
         long id = await provisioning.EnsureUserAsync(subject, email, fullName, username, ct);
+        if (!await provisioning.IsActiveAsync(id, ct))
+        {
+            // Deactivated (club-members D3): even a token that is still valid gets nothing (defence in depth).
+            await http.Response.SendUnauthorizedAsync(ct);
+            return;
+        }
 
         if (http.RequestServices.GetRequiredService<ICurrentUser>() is CurrentUser current)
         {
@@ -166,6 +172,12 @@ internal interface IUserProvisioningService : IService
     /// <paramref name="username"/> is backfilled on a later call; a stored one is never erased or rewritten.
     /// </summary>
     Task<long> EnsureUserAsync(string subject, string? email, string? fullName, string? username, CancellationToken ct);
+
+    /// <summary>Whether the member may use the API (club-members D3); cached, and evicted by <see cref="ForgetActive"/>.</summary>
+    Task<bool> IsActiveAsync(long userId, CancellationToken ct);
+
+    /// <summary>Drops the cached answer of <see cref="IsActiveAsync"/> after an Admin changed it.</summary>
+    Task ForgetActiveAsync(long userId, CancellationToken ct);
 }
 
 internal sealed class UserProvisioningService(
@@ -219,6 +231,17 @@ internal sealed class UserProvisioningService(
             return winner.Id;
         }
     }
+
+    public async Task<bool> IsActiveAsync(long userId, CancellationToken ct) =>
+        await cache.GetOrSetAsync(
+            Constants.Cache.UserActive + userId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            async (FusionCacheFactoryExecutionContext<bool> _, CancellationToken token) =>
+                await Context.Users.AsNoTracking().Where(u => u.Id == userId).Select(u => (bool?)u.Active).SingleOrDefaultAsync(token) ?? false,
+            options => options.SetDuration(_cacheTtl),
+            ct);
+
+    public async Task ForgetActiveAsync(long userId, CancellationToken ct) =>
+        await cache.RemoveAsync(Constants.Cache.UserActive + userId.ToString(System.Globalization.CultureInfo.InvariantCulture), token: ct);
 
     private static string? NullIfEmpty(string? value) => string.IsNullOrEmpty(value) ? null : value;
 }

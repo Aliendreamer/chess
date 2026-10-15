@@ -52,6 +52,7 @@ internal static class ActorNames
     public const string Invite = "invite";
     public const string Ping = "ping";
     public const string Matchmaking = "matchmaking";
+    public const string Presence = "presence";
     public const string JournalPublisher = "journal-publisher";
     public const string IdleGameSweeper = "idle-game-sweeper";
     public const string NewsFetcher = "news-fetcher";

@@ -15,6 +15,8 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.FullName).HasMaxLength(255);
         builder.Property(u => u.Username).HasMaxLength(255);
         builder.Property(u => u.Preferences).HasColumnType("jsonb");
+        // No database default on purpose: EF would then never write false on insert. The migration fills existing rows.
+        builder.Property(u => u.Active).IsRequired();
         builder.Property(u => u.Version).IsConcurrencyToken();
 
         // The engine's players (engine-play D2): fixed negative ids, so games can name them without a lookup.

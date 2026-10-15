@@ -152,6 +152,20 @@ public sealed class MatchmakingActorTests() : TestKit(AkkaConfig.InMemoryPersist
     }
 
     [Fact]
+    public void A_deactivated_member_leaves_whichever_queue_they_were_in()
+    {
+        IActorRef mm = Matchmaker();
+        Join(mm, A, "10+5");
+
+        mm.Tell(new LeaveAllQueues(A));
+        Assert.Equal("10+5", ExpectMsg<Left>().TimeControl);
+        mm.Tell(new LeaveAllQueues(A));
+        ExpectMsg<Left>(); // nothing left: still answered
+
+        Assert.IsType<Waiting>(Join(mm, B, "10+5"));
+    }
+
+    [Fact]
     public void A_heartbeat_just_after_being_paired_answers_with_the_same_game()
     {
         IActorRef mm = Matchmaker();

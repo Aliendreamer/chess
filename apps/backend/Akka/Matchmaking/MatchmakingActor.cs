@@ -15,6 +15,9 @@ internal sealed record JoinQueue(long UserId, string TimeControl, bool Heartbeat
 
 internal sealed record LeaveQueue(long UserId, string TimeControl);
 
+/// <summary>A member was deactivated (club-members D3): their place in any queue goes. Answered with <see cref="Left"/>.</summary>
+internal sealed record LeaveAllQueues(long UserId);
+
 internal sealed record GetQueue(string TimeControl);
 
 /// <summary>How many wait in every preset queue (the lobby, live-home): one ask instead of one per preset.</summary>
@@ -97,6 +100,18 @@ internal sealed class MatchmakingActor : ReceiveActor, IWithTimers
 
         Receive<JoinQueue>(HandleJoin);
         Receive<LeaveQueue>(HandleLeave);
+        Receive<LeaveAllQueues>(leave =>
+        {
+            string tc = string.Empty;
+            if (_byUser.TryGetValue(leave.UserId, out Entry? entry))
+            {
+                tc = entry.TimeControl;
+                Remove(entry);
+            }
+
+            _recent.Remove(leave.UserId);
+            Sender.Tell(new Left(tc));
+        });
         Receive<GetQueue>(q => Sender.Tell(TimeControl.TryParse(q.TimeControl, out _) ? View(q.TimeControl) : new QueueRejected(NotAPreset(q.TimeControl))));
         Receive<GetQueues>(_ => Sender.Tell(new QueueCounts(
             [.. TimeControl.Presets.Select(p => new QueueCount(p.ToString(), Queue(p.ToString()).Count))])));

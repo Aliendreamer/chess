@@ -2,6 +2,7 @@ using Akka.Actor;
 using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.TestKit;
 using Chess.Backend.Akka.Games;
+using Chess.Backend.Akka.Presence;
 using Chess.Backend.Games;
 using Chess.Backend.Messaging;
 
@@ -172,6 +173,9 @@ public sealed class GameActorTests() : GameActorTestBase(virtualTime: false)
         TestProbe mediator = CreateTestProbe();
         (Guid id, IActorRef actor, _) = Started(mediator: mediator.Ref);
         Publish created = mediator.ExpectMsg<Publish>();
+        // A game between people also tells the presence singleton it started (club-members D1).
+        Publish started = mediator.ExpectMsg<Publish>();
+        Assert.Equal((PresenceTopics.PubSub, (object)new PlayerGameStarted(id, White, Black)), (started.Topic, started.Message));
 
         GameView moved = Move(actor, id, White, "e2e4");
         Publish afterMove = mediator.ExpectMsg<Publish>();

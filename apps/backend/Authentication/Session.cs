@@ -243,7 +243,8 @@ internal interface ISessionStore : IService
     /// <summary>Revokes the session behind a raw token; returns it (for IdP back-channel logout) or null.</summary>
     Task<UserSession?> RevokeAsync(string rawToken, CancellationToken ct);
 
-    Task<int> RevokeAllForSubjectAsync(string subject, CancellationToken ct);
+    /// <summary>Revokes every live session of a subject (a member deactivated, club-members D3). Returns how many.</summary>
+    Task<int> RevokeAllAsync(string subject, CancellationToken ct);
 
     /// <summary>Deletes revoked/expired sessions older than the grace window. Returns the number removed.</summary>
     Task<int> PurgeAsync(TimeSpan grace, CancellationToken ct);
@@ -332,7 +333,7 @@ internal sealed class SessionStore(
         return session;
     }
 
-    public async Task<int> RevokeAllForSubjectAsync(string subject, CancellationToken ct)
+    public async Task<int> RevokeAllAsync(string subject, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrEmpty(subject);
         DateTimeOffset now = clock.GetUtcNow();

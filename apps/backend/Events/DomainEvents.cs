@@ -114,7 +114,8 @@ internal sealed record AbandonmentOffered(
 
 /// <summary>
 /// <see cref="ForId"/> reserves the invite for one user and <see cref="RematchOf"/> names the finished game it
-/// rematches (game-feedback); both are absent from invites recorded before them.
+/// rematches (game-feedback); both are absent from invites recorded before them. <see cref="Kind"/> (<c>challenge</c>;
+/// absent = a rematch) and <see cref="LifetimeSeconds"/> (absent = 24 h) came with challenges (club-members D2).
 /// </summary>
 internal sealed record InviteCreated(
     [property: JsonPropertyName("creatorId")] long CreatorId,
@@ -123,6 +124,25 @@ internal sealed record InviteCreated(
     [property: JsonPropertyName("at")] DateTimeOffset At,
     [property: JsonPropertyName("forId")] long? ForId = null,
     [property: JsonPropertyName("rematchOf")] Guid? RematchOf = null,
+    [property: JsonIgnore] string? Trace = null,
+    [property: JsonPropertyName("kind")] string? Kind = null,
+    [property: JsonPropertyName("lifetimeSeconds")] int? LifetimeSeconds = null) : ITracedEvent
+{
+    public ITracedEvent WithTrace(string? trace) => this with { Trace = trace };
+}
+
+/// <summary>The member a challenge was for said no (club-members D2).</summary>
+internal sealed record InviteDeclined(
+    [property: JsonPropertyName("byId")] long ById,
+    [property: JsonPropertyName("at")] DateTimeOffset At,
+    [property: JsonIgnore] string? Trace = null) : ITracedEvent
+{
+    public ITracedEvent WithTrace(string? trace) => this with { Trace = trace };
+}
+
+/// <summary>A challenge ran out unanswered: persisted by its timer, so the frame that says so has a newer seq.</summary>
+internal sealed record InviteExpired(
+    [property: JsonPropertyName("at")] DateTimeOffset At,
     [property: JsonIgnore] string? Trace = null) : ITracedEvent
 {
     public ITracedEvent WithTrace(string? trace) => this with { Trace = trace };

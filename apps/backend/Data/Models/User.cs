@@ -19,4 +19,10 @@ internal sealed class User : AuditableEntity
 
     /// <summary>Display preferences as JSON (user-preferences); null means the defaults.</summary>
     public string? Preferences { get; set; }
+
+    /// <summary>False once an Admin deactivated the member (club-members D3): no sign-in, not listed, games kept.</summary>
+    public bool Active { get; set; } = true;
+
+    /// <summary>When the member's last page closed (club-members D1); null until they first went offline.</summary>
+    public DateTimeOffset? LastSeenAt { get; set; }
 }

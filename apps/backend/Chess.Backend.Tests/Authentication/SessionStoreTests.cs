@@ -117,7 +117,7 @@ public sealed class SessionStoreTests
         string b1 = await store.CreateAsync("b", "at", "rt", T0.AddMinutes(5), T0.AddHours(8), CancellationToken.None);
         await store.RevokeAsync(a2, CancellationToken.None);
 
-        int count = await store.RevokeAllForSubjectAsync("a", CancellationToken.None);
+        int count = await store.RevokeAllAsync("a", CancellationToken.None);
 
         Assert.Equal(1, count);
         Assert.Null(await store.GetValidAsync(a1, CancellationToken.None));
@@ -149,7 +149,7 @@ public sealed class SessionStoreTests
         (SessionStore store, _, _) = Build();
         await Assert.ThrowsAsync<ArgumentException>(() => store.CreateAsync(string.Empty, "at", null, T0, null, CancellationToken.None));
         await Assert.ThrowsAsync<ArgumentException>(() => store.CreateAsync("s", string.Empty, null, T0, null, CancellationToken.None));
-        await Assert.ThrowsAsync<ArgumentException>(() => store.RevokeAllForSubjectAsync(string.Empty, CancellationToken.None));
+        await Assert.ThrowsAsync<ArgumentException>(() => store.RevokeAllAsync(string.Empty, CancellationToken.None));
         await Assert.ThrowsAsync<ArgumentException>(() => store.UpdateTokensAsync(1, string.Empty, null, T0, null, CancellationToken.None));
     }
 

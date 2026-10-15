@@ -62,6 +62,23 @@ public sealed class UserProvisioningServiceTests
         await Assert.ThrowsAsync<ArgumentException>(() => Build(db).EnsureUserAsync(string.Empty, null, null, null, CancellationToken.None));
     }
 
+    [Fact]
+    public async Task Whether_a_member_is_active_is_cached_until_forgotten()
+    {
+        using ProjectDbContext db = TestDb.Create();
+        UserProvisioningService svc = Build(db);
+        long id = await svc.EnsureUserAsync("sub-a", null, null, "ann", CancellationToken.None);
+        Assert.True(await svc.IsActiveAsync(id, CancellationToken.None));
+
+        (await db.Users.SingleAsync()).Active = false;
+        await db.SaveChangesAsync();
+        Assert.True(await svc.IsActiveAsync(id, CancellationToken.None)); // cached
+
+        await svc.ForgetActiveAsync(id, CancellationToken.None);
+        Assert.False(await svc.IsActiveAsync(id, CancellationToken.None));
+        Assert.False(await svc.IsActiveAsync(12345, CancellationToken.None)); // nobody is not active
+    }
+
     [Theory]
     [InlineData(null, "ann", "ann")] // backfilled on the next login (D23)
     [InlineData("ann", "", "ann")] // an empty claim never erases a name

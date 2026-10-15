@@ -11,6 +11,7 @@ public sealed class UserProvisioningPreProcessorTests
         CurrentUser current = new();
         Mock<IUserProvisioningService> provisioning = new();
         provisioning.Setup(p => p.EnsureUserAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync(42);
+        provisioning.Setup(p => p.IsActiveAsync(It.IsAny<long>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
         DefaultHttpContext http = new()
         {
             User = user,
@@ -84,6 +85,19 @@ public sealed class UserProvisioningPreProcessorTests
         (IPreProcessorContext ctx, CurrentUser current, Mock<IUserProvisioningService> provisioning) = Build(user);
         await new UserProvisioningPreProcessor().PreProcessAsync(ctx, CancellationToken.None);
         provisioning.VerifyNoOtherCalls();
+        Assert.False(current.IsAuthenticated);
+    }
+
+    [Fact]
+    public async Task A_deactivated_member_is_answered_401_even_with_a_valid_token()
+    {
+        ClaimsPrincipal user = new(new ClaimsIdentity([new Claim(Constants.Claims.Subject, "sub-gone")], "test"));
+        (IPreProcessorContext ctx, CurrentUser current, Mock<IUserProvisioningService> provisioning) = Build(user);
+        provisioning.Setup(p => p.IsActiveAsync(42, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        await new UserProvisioningPreProcessor().PreProcessAsync(ctx, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status401Unauthorized, ctx.HttpContext.Response.StatusCode);
         Assert.False(current.IsAuthenticated);
     }
 

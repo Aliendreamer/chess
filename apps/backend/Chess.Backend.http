@@ -16,6 +16,8 @@
 @gameId = 00000000000000000000000000000000
 @studyId = 00000000000000000000000000000000
 @aggregateId = paste-from-dead-letter-list
+@challengeId = 00000000000000000000000000000000
+@memberId = 2
 
 ### ---------- auth (browser flow; shown for completeness) ----------
 
@@ -132,6 +134,31 @@ Cookie: mp_sid={{sid}}
 POST {{host}}/api/games/{{gameId}}/rematch
 Cookie: mp_sid={{sid}}
 
+### ---------- members and challenges (club-members) ----------
+
+### Active members with their state (online/playing/offline); live on members:all
+GET {{host}}/api/members
+Cookie: mp_sid={{sid}}
+
+### Challenge an online member (preset time control; your colour: white|black|random); open 60 s, live on invite:{id}
+POST {{host}}/api/challenges
+Cookie: mp_sid={{sid}}
+Content-Type: application/json
+
+{ "opponentId": 2, "timeControl": "5+3", "color": "white" }
+
+### Accept / decline (the challenged member) or cancel (the challenger)
+POST {{host}}/api/challenges/{{challengeId}}/accept
+Cookie: mp_sid={{sid}}
+
+###
+POST {{host}}/api/challenges/{{challengeId}}/decline
+Cookie: mp_sid={{sid}}
+
+###
+POST {{host}}/api/challenges/{{challengeId}}/cancel
+Cookie: mp_sid={{sid}}
+
 ### Live view (the actor while playing; the replica once ended)
 GET {{host}}/api/games/{{gameId}}/live
 Cookie: mp_sid={{sid}}
@@ -185,5 +212,35 @@ Cookie: mp_sid={{sid}}
 # groups: chess.rm-games, chess.rm-pings)
 POST {{host}}/api/admin/projections/chess.rm-games/dead-letters/{{aggregateId}}/replay
 Cookie: mp_sid={{sid}}
+
+### Every member, active or not, with Admin from Keycloak
+GET {{host}}/api/admin/members
+Cookie: mp_sid={{sid}}
+
+### Create a member: answers the temporary password once
+POST {{host}}/api/admin/members
+Cookie: mp_sid={{sid}}
+Content-Type: application/json
+
+{ "username": "carol", "fullName": "Carol Smith", "email": null }
+
+### Deactivate / reactivate / reset the password
+POST {{host}}/api/admin/members/{{memberId}}/deactivate
+Cookie: mp_sid={{sid}}
+
+###
+POST {{host}}/api/admin/members/{{memberId}}/reactivate
+Cookie: mp_sid={{sid}}
+
+###
+POST {{host}}/api/admin/members/{{memberId}}/reset-password
+Cookie: mp_sid={{sid}}
+
+### Grant or remove Admin (not your own)
+PUT {{host}}/api/admin/members/{{memberId}}/admin
+Cookie: mp_sid={{sid}}
+Content-Type: application/json
+
+{ "admin": true }
 
 # The live hub (/hub/live) is SignalR for the BFF's Relay service account only — not callable from here.

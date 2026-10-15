@@ -92,4 +92,19 @@ internal static partial class Log
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Game {GameId} ended: its review was started automatically")]
     public static partial void AutoReviewStarted(ILogger logger, Guid gameId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Member {UserId} ({Username}) created by an Admin")]
+    public static partial void MemberCreated(ILogger logger, long userId, string username);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Member {UserId} deactivated; {Sessions} sessions revoked")]
+    public static partial void MemberDeactivated(ILogger logger, long userId, int sessions);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Member {UserId} reactivated")]
+    public static partial void MemberReactivated(ILogger logger, long userId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Keycloak admin call failed: {Reason}")]
+    public static partial void KeycloakAdminFailed(ILogger logger, Exception exception, string reason);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Member {UserId}: the live state did not let go in time ({Reason}); their challenges run out on their own")]
+    public static partial void EvictionIncomplete(ILogger logger, long userId, string reason);
 }

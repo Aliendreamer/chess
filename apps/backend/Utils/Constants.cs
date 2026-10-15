@@ -96,6 +96,9 @@ internal static class Constants
     public static class Cache
     {
         public const string UserIdBySubject = "user-id:";
+
+        /// <summary>Whether a member is active, by users.id; removed when an Admin deactivates or reactivates them.</summary>
+        public const string UserActive = "user-active:";
         public const string Lobby = "lobby";
         public const string OidcDiscovery = "oidc:discovery";
         public const string PreferencesByUser = "prefs:";

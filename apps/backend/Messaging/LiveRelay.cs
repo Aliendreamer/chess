@@ -3,6 +3,7 @@ using Akka.Cluster.Tools.PublishSubscribe;
 using Akka.Event;
 using Chess.Backend.Akka;
 using Chess.Backend.Akka.Games;
+using Chess.Backend.Akka.Presence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Done = Akka.Done;
@@ -97,7 +98,7 @@ internal sealed class LiveTopicResolver
 /// </summary>
 [Authorize(Roles = Constants.Roles.Relay)]
 [ExcludeFromCodeCoverage]
-internal sealed class LiveHub(LiveTopicResolver topics, IRequiredActor<GameActor> games) : Hub
+internal sealed class LiveHub(LiveTopicResolver topics, IRequiredActor<GameActor> games, IRequiredActor<PresenceActor> presence) : Hub
 {
     private const int MaxInstanceLength = 64;
 
@@ -118,8 +119,9 @@ internal sealed class LiveHub(LiveTopicResolver topics, IRequiredActor<GameActor
     public Task Unsubscribe(string topic) => Groups.RemoveFromGroupAsync(Context.ConnectionId, topic);
 
     /// <summary>
-    /// The BFF's presence report for a signed-in user on a game topic (presence-and-abandonment D1–D2); re-sent every
-    /// 30 s as a lease. Only <c>game</c> topics carry presence; anything else is ignored. The game decides who plays.
+    /// The BFF's presence report for a signed-in user on a game topic (presence-and-abandonment D1–D2) or on their own
+    /// <c>user:</c> topic (club-members D1); re-sent every 30 s as a lease. Only those carry presence; anything else,
+    /// and a <c>user:</c> topic of somebody else, is ignored. The game decides who plays; the presence singleton who is online.
     /// </summary>
     public void Present(string topic, long userId, string instance) => Report(topic, userId, instance, present: true);
 
@@ -128,14 +130,19 @@ internal sealed class LiveHub(LiveTopicResolver topics, IRequiredActor<GameActor
     private void Report(string topic, long userId, string instance, bool present)
     {
         if (string.IsNullOrEmpty(instance) || instance.Length > MaxInstanceLength
-            || !topics.TryResolve(topic, out ILiveTopicSource? source, out string id)
-            || source.Kind != GameLiveSource.KindName
-            || !Guid.TryParseExact(id, "N", out Guid gameId))
+            || !topics.TryResolve(topic, out ILiveTopicSource? source, out string id))
         {
             return;
         }
 
-        games.ActorRef.Tell(ActorTracing.Wrap(new ReportPresence(gameId, userId, instance, present)));
+        if (source.Kind == GameLiveSource.KindName && Guid.TryParseExact(id, "N", out Guid gameId))
+        {
+            games.ActorRef.Tell(ActorTracing.Wrap(new ReportPresence(gameId, userId, instance, present)));
+        }
+        else if (source.Kind == UserLiveSource.KindName && UserLiveSource.TryParseId(id, out long owner) && owner == userId)
+        {
+            presence.ActorRef.Tell(ActorTracing.Wrap(new ReportUserPresence(userId, instance, present)));
+        }
     }
 }
 
