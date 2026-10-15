@@ -40,3 +40,7 @@ in anonymous volumes, so a plain rebuild keeps the stale tree and vite dies with
 Sandbox masks (`.mcp.json`, `.claude/{loop.md,launch.json,…}`, shell dotfiles) appear as unreadable
 device files in every cwd: they are ignored in `.prettierignore`, markdownlint, the backend csproj
 `DefaultItemExcludes`, and `.vscode/settings.json`.
+
+Commit messages: `git commit -F - <<EOF` loses the blank line after the subject in this environment (subject and
+body run together; commitlint warns `body-leading-blank`). Use `git commit -m "<subject>" -m "<body>"` instead, and
+check with `git log -1 --format=%B | cat -A`.
