@@ -5,7 +5,9 @@
 #   tools/localdev/verify-auth.sh                       # via Traefik on 127.0.0.1:80
 #   USER_NAME=player PASSWORD='Player123!' tools/localdev/verify-auth.sh
 #
-#   SID_ONLY=1 tools/localdev/verify-auth.sh             # login+callback only; prints raw mp_sid
+#   NEW_PASSWORD='…' tools/localdev/verify-auth.sh       # PASSWORD is temporary: answer Keycloak's
+#                                                         # update-password form with NEW_PASSWORD.
+#   SID_ONLY=1 tools/localdev/verify-auth.sh           # login+callback only; prints raw mp_sid
 #                                                         # on stdout (last line) and exits 0 —
 #                                                         # skips /api/me, logout, revocation.
 #                                                         # All progress chatter goes to stderr so
@@ -69,6 +71,25 @@ post_headers="$(mktemp)"; post_body="$(mktemp)"
 curl -sS --resolve "$KC_HOST:80:$EDGE_IP" -b "$(kc_cookie_header)" -o "$post_body" -D "$post_headers" \
   --data-urlencode "username=$USERNAME" --data-urlencode "password=$PASSWORD" --data-urlencode "credentialId=" "$action"
 callback="$(awk 'tolower($1)=="location:" {print $2}' "$post_headers" | tr -d '\r')"
+if [[ -n "${NEW_PASSWORD:-}" && "$callback" == http://$KC_HOST/*/login-actions/required-action* ]]; then
+  # A temporary password: Keycloak redirects to its update-password page (required action UPDATE_PASSWORD) before it
+  # lets go. Same Secure-cookie dance as above, a later Set-Cookie replacing an earlier one of the same name.
+  echo "update-password page → POST the new password"
+  merge_kc_cookies() {
+    KC_COOKIES="$({ tr ';' '\n' <<<"$KC_COOKIES"; awk 'tolower($1)=="set-cookie:" {sub(/^[^:]*: */, ""); sub(/;.*$/, ""); print}' "$1"; } \
+      | sed -E 's/^ +//' | awk -F= 'NF > 1 { v[$1] = $0; if (!($1 in seen)) { seen[$1] = 1; order[++n] = $1 } }
+        END { for (i = 1; i <= n; i++) printf "%s; ", v[order[i]] }')"
+  }
+  merge_kc_cookies "$post_headers"
+  curl -sS --resolve "$KC_HOST:80:$EDGE_IP" -b "$(kc_cookie_header)" -o "$post_body" -D "$post_headers" "$callback"
+  merge_kc_cookies "$post_headers"
+  grep -q 'password-new' "$post_body" || fail "expected Keycloak's update-password form at $callback"
+  action="$(grep -o 'action="[^"]*"' "$post_body" | head -n1 | sed -E 's/action="([^"]*)"/\1/; s/&amp;/\&/g')"
+  [[ -n "$action" ]] || fail "could not find the update-password form action"
+  curl -sS --resolve "$KC_HOST:80:$EDGE_IP" -b "$(kc_cookie_header)" -o "$post_body" -D "$post_headers" \
+    --data-urlencode "password-new=$NEW_PASSWORD" --data-urlencode "password-confirm=$NEW_PASSWORD" "$action"
+  callback="$(awk 'tolower($1)=="location:" {print $2}' "$post_headers" | tr -d '\r')"
+fi
 if [[ "$callback" != http://$APP_HOST/api/auth/callback?* ]]; then
   echo "Keycloak answered: $(head -n1 "$post_headers")" >&2
   echo "cookies replayed: $(kc_cookie_header | sed -E 's/=[^;]*/=…/g')" >&2

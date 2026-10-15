@@ -359,8 +359,14 @@ services:
         said=$$("$$kcadm" get "clients/$$cid/service-account-user" -r "$$realm" \
           --fields id --format csv --noquotes)
         "$$kcadm" add-roles -r "$$realm" --uid "$$said" --cclientid realm-management \
-          --rolename manage-users --rolename view-users --rolename query-users
+          --rolename manage-users --rolename view-users --rolename query-users \
+          --rolename view-realm
         echo "keycloak-init: granted realm-management roles to service account $$said"
+        # Members are made by an Admin (club-members), e-mail optional and maybe a one-word name: the default user
+        # profile requires e-mail, first and last name, and VERIFY_PROFILE would stop such a member at the first
+        # sign-in. The Admin owns these fields, so the realm never asks the member for them.
+        "$$kcadm" update authentication/required-actions/VERIFY_PROFILE -r "$$realm" -s enabled=false
+        echo "keycloak-init: VERIFY_PROFILE off"
     restart: "no"
 
   backend:
