@@ -1,7 +1,7 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { BroadcastImportForm, DeadLetterList, LibraryImportForm } from './admin'
-import type { DeadLetter } from '#/lib/admin'
+import { AdminMembers, BroadcastImportForm, DeadLetterList, LibraryImportForm } from './admin'
+import type { AdminMember, DeadLetter } from '#/lib/admin'
 import type { BroadcastRun } from '#/lib/library'
 
 afterEach(cleanup)
@@ -172,5 +172,106 @@ describe('BroadcastImportForm', () => {
       />,
     )
     expect(screen.getByText('lichess answered 404 for 2026-08.')).toBeTruthy()
+  })
+})
+
+describe('AdminMembers (member-admin)', () => {
+  const member = (id: number, username: string, over: Partial<AdminMember> = {}): AdminMember => ({
+    id,
+    username,
+    fullName: `${username} Doe`,
+    email: null,
+    active: true,
+    admin: false,
+    createdAt: '2026-10-01T09:00:00Z',
+    lastSeenAt: null,
+    ...over,
+  })
+  const ann = member(1, 'ann', { admin: true })
+  const bob = member(2, 'bob')
+
+  const rowOf = (name: string) =>
+    screen.getAllByTestId('admin-member').find((r) => r.getAttribute('data-member') === name)!
+
+  function renderMembers(over: Partial<Parameters<typeof AdminMembers>[0]> = {}) {
+    const props = {
+      members: [ann, bob],
+      meId: 1,
+      onCreate: vi.fn(),
+      onAction: vi.fn(),
+      onResetPassword: vi.fn(),
+      ...over,
+    }
+    render(<AdminMembers {...props} />)
+    return props
+  }
+
+  it('lists members with their badges and keeps admins from harming themselves', () => {
+    renderMembers({ members: [ann, bob, member(3, 'cid', { active: false })] })
+    expect(within(rowOf('ann')).getByText('Admin')).toBeDefined()
+    expect(within(rowOf('bob')).getByText('Active')).toBeDefined()
+    expect(within(rowOf('cid')).getByText('Deactivated')).toBeDefined()
+    const disabled = (name: string) => screen.getByRole('button', { name }).hasAttribute('disabled')
+    expect(disabled('Deactivate ann')).toBe(true)
+    expect(disabled('Remove admin from ann')).toBe(true)
+    expect(disabled("Reset ann's password")).toBe(false)
+    expect(disabled('Deactivate bob')).toBe(false)
+    expect(disabled('Make bob an admin')).toBe(false)
+    expect(disabled('Reactivate cid')).toBe(false)
+  })
+
+  it('creates a member and shows the temporary password once', async () => {
+    const carol = member(4, 'carol')
+    const onCreate = vi.fn().mockResolvedValue({
+      ok: true,
+      view: { member: carol, temporaryPassword: 'Tmp-pass-1234567' },
+    })
+    renderMembers({ onCreate })
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'carol' } })
+    fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Carol Doe' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create member' }))
+
+    expect((await screen.findByTestId('temporary-password-value')).textContent).toBe(
+      'Tmp-pass-1234567',
+    )
+    expect(
+      screen.getByText('Give this to carol; they choose their own at first sign-in.'),
+    ).toBeDefined()
+    expect(onCreate).toHaveBeenCalledWith({ username: 'carol', fullName: 'Carol Doe', email: null })
+    expect(rowOf('carol')).toBeDefined()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    expect(screen.queryByTestId('temporary-password')).toBeNull()
+  })
+
+  it('shows a refused creation', async () => {
+    renderMembers({
+      onCreate: vi.fn().mockResolvedValue({ ok: false, status: 409, error: 'carol is taken.' }),
+    })
+    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'carol' } })
+    fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Carol' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create member' }))
+    expect((await screen.findByRole('alert')).textContent).toBe('carol is taken.')
+  })
+
+  it('deactivates a member and shows the row as the server answered', async () => {
+    const onAction = vi.fn().mockResolvedValue({ ok: true, view: { ...bob, active: false } })
+    renderMembers({ onAction })
+    fireEvent.click(screen.getByRole('button', { name: 'Deactivate bob' }))
+    expect(await within(rowOf('bob')).findByText('Deactivated')).toBeDefined()
+    expect(onAction).toHaveBeenCalledWith(2, 'deactivate')
+    expect(screen.getByRole('button', { name: 'Reactivate bob' })).toBeDefined()
+  })
+
+  it('resets a password and shows the new one in its row', async () => {
+    const onResetPassword = vi
+      .fn()
+      .mockResolvedValue({ ok: true, view: { temporaryPassword: 'New-pass-7654321' } })
+    renderMembers({ onResetPassword })
+    fireEvent.click(screen.getByRole('button', { name: "Reset bob's password" }))
+    expect((await within(rowOf('bob')).findByTestId('temporary-password-value')).textContent).toBe(
+      'New-pass-7654321',
+    )
+    expect(onResetPassword).toHaveBeenCalledWith(2)
   })
 })

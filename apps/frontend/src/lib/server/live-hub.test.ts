@@ -207,11 +207,25 @@ describe('HubMultiplexer presence (presence-and-abandonment D1–D2)', () => {
     ])
   })
 
+  it("reports presence on a member's own user: topic too (club-members D1)", async () => {
+    const { mux, presence } = withTimer()
+    const tab = socket()
+
+    await mux.subscribe('user:7', tab, 7)
+    await mux.unsubscribe('user:7', tab, 7)
+
+    expect(presence()).toEqual([
+      ['Present', 'user:7', 7, 'bff-1'],
+      ['Absent', 'user:7', 7, 'bff-1'],
+    ])
+  })
+
   it('reports nothing for other kinds or an unknown user', async () => {
     const { mux, presence } = withTimer()
 
     await mux.subscribe('ping:p1', socket(), 7)
     await mux.subscribe('queue:5+3', socket(), 7)
+    await mux.subscribe('members:all', socket(), 7)
     await mux.subscribe(GAME, socket())
 
     expect(presence()).toEqual([])

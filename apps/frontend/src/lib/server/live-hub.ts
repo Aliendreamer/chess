@@ -8,7 +8,7 @@ import type { LiveFrame, SocketMessage } from '../live'
  * One backend hub connection per SSR process, shared by every browser socket (ROADMAP D5). Topics are
  * reference-counted: the first local subscriber joins the backend group, the last one leaves it. Every subscriber
  * gets its own snapshot from `Subscribe`; pushes fan out by `frame.topic`. On `game:` topics it also reports each
- * signed-in user's presence (presence-and-abandonment D1–D2). Transport-injected (`HubPort`) so all of it is
+ * signed-in user's presence (presence-and-abandonment D1–D2), and on `user:` topics too (club-members D1). Transport-injected (`HubPort`) so all of it is
  * unit-tested without SignalR; `signalRPort` below is the real one.
  */
 
@@ -30,7 +30,7 @@ export interface HubPort {
 }
 
 export interface HubMultiplexer {
-  /** `userId` is the socket's signed-in user; on `game:` topics it drives presence reporting. */
+  /** `userId` is the socket's signed-in user; on `game:` and `user:` topics it drives presence reporting. */
   subscribe: (topic: string, socket: LocalSocket, userId?: number) => Promise<void>
   unsubscribe: (topic: string, socket: LocalSocket, userId?: number) => Promise<void>
   topicCount: () => number
@@ -61,8 +61,12 @@ export const HUB = {
   frame: 'frame',
 } as const
 
-/** Only game topics carry presence. */
-const PRESENCE_PREFIX = liveTopic('game', '')
+/**
+ * Topics that carry presence: a game's (presence-and-abandonment) and a member's own `user:` topic, which every page
+ * keeps open (club-members D1; the relay admits `user:` for its own member only).
+ */
+const PRESENCE_PREFIXES = [liveTopic('game', ''), liveTopic('user', '')]
+const carriesPresence = (topic: string) => PRESENCE_PREFIXES.some((p) => topic.startsWith(p))
 
 const send = (socket: LocalSocket, message: SocketMessage) =>
   socket.send(
@@ -103,7 +107,7 @@ export function createHubMultiplexer(
   }
 
   function present(topic: string, userId: number | undefined) {
-    if (userId === undefined || !topic.startsWith(PRESENCE_PREFIX)) return
+    if (userId === undefined || !carriesPresence(topic)) return
     let users = presence.get(topic)
     if (!users) presence.set(topic, (users = new Map()))
     const count = (users.get(userId) ?? 0) + 1

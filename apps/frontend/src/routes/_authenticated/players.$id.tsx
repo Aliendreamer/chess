@@ -69,7 +69,7 @@ function PlayerPage() {
       <section className="flex min-w-0 flex-col gap-3.5 xl:max-h-full xl:min-h-0">
         <SectionHeading>Games</SectionHeading>
         <div className="flex flex-col gap-3.5 xl:min-h-0 xl:overflow-y-auto xl:pr-1">
-          <RecentGames games={pager.items} />
+          <RecentGames games={pager.items} analyse />
           <LoadMore pager={pager} />
         </div>
       </section>

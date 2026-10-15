@@ -32,6 +32,14 @@ describe('parseLiveUrl', () => {
     expect(parseLiveUrl('/api/ws/live/invite/7c9e6679-7425-40de-944b-e07fc1f90ae7')).toBeNull()
   })
 
+  it('accepts the user kind with a numeric id and the members kind with "all" only', () => {
+    expect(parseLiveUrl('/api/ws/live/user/7')).toEqual({ kind: 'user', id: '7', topic: 'user:7' })
+    expect(parseLiveUrl('/api/ws/live/user/abc')).toBeNull()
+    expect(parseLiveUrl('/api/ws/live/user/-1')).toBeNull()
+    expect(parseLiveUrl('/api/ws/live/members/all')?.topic).toBe('members:all')
+    expect(parseLiveUrl('/api/ws/live/members/7')).toBeNull()
+  })
+
   it('accepts a known kind with a valid id, absolute or relative, with a query', () => {
     const want = { kind: 'ping', id: 'abc-1', topic: 'ping:abc-1' }
     expect(parseLiveUrl('http://app.chess.localhost/api/ws/live/ping/abc-1')).toEqual(want)
@@ -111,6 +119,22 @@ describe('openRelay', () => {
     expect(mux.subscribe).toHaveBeenCalledWith('ping:p1', s, 7)
     expect(deps.setInterval).toHaveBeenCalledWith(expect.any(Function), 1000)
     expect(s.closed).toBeUndefined()
+  })
+
+  it('admits a user: topic for the signed-in member only (club-members D1)', async () => {
+    const own = harness([true])
+    const mine = socket()
+    await openRelay({ kind: 'user', id: '7', topic: 'user:7' }, 'mp_sid=x', mine, own.deps).ready
+    expect(own.mux.subscribe).toHaveBeenCalledWith('user:7', mine, 7)
+    expect(mine.closed).toBeUndefined()
+
+    const other = harness([true])
+    const theirs = socket()
+    await openRelay({ kind: 'user', id: '8', topic: 'user:8' }, 'mp_sid=x', theirs, other.deps)
+      .ready
+    expect(other.mux.subscribe).not.toHaveBeenCalled()
+    expect(other.deps.setInterval).not.toHaveBeenCalled()
+    expect(theirs.closed).toEqual([BAD_TOPIC, 'not your topic'])
   })
 
   it('closes 4401 and unsubscribes when a re-check finds the session gone', async () => {

@@ -16,6 +16,7 @@ import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedPracticeRouteImport } from './routes/_authenticated/practice'
 import { Route as AuthenticatedNewsRouteImport } from './routes/_authenticated/news'
+import { Route as AuthenticatedMembersRouteImport } from './routes/_authenticated/members'
 import { Route as AuthenticatedLibraryRouteImport } from './routes/_authenticated/library'
 import { Route as AuthenticatedAnalysisRouteImport } from './routes/_authenticated/analysis'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -65,6 +66,11 @@ const AuthenticatedPracticeRoute = AuthenticatedPracticeRouteImport.update({
 const AuthenticatedNewsRoute = AuthenticatedNewsRouteImport.update({
   id: '/news',
   path: '/news',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedMembersRoute = AuthenticatedMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedLibraryRoute = AuthenticatedLibraryRouteImport.update({
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
   '/library': typeof AuthenticatedLibraryRoute
+  '/members': typeof AuthenticatedMembersRoute
   '/news': typeof AuthenticatedNewsRoute
   '/practice': typeof AuthenticatedPracticeRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/analysis': typeof AuthenticatedAnalysisRoute
   '/library': typeof AuthenticatedLibraryRoute
+  '/members': typeof AuthenticatedMembersRoute
   '/news': typeof AuthenticatedNewsRoute
   '/practice': typeof AuthenticatedPracticeRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/analysis': typeof AuthenticatedAnalysisRoute
   '/_authenticated/library': typeof AuthenticatedLibraryRoute
+  '/_authenticated/members': typeof AuthenticatedMembersRoute
   '/_authenticated/news': typeof AuthenticatedNewsRoute
   '/_authenticated/practice': typeof AuthenticatedPracticeRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -234,6 +243,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/analysis'
     | '/library'
+    | '/members'
     | '/news'
     | '/practice'
     | '/settings'
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/analysis'
     | '/library'
+    | '/members'
     | '/news'
     | '/practice'
     | '/settings'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/analysis'
     | '/_authenticated/library'
+    | '/_authenticated/members'
     | '/_authenticated/news'
     | '/_authenticated/practice'
     | '/_authenticated/settings'
@@ -359,6 +371,13 @@ declare module '@tanstack/react-router' {
       path: '/news'
       fullPath: '/news'
       preLoaderRoute: typeof AuthenticatedNewsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/members': {
+      id: '/_authenticated/members'
+      path: '/members'
+      fullPath: '/members'
+      preLoaderRoute: typeof AuthenticatedMembersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/library': {
@@ -481,6 +500,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAnalysisRoute: typeof AuthenticatedAnalysisRoute
   AuthenticatedLibraryRoute: typeof AuthenticatedLibraryRoute
+  AuthenticatedMembersRoute: typeof AuthenticatedMembersRoute
   AuthenticatedNewsRoute: typeof AuthenticatedNewsRoute
   AuthenticatedPracticeRoute: typeof AuthenticatedPracticeRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -502,6 +522,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAnalysisRoute: AuthenticatedAnalysisRoute,
   AuthenticatedLibraryRoute: AuthenticatedLibraryRoute,
+  AuthenticatedMembersRoute: AuthenticatedMembersRoute,
   AuthenticatedNewsRoute: AuthenticatedNewsRoute,
   AuthenticatedPracticeRoute: AuthenticatedPracticeRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,

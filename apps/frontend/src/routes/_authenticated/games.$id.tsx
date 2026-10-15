@@ -42,6 +42,7 @@ import { pageTitle, rematchState, tabState, useTabSignals } from '#/lib/feedback
 import { isInviteView } from '#/lib/play'
 import { REVIEW_POLL_MS, marksFor, previewLine, useReview } from '#/lib/review'
 import { ReviewPanel } from '#/components/review'
+import { isAdmin } from '#/lib/admin'
 import {
   Board,
   CategoryMark,
@@ -345,7 +346,8 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
   }, [])
   const balance = material(shown?.fen ?? fen)
 
-  // The engine review (game-review): only once the game has ended; its players may start it.
+  // The engine review (game-review): any member reads it once the game has ended (club-members D4); its players
+  // and admins may start it.
   const loadReview = useCallback(() => getReview({ data: topic }), [topic])
   const startReview = useCallback(() => postStartReview({ data: topic }), [topic])
   const reviewing = useReview(null, loadReview, startReview, REVIEW_POLL_MS, !playing)
@@ -462,7 +464,7 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
           <ReviewPanel
             review={reviewing.view}
             mine={mine}
-            canStart={mine !== null}
+            canStart={mine !== null || isAdmin(me)}
             busy={reviewing.busy}
             error={reviewing.error}
             onStart={() => void reviewing.start()}

@@ -1,7 +1,15 @@
 import { redirect } from '@tanstack/react-router'
-import { LOGIN_REDIRECT, readJson } from './upstream'
+import { LOGIN_REDIRECT, postCommand, readJson, sendCommand } from './upstream'
+import type { CommandOutcome } from '../games'
 import type { CursorPage } from '../play'
-import type { DeadLetter, ReplayOutcome } from '../admin'
+import type {
+  AdminMember,
+  CreatedMember,
+  DeadLetter,
+  MemberAction,
+  NewMember,
+  ReplayOutcome,
+} from '../admin'
 
 /** `GET /api/admin/projections/dead-letters`: newest parked first, optionally one projection's (Admin only). */
 export async function loadDeadLetters(
@@ -37,4 +45,50 @@ export async function replayDeadLetters(
       : { ok: false, error: body.error ?? 'It failed again.' }
   }
   return { ok: false, error: `Replay refused (${res.status}).` }
+}
+
+/** `GET /api/admin/members`: every member, active or not (member-admin, Admin only). */
+export async function loadAdminMembers(fetchImpl: typeof fetch): Promise<Array<AdminMember>> {
+  const page = await readJson<{ items: Array<AdminMember> }>(
+    await fetchImpl('/api/admin/members'),
+    'GET /api/admin/members',
+  )
+  return page.items
+}
+
+/** `POST /api/admin/members`: the member and their temporary password; a taken username is a refusal. */
+export function createMember(
+  fetchImpl: typeof fetch,
+  member: NewMember,
+): Promise<CommandOutcome<CreatedMember>> {
+  return postCommand<CreatedMember>(fetchImpl, '/api/admin/members', {
+    username: member.username,
+    fullName: member.fullName,
+    email: member.email ?? null,
+  })
+}
+
+/** Deactivate, reactivate or grant/remove Admin: the member as it now stands. */
+export function changeMember(
+  fetchImpl: typeof fetch,
+  id: number,
+  action: Exclude<MemberAction, 'reset-password'>,
+): Promise<CommandOutcome<AdminMember>> {
+  if (action === 'make-admin' || action === 'remove-admin') {
+    return sendCommand<AdminMember>(fetchImpl, 'PUT', `/api/admin/members/${id}/admin`, {
+      admin: action === 'make-admin',
+    })
+  }
+  return postCommand<AdminMember>(fetchImpl, `/api/admin/members/${id}/${action}`)
+}
+
+/** `POST …/{id}/reset-password`: a new temporary password, shown once. */
+export function resetMemberPassword(
+  fetchImpl: typeof fetch,
+  id: number,
+): Promise<CommandOutcome<{ temporaryPassword: string }>> {
+  return postCommand<{ temporaryPassword: string }>(
+    fetchImpl,
+    `/api/admin/members/${id}/reset-password`,
+  )
 }

@@ -513,17 +513,26 @@ const COLUMNS =
   'grid-cols-[40px_minmax(0,1fr)_auto] gap-x-4 gap-y-1 shell:grid-cols-[40px_minmax(0,1fr)_80px_minmax(0,160px)] shell:gap-4'
 const COLUMNS_WITH_PGN =
   'grid-cols-[40px_minmax(0,1fr)_auto] gap-x-4 gap-y-1 shell:grid-cols-[40px_minmax(0,1fr)_80px_minmax(0,160px)_40px] shell:gap-4'
+const COLUMNS_WITH_ANALYSE =
+  'grid-cols-[40px_minmax(0,1fr)_auto] gap-x-4 gap-y-1 shell:grid-cols-[40px_minmax(0,1fr)_80px_minmax(0,160px)_64px] shell:gap-4'
 
 export interface RecentGamesProps {
   games: ReadonlyArray<MyGameItem>
   /** A PGN download link on finished games (the history page). */
   pgn?: boolean
+  /** An Analyse link on finished games, to the analysis board (a member's profile, player-profiles). */
+  analyse?: boolean
   /** What an empty list says (home points at Quick pairing). */
   empty?: string
 }
 
 /** "My games" rows: result from my side, the opponent by name, the time control and how it ended. */
-export function RecentGames({ games, pgn = false, empty = 'No games yet.' }: RecentGamesProps) {
+export function RecentGames({
+  games,
+  pgn = false,
+  analyse = false,
+  empty = 'No games yet.',
+}: RecentGamesProps) {
   if (games.length === 0) {
     return <p className="m-0 text-sm text-fg-secondary">{empty}</p>
   }
@@ -535,7 +544,7 @@ export function RecentGames({ games, pgn = false, empty = 'No games yet.' }: Rec
         return (
           <li
             key={game.gameId}
-            className={`grid ${pgn ? COLUMNS_WITH_PGN : COLUMNS} items-baseline border-b border-line-divider py-2.5`}
+            className={`grid ${pgn ? COLUMNS_WITH_PGN : analyse ? COLUMNS_WITH_ANALYSE : COLUMNS} items-baseline border-b border-line-divider py-2.5`}
           >
             <span
               className={`font-mono font-medium ${outcome ? OUTCOME_TONE[outcome] : 'text-fg-muted'}`}
@@ -563,6 +572,20 @@ export function RecentGames({ games, pgn = false, empty = 'No games yet.' }: Rec
                 <a href={`/pgn/${game.gameId}`} download className="font-mono text-sm no-underline">
                   PGN
                 </a>
+              ) : (
+                <span />
+              )
+            ) : null}
+            {analyse && !pgn ? (
+              finished ? (
+                <Link
+                  to="/analysis"
+                  search={{ game: game.gameId }}
+                  aria-label={`Analyse the game vs ${game.opponent}`}
+                  className="text-sm no-underline hover:underline"
+                >
+                  Analyse
+                </Link>
               ) : (
                 <span />
               )

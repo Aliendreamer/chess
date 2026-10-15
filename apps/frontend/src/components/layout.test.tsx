@@ -48,6 +48,15 @@ describe('Shell', () => {
     expect(screen.getByTestId('shell').getAttribute('data-board')).toBe('brown')
   })
 
+  it('shows the banner it is given above every page (challenges)', () => {
+    render(
+      <Shell me={me} banner={<p>a challenge</p>}>
+        <p>page</p>
+      </Shell>,
+    )
+    expect(screen.getByText('a challenge')).toBeDefined()
+  })
+
   it('every rail icon is decorative and every link keeps its name (site-themes)', () => {
     render(
       <Shell me={me}>
@@ -57,6 +66,7 @@ describe('Shell', () => {
     const rail = screen.getByRole('complementary')
     for (const name of [
       'Home',
+      'Members',
       'History',
       'Studies',
       'Analysis',
@@ -69,7 +79,7 @@ describe('Shell', () => {
       expect(within(rail).getByRole('link', { name })).toBeDefined()
     }
     const icons = [...rail.querySelectorAll('svg')]
-    expect(icons.length).toBe(10)
+    expect(icons.length).toBe(11)
     expect(icons.every((svg) => svg.closest('[aria-hidden]') !== null)).toBe(true)
   })
 

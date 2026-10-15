@@ -27,7 +27,14 @@ const KINDS: Record<LiveKind, RegExp> = {
   ping: /^[a-z0-9-]{1,64}$/, // PingIds.Pattern
   game: /^[0-9a-f]{32}$/, // GameLiveSource: a Guid v7 in N form (ROADMAP D11)
   queue: /^\d{1,2}\+\d{1,2}$/, // QueueLiveSource: a time control; the backend checks it is a preset
-  invite: /^[0-9a-f]{32}$/, // InviteLiveSource: a rematch, keyed by the finished game's Guid in N form
+  invite: /^[0-9a-f]{32}$/, // InviteLiveSource: a rematch or a challenge, a Guid in N form
+  user: /^\d{1,19}$/, // UserLiveSource: a user id; only the signed-in member's own (`openRelay`)
+  members: /^all$/, // MembersLiveSource: the one club-wide list
+}
+
+/** Topics only their own member may watch (club-members D1): `user:{id}` carries that member's challenges and presence. */
+function mayWatch(target: LiveTarget, userId: number): boolean {
+  return target.kind !== 'user' || target.id === String(userId)
 }
 
 const isLiveKind = (kind: string): kind is LiveKind =>
@@ -110,6 +117,11 @@ export function openRelay(
     if (user === null) {
       bffMetrics.refused(UNAUTHENTICATED)
       socket.close(UNAUTHENTICATED, 'unauthenticated')
+      return
+    }
+    if (!mayWatch(target, user)) {
+      bffMetrics.refused(BAD_TOPIC)
+      socket.close(BAD_TOPIC, 'not your topic')
       return
     }
     subscribed = true

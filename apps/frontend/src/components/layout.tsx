@@ -12,6 +12,7 @@ import {
   Settings,
   Shield,
   UserRound,
+  Users,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Me, Preferences } from '#/lib/auth'
@@ -28,10 +29,13 @@ import { Button, SectionHeading, buttonClass } from '#/components/ui'
 export function Shell({
   me,
   prefs = DEFAULT_PREFERENCES,
+  banner,
   children,
 }: {
   me: Me
   prefs?: Preferences
+  /** Shown over every page: the challenges to me (challenges). */
+  banner?: ReactNode
   children: ReactNode
 }) {
   return (
@@ -45,6 +49,7 @@ export function Shell({
         className="min-h-screen bg-surface-page text-fg-primary shell:grid shell:grid-cols-[var(--rail-width)_minmax(0,1fr)]"
       >
         <TopBar me={me} />
+        {banner}
         <aside className="hidden flex-col gap-7 border-r border-line-divider bg-surface-rail px-4 py-6 shell:flex">
           <Wordmark />
           <Navigation me={me} />
@@ -101,6 +106,7 @@ function Navigation({ me }: { me: Me }) {
     <>
       <NavGroup label="Play">
         <NavItem to="/" exact label="Home" icon={<House size={16} />} />
+        <NavItem to="/members" label="Members" icon={<Users size={16} />} />
       </NavGroup>
       <NavGroup label="Games">
         <NavItem to="/games" exact label="History" icon={<History size={16} />} />

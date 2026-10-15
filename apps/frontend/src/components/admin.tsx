@@ -1,11 +1,20 @@
 import { useState } from 'react'
-import type { DeadLetter, ReplayOutcome } from '#/lib/admin'
+import { Copy } from 'lucide-react'
+import type {
+  AdminMember,
+  CreatedMember,
+  DeadLetter,
+  MemberAction,
+  NewMember,
+  ReplayOutcome,
+} from '#/lib/admin'
 import type { BroadcastRun, ImportAnswer, ImportBatch, ImportGame } from '#/lib/library'
 import type { CommandOutcome } from '#/lib/games'
 import { IMPORT_BATCH, batches, toImportGame } from '#/lib/library'
 import { parsePgn } from '#/lib/studies'
-import { firstLine } from '#/lib/admin'
-import { Button, ErrorText, buttonClass, useAdoptTyped, useCommand } from '#/components/ui'
+import { checkNewMember, firstLine, isSelfHarm } from '#/lib/admin'
+import { lastSeenText, useNow } from '#/lib/members'
+import { Button, ErrorText, Panel, buttonClass, useAdoptTyped, useCommand } from '#/components/ui'
 
 /** The admin screens (admin-screens): parked projection records, each with its error and a Replay. */
 
@@ -337,5 +346,335 @@ export function BroadcastImportForm({
         </div>
       )}
     </div>
+  )
+}
+
+const FIELD =
+  'rounded-control border border-line-default bg-surface-inset px-3 py-2 text-fg-primary pointer-coarse:min-h-11'
+
+export interface AdminMembersProps {
+  members: ReadonlyArray<AdminMember>
+  meId: number
+  onCreate: (member: NewMember) => Promise<CommandOutcome<CreatedMember>>
+  onAction: (
+    id: number,
+    action: Exclude<MemberAction, 'reset-password'>,
+  ) => Promise<CommandOutcome<AdminMember>>
+  onResetPassword: (id: number) => Promise<CommandOutcome<{ temporaryPassword: string }>>
+}
+
+/**
+ * Member admin (member-admin): create a member (their temporary password shown once), and per member deactivate or
+ * reactivate, reset the password, grant or remove Admin. Your own row cannot be deactivated or lose its role.
+ */
+export function AdminMembers({
+  members,
+  meId,
+  onCreate,
+  onAction,
+  onResetPassword,
+}: AdminMembersProps) {
+  const [list, setList] = useState<Array<AdminMember>>(() => [...members])
+  const [created, setCreated] = useState<{ username: string; password: string } | null>(null)
+  const now = useNow(60_000)
+
+  function replace(member: AdminMember) {
+    setList((prev) => prev.map((m) => (m.id === member.id ? member : m)))
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <CreateMemberForm
+        onCreate={async (input) => {
+          const outcome = await onCreate(input)
+          if (outcome.ok) {
+            setList((prev) => [
+              outcome.view.member,
+              ...prev.filter((m) => m.id !== outcome.view.member.id),
+            ])
+            setCreated({
+              username: outcome.view.member.username,
+              password: outcome.view.temporaryPassword,
+            })
+          }
+          return outcome
+        }}
+      />
+      {created ? (
+        <OneTimePassword
+          username={created.username}
+          password={created.password}
+          onDone={() => setCreated(null)}
+        />
+      ) : null}
+      {list.length === 0 ? (
+        <p className="m-0 text-sm text-fg-secondary">No members yet.</p>
+      ) : (
+        <ul className="m-0 flex list-none flex-col p-0" data-testid="admin-members">
+          {list.map((member) => (
+            <AdminMemberRow
+              key={member.id}
+              member={member}
+              meId={meId}
+              now={now}
+              onAction={async (action) => {
+                const outcome = await onAction(member.id, action)
+                if (outcome.ok) replace(outcome.view)
+                return outcome
+              }}
+              onResetPassword={() => onResetPassword(member.id)}
+            />
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function CreateMemberForm({
+  onCreate,
+}: {
+  onCreate: (member: NewMember) => Promise<CommandOutcome<CreatedMember>>
+}) {
+  const [username, setUsername] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [invalid, setInvalid] = useState<string | null>(null)
+  const command = useCommand()
+  const usernameField = useAdoptTyped<HTMLInputElement>(setUsername)
+  const fullNameField = useAdoptTyped<HTMLInputElement>(setFullName)
+  const emailField = useAdoptTyped<HTMLInputElement>(setEmail)
+
+  async function create() {
+    const checked = checkNewMember({ username, fullName, email })
+    if (!checked.ok) {
+      setInvalid(checked.error)
+      return
+    }
+    setInvalid(null)
+    const done = await command.run(() => onCreate(checked.member))
+    if (done) {
+      setUsername('')
+      setFullName('')
+      setEmail('')
+    }
+  }
+
+  return (
+    <form
+      className="flex flex-col gap-3"
+      aria-label="New member"
+      onSubmit={(e) => {
+        e.preventDefault()
+        void create()
+      }}
+    >
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(200px,100%),1fr))] gap-3">
+        <label className="flex flex-col gap-1 text-sm text-fg-secondary">
+          Username
+          <input
+            ref={usernameField}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            maxLength={64}
+            autoComplete="off"
+            className={FIELD}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-fg-secondary">
+          Full name
+          <input
+            ref={fullNameField}
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            maxLength={200}
+            autoComplete="off"
+            className={FIELD}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm text-fg-secondary">
+          E-mail (optional)
+          <input
+            ref={emailField}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            maxLength={254}
+            autoComplete="off"
+            className={FIELD}
+          />
+        </label>
+      </div>
+      <div>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={command.busy || !username.trim() || !fullName.trim()}
+        >
+          {command.busy ? 'Creating…' : 'Create member'}
+        </Button>
+      </div>
+      {(invalid ?? command.error) ? <ErrorText>{invalid ?? command.error}</ErrorText> : null}
+    </form>
+  )
+}
+
+/** A temporary password, shown this once: nothing keeps it. */
+export function OneTimePassword({
+  username,
+  password,
+  onDone,
+}: {
+  username: string
+  password: string
+  onDone: () => void
+}) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <Panel
+      variant="accent"
+      title="Temporary password"
+      testId="temporary-password"
+      className="gap-3"
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <code
+          className="rounded-control bg-surface-inset px-3 py-2 font-mono text-base text-fg-primary select-all"
+          data-testid="temporary-password-value"
+        >
+          {password}
+        </code>
+        <Button
+          size="sm"
+          onClick={() => {
+            // No clipboard outside a secure context: the password stays selectable.
+            if (!('clipboard' in navigator)) return
+            void navigator.clipboard
+              .writeText(password)
+              .then(() => setCopied(true))
+              .catch(() => undefined)
+          }}
+        >
+          <Copy aria-hidden size={14} />
+          {copied ? 'Copied' : 'Copy'}
+        </Button>
+        <Button size="sm" onClick={onDone}>
+          Done
+        </Button>
+      </div>
+      <p className="m-0 text-sm text-fg-secondary">
+        {`Give this to ${username}; they choose their own at first sign-in.`}
+      </p>
+    </Panel>
+  )
+}
+
+function Badge({ tone, children }: { tone: 'good' | 'off' | 'accent'; children: string }) {
+  const tones = {
+    good: 'border-line-default text-status-healthy',
+    off: 'border-line-default text-status-loss',
+    accent: 'border-line-accent text-fg-accent',
+  } as const
+  return (
+    <span
+      className={`rounded-pill border px-2 py-0.5 text-2xs tracking-wide uppercase ${tones[tone]}`}
+    >
+      {children}
+    </span>
+  )
+}
+
+function AdminMemberRow({
+  member,
+  meId,
+  now,
+  onAction,
+  onResetPassword,
+}: {
+  member: AdminMember
+  meId: number
+  now: number
+  onAction: (
+    action: Exclude<MemberAction, 'reset-password'>,
+  ) => Promise<CommandOutcome<AdminMember>>
+  onResetPassword: () => Promise<CommandOutcome<{ temporaryPassword: string }>>
+}) {
+  const command = useCommand()
+  const [password, setPassword] = useState<string | null>(null)
+  const self = member.id === meId
+  const activation = member.active ? 'deactivate' : 'reactivate'
+  const role = member.admin ? 'remove-admin' : 'make-admin'
+
+  async function reset() {
+    const answer = await command.run(onResetPassword)
+    if (answer) setPassword(answer.temporaryPassword)
+  }
+
+  return (
+    <li
+      className="flex flex-col gap-2 border-b border-line-divider py-3"
+      data-testid="admin-member"
+      data-member={member.username}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="font-medium text-fg-primary">{member.username}</span>
+          {member.fullName ? (
+            <span className="text-sm text-fg-secondary">{member.fullName}</span>
+          ) : null}
+          {member.email ? <span className="text-xs text-fg-muted">{member.email}</span> : null}
+          {self ? <span className="text-xs text-fg-muted">(you)</span> : null}
+        </span>
+        <span className="flex flex-wrap items-center gap-2">
+          {member.active ? (
+            <Badge tone="good">Active</Badge>
+          ) : (
+            <Badge tone="off">Deactivated</Badge>
+          )}
+          {member.admin ? <Badge tone="accent">Admin</Badge> : null}
+          <span className="text-xs text-fg-muted" suppressHydrationWarning>
+            {lastSeenText(member.lastSeenAt, now)}
+          </span>
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          disabled={command.busy || isSelfHarm(activation, member, meId)}
+          aria-label={`${member.active ? 'Deactivate' : 'Reactivate'} ${member.username}`}
+          onClick={() => void command.run(() => onAction(activation))}
+        >
+          {member.active ? 'Deactivate' : 'Reactivate'}
+        </Button>
+        <Button
+          size="sm"
+          disabled={command.busy}
+          aria-label={`Reset ${member.username}'s password`}
+          onClick={() => void reset()}
+        >
+          Reset password
+        </Button>
+        <Button
+          size="sm"
+          disabled={command.busy || isSelfHarm(role, member, meId)}
+          aria-label={
+            member.admin
+              ? `Remove admin from ${member.username}`
+              : `Make ${member.username} an admin`
+          }
+          onClick={() => void command.run(() => onAction(role))}
+        >
+          {member.admin ? 'Remove admin' : 'Make admin'}
+        </Button>
+      </div>
+      {command.error ? <ErrorText>{command.error}</ErrorText> : null}
+      {password ? (
+        <OneTimePassword
+          username={member.username}
+          password={password}
+          onDone={() => setPassword(null)}
+        />
+      ) : null}
+    </li>
   )
 }

@@ -3,7 +3,7 @@ import { getRequestHeader, getRequestIP } from '@tanstack/react-start/server'
 import { CLAIM_OUTCOMES, PRESETS } from '../games'
 import { THINK_LEVELS } from '../analysis'
 import { isPreferences } from '../auth'
-import { isAggregateId, isProjectionGroup } from '../admin'
+import { checkNewMember, isAggregateId, isProjectionGroup } from '../admin'
 import { IMPORT_BATCH, isLibrarySource, searchQuery } from '../library'
 import { isColor } from '../trainer'
 import { MAX_EXCLUDE, UCI_MOVE, cleanFilters, isTrainingId, isTrainingMode } from '../training'
@@ -12,7 +12,15 @@ import { apiUrl, clientIp, forwardClientIp, isGuid } from './upstream'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
 import { telemetryEnabled } from './telemetry'
 import { loadPingLive, sendPing } from './pings'
-import { loadDeadLetters, replayDeadLetters } from './admin'
+import {
+  changeMember,
+  createMember,
+  loadAdminMembers,
+  loadDeadLetters,
+  replayDeadLetters,
+  resetMemberPassword,
+} from './admin'
+import { answerChallenge, loadMembers, sendChallenge } from './members'
 import { loadEvents, loadNews, loadNewsSources } from './news'
 import {
   importLibrary,
@@ -59,6 +67,8 @@ import {
 import { joinQueue, leaveQueue, loadLobby, loadMyGames, rematch } from './play'
 import type { ImportBatch, LibrarySearch, LibrarySource } from '../library'
 import type { Preferences } from '../auth'
+import type { MemberAction, NewMember } from '../admin'
+import type { ChallengeAnswer } from './members'
 import type { ColourChoice, GameCommand } from '../games'
 import type { StudyInput, StudyMoveInput } from '../studies'
 import type { Think } from '../analysis'
@@ -317,6 +327,70 @@ export const postReplayDeadLetters = createServerFn({ method: 'POST' })
     return input
   })
   .handler(({ data }) => replayDeadLetters(serverFetch(), data.groupId, data.aggregateId))
+
+/** A member's id: a positive `users` id (the computer players are negative and never members). */
+function memberId(id: number): number {
+  if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Not a member id.')
+  return id
+}
+
+/** Every active member with their state (club-members). */
+export const getMembers = createServerFn({ method: 'GET' }).handler(() =>
+  loadMembers(serverFetch()),
+)
+
+/** Challenges an online member to a preset game (challenges). */
+export const postChallenge = createServerFn({ method: 'POST' })
+  .validator((input: { opponentId: number; timeControl: string; color: ColourChoice }) => {
+    if (!COLORS.includes(input.color)) throw new Error('Not a colour.')
+    return {
+      opponentId: memberId(input.opponentId),
+      timeControl: preset(input.timeControl),
+      color: input.color,
+    }
+  })
+  .handler(({ data }) => sendChallenge(serverFetch(), data))
+
+const CHALLENGE_ANSWERS: ReadonlyArray<ChallengeAnswer> = ['accept', 'decline', 'cancel']
+
+/** Accepts or declines a challenge to me, or cancels mine. */
+export const postChallengeAnswer = createServerFn({ method: 'POST' })
+  .validator((input: { inviteId: string; answer: ChallengeAnswer }) => {
+    if (!CHALLENGE_ANSWERS.includes(input.answer)) throw new Error('Not an answer.')
+    return { inviteId: guid(input.inviteId), answer: input.answer }
+  })
+  .handler(({ data }) => answerChallenge(serverFetch(), data.inviteId, data.answer))
+
+/** Every member, for the admin's Members section (member-admin); the API answers 403 to anyone but an Admin. */
+export const getAdminMembers = createServerFn({ method: 'GET' }).handler(() =>
+  loadAdminMembers(serverFetch()),
+)
+
+export const postCreateMember = createServerFn({ method: 'POST' })
+  .validator((input: NewMember) => {
+    const checked = checkNewMember(input)
+    if (!checked.ok) throw new Error(checked.error)
+    return checked.member
+  })
+  .handler(({ data }) => createMember(serverFetch(), data))
+
+const MEMBER_ACTIONS: ReadonlyArray<Exclude<MemberAction, 'reset-password'>> = [
+  'deactivate',
+  'reactivate',
+  'make-admin',
+  'remove-admin',
+]
+
+export const postMemberAction = createServerFn({ method: 'POST' })
+  .validator((input: { id: number; action: Exclude<MemberAction, 'reset-password'> }) => {
+    if (!MEMBER_ACTIONS.includes(input.action)) throw new Error('Not a member action.')
+    return { id: memberId(input.id), action: input.action }
+  })
+  .handler(({ data }) => changeMember(serverFetch(), data.id, data.action))
+
+export const postResetMemberPassword = createServerFn({ method: 'POST' })
+  .validator((id: number) => memberId(id))
+  .handler(({ data }) => resetMemberPassword(serverFetch(), data))
 
 /** A player id: a `users` id, negative for the computer players. */
 function playerId(id: number): number {

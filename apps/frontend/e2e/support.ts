@@ -72,7 +72,7 @@ const STALE_LOCK_MS = 90_000
  * user waits in one queue at a time: two specs seeking at once (Playwright runs 2 workers) would steal each other's
  * opponent. Pairings are short, so they simply take turns.
  */
-async function withPairingLock<T>(work: () => Promise<T>): Promise<T> {
+export async function withPairingLock<T>(work: () => Promise<T>): Promise<T> {
   const deadline = Date.now() + 120_000
   for (;;) {
     try {

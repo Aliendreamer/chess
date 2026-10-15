@@ -52,3 +52,62 @@ export function isAggregateId(value: string): boolean {
 export function firstLine(text: string): string {
   return text.split('\n', 1)[0] ?? ''
 }
+
+/** A row of `GET /api/admin/members` (member-admin): every member, active or not. */
+export interface AdminMember {
+  id: number
+  username: string
+  fullName: string | null
+  email: string | null
+  active: boolean
+  admin: boolean
+  createdAt: string
+  lastSeenAt: string | null
+}
+
+/** `POST /api/admin/members`: who to create. The e-mail is optional. */
+export interface NewMember {
+  username: string
+  fullName: string
+  email?: string | null
+}
+
+/** A new member and their temporary password, shown once. */
+export interface CreatedMember {
+  member: AdminMember
+  temporaryPassword: string
+}
+
+export type MemberAction =
+  | 'deactivate'
+  | 'reactivate'
+  | 'reset-password'
+  | 'make-admin'
+  | 'remove-admin'
+
+const USERNAME = /^[A-Za-z0-9._-]{1,64}$/
+const EMAIL = /^[^\s@]+@[^\s@]+$/
+
+/** The create form's input, trimmed, or the reason it cannot be sent. */
+export function checkNewMember(
+  input: NewMember,
+): { ok: true; member: NewMember } | { ok: false; error: string } {
+  const username = input.username.trim()
+  const fullName = input.fullName.trim()
+  const email = input.email?.trim() ?? ''
+  if (!USERNAME.test(username))
+    return { ok: false, error: 'A username is letters, digits, dots, dashes or underscores.' }
+  if (!fullName || fullName.length > 200) return { ok: false, error: 'Give the full name.' }
+  if (email && (email.length > 254 || !EMAIL.test(email)))
+    return { ok: false, error: 'That is not an e-mail address.' }
+  return { ok: true, member: { username, fullName, email: email || null } }
+}
+
+/** Actions an admin may not take on their own row: no self-deactivation, no removing their own role. */
+export function isSelfHarm(
+  action: MemberAction,
+  member: Pick<AdminMember, 'id'>,
+  meId: number,
+): boolean {
+  return member.id === meId && (action === 'deactivate' || action === 'remove-admin')
+}

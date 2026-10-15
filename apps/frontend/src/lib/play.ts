@@ -27,14 +27,19 @@ export interface QueueView {
   seq: number
 }
 
-/** Mirrors the API's `InviteView` (a rematch offer, game-feedback), also the `invite` live kind's payload. */
+/**
+ * Mirrors the API's `InviteView` (a rematch offer, game-feedback; a challenge, club-members), also the `invite` live
+ * kind's payload.
+ */
 export interface InviteView {
   inviteId: string
   creatorId: number
   timeControl: string
   /** The creator's colour: white, black or random. */
   color: ColourChoice
-  status: 'open' | 'accepted' | 'cancelled' | 'expired'
+  status: 'open' | 'accepted' | 'cancelled' | 'expired' | 'declined'
+  /** Absent in frames from before challenges: a rematch. */
+  kind?: 'rematch' | 'challenge'
   gameId: string | null
   createdAt: string
   expiresAt: string

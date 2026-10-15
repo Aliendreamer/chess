@@ -24,14 +24,19 @@ vi.mock('@tanstack/react-router', () => ({
     children,
     to,
     params,
+    search,
     ...rest
   }: {
     children: ReactNode
     to: string
-    params: { id: string }
+    params?: { id: string }
+    search?: Record<string, string>
     'aria-label'?: string
   }) => (
-    <a href={to.replace('$id', params.id)} aria-label={rest['aria-label']}>
+    <a
+      href={`${params ? to.replace('$id', params.id) : to}${search ? `?${new URLSearchParams(search).toString()}` : ''}`}
+      aria-label={rest['aria-label']}
+    >
       {children}
     </a>
   ),
@@ -346,6 +351,30 @@ describe('RecentGames', () => {
     expect(screen.getByRole('link', { name: 'Open the game vs player' }).getAttribute('href')).toBe(
       '/games/g1',
     )
+  })
+})
+
+describe('RecentGames with Analyse (player-profiles)', () => {
+  it('opens a finished game on the analysis board, not one still played', () => {
+    const game = {
+      color: 'white' as const,
+      opponentId: 5,
+      opponent: 'player',
+      timeControl: '3+2',
+      reason: null,
+      createdAt: '2026-10-02T10:00:00Z',
+    }
+    render(
+      <RecentGames
+        analyse
+        games={[
+          { ...game, gameId: 'g1', status: 'ended', result: '1-0' },
+          { ...game, gameId: 'g2', status: 'playing', result: null },
+        ]}
+      />,
+    )
+    const links = screen.getAllByRole('link', { name: 'Analyse the game vs player' })
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(['/analysis?game=g1'])
   })
 })
 

@@ -6,15 +6,24 @@ import type { BroadcastRun } from '#/lib/library'
 import { PROJECTION_GROUPS, isAdmin, isProjectionGroup } from '#/lib/admin'
 import { useLoadMore } from '#/lib/play'
 import {
+  getAdminMembers,
   getBroadcastRuns,
   getDeadLetters,
+  postCreateMember,
   postImportLibrary,
+  postMemberAction,
   postReplayDeadLetters,
+  postResetMemberPassword,
   postStartBroadcastImport,
 } from '#/lib/server/api'
 import { publishedMonths, useBroadcastRuns } from '#/lib/library'
 import { Chip, LoadMore, SectionHeading } from '#/components/ui'
-import { BroadcastImportForm, DeadLetterList, LibraryImportForm } from '#/components/admin'
+import {
+  AdminMembers,
+  BroadcastImportForm,
+  DeadLetterList,
+  LibraryImportForm,
+} from '#/components/admin'
 import { pageTitle } from '#/lib/feedback'
 
 const PAGE = 50
@@ -34,6 +43,7 @@ export const Route = createFileRoute('/_authenticated/admin')({
       data: { limit: PAGE, ...(deps.group ? { groupId: deps.group } : {}) },
     }),
     broadcastRuns: await getBroadcastRuns(),
+    members: await getAdminMembers(),
     // A fresh load (a replay, another filter) starts the pager over.
     loadedAt: Date.now(),
   }),
@@ -42,7 +52,8 @@ export const Route = createFileRoute('/_authenticated/admin')({
 })
 
 function AdminPage() {
-  const { page, loadedAt, broadcastRuns } = Route.useLoaderData()
+  const { page, loadedAt, broadcastRuns, members } = Route.useLoaderData()
+  const { me } = Route.useRouteContext()
   const { group } = Route.useSearch()
   const navigate = useNavigate()
   const router = useRouter()
@@ -62,6 +73,21 @@ function AdminPage() {
   return (
     <div className="flex flex-col gap-6">
       <SectionHeading size="xl">Admin</SectionHeading>
+
+      <section className="flex flex-col gap-3.5" aria-label="Members">
+        <SectionHeading>Members</SectionHeading>
+        <p className="m-0 max-w-prose text-sm text-fg-secondary">
+          Members join by invitation: create one here and hand them the temporary password. A
+          deactivated member is signed out at once and cannot sign in; their games stay.
+        </p>
+        <AdminMembers
+          members={members}
+          meId={me.id}
+          onCreate={(member) => postCreateMember({ data: member })}
+          onAction={(id, action) => postMemberAction({ data: { id, action } })}
+          onResetPassword={(id) => postResetMemberPassword({ data: id })}
+        />
+      </section>
 
       <section className="flex flex-col gap-3.5" aria-label="Game library">
         <SectionHeading>Game library</SectionHeading>

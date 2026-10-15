@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react'
  */
 
 /** The live kinds, each a backend `ILiveTopicSource` (its `KindName`); the relay allows exactly these. */
-export const LIVE_KINDS = ['ping', 'game', 'queue', 'invite'] as const
+export const LIVE_KINDS = ['ping', 'game', 'queue', 'invite', 'user', 'members'] as const
 export type LiveKind = (typeof LIVE_KINDS)[number]
 
 /** A topic as the backend spells it (`LiveTopics.Format`): `kind:id`. */
