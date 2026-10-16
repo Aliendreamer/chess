@@ -26,39 +26,6 @@ export interface FamilyProgress {
   learned: number
 }
 
-/** The kind of opening a family is, read from its name: the trainer's columns. */
-export type OpeningKind = 'gambit' | 'defence' | 'opening' | 'game'
-
-export const OPENING_KINDS: ReadonlyArray<{ kind: OpeningKind; label: string }> = [
-  { kind: 'gambit', label: 'Gambits' },
-  { kind: 'defence', label: 'Defences' },
-  { kind: 'opening', label: 'Openings and attacks' },
-  { kind: 'game', label: 'Games and others' },
-]
-
-/** "Benko Gambit Accepted" is a gambit, "Alekhine Defense" a defence, "London System" an opening; the rest are games. */
-export function openingKind(name: string): OpeningKind {
-  if (/gambit/i.test(name)) return 'gambit'
-  if (/\bdefen[cs]e\b/i.test(name)) return 'defence'
-  if (/\b(opening|attack|system)\b/i.test(name)) return 'opening'
-  return 'game'
-}
-
-/** The families by kind, in the columns' order: in each, the ones with lines learned first, then by name. */
-export function groupFamilies(
-  families: ReadonlyArray<FamilyProgress>,
-): Array<{ kind: OpeningKind; label: string; families: Array<FamilyProgress> }> {
-  return OPENING_KINDS.map(({ kind, label }) => ({
-    kind,
-    label,
-    families: families
-      .filter((f) => openingKind(f.name) === kind)
-      .sort(
-        (a, b) => Number(b.learned > 0) - Number(a.learned > 0) || a.name.localeCompare(b.name),
-      ),
-  }))
-}
-
 export interface NextLine {
   line: TrainerLine | null
   /** When nothing is due: when the next line is. */

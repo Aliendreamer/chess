@@ -2,3 +2,4 @@
 export * from './analysis.ts'
 export * from './board.ts'
 export * from './tree.ts'
+export * from './trainer.ts'

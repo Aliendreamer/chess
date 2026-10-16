@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { STANDARD_START, legalTargets, uciSquares } from '@chess/core'
+import { STANDARD_START, groupFamilies, legalTargets, uciSquares } from '@chess/core'
 import type { ReactNode } from 'react'
 import type {
   Drill,
@@ -11,7 +11,7 @@ import type {
   TrainerColor,
   TrainerLine,
 } from '#/lib/trainer'
-import { groupFamilies, lineState, lineText, sanAt, studyLineLabel } from '#/lib/trainer'
+import { lineState, lineText, sanAt, studyLineLabel } from '#/lib/trainer'
 import { Board, PromotionPicker } from '#/components/games'
 import { Panel } from '#/components/ui'
 
