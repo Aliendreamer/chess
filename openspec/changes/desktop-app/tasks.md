@@ -66,7 +66,7 @@ machine, a release), with the command that proves it.
 
 ## 5. Features
 
-- [ ] 5.1 Play the computer: new game (level, colour, think time 5/10/20 s, the last choice remembered), chess.js rules
+- [x] 5.1 Play the computer: new game (level, colour, think time 5/10/20 s, the last choice remembered), chess.js rules
       with every draw rule, moves persisted, resume after restart, resign, PGN, the game list, home's play tile and
       recent games. Test first: a data-layer test playing fool's mate against a fake engine ends 0-1 by checkmate and
       lists the game, red.

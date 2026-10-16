@@ -1,12 +1,13 @@
 import { DatabaseSync } from 'node:sqlite'
 import type { Sql, SqlValue } from '#/lib/data/db'
 import type { UciChannel } from '#/lib/engine'
+import type { AppServices } from '#/lib/app'
 
 /** An in-memory SQLite behind the same interface as the plugin (desktop-app D9): node's own driver, no native build. */
 export function memorySql(path = ':memory:'): Sql & { close: () => void } {
   const db = new DatabaseSync(path)
   return {
-    select: <T>(sql: string, params: ReadonlyArray<SqlValue> = []) =>
+    select: <T,>(sql: string, params: ReadonlyArray<SqlValue> = []) =>
       Promise.resolve(db.prepare(sql).all(...params) as Array<T>),
     execute: (sql: string, params: ReadonlyArray<SqlValue> = []) => {
       // Several statements (a migration, a batch) run as a script; one with parameters as a prepared statement.
@@ -49,4 +50,44 @@ export async function processChannel(path: string): Promise<UciChannel> {
       return Promise.resolve()
     },
   }
+}
+
+/** Services for page tests: an in-memory database, a scripted engine, and dialogs that record what they were given. */
+export async function fakeServices(
+  moves: Array<string> = [],
+): Promise<AppServices & { saved: Array<{ name: string; text: string }>; close: () => void }> {
+  const { openDb } = await import('#/lib/data/db')
+  const { AnalysisQueue, EngineSupervisor } = await import('#/lib/engine')
+  const sql = memorySql()
+  const db = await openDb(sql)
+  const idle = new EngineSupervisor(() => Promise.reject(new Error('no engine in this test')))
+  const saved: Array<{ name: string; text: string }> = []
+  return {
+    db,
+    player: { bestMove: () => Promise.resolve(moves.shift() ?? null) },
+    analysis: new AnalysisQueue(idle),
+    engines: { play: idle, analysis: idle },
+    saveText: (name, text) => {
+      saved.push({ name, text })
+      return Promise.resolve(true)
+    },
+    openText: () => Promise.resolve(null),
+    openLink: () => Promise.resolve(),
+    saved,
+    close: () => sql.close(),
+  }
+}
+
+/** The whole app at `path`, on a memory history, with the given services. */
+export async function renderApp(path: string, app: AppServices) {
+  const { render } = await import('@testing-library/react')
+  const { RouterProvider, createMemoryHistory, createRouter } =
+    await import('@tanstack/react-router')
+  const { routeTree } = await import('#/routeTree.gen')
+  const router = createRouter({
+    routeTree,
+    context: { app },
+    history: createMemoryHistory({ initialEntries: [path] }),
+  })
+  return { router, ...render(<RouterProvider router={router} />) }
 }
