@@ -4,8 +4,13 @@ import { ensureOpenings } from './data/openings'
 import { AnalysisQueue, EngineSupervisor, sidecarChannel } from './engine'
 import { Evaluator } from './data/analysis'
 import { reviewsToRun, runReview } from './data/review'
+import { getSetting } from './data/settings'
+import { mineRound } from './data/training'
 import type { Db } from './data/db'
 import type { EnginePlayer } from './data/play'
+
+/** How often the miner looks for critical moments in the library. */
+const MINE_EVERY_MS = 10_000
 
 /**
  * What the pages work with (desktop-app D2): the database, the engine for games, the analysis queue, and the few things
@@ -49,6 +54,13 @@ export async function startServices(): Promise<AppServices> {
     for (const id of await reviewsToRun(db))
       await runReview(db, evaluator, id).catch(() => undefined)
   })()
+  // The miner (training D3): a round every little while, behind the board and the reviews; off in Settings.
+  const mine = async () => {
+    if ((await getSetting(db, 'training.miner', true)) && queue.pending('background') === 0)
+      await mineRound(db, evaluator).catch(() => undefined)
+    setTimeout(() => void mine(), MINE_EVERY_MS)
+  }
+  setTimeout(() => void mine(), MINE_EVERY_MS)
   return {
     db,
     player: {

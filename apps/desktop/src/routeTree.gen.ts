@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TrainingRouteImport } from './routes/training'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as AnalysisRouteImport } from './routes/analysis'
 import { Route as IndexRouteImport } from './routes/index'
@@ -20,6 +21,11 @@ import { Route as StudiesIdRouteImport } from './routes/studies.$id'
 import { Route as GamesIdRouteImport } from './routes/games.$id'
 import { Route as TrainerStudyIdRouteImport } from './routes/trainer.study.$id'
 
+const TrainingRoute = TrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LibraryRoute = LibraryRouteImport.update({
   id: '/library',
   path: '/library',
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
   '/library': typeof LibraryRoute
+  '/training': typeof TrainingRoute
   '/games/$id': typeof GamesIdRoute
   '/studies/$id': typeof StudiesIdRoute
   '/trainer/$family': typeof TrainerFamilyRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
   '/library': typeof LibraryRoute
+  '/training': typeof TrainingRoute
   '/games/$id': typeof GamesIdRoute
   '/studies/$id': typeof StudiesIdRoute
   '/trainer/$family': typeof TrainerFamilyRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
   '/library': typeof LibraryRoute
+  '/training': typeof TrainingRoute
   '/games/$id': typeof GamesIdRoute
   '/studies/$id': typeof StudiesIdRoute
   '/trainer/$family': typeof TrainerFamilyRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/analysis'
     | '/library'
+    | '/training'
     | '/games/$id'
     | '/studies/$id'
     | '/trainer/$family'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/analysis'
     | '/library'
+    | '/training'
     | '/games/$id'
     | '/studies/$id'
     | '/trainer/$family'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/analysis'
     | '/library'
+    | '/training'
     | '/games/$id'
     | '/studies/$id'
     | '/trainer/$family'
@@ -151,6 +163,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalysisRoute: typeof AnalysisRoute
   LibraryRoute: typeof LibraryRoute
+  TrainingRoute: typeof TrainingRoute
   GamesIdRoute: typeof GamesIdRoute
   StudiesIdRoute: typeof StudiesIdRoute
   TrainerFamilyRoute: typeof TrainerFamilyRoute
@@ -162,6 +175,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/training': {
+      id: '/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof TrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/library': {
       id: '/library'
       path: '/library'
@@ -239,6 +259,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalysisRoute: AnalysisRoute,
   LibraryRoute: LibraryRoute,
+  TrainingRoute: TrainingRoute,
   GamesIdRoute: GamesIdRoute,
   StudiesIdRoute: StudiesIdRoute,
   TrainerFamilyRoute: TrainerFamilyRoute,

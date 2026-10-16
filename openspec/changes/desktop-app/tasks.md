@@ -85,7 +85,7 @@ machine, a release), with the command that proves it.
 - [x] 5.6 Opening trainer and study lines: families by kind, a family's lines, drill, Leitner progress, study lines of
       the player's studies (lines dropped when the tree loses them). Test first: a clean drill of a box-2 line stores
       box 3 due in 7 days, red.
-- [ ] 5.7 Training: the miner over library positions (candidates, keep rule, paused while the engine is busy for the
+- [x] 5.7 Training: the miner over library positions (candidates, keep rule, paused while the engine is busy for the
       board or a game, a setting to turn it off), sessions in My games / Master games with filters, sets of 10 or
       endless, the judge and Leitner scheduling. Test first: a candidate with gap 0.05 is dropped and never asked again;
       one with 0.4 is kept with the master's move, red.
