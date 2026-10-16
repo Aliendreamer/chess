@@ -2,6 +2,7 @@ import { levelOptions } from '@chess/core'
 import { openDb, tauriSql } from './data/db'
 import { ensureOpenings } from './data/openings'
 import { AnalysisQueue, EngineSupervisor, sidecarChannel } from './engine'
+import { Evaluator } from './data/analysis'
 import type { Db } from './data/db'
 import type { EnginePlayer } from './data/play'
 
@@ -15,6 +16,8 @@ export interface AppServices {
   player: EnginePlayer
   /** The full-strength engine: the board first, review and mining behind it. */
   analysis: AnalysisQueue
+  /** Evaluations from the store, or asked of the analysis engine once. */
+  evaluator: Evaluator
   /** Status of the two engine processes, for "engine restarting". */
   engines: { play: EngineSupervisor; analysis: EngineSupervisor }
   /** Asks where to save `text` (a PGN), then writes it; false when the person cancels. */
@@ -38,13 +41,15 @@ export async function startServices(): Promise<AppServices> {
   await ensureOpenings(db)
   const play = new EngineSupervisor(sidecarChannel)
   const analysis = new EngineSupervisor(sidecarChannel)
+  const queue = new AnalysisQueue(analysis)
   return {
     db,
     player: {
       bestMove: (fen, level, thinkMs) =>
         play.run((engine) => engine.bestMove(fen, levelOptions(level), thinkMs)),
     },
-    analysis: new AnalysisQueue(analysis),
+    analysis: queue,
+    evaluator: new Evaluator(db, queue),
     engines: { play, analysis },
     saveText: async (defaultName, text) => {
       const { save } = await import('@tauri-apps/plugin-dialog')

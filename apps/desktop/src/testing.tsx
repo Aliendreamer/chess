@@ -62,10 +62,13 @@ export async function fakeServices(
   const db = await openDb(sql)
   const idle = new EngineSupervisor(() => Promise.reject(new Error('no engine in this test')))
   const saved: Array<{ name: string; text: string }> = []
+  const { Evaluator } = await import('#/lib/data/analysis')
+  const queue = new AnalysisQueue(idle)
   return {
     db,
     player: { bestMove: () => Promise.resolve(moves.shift() ?? null) },
-    analysis: new AnalysisQueue(idle),
+    analysis: queue,
+    evaluator: new Evaluator(db, queue),
     engines: { play: idle, analysis: idle },
     saveText: (name, text) => {
       saved.push({ name, text })

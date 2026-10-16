@@ -209,9 +209,7 @@ function GamePage() {
             game={game}
             onNewGame={() => void navigate({ to: '/' })}
             onSavePgn={() => void savePgn()}
-            onAnalyse={() =>
-              void navigate({ to: '/analysis' as never, search: { game: game.id } as never })
-            }
+            onAnalyse={() => void navigate({ to: '/analysis', search: { game: game.id } as never })}
           />
         )}
       </aside>

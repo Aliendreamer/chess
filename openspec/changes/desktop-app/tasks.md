@@ -70,7 +70,7 @@ machine, a release), with the command that proves it.
       with every draw rule, moves persisted, resume after restart, resign, PGN, the game list, home's play tile and
       recent games. Test first: a data-layer test playing fool's mate against a fake engine ends 0-1 by checkmate and
       lists the game, red.
-- [ ] 5.2 Evaluations: `position_evaluations` cache (a longer think answers a shorter one), the analysis board
+- [x] 5.2 Evaluations: `position_evaluations` cache (a longer think answers a shorter one), the analysis board
       (`?fen=`, `?game=`, pasted FEN/PGN), auto-evaluate after 300 ms, scores in the tree, opening name, library games
       at the position. Test first: a stored deep evaluation answers a normal request without asking the engine, red.
 - [ ] 5.3 Review: queue on game end (≥ 2 plies, not aborted) at 800 ms a position at low priority, `GameReviewer` on
