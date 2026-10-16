@@ -7,7 +7,7 @@ import { reviewsToRun, runReview } from './data/review'
 import { getSetting } from './data/settings'
 import { mineRound } from './data/training'
 import { EVENTS_EVERY_MS, NEWS_EVERY_MS, eventsRound, newsRound } from './data/news'
-import type { Db } from './data/db'
+import type { Db, Sql } from './data/db'
 import type { EnginePlayer } from './data/play'
 import type { FetchText } from './data/news'
 
@@ -36,6 +36,14 @@ export interface AppServices {
   openLink: (url: string) => Promise<void>
   /** A GET to a news source (the capability's allow-list decides which hosts). */
   fetchText: FetchText
+  /** Backup and restore (D10): where to write a backup, which file to restore, and opening that file on its own. */
+  backups: {
+    chooseSave: (defaultName: string) => Promise<string | null>
+    chooseOpen: () => Promise<string | null>
+    open: (path: string) => Promise<Sql & { close?: () => Promise<void> | void }>
+    /** Where the current data is kept before a restore replaces it. */
+    asidePath: () => Promise<string>
+  }
 }
 
 export interface RouterContext {
@@ -106,6 +114,38 @@ export async function startServices(): Promise<AppServices> {
         filters: [{ name: 'PGN', extensions: [...extensions] }],
       })
       return typeof path === 'string' ? readTextFile(path) : null
+    },
+    backups: {
+      chooseSave: async (defaultName) => {
+        const { save } = await import('@tauri-apps/plugin-dialog')
+        return save({
+          defaultPath: defaultName,
+          filters: [{ name: 'Chess backup', extensions: ['chessbackup'] }],
+        })
+      },
+      chooseOpen: async () => {
+        const { open } = await import('@tauri-apps/plugin-dialog')
+        const path = await open({
+          multiple: false,
+          filters: [{ name: 'Chess backup', extensions: ['chessbackup'] }],
+        })
+        return typeof path === 'string' ? path : null
+      },
+      open: async (path) => {
+        const { default: Database } = await import('@tauri-apps/plugin-sql')
+        const other = await Database.load(`sqlite:${path}`)
+        return {
+          select: <T,>(text: string, params: ReadonlyArray<string | number | null> = []) =>
+            other.select<Array<T>>(text, [...params]),
+          execute: async (text, params = []) => ({
+            rowsAffected: (await other.execute(text, [...params])).rowsAffected,
+          }),
+          close: async () => {
+            await other.close()
+          },
+        }
+      },
+      asidePath: () => Promise.resolve(`${file}.before-restore-${Date.now()}`),
     },
     openLink: async (url) => {
       const { openUrl } = await import('@tauri-apps/plugin-opener')

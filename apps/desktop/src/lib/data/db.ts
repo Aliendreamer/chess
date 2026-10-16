@@ -29,6 +29,11 @@ export interface Db {
   execute: (sql: string, params?: ReadonlyArray<SqlValue>) => Promise<{ rowsAffected: number }>
   /** Several writes as one transaction, after every write before it. */
   batch: (statements: ReadonlyArray<Statement>) => Promise<void>
+  /**
+   * A script run as one call on one connection, after every write before it: for what cannot be in a transaction
+   * (`VACUUM INTO`, `ATTACH`). Text only, no parameters.
+   */
+  script: (sql: string) => Promise<void>
 }
 
 /**
@@ -72,6 +77,10 @@ export async function openDb(
           await sql.execute('ROLLBACK').catch(() => undefined)
           throw e
         }
+      }),
+    script: (text) =>
+      serial(async () => {
+        await sql.execute(text)
       }),
   }
 }

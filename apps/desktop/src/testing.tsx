@@ -19,7 +19,9 @@ export function memorySql(path = ':memory:'): Sql & { close: () => void } {
       }
       return Promise.resolve({ rowsAffected: Number(db.prepare(sql).run(...params).changes) })
     },
-    close: () => db.close(),
+    close: () => {
+      if (db.isOpen) db.close()
+    },
   }
 }
 
@@ -85,6 +87,17 @@ export async function fakeServices(moves: Array<string> = []): Promise<
       return Promise.resolve()
     },
     fetchText: () => Promise.reject(new Error('offline')),
+    backups: {
+      chooseSave: () => Promise.resolve(null),
+      chooseOpen: () => Promise.resolve(null),
+      open: (path) => Promise.resolve(memorySql(path)),
+      asidePath: async () => {
+        const { mkdtempSync } = await import('node:fs')
+        const { tmpdir } = await import('node:os')
+        const { join } = await import('node:path')
+        return join(mkdtempSync(join(tmpdir(), 'chess-aside-')), 'chess.db.before-restore')
+      },
+    },
     opened,
     saved,
     close: () => sql.close(),

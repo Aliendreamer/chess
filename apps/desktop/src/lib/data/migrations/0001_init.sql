@@ -192,3 +192,6 @@ CREATE TABLE chess_events (
   ends_at    TEXT,
   fetched_at TEXT NOT NULL
 );
+
+-- Marks the file as this app's, so a restore can tell a backup of ours from any other SQLite file.
+INSERT INTO settings (key, value) VALUES ('app.marker', '"chess-desktop"');

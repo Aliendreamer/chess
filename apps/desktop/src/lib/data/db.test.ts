@@ -77,7 +77,7 @@ describe('openDb (desktop-app D4)', () => {
       ]),
     ).rejects.toThrow()
     const rows = await db.select<{ key: string; value: string }>(
-      'SELECT key, value FROM settings ORDER BY key',
+      "SELECT key, value FROM settings WHERE key IN ('a', 'b', 'c') ORDER BY key",
     )
     expect(rows).toEqual([
       { key: 'a', value: '1' },

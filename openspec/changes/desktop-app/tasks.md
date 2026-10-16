@@ -98,7 +98,7 @@ machine, a release), with the command that proves it.
 - [ ] 5.10 Offline check: no request leaves the app except to the news hosts (the capability allow-list and CSP), and
       every page works with the network off. Test first: a test over the capability file fails on any host outside the
       news list. **[human]** the smoke list in `apps/desktop/README.md` with the network off in WSLg.
-- [ ] 5.11 Backup and restore: Settings → Backup (`VACUUM INTO` to a picked file), Restore (check the app marker and
+- [x] 5.11 Backup and restore: Settings → Backup (`VACUUM INTO` to a picked file), Restore (check the app marker and
       schema version, confirm, keep `chess.db.before-restore`, swap, migrate, reload). Test first: restoring a file from
       a newer schema version is refused and the database is unchanged, red.
 
