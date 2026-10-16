@@ -1,17 +1,14 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { parsePgn } from '@chess/core'
+import { mainLine, parsePgn, toImportGame, uciLine } from '@chess/core'
 import {
   BROADCAST_POSITION_MOVES,
   batches,
   creditsFor,
   isLibrarySource,
   lichessUrl,
-  mainLine,
   publishedMonths,
   searchQuery,
-  toImportGame,
-  uciLine,
   useBroadcastRuns,
   useLibraryPosition,
   useOpeningName,

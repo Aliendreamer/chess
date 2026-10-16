@@ -27,7 +27,7 @@ machine, a release), with the command that proves it.
 - [x] 2.4 Port the training judge (master / engine / both / none), the miner's keep rule (`MinGap`, `MinPly`,
       `PerGame`, two legal moves) and `EngineLevel`. Test first: the matching `TrainingServiceTests` /
       `TrainingMinerTests` cases, red.
-- [ ] 2.5 Port the library PGN import (replay from the start, illegal refused, `DedupeKey`, factual headers only) and
+- [x] 2.5 Port the library PGN import (replay from the start, illegal refused, `DedupeKey`, factual headers only) and
       the openings TSV reader. Test first: `LibraryImportTests` cases, red.
 - [ ] 2.6 Port `FeedParser` and `BroadcastParser` (no DTDs, plain-text titles, https links only). Test first: the C#
       fixtures (including a DTD feed) as vitest, red.

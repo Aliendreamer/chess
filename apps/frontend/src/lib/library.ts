@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { STANDARD_START } from '@chess/core'
-import type { ParsedGame, StudyMoveInput } from '@chess/core'
+import type { ImportGame } from '@chess/core'
 
 /**
- * The game library (game-library): its API shapes, search query, and turning a parsed PGN game into what the admin
- * import sends. Client-safe; the reads are in `lib/server/library.ts`.
+ * The game library (game-library): its API shapes and search query; turning a parsed PGN game into an import is
+ * `@chess/core`. Client-safe; the reads are in `lib/server/library.ts`.
  */
 
 export interface LibraryGameItem {
@@ -161,20 +160,6 @@ export interface LibrarySearch {
   source?: LibrarySource
 }
 
-/** One game as the admin import sends it: factual headers and the main line in UCI. */
-export interface ImportGame {
-  white: string
-  black: string
-  event: string | null
-  site: string | null
-  round: string | null
-  date: string | null
-  result: string
-  eco: string | null
-  moves: Array<string>
-  startFen: string | null
-}
-
 export interface ImportItem {
   index: number
   status: 'imported' | 'duplicate' | 'refused'
@@ -230,40 +215,10 @@ export function searchQuery(search: LibrarySearch, limit: number, cursor?: strin
   return query.toString()
 }
 
-/** A tree's main line: each node's first child. */
-export function mainLine(tree: ReadonlyArray<StudyMoveInput>): Array<string> {
-  const moves: Array<string> = []
-  for (let node = tree[0]; node; node = node.children[0]) moves.push(node.uci)
-  return moves
-}
-
-/** A parsed game as the import sends it; the server judges it (a FEN start is refused there, not here). */
-export function toImportGame(parsed: ParsedGame & { ok: true }): ImportGame {
-  const { study, headers } = parsed
-  const startFen = study.startFen && study.startFen !== STANDARD_START ? study.startFen : null
-  return {
-    white: study.white ?? '?',
-    black: study.black ?? '?',
-    event: headers.event,
-    site: headers.site,
-    round: headers.round,
-    date: headers.date,
-    result: study.result ?? '*',
-    eco: headers.eco,
-    moves: mainLine(study.tree),
-    startFen,
-  }
-}
-
 export function batches<T>(items: ReadonlyArray<T>, size: number): Array<Array<T>> {
   const out: Array<Array<T>> = []
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size))
   return out
-}
-
-/** A game's moves as a one-line tree, to replay with `fromInput` (a library game opened on the analysis board). */
-export function uciLine(moves: ReadonlyArray<string>): Array<StudyMoveInput> {
-  return moves.reduceRight<Array<StudyMoveInput>>((children, uci) => [{ uci, children }], [])
 }
 
 /**

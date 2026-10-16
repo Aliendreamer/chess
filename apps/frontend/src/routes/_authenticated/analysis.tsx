@@ -11,6 +11,7 @@ import {
   playMove,
   positionKey,
   toInput,
+  uciLine,
 } from '@chess/core'
 import type { ParsedGame } from '@chess/core'
 import type { LibrarySource } from '#/lib/library'
@@ -28,7 +29,6 @@ import {
   BROADCAST_SOURCE,
   isLibrarySource,
   lichessUrl,
-  uciLine,
   useLibraryPosition,
   useOpeningName,
 } from '#/lib/library'
