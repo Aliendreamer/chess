@@ -57,7 +57,7 @@ machine, a release), with the command that proves it.
 - [x] 4.3 `lib/data/db.ts`: migrations in `src/lib/data/migrations/` (all tables of design D4), one serialised writer,
       WAL, a backup copy before migrating; a `node:sqlite` adapter for tests. Test first: a migration test on an
       empty database expects every table, red.
-- [ ] 4.4 Load the embedded openings once (version row reloads a changed set). Test first: a second start loads
+- [x] 4.4 Load the embedded openings once (version row reloads a changed set). Test first: a second start loads
       nothing; a changed version reloads, red.
 - [ ] 4.5 `lib/engine/`: UCI client ported from `apps/engine/Stockfish.cs` (handshake, options, `go movetime`,
       `info`/MultiPV parsing, `bestmove`), the play and analysis processes, pre-emption of background work, restart on
