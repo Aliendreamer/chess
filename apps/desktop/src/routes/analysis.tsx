@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   STANDARD_START,
   engineName,
@@ -10,6 +10,7 @@ import {
   lineEnd,
   parsePgn,
   positionKey,
+  toInput,
 } from '@chess/core'
 import {
   AnalysisBoard,
@@ -17,14 +18,17 @@ import {
   ErrorText,
   Panel,
   SectionHeading,
+  analysisTitle,
   useAdoptTyped,
   useAnalysis,
+  useCommand,
   useMoveTree,
   useOpeningName,
 } from '@chess/ui'
 import type { ParsedGame, StudyMove } from '@chess/core'
 import { PERSON_NAME, loadGame } from '#/lib/data/play'
 import { openingNames } from '#/lib/data/openings'
+import { createStudies } from '#/lib/data/studies'
 
 interface Start {
   startFen: string
@@ -102,6 +106,25 @@ function Analysis({ start }: { start: Start }) {
   const [pasteError, setPasteError] = useState<string | null>(start.error)
   const [choices, setChoices] = useState<Array<ParsedGame & { ok: true }>>([])
   const pasteBox = useAdoptTyped<HTMLTextAreaElement>(setPasted)
+  const navigate = useNavigate()
+  const saving = useCommand()
+
+  async function save() {
+    const result = await saving.run(async () => ({
+      ok: true as const,
+      view: await createStudies(app.db, [
+        {
+          title: analysisTitle(players),
+          startFen: editor.startFen,
+          tree: toInput(editor.tree),
+          white: players?.white ?? null,
+          black: players?.black ?? null,
+        },
+      ]),
+    }))
+    const created = result?.created[0]
+    if (created) void navigate({ to: '/studies/$id', params: { id: created.id } })
+  }
 
   /** A FEN replaces the position; a PGN its moves (one game at once, several offered to pick from). */
   function load(text: string) {
@@ -156,6 +179,12 @@ function Analysis({ start }: { start: Start }) {
         </header>
       }
     >
+      <div className="flex flex-wrap gap-2">
+        <Button variant="primary" disabled={saving.busy} onClick={() => void save()}>
+          Save as study
+        </Button>
+      </div>
+      {saving.error ? <ErrorText>{saving.error}</ErrorText> : null}
       <Panel variant="outlined" title="Start from" className="gap-3">
         <textarea
           ref={pasteBox}

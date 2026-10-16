@@ -282,3 +282,71 @@ export function normalisePgn(text: string): string {
     .replace(/^(\[[^\n]*\])\n(?=[^[\n])/gm, '$1\n\n') // headers straight into movetext
     .replace(/^([^[\n][^\n]*)\n(?=\[)/gm, '$1\n\n') // movetext straight into the next game's headers
 }
+
+/** What a study knows about the game it came from; missing values are written as PGN's unknowns. */
+export interface StudyHeaders {
+  white?: string | null
+  black?: string | null
+  result?: string | null
+  date?: string | null
+}
+
+const DECIDED = new Set(['1-0', '0-1', '1/2-1/2'])
+
+/**
+ * A study as PGN (studies D3): the seven-tag roster (Event is the title), `SetUp`/`FEN` for a custom start, and movetext
+ * with each variation in parentheses right after the move it replaces. As the backend's `StudyPgn.Build`.
+ */
+export function studyPgn(
+  title: string,
+  headers: StudyHeaders,
+  startFen: string,
+  tree: ReadonlyArray<StudyMove>,
+  site = 'chess',
+): string {
+  const result = headers.result && DECIDED.has(headers.result) ? headers.result : '*'
+  const tag = (name: string, value: string) =>
+    `[${name} "${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"]\n`
+  let pgn =
+    tag('Event', title) +
+    tag('Site', site) +
+    tag('Date', headers.date ?? '????.??.??') +
+    tag('Round', '-') +
+    tag('White', headers.white ?? '?') +
+    tag('Black', headers.black ?? '?') +
+    tag('Result', result)
+  if (startFen !== STANDARD_START) pgn += tag('SetUp', '1') + tag('FEN', startFen)
+  const tokens: Array<string> = []
+  pgnLine(tokens, startFen, tree, true)
+  tokens.push(result)
+  return `${pgn}\n${tokens.join(' ').replaceAll('( ', '(').replaceAll(' )', ')')}\n`
+}
+
+/** The first move continues the line; the others follow it as variations. */
+function pgnLine(
+  tokens: Array<string>,
+  fenBefore: string,
+  moves: ReadonlyArray<StudyMove>,
+  forceNumber: boolean,
+) {
+  const [main, ...variations] = moves
+  if (!main) return
+  pgnMove(tokens, fenBefore, main, forceNumber)
+  for (const v of variations) {
+    tokens.push('(')
+    pgnMove(tokens, fenBefore, v, true)
+    pgnLine(tokens, v.fen, v.children, false)
+    tokens.push(')')
+  }
+  // After a variation, the main line resumes with its move number even on Black's move ("3... Nc6").
+  pgnLine(tokens, main.fen, main.children, moves.length > 1)
+}
+
+function pgnMove(tokens: Array<string>, fenBefore: string, move: StudyMove, forceNumber: boolean) {
+  const fields = fenBefore.split(' ')
+  const number = fields[5] ?? '1'
+  if (fields[1] === 'b') {
+    if (forceNumber) tokens.push(`${number}...`)
+  } else tokens.push(`${number}.`)
+  tokens.push(move.san)
+}

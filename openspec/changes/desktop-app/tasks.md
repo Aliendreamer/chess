@@ -76,7 +76,7 @@ machine, a release), with the command that proves it.
 - [x] 5.3 Review: queue on game end (≥ 2 plies, not aborted) at 800 ms a position at low priority, `GameReviewer` on
       read, `ReviewPanel` and move marks on the finished game page; mistakes into `mistake_drills` once. Test first: a
       finished game with a scripted blunder yields one drill for the player and none for the engine, red.
-- [ ] 5.4 Studies: list, create, edit with variations and comments, `version` check, PGN import (broken game reported
+- [x] 5.4 Studies: list, create, edit with variations, `version` check, PGN import (broken game reported
       by number) and export, from a game. Test first: importing a five-game file with a broken third makes four studies
       and reports game 3, red.
 - [ ] 5.5 Library and explorer: PGN import into `library_games` + `library_positions`, duplicates skipped, search by

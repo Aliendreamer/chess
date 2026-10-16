@@ -15,9 +15,10 @@ import {
   playMove,
   promote,
   remove,
+  studyPgn,
   toInput,
 } from './tree.ts'
-import type { StudyMove } from './tree.ts'
+import type { StudyMove, StudyMoveInput } from './tree.ts'
 
 const m = (uci: string, san: string, children: Array<StudyMove> = []): StudyMove => ({
   uci,
@@ -232,5 +233,35 @@ describe('parsePgn tolerance (game-library)', () => {
       'Caruana, Fabiano',
       'Carlsen, Magnus',
     ])
+  })
+})
+
+describe('a study as PGN (StudyPgnTests)', () => {
+  const M = (uci: string, ...children: Array<StudyMoveInput>): StudyMoveInput => ({ uci, children })
+
+  it('puts variations after the move they replace and numbers Black’s moves after them', () => {
+    const study = fromInput(STANDARD_START, [
+      M('e2e4', M('e7e5', M('g1f3', M('b8c6'), M('d7d6'))), M('c7c5', M('g1f3'))),
+    ])
+    expect(
+      studyPgn(
+        'Ruy ideas',
+        { white: 'ann', black: 'bob', result: '1-0', date: '2026.09.28' },
+        STANDARD_START,
+        study,
+      ),
+    ).toBe(
+      '[Event "Ruy ideas"]\n[Site "chess"]\n[Date "2026.09.28"]\n[Round "-"]\n[White "ann"]\n[Black "bob"]\n[Result "1-0"]\n\n1. e4 e5 (1... c5 2. Nf3) 2. Nf3 Nc6 (2... d6) 1-0\n',
+    )
+  })
+
+  it('writes SetUp and FEN for a custom start, and unknowns as PGN does', () => {
+    const start = '8/8/8/4k3/8/8/4P3/4K3 b - - 0 40'
+    const pgn = studyPgn('Endgame "lesson"', {}, start, fromInput(start, [M('e5e4')]))
+    expect(pgn).toContain('[Event "Endgame \\"lesson\\""]')
+    expect(pgn).toContain(
+      '[White "?"]\n[Black "?"]\n[Result "*"]\n[SetUp "1"]\n[FEN "8/8/8/4k3/8/8/4P3/4K3 b - - 0 40"]',
+    )
+    expect(pgn.endsWith('\n40... Ke4 *\n')).toBe(true)
   })
 })

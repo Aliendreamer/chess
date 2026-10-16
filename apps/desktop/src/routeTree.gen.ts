@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AnalysisRouteImport } from './routes/analysis'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StudiesIndexRouteImport } from './routes/studies.index'
 import { Route as GamesIndexRouteImport } from './routes/games.index'
+import { Route as StudiesIdRouteImport } from './routes/studies.$id'
 import { Route as GamesIdRouteImport } from './routes/games.$id'
 
 const AnalysisRoute = AnalysisRouteImport.update({
@@ -24,9 +26,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudiesIndexRoute = StudiesIndexRouteImport.update({
+  id: '/studies/',
+  path: '/studies/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GamesIndexRoute = GamesIndexRouteImport.update({
   id: '/games/',
   path: '/games/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudiesIdRoute = StudiesIdRouteImport.update({
+  id: '/studies/$id',
+  path: '/studies/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesIdRoute = GamesIdRouteImport.update({
@@ -39,34 +51,55 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
   '/games/$id': typeof GamesIdRoute
+  '/studies/$id': typeof StudiesIdRoute
   '/games/': typeof GamesIndexRoute
+  '/studies/': typeof StudiesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
   '/games/$id': typeof GamesIdRoute
+  '/studies/$id': typeof StudiesIdRoute
   '/games': typeof GamesIndexRoute
+  '/studies': typeof StudiesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
   '/games/$id': typeof GamesIdRoute
+  '/studies/$id': typeof StudiesIdRoute
   '/games/': typeof GamesIndexRoute
+  '/studies/': typeof StudiesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analysis' | '/games/$id' | '/games/'
+  fullPaths:
+    | '/'
+    | '/analysis'
+    | '/games/$id'
+    | '/studies/$id'
+    | '/games/'
+    | '/studies/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analysis' | '/games/$id' | '/games'
-  id: '__root__' | '/' | '/analysis' | '/games/$id' | '/games/'
+  to: '/' | '/analysis' | '/games/$id' | '/studies/$id' | '/games' | '/studies'
+  id:
+    | '__root__'
+    | '/'
+    | '/analysis'
+    | '/games/$id'
+    | '/studies/$id'
+    | '/games/'
+    | '/studies/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalysisRoute: typeof AnalysisRoute
   GamesIdRoute: typeof GamesIdRoute
+  StudiesIdRoute: typeof StudiesIdRoute
   GamesIndexRoute: typeof GamesIndexRoute
+  StudiesIndexRoute: typeof StudiesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -85,11 +118,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/studies/': {
+      id: '/studies/'
+      path: '/studies'
+      fullPath: '/studies/'
+      preLoaderRoute: typeof StudiesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/games/': {
       id: '/games/'
       path: '/games'
       fullPath: '/games/'
       preLoaderRoute: typeof GamesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/studies/$id': {
+      id: '/studies/$id'
+      path: '/studies/$id'
+      fullPath: '/studies/$id'
+      preLoaderRoute: typeof StudiesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/games/$id': {
@@ -106,7 +153,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalysisRoute: AnalysisRoute,
   GamesIdRoute: GamesIdRoute,
+  StudiesIdRoute: StudiesIdRoute,
   GamesIndexRoute: GamesIndexRoute,
+  StudiesIndexRoute: StudiesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

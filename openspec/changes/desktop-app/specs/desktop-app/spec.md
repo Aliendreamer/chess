@@ -68,7 +68,7 @@ the book exit, as in the club.
 
 ### Requirement: Studies
 
-The player SHALL be able to create studies, add moves and variations, comment, import PGN (several games, a broken
+The player SHALL be able to create studies, add moves and variations, import PGN (several games, a broken
 game reported by number) and export PGN with variations, and make a study from a finished game.
 
 #### Scenario: Import a collection
