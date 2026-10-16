@@ -6,8 +6,10 @@ import { Evaluator } from './data/analysis'
 import { reviewsToRun, runReview } from './data/review'
 import { getSetting } from './data/settings'
 import { mineRound } from './data/training'
+import { EVENTS_EVERY_MS, NEWS_EVERY_MS, eventsRound, newsRound } from './data/news'
 import type { Db } from './data/db'
 import type { EnginePlayer } from './data/play'
+import type { FetchText } from './data/news'
 
 /** How often the miner looks for critical moments in the library. */
 const MINE_EVERY_MS = 10_000
@@ -32,6 +34,8 @@ export interface AppServices {
   openText: (extensions: ReadonlyArray<string>) => Promise<string | null>
   /** Opens a link in the system browser, never inside the app. */
   openLink: (url: string) => Promise<void>
+  /** A GET to a news source (the capability's allow-list decides which hosts). */
+  fetchText: FetchText
 }
 
 export interface RouterContext {
@@ -61,8 +65,24 @@ export async function startServices(): Promise<AppServices> {
     setTimeout(() => void mine(), MINE_EVERY_MS)
   }
   setTimeout(() => void mine(), MINE_EVERY_MS)
+  // News (desktop-app D7): fetched while the app runs; a round that fails (offline) leaves what is kept.
+  const fetchText: FetchText = async (url, headers) => {
+    const { fetch } = await import('@tauri-apps/plugin-http')
+    const answer = await fetch(url, { method: 'GET', headers, connectTimeout: 10_000 })
+    return { status: answer.status, text: await answer.text() }
+  }
+  const every = (ms: number, round: () => Promise<unknown>) => {
+    const run = () =>
+      void round()
+        .catch(() => undefined)
+        .finally(() => setTimeout(run, ms))
+    setTimeout(run, 3_000)
+  }
+  every(NEWS_EVERY_MS, () => newsRound(db, fetchText))
+  every(EVENTS_EVERY_MS, () => eventsRound(db, fetchText))
   return {
     db,
+    fetchText,
     player: {
       bestMove: (fen, level, thinkMs) =>
         play.run((engine) => engine.bestMove(fen, levelOptions(level), thinkMs)),

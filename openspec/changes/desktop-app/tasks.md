@@ -89,7 +89,7 @@ machine, a release), with the command that proves it.
       board or a game, a setting to turn it off), sessions in My games / Master games with filters, sets of 10 or
       endless, the judge and Leitner scheduling. Test first: a candidate with gap 0.05 is dropped and never asked again;
       one with 0.4 is kept with the master's move, red.
-- [ ] 5.8 News: the four feeds and the tournament list on their intervals while online, stored with `keepDays`
+- [x] 5.8 News: the four feeds and the tournament list on their intervals while online, stored with `keepDays`
       pruning, events replaced whole, 429 pause, sources switchable, links opened in the system browser, home's News and
       Events and `/news`. Test first: a failing source leaves its stored items and the others are fetched, red.
 - [ ] 5.9 Settings and About: site theme, board theme, animation, coordinates (applied at once, kept); About with the

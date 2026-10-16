@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrainingRouteImport } from './routes/training'
+import { Route as NewsRouteImport } from './routes/news'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as AnalysisRouteImport } from './routes/analysis'
 import { Route as IndexRouteImport } from './routes/index'
@@ -24,6 +25,11 @@ import { Route as TrainerStudyIdRouteImport } from './routes/trainer.study.$id'
 const TrainingRoute = TrainingRouteImport.update({
   id: '/training',
   path: '/training',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsRoute = NewsRouteImport.update({
+  id: '/news',
+  path: '/news',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibraryRoute = LibraryRouteImport.update({
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
   '/library': typeof LibraryRoute
+  '/news': typeof NewsRoute
   '/training': typeof TrainingRoute
   '/games/$id': typeof GamesIdRoute
   '/studies/$id': typeof StudiesIdRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
   '/library': typeof LibraryRoute
+  '/news': typeof NewsRoute
   '/training': typeof TrainingRoute
   '/games/$id': typeof GamesIdRoute
   '/studies/$id': typeof StudiesIdRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
   '/library': typeof LibraryRoute
+  '/news': typeof NewsRoute
   '/training': typeof TrainingRoute
   '/games/$id': typeof GamesIdRoute
   '/studies/$id': typeof StudiesIdRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/'
     | '/analysis'
     | '/library'
+    | '/news'
     | '/training'
     | '/games/$id'
     | '/studies/$id'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/'
     | '/analysis'
     | '/library'
+    | '/news'
     | '/training'
     | '/games/$id'
     | '/studies/$id'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/'
     | '/analysis'
     | '/library'
+    | '/news'
     | '/training'
     | '/games/$id'
     | '/studies/$id'
@@ -163,6 +175,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalysisRoute: typeof AnalysisRoute
   LibraryRoute: typeof LibraryRoute
+  NewsRoute: typeof NewsRoute
   TrainingRoute: typeof TrainingRoute
   GamesIdRoute: typeof GamesIdRoute
   StudiesIdRoute: typeof StudiesIdRoute
@@ -180,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/training'
       fullPath: '/training'
       preLoaderRoute: typeof TrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news': {
+      id: '/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/library': {
@@ -259,6 +279,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalysisRoute: AnalysisRoute,
   LibraryRoute: LibraryRoute,
+  NewsRoute: NewsRoute,
   TrainingRoute: TrainingRoute,
   GamesIdRoute: GamesIdRoute,
   StudiesIdRoute: StudiesIdRoute,

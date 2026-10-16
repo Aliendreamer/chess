@@ -53,15 +53,20 @@ export async function processChannel(path: string): Promise<UciChannel> {
 }
 
 /** Services for page tests: an in-memory database, a scripted engine, and dialogs that record what they were given. */
-export async function fakeServices(
-  moves: Array<string> = [],
-): Promise<AppServices & { saved: Array<{ name: string; text: string }>; close: () => void }> {
+export async function fakeServices(moves: Array<string> = []): Promise<
+  AppServices & {
+    saved: Array<{ name: string; text: string }>
+    opened: Array<string>
+    close: () => void
+  }
+> {
   const { openDb } = await import('#/lib/data/db')
   const { AnalysisQueue, EngineSupervisor } = await import('#/lib/engine')
   const sql = memorySql()
   const db = await openDb(sql)
   const idle = new EngineSupervisor(() => Promise.reject(new Error('no engine in this test')))
   const saved: Array<{ name: string; text: string }> = []
+  const opened: Array<string> = []
   const { Evaluator } = await import('#/lib/data/analysis')
   const queue = new AnalysisQueue(idle)
   return {
@@ -75,7 +80,12 @@ export async function fakeServices(
       return Promise.resolve(true)
     },
     openText: () => Promise.resolve(null),
-    openLink: () => Promise.resolve(),
+    openLink: (url) => {
+      opened.push(url)
+      return Promise.resolve()
+    },
+    fetchText: () => Promise.reject(new Error('offline')),
+    opened,
     saved,
     close: () => sql.close(),
   }

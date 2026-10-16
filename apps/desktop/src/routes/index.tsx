@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { SectionHeading, useCommand } from '@chess/ui'
+import { EventsNow, NewsList, SectionHeading, useCommand } from '@chess/ui'
 import type { ColourChoice, ThinkSeconds } from '@chess/core'
 import { EngineForm, GameRows } from '#/components/play'
 import { createGame, listGames } from '#/lib/data/play'
 import { getSetting, setSetting } from '#/lib/data/settings'
+import { currentEvents, latestNews } from '#/lib/data/news'
 
 /** The last choices, so the next game starts where the last one did (the think time: owner, 2026-10-16). */
 interface PlayChoice {
@@ -18,6 +19,8 @@ export const Route = createFileRoute('/')({
   loader: async ({ context: { app } }) => ({
     recent: (await listGames(app.db, 8)).items,
     choice: await getSetting(app.db, 'play.choice', DEFAULT_CHOICE),
+    news: await latestNews(app.db, 8),
+    events: await currentEvents(app.db, 5),
   }),
   component: Home,
 })
@@ -25,7 +28,7 @@ export const Route = createFileRoute('/')({
 /** Home: a game against the computer and your recent games. */
 function Home() {
   const { app } = Route.useRouteContext()
-  const { recent, choice } = Route.useLoaderData()
+  const { recent, choice, news, events } = Route.useLoaderData()
   const navigate = useNavigate()
   const [level, setLevel] = useState(choice.level)
   const [color, setColor] = useState<ColourChoice>(choice.color)
@@ -59,10 +62,25 @@ function Home() {
           onStart={() => void start()}
         />
       </section>
-      <section className="flex flex-col gap-3">
-        <SectionHeading>Your games</SectionHeading>
-        <GameRows games={recent} />
-      </section>
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8">
+        <section className="flex flex-col gap-3">
+          <SectionHeading>Your games</SectionHeading>
+          <GameRows games={recent} />
+        </section>
+        <section className="flex flex-col gap-6">
+          {events.length > 0 ? <EventsNow events={events} /> : null}
+          <div className="flex flex-col gap-3">
+            <SectionHeading>News</SectionHeading>
+            {news.length > 0 ? (
+              <NewsList items={news} nowMs={Date.now()} />
+            ) : (
+              <p className="text-sm text-fg-muted">
+                The news is fetched once the computer is online.
+              </p>
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

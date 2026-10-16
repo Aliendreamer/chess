@@ -29,6 +29,26 @@
     "shell:allow-stdin-write",
     "shell:allow-kill",
     "fs:allow-read-text-file",
-    "fs:allow-write-text-file"
+    "fs:allow-write-text-file",
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "https://www.fide.com/feed/"
+        },
+        {
+          "url": "https://en.chessbase.com/feed"
+        },
+        {
+          "url": "https://lichess.org/@/Lichess/blog.atom"
+        },
+        {
+          "url": "https://theweekinchess.com/twic-rss-feed"
+        },
+        {
+          "url": "https://lichess.org/api/broadcast/top*"
+        }
+      ]
+    }
   ]
 }

@@ -57,9 +57,12 @@ const NAV: ReadonlyArray<{ to: string; label: string; icon: typeof Swords; exact
  */
 export function Shell({
   prefs = DEFAULT_PREFERENCES,
+  onExternalLink,
   children,
 }: {
   prefs?: Preferences
+  /** Where a link to another site goes: the system browser, never this window (desktop-app D7). */
+  onExternalLink?: (url: string) => void
   children: ReactNode
 }) {
   return (
@@ -69,6 +72,13 @@ export function Shell({
           data-testid="shell"
           data-board={prefs.boardTheme}
           data-theme={prefs.siteTheme}
+          onClickCapture={(event) => {
+            const link = (event.target as HTMLElement).closest('a[href]')
+            const url = link?.getAttribute('href') ?? ''
+            if (!/^https?:\/\//i.test(url)) return
+            event.preventDefault()
+            onExternalLink?.(url)
+          }}
           className="grid min-h-screen grid-cols-[var(--rail-width)_minmax(0,1fr)] bg-surface-page text-fg-primary"
         >
           <aside className="flex flex-col gap-7 border-r border-line-divider bg-surface-rail px-4 py-6">

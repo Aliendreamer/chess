@@ -3,9 +3,14 @@ import type { RouterContext } from '#/lib/app'
 import { Shell } from '#/components/layout'
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  component: () => (
-    <Shell>
+  component: Root,
+})
+
+function Root() {
+  const { app } = Route.useRouteContext()
+  return (
+    <Shell onExternalLink={(url) => void app.openLink(url)}>
       <Outlet />
     </Shell>
-  ),
-})
+  )
+}
