@@ -77,3 +77,20 @@ describe('playing the computer (desktop-app)', () => {
     )
   })
 })
+
+describe('the review on a finished game (game-review)', () => {
+  it('starts by itself and shows the review panel', async () => {
+    const s = await app(['e7e5', 'd8h4'])
+    const game = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    const { personMove, engineMove } = await import('#/lib/data/play')
+    await personMove(s.db, game.id, 'f2f3')
+    await engineMove(s.db, s.player, game.id)
+    await personMove(s.db, game.id, 'g2g4')
+    await engineMove(s.db, s.player, game.id)
+    await renderApp(`/games/${game.id}`, s)
+    expect(await screen.findByTestId('review-panel')).toBeTruthy()
+    await waitFor(async () =>
+      expect(await s.db.select('SELECT game_id FROM reviews')).toHaveLength(1),
+    )
+  })
+})

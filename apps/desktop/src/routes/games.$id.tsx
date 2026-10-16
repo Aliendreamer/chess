@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router'
 import {
   STANDARD_START,
   clickSquare,
   engineName,
   legalTargets,
+  marksFor,
   needsPromotion,
   pieceAt,
   uciSquares,
@@ -17,8 +18,13 @@ import {
   MoveNav,
   Panel,
   PromotionPicker,
+  REVIEW_POLL_MS,
+  ReviewPanel,
+  previewLine,
   useCommand,
+  useReview,
 } from '@chess/ui'
+import type { PreviewState } from '@chess/ui'
 import type { EngineStatus } from '#/lib/engine'
 import { GameEndPanel, PlayerLine } from '#/components/play'
 import {
@@ -30,6 +36,7 @@ import {
   resign,
   toMove,
 } from '#/lib/data/play'
+import { loadReview, reviewable, runReview, startReview } from '#/lib/data/review'
 
 export const Route = createFileRoute('/games/$id')({
   loader: async ({ context: { app }, params }) => {
@@ -59,6 +66,17 @@ function GamePage() {
   const [engineError, setEngineError] = useState<string | null>(null)
   const [engine, setEngine] = useState<EngineStatus>(app.engines.play.state)
   const command = useCommand()
+  const [preview, setPreview] = useState<PreviewState | null>(null)
+
+  // The engine review (game-review): started by itself once the game has ended, read while it runs.
+  const ended = game.status === 'ended'
+  const load = useCallback(() => loadReview(app.db, game.id), [app, game.id])
+  const start = useCallback(() => startReview(app.db, app.evaluator, game.id), [app, game.id])
+  const reviewing = useReview(null, load, start, REVIEW_POLL_MS, ended)
+  const reviewed = reviewing.view && reviewing.view.status !== 'none' ? reviewing.view : null
+  useEffect(() => {
+    if (reviewable(game)) void runReview(app.db, app.evaluator, game.id).catch(() => undefined)
+  }, [app, game])
 
   useEffect(() => setGame(loaded), [loaded])
   useEffect(() => app.engines.play.subscribe(setEngine), [app])
@@ -85,7 +103,15 @@ function GamePage() {
   }, [app, game])
 
   const shownPly = viewPly ?? game.ply
-  const fen = shownPly === 0 ? STANDARD_START : (game.moves[shownPly - 1]?.fenAfter ?? game.fen)
+  const fenAt = (ply: number) =>
+    ply === 0 ? STANDARD_START : (game.moves[ply - 1]?.fenAfter ?? game.fen)
+  // The engine's better line, when one of its moves is clicked in the review, is shown on the board.
+  const previewMove = preview ? reviewed?.moves[preview.ply - 1] : undefined
+  const lined =
+    preview && previewMove
+      ? previewLine(fenAt(preview.ply - 1), previewMove.line, preview.upTo)
+      : null
+  const fen = lined?.fen ?? fenAt(shownPly)
   const live = viewPly === null || viewPly === game.ply
   const myTurn = game.status === 'playing' && toMove(game) === game.personColor && live
   const side = game.personColor === 'white' ? 'w' : 'b'
@@ -148,7 +174,7 @@ function GamePage() {
         <Board
           fen={fen}
           orientation={game.personColor}
-          lastMove={uciSquares(game.moves[shownPly - 1]?.uci)}
+          lastMove={lined ? lined.lastMove : uciSquares(game.moves[shownPly - 1]?.uci)}
           selected={selected}
           targets={selected && myTurn ? legalTargets(fen, selected) : []}
           {...(myTurn
@@ -183,7 +209,11 @@ function GamePage() {
         <MoveList
           sans={game.moves.map((m) => m.san)}
           viewPly={viewPly}
-          onSelect={(ply) => setViewPly(ply === game.ply ? null : ply)}
+          onSelect={(ply) => {
+            setPreview(null)
+            setViewPly(ply === game.ply ? null : ply)
+          }}
+          {...(reviewed ? { marks: marksFor(reviewed.moves) } : {})}
         />
         <MoveNav
           onStart={() => setViewPly(0)}
@@ -209,9 +239,26 @@ function GamePage() {
             game={game}
             onNewGame={() => void navigate({ to: '/' })}
             onSavePgn={() => void savePgn()}
-            onAnalyse={() => void navigate({ to: '/analysis', search: { game: game.id } as never })}
+            onAnalyse={() => void navigate({ to: '/analysis', search: { game: game.id } })}
           />
         )}
+        {ended ? (
+          <ReviewPanel
+            review={reviewing.view}
+            mine={game.personColor}
+            canStart={reviewable(game)}
+            busy={reviewing.busy}
+            error={reviewing.error}
+            onStart={() => void reviewing.start()}
+            current={shownPly}
+            onSelect={(ply) => {
+              setPreview(null)
+              setViewPly(ply === game.ply ? null : ply)
+            }}
+            preview={preview}
+            onPreview={setPreview}
+          />
+        ) : null}
       </aside>
     </div>
   )

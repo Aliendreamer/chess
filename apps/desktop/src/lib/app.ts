@@ -3,6 +3,7 @@ import { openDb, tauriSql } from './data/db'
 import { ensureOpenings } from './data/openings'
 import { AnalysisQueue, EngineSupervisor, sidecarChannel } from './engine'
 import { Evaluator } from './data/analysis'
+import { reviewsToRun, runReview } from './data/review'
 import type { Db } from './data/db'
 import type { EnginePlayer } from './data/play'
 
@@ -42,6 +43,12 @@ export async function startServices(): Promise<AppServices> {
   const play = new EngineSupervisor(sidecarChannel)
   const analysis = new EngineSupervisor(sidecarChannel)
   const queue = new AnalysisQueue(analysis)
+  const evaluator = new Evaluator(db, queue)
+  // Reviews left unfinished (the app closed while one ran, or a game ended without one) run again, behind the board.
+  void (async () => {
+    for (const id of await reviewsToRun(db))
+      await runReview(db, evaluator, id).catch(() => undefined)
+  })()
   return {
     db,
     player: {
@@ -49,7 +56,7 @@ export async function startServices(): Promise<AppServices> {
         play.run((engine) => engine.bestMove(fen, levelOptions(level), thinkMs)),
     },
     analysis: queue,
-    evaluator: new Evaluator(db, queue),
+    evaluator,
     engines: { play, analysis },
     saveText: async (defaultName, text) => {
       const { save } = await import('@tauri-apps/plugin-dialog')
