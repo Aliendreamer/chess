@@ -59,7 +59,7 @@ machine, a release), with the command that proves it.
       empty database expects every table, red.
 - [x] 4.4 Load the embedded openings once (version row reloads a changed set). Test first: a second start loads
       nothing; a changed version reloads, red.
-- [ ] 4.5 `lib/engine/`: UCI client ported from `apps/engine/Stockfish.cs` (handshake, options, `go movetime`,
+- [x] 4.5 `lib/engine/`: UCI client ported from `apps/engine/Stockfish.cs` (handshake, options, `go movetime`,
       `info`/MultiPV parsing, `bestmove`), the play and analysis processes, pre-emption of background work, restart on
       exit. Test first: the client against a fake engine script (as `Chess.Engine.Tests`), red; a fake that exits
       mid-search is restarted and asked again.

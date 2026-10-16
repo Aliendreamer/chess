@@ -6,7 +6,7 @@ import { memorySql } from '#/testing'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
-async function db() {
+async function testDb() {
   const sql = memorySql()
   opened.push(sql)
   return openDb(sql)
@@ -19,14 +19,14 @@ const AFTER_E4_C5 = positionKey('rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR
 
 describe('the openings list (desktop-app D4)', () => {
   it('is loaded on the first start, and not again while it is the same', async () => {
-    const d = await db()
+    const d = await testDb()
     expect(await ensureOpenings(d, () => Promise.resolve(LIST_A))).toBe('loaded')
     expect(await ensureOpenings(d, () => Promise.resolve(LIST_A))).toBe('current')
     expect((await allOpenings(d)).map((o) => o.name)).toEqual(['Sicilian Defense'])
   })
 
   it('is loaded again, whole, when a new app ships a changed list', async () => {
-    const d = await db()
+    const d = await testDb()
     await ensureOpenings(d, () => Promise.resolve(LIST_A))
     expect(await ensureOpenings(d, () => Promise.resolve(LIST_B))).toBe('loaded')
     expect((await allOpenings(d)).map((o) => o.name).sort()).toEqual([
@@ -36,7 +36,7 @@ describe('the openings list (desktop-app D4)', () => {
   })
 
   it('names the positions it knows', async () => {
-    const d = await db()
+    const d = await testDb()
     await ensureOpenings(d, () => Promise.resolve(LIST_A))
     const names = await openingNames(d, [AFTER_E4_C5, 'unknown'])
     expect([...names]).toEqual([[AFTER_E4_C5, { eco: 'B20', name: 'Sicilian Defense' }]])
@@ -51,7 +51,7 @@ describe('the openings list (desktop-app D4)', () => {
   })
 
   it('loads the real list in one batch', async () => {
-    const d = await db()
+    const d = await testDb()
     const started = performance.now()
     expect(await ensureOpenings(d)).toBe('loaded')
     const [row] = await d.select<{ n: number }>('SELECT count(*) AS n FROM openings')

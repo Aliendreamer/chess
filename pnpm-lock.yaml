@@ -212,6 +212,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 4.1.8
         version: 4.1.8(vitest@4.1.8)
+      chess.js:
+        specifier: 1.4.0
+        version: 1.4.0
       eslint:
         specifier: 10.4.1
         version: 10.4.1(jiti@2.7.0)(supports-color@10.2.2)
