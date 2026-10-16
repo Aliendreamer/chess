@@ -174,3 +174,19 @@ Proposal written: `openspec/changes/desktop-app/` (proposal, design D1–D11, sp
 shared-chess-libraries + frontend-layout delta, 29 tasks in 6 groups). Owner's answers: engine think time is the
 player's choice of 5/10/20 s a move; backup + restore in 1.0.0 (restore replaces); the app's code (`apps/desktop`,
 `libs/`) is MIT, Stockfish stays a separate GPLv3 binary (aggregation).
+
+## 2026-10-16 — desktop-app built (owner: "start")
+
+All code tasks of `openspec/changes/desktop-app/` are done and committed on main (not pushed): `libs/chess-core` and
+`libs/chess-ui` (the club refactored onto them: 658 tests before and after the moves), `apps/desktop` (Tauri scaffold,
+pinned Stockfish sidecar via `tools/desktop/fetch-stockfish.mjs`, SQLite data layer, UCI client + supervisor + analysis
+queue, every feature page, backup/restore, settings/about, offline test, README with the smoke list), MIT licences, Nx
+Release group `desktop`, `tools/desktop/publish.sh`. Still open, all the owner's: 3.4 (club e2e: 7 failures, all
+pre-existing — duplicate `users` rows from Keycloak resets, the pings spec's first socket, stale review/studies
+expectations, a training start racing hydration; see the session summary), 4.1 (window in WSLg: Rust + WebKitGTK not
+installed here), 5.10 (smoke list), 6.1 (bundles on both machines), 6.4 (first release). Learned: pnpm 12 sometimes
+writes a lockfile with missing snapshots after `pnpm add` in a new workspace package — `pnpm install --fix-lockfile`
+repairs it; Vite's config is loaded by plain Node, so anything it imports (frontend `lib/server/*`) must not reach
+`.svg` imports or extensionless TS imports (`@chess/core` uses `.ts` extensions); TS drops `x.tsx` from a project when
+`x.ts` sits beside it (hence `<feature>-model.ts`); react-chessboard throws in jsdom when it animates a move (page tests
+stub `matchMedia` for reduced motion).

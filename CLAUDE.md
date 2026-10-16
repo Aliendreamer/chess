@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding four apps:
+An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding five apps and two shared libraries:
 
 - `apps/backend` — .NET 10 API (`Chess.Backend`): FastEndpoints + EF Core/Npgsql, Keycloak PKCE login,
   **server-owned opaque cookie session** (`mp_sid`; tokens never leave the server; logout revokes).
@@ -16,6 +16,14 @@ An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding four apps:
   outside the Akka cluster. Its image downloads the pinned official Stockfish release at build time (`ARG`s in
   `apps/engine/Dockerfile`, SHA-256-checked; GPLv3 notice + `SOURCE.txt` ship with it).
 - `apps/proxy` — nginx edge for deployment (`/api/` → backend, `/` → frontend, `/hc` local 200).
+- `apps/desktop` — the standalone, offline Tauri 2 app for one player (`chess-desktop`, OpenSpec `desktop-app`): play
+  Stockfish (bundled sidecar), analysis, review, studies, trainer, training, library, news; SQLite on the machine.
+  Windows + Linux installers built locally and published to GitHub Releases by the owner (no CI). See its README.
+- `libs/chess-core` (`@chess/core`) — pure TypeScript chess logic both TS apps use (rules feedback, move tree and PGN,
+  review, Leitner schedule, trainer families, training judge, library import, feed parsers); no React, DOM or router.
+- `libs/chess-ui` (`@chess/ui`) — presentational React both apps show (board, move list/tree, review, analysis,
+  trainer, training, library, news, settings, the Club tokens and themes in `theme.css`, the Cburnett pieces). Links go
+  through `LinkContext`/`AppLink` (the club provides `ClubLink`, the desktop `DesktopLink`); no router imports.
 
 Node ≥ 24, pnpm pinned in `package.json#packageManager` (bump deliberately). Docker is required for
 the local stack and for the proxy target (its `build` makes a local `:local` image and never pushes;
@@ -48,6 +56,11 @@ dotnet test Chess.Backend.Tests --filter "FullyQualifiedName~SessionStoreTests" 
 pnpm exec nx integration-test backend          # Testcontainers round-trip + recovery (needs Docker)
 ./build_migration.sh "AddSomething"            # EF migration (dotnet-ef 10.x)
 dotnet format Chess.Backend.slnx --verify-no-changes   # = nx lint backend
+
+# desktop (apps/desktop) — needs Rust and, on Linux, the WebKitGTK dev packages (README)
+pnpm exec nx run desktop:dev        # fetches the pinned Stockfish once, then the window (WSLg on WSL)
+pnpm exec nx run desktop:test       # vitest (node:sqlite data layer, UCI client, pages) + the tools/desktop tests
+pnpm exec nx run desktop:bundle     # this machine's installers; tools/desktop/publish.sh <version> uploads them
 
 # engine (apps/engine)
 dotnet build Chess.Engine.csproj && dotnet test Chess.Engine.Tests   # UCI client + worker against a fake engine
@@ -463,3 +476,13 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
 - The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
 
 <!-- nx configuration end-->
+
+- **Desktop app (desktop-app)** — `apps/desktop`: a Vite SPA (TanStack Router, hash history) in a thin Tauri shell
+  (`src-tauri`: plugins only; `capabilities/default.json` allows the sidecar, the news hosts, dialog-picked files and
+  links in the browser; a strict CSP). `src/lib/app.tsx` builds the services the router hands every loader (database,
+  two Stockfish supervisors, the analysis queue, dialogs, fetching); `src/lib/data/*` is one file per feature over
+  SQLite (`db.ts`: migrations by `user_version`, one write queue, batches as one `BEGIN…COMMIT` call because the
+  plugin's pool may switch connections), `src/lib/engine.ts` the UCI client (board requests stop background work).
+  Logic ported from the backend lives in `@chess/core` with the backend tests' cases; the backend keeps its C# copies,
+  so a rule change touches both. Releases: Nx Release group `desktop`, `nx run desktop:bundle` on WSL and on a
+  Windows-side clone, `tools/desktop/publish.sh` to the GitHub Release.

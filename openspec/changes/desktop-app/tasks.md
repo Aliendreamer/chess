@@ -111,7 +111,7 @@ machine, a release), with the command that proves it.
 - [x] 6.2 `tools/desktop/publish.sh <version>`: `gh release create desktop@<version>` with the changelog section as
       notes, or `gh release upload` when it exists; installers of the current machine only. Test first: a dry-run mode
       prints the `gh` commands for an existing and a new release, checked by a shell test.
-- [ ] 6.3 CLAUDE.md, ROADMAP Part 7 and the project memory updated; `apps/desktop/README.md` (toolchain: Rust,
+- [x] 6.3 CLAUDE.md, ROADMAP Part 7 and the project memory updated; `apps/desktop/README.md` (toolchain: Rust,
       WebKitGTK 4.1 on Linux, WebView2 on Windows; smoke list; how to release).
 - [ ] 6.4 **[human]** First release: `pnpm exec nx release version 1.0.0 --projects desktop`, changelog, tag; bundle
       on both machines; `tools/desktop/publish.sh 1.0.0` on each. Proof: `gh release view desktop@1.0.0` lists four

@@ -240,7 +240,15 @@ feeds. Three OpenSpec changes, in this order:
   **Events now** box (owner, 2026-10-02): the tournaments being played, from lichess's broadcast list every 10 min,
   names and links only.
 
-### Part 7 — Desktop app (idea, owner 2026-10-03: think it through, feasibility first)
+### Part 7 — Desktop app (decided 2026-10-16, built as `desktop-app`)
+
+**[decided]** (owner, 2026-10-16): a standalone, offline app for one player — `apps/desktop`, Tauri 2, the React UI
+shared with the club through `libs/chess-core` and `libs/chess-ui`, SQLite on the machine, the pinned Stockfish as a
+sidecar; every one-player feature (games against the computer with 5/10/20 s a move, analysis, review, studies, trainer,
+training, library, news with the tournaments being played; backup and restore), no lichess broadcast games, no play
+against people. Windows and Linux, versioned by Nx Release (`desktop@1.0.0` first), built locally and published to
+GitHub Releases by the owner — no CI. MIT for the app's code; Stockfish ships as a separate GPLv3 program. The club stays
+as it is. What follows is the feasibility note that led there.
 
 The question: a desktop app, and could the whole club run as a standalone desktop app? Feasibility as of 2026-10-03:
 
@@ -291,5 +299,4 @@ The question: a desktop app, and could the whole club run as a standalone deskto
   not humans), so level 1320 is far stronger than a 1320 human — in `verify-part2.sh` it beat full-strength Stockfish
   at 200 ms a move. The levels are now named Casual … Maximum instead of by Elo (2026-09-27); making the bottom level
   beatable for beginners still needs our own handicaps (shallower search, deliberate inaccuracies).
-- A desktop app for the UI: how to package or build one (for example wrapping the web UI, or a native client over
-  the same BFF). Parked on purpose; to be thought through later, not now.
+- ~~A desktop app for the UI~~ — settled in Part 7 (2026-10-16): a standalone Tauri app, not a client of the club.
