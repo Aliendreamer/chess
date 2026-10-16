@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Presentational React shared by the club frontend and the desktop app.",
+  "license": "MIT",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

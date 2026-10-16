@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "The standalone chess app for one player: play the computer, learn, analyse, read the news (desktop-app).",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=24"

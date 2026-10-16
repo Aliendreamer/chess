@@ -66,6 +66,12 @@
           "conventionalCommits": true,
           "versionActions": "./tools/nx-release/dotnet-version-actions.cjs"
         }
+      },
+      "desktop": {
+        "projects": ["desktop"],
+        "version": {
+          "conventionalCommits": true
+        }
       }
     }
   },

@@ -39,7 +39,10 @@
     "externalBin": ["binaries/stockfish"],
     "resources": {
       "binaries/Copying.txt": "stockfish/Copying.txt",
-      "binaries/SOURCE.txt": "stockfish/SOURCE.txt"
-    }
+      "binaries/SOURCE.txt": "stockfish/SOURCE.txt",
+      "../LICENSE": "LICENSE"
+    },
+    "licenseFile": "../LICENSE",
+    "copyright": "Copyright (c) 2026 Aliendreamer \u2014 MIT; Stockfish: GPLv3"
   }
 }

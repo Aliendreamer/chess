@@ -181,7 +181,10 @@ refactor; no Playwright for the desktop app in 1.0.0 (a manual smoke list in `ap
 Settings → Backup writes the whole database to one file the player picks (`VACUUM INTO`, so a consistent copy while
 the app runs; extension `.chessbackup`). Restore takes such a file, checks it is one of ours (a `settings` row naming
 the app and a schema version no newer than this build's), asks for confirmation, keeps the current database as
-`chess.db.before-restore`, swaps the file in, runs the migrations and reloads. Restore replaces; it does not merge.
+`chess.db.before-restore-{time}`, then replaces every table's rows with the backup's in one transaction (the backup
+attached on the same connection; the openings stay as shipped). Restore replaces; it does not merge. With one schema
+version so far a backup must be at the app's schema; the first new migration must also migrate an older backup on
+restore (the spec's "same or a newer version").
 
 ### D11. Licence
 
