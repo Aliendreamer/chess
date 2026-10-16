@@ -1,6 +1,7 @@
 import { CategoryDot } from '@chess/ui'
+import { scoreShare } from '@chess/core'
 import type { PlayerProfile } from '#/lib/players'
-import { recordByCategory, scoreShare } from '#/lib/players'
+import { recordByCategory } from '#/lib/players'
 
 /**
  * Player profiles (player-profiles): the record — totals, a win/draw/loss bar and a row per game type. Names link to

@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { createFileRoute, notFound, useNavigate, useRouter } from '@tanstack/react-router'
-import { Chip, LoadMore, SectionHeading } from '@chess/ui'
+import { Chip, LoadMore, SectionHeading, publishedMonths, useBroadcastRuns } from '@chess/ui'
 import type { DeadLetter, ProjectionGroup } from '#/lib/admin'
 import type { CursorPage } from '#/lib/play'
-import type { BroadcastRun } from '#/lib/library'
+import type { BroadcastRun } from '@chess/ui'
 import { PROJECTION_GROUPS, isAdmin, isProjectionGroup } from '#/lib/admin'
 import { useLoadMore } from '#/lib/play'
 import {
@@ -17,7 +17,6 @@ import {
   postResetMemberPassword,
   postStartBroadcastImport,
 } from '#/lib/server/api'
-import { publishedMonths, useBroadcastRuns } from '#/lib/library'
 import {
   AdminMembers,
   BroadcastImportForm,

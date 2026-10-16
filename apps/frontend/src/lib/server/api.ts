@@ -2,16 +2,18 @@ import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader, getRequestIP } from '@tanstack/react-start/server'
 import { THINK_LEVELS, isPreferences } from '@chess/core'
 import {
+  IMPORT_BATCH,
   MAX_EXCLUDE,
   UCI_MOVE,
   cleanFilters,
   isColor,
+  isLibrarySource,
   isTrainingId,
   isTrainingMode,
+  searchQuery,
 } from '@chess/ui'
 import { CLAIM_OUTCOMES, PRESETS } from '../games'
 import { checkNewMember, isAggregateId, isProjectionGroup } from '../admin'
-import { IMPORT_BATCH, isLibrarySource, searchQuery } from '../library'
 import { loadMe, loadPreferences, savePreferences } from './auth'
 import { apiUrl, clientIp, forwardClientIp, isGuid } from './upstream'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
@@ -70,12 +72,18 @@ import {
   studyFromGame,
 } from './studies'
 import { joinQueue, leaveQueue, loadLobby, loadMyGames, rematch } from './play'
-import type { ImportBatch, LibrarySearch, LibrarySource } from '../library'
+import type {
+  ImportBatch,
+  LibrarySearch,
+  LibrarySource,
+  TrainerColor,
+  TrainingFilters,
+  TrainingMode,
+} from '@chess/ui'
 import type { ColourChoice, Preferences, StudyInput, StudyMoveInput, Think } from '@chess/core'
 import type { MemberAction, NewMember } from '../admin'
 import type { ChallengeAnswer } from './members'
 import type { GameCommand } from '../games'
-import type { TrainerColor, TrainingFilters, TrainingMode } from '@chess/ui'
 
 /**
  * A `fetch` bound to the internal API that re-attaches the caller's session cookie under its API name and tells the API

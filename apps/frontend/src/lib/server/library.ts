@@ -10,7 +10,7 @@ import type {
   LibraryPosition,
   LibrarySource,
   OpeningView,
-} from '../library'
+} from '@chess/ui'
 
 /** `GET /api/library/games?…` with a query built by `lib/library.ts#searchQuery`. */
 export async function loadLibrary(

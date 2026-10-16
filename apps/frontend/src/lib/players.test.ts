@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { recordByCategory, scoreShare } from './players'
+import { scoreShare } from '@chess/core'
+import { recordByCategory } from './players'
 
 describe('recordByCategory', () => {
   it('adds time controls into game types, in the usual order, leaving out types without games', () => {

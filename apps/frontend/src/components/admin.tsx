@@ -1,7 +1,16 @@
 import { useState } from 'react'
 import { Copy } from 'lucide-react'
 import { parsePgn, toImportGame } from '@chess/core'
-import { Button, ErrorText, Panel, buttonClass, useAdoptTyped, useCommand } from '@chess/ui'
+import {
+  Button,
+  ErrorText,
+  IMPORT_BATCH,
+  Panel,
+  batches,
+  buttonClass,
+  useAdoptTyped,
+  useCommand,
+} from '@chess/ui'
 import type {
   AdminMember,
   CreatedMember,
@@ -10,9 +19,8 @@ import type {
   NewMember,
   ReplayOutcome,
 } from '#/lib/admin'
-import type { BroadcastRun, ImportAnswer, ImportBatch } from '#/lib/library'
+import type { BroadcastRun, ImportAnswer, ImportBatch } from '@chess/ui'
 import type { CommandOutcome, ImportGame } from '@chess/core'
-import { IMPORT_BATCH, batches } from '#/lib/library'
 import { checkNewMember, firstLine, isSelfHarm } from '#/lib/admin'
 import { lastSeenText, useNow } from '#/lib/members'
 

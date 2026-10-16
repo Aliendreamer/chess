@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AdminMembers, BroadcastImportForm, DeadLetterList, LibraryImportForm } from './admin'
 import type { AdminMember, DeadLetter } from '#/lib/admin'
-import type { BroadcastRun } from '#/lib/library'
+import type { BroadcastRun } from '@chess/ui'
 
 afterEach(cleanup)
 

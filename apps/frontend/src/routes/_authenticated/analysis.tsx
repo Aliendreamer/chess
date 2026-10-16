@@ -15,18 +15,24 @@ import {
 } from '@chess/core'
 import {
   AnalysisBoard,
+  BROADCAST_SOURCE,
   Button,
   ErrorText,
   Panel,
+  PositionPanel,
   SectionHeading,
   analysisTitle,
+  isLibrarySource,
+  lichessUrl,
   useAdoptTyped,
   useAnalysis,
   useCommand,
+  useLibraryPosition,
   useMoveTree,
+  useOpeningName,
 } from '@chess/ui'
 import type { ParsedGame } from '@chess/core'
-import type { LibrarySource } from '#/lib/library'
+import type { LibrarySource } from '@chess/ui'
 import {
   getFinishedGame,
   getLibraryGame,
@@ -35,14 +41,6 @@ import {
   postAnalysis,
   postCreateStudies,
 } from '#/lib/server/api'
-import {
-  BROADCAST_SOURCE,
-  isLibrarySource,
-  lichessUrl,
-  useLibraryPosition,
-  useOpeningName,
-} from '#/lib/library'
-import { PositionPanel } from '#/components/library'
 import { pageTitle } from '#/lib/feedback'
 
 /**

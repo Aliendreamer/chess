@@ -1,15 +1,18 @@
-import { Link } from '@tanstack/react-router'
-import { playMove } from '@chess/core'
-import { Chip, Panel } from '@chess/ui'
-import type { ExplorerMove, LibraryGameItem, LibraryPosition, LibrarySource } from '#/lib/library'
+import { playMove, scoreShare } from '@chess/core'
+import { AppLink, Chip, Panel, href } from './ui.tsx'
 import {
   BROADCAST_POSITION_MOVES,
   BROADCAST_SOURCE,
   LIBRARY_SOURCES,
   creditsFor,
   lichessUrl,
-} from '#/lib/library'
-import { scoreShare } from '#/lib/players'
+} from './library-model.ts'
+import type {
+  ExplorerMove,
+  LibraryGameItem,
+  LibraryPosition,
+  LibrarySource,
+} from './library-model.ts'
 
 /**
  * The game library (game-library): search results, and the games at the analysis board's position. Every game opens
@@ -29,13 +32,12 @@ export function LibraryList({ games }: { games: ReadonlyArray<LibraryGameItem> }
           className="grid grid-cols-[52px_minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-0.5 border-b border-line-divider py-2.5"
         >
           <span className="font-mono text-sm text-fg-secondary">{g.year ?? '—'}</span>
-          <Link
-            to="/analysis"
-            search={{ library: g.id }}
+          <AppLink
+            to={href('/analysis', { library: g.id })}
             className="truncate text-fg-primary no-underline hover:text-fg-accent"
           >
             {`${g.white} – ${g.black}`}
-          </Link>
+          </AppLink>
           <span className="font-mono text-sm text-fg-primary">{RESULT[g.result] ?? g.result}</span>
           <span className="col-start-2 flex flex-wrap items-baseline gap-x-3 text-xs text-fg-secondary">
             {g.event ? <span>{g.event}</span> : null}
@@ -67,18 +69,21 @@ export function PositionPanel({
   position: LibraryPosition
   fen: string
   onPlay: (uci: string) => void
-  source: LibrarySource
-  onSource: (source: LibrarySource) => void
+  /** The club's source filter and its credits; the desktop app, whose library is the player's own, has neither. */
+  source?: LibrarySource
+  onSource?: (source: LibrarySource) => void
 }) {
   return (
     <Panel variant="outlined" title="In the library" className="gap-2" testId="library-panel">
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Source">
-        {LIBRARY_SOURCES.map((s) => (
-          <Chip key={s.value} selected={source === s.value} onClick={() => onSource(s.value)}>
-            {s.label}
-          </Chip>
-        ))}
-      </div>
+      {source && onSource ? (
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Source">
+          {LIBRARY_SOURCES.map((s) => (
+            <Chip key={s.value} selected={source === s.value} onClick={() => onSource(s.value)}>
+              {s.label}
+            </Chip>
+          ))}
+        </div>
+      ) : null}
       {position.moves.length > 0 ? (
         <MovesTable moves={position.moves} fen={fen} onPlay={onPlay} />
       ) : null}
@@ -94,13 +99,12 @@ export function PositionPanel({
               const onLichess = g.source === BROADCAST_SOURCE ? lichessUrl(g.sourceRef) : null
               return (
                 <li key={g.id} className="flex items-baseline justify-between gap-3 text-sm">
-                  <Link
-                    to="/analysis"
-                    search={{ library: g.id, ply: g.ply }}
+                  <AppLink
+                    to={href('/analysis', { library: g.id, ply: g.ply })}
                     className="truncate text-fg-primary no-underline hover:text-fg-accent"
                   >
                     {`${g.white} – ${g.black}${g.year ? `, ${g.year}` : ''}`}
-                  </Link>
+                  </AppLink>
                   <span className="flex shrink-0 items-baseline gap-2">
                     {onLichess ? (
                       <a
@@ -123,22 +127,24 @@ export function PositionPanel({
           </ul>
         </>
       )}
-      <footer className="flex flex-col gap-0.5 text-2xs text-fg-muted">
-        {creditsFor(source).map((c) => (
-          <a
-            key={c.href}
-            href={c.href}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="text-fg-muted hover:text-fg-accent"
-          >
-            {c.label}
-          </a>
-        ))}
-        {source !== 'wc' ? (
-          <span>{`Broadcast games are indexed for their first ${BROADCAST_POSITION_MOVES} moves.`}</span>
-        ) : null}
-      </footer>
+      {source ? (
+        <footer className="flex flex-col gap-0.5 text-2xs text-fg-muted">
+          {creditsFor(source).map((c) => (
+            <a
+              key={c.href}
+              href={c.href}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-fg-muted hover:text-fg-accent"
+            >
+              {c.label}
+            </a>
+          ))}
+          {source !== 'wc' ? (
+            <span>{`Broadcast games are indexed for their first ${BROADCAST_POSITION_MOVES} moves.`}</span>
+          ) : null}
+        </footer>
+      ) : null}
     </Panel>
   )
 }

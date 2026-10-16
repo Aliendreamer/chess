@@ -231,3 +231,18 @@ export function buildPgn(game: PgnGame): string {
   lines.push(line)
   return `${tags.join('\n')}\n\n${lines.join('\n')}\n`
 }
+
+export interface Score {
+  wins: number
+  draws: number
+  losses: number
+}
+
+/** Whole percentages for the record bar, losses taking the rounding so they add up to 100. */
+export function scoreShare(s: Score): Score {
+  const games = s.wins + s.draws + s.losses
+  if (games === 0) return { wins: 0, draws: 0, losses: 0 }
+  const wins = Math.round((s.wins / games) * 100)
+  const draws = Math.round((s.draws / games) * 100)
+  return { wins, draws, losses: 100 - wins - draws }
+}

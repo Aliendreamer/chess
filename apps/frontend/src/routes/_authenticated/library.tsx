@@ -1,11 +1,17 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Button, LoadMore, Panel, SectionHeading } from '@chess/ui'
-import type { LibrarySearch } from '#/lib/library'
-import { LIBRARY_SOURCES, isLibrarySource } from '#/lib/library'
+import {
+  Button,
+  LIBRARY_SOURCES,
+  LibraryList,
+  LoadMore,
+  Panel,
+  SectionHeading,
+  isLibrarySource,
+} from '@chess/ui'
+import type { LibrarySearch } from '@chess/ui'
 import { useLoadMore } from '#/lib/play'
 import { getLibrary } from '#/lib/server/api'
 import { pageTitle } from '#/lib/feedback'
-import { LibraryList } from '#/components/library'
 
 const PAGE = 30
 

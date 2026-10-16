@@ -1,24 +1,8 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { LibraryList, PositionPanel } from './library'
+import { LibraryList, PositionPanel } from './library.tsx'
 import type { ReactNode } from 'react'
-import type { LibraryGameItem } from '#/lib/library'
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({
-    children,
-    to,
-    search,
-  }: {
-    children: ReactNode
-    to: string
-    search?: Record<string, unknown>
-  }) => (
-    <a href={`${to}?${new URLSearchParams(search as Record<string, string>).toString()}`}>
-      {children}
-    </a>
-  ),
-}))
+import type { LibraryGameItem } from './library-model.ts'
 
 afterEach(cleanup)
 

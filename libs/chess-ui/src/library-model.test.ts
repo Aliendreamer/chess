@@ -12,8 +12,8 @@ import {
   useBroadcastRuns,
   useLibraryPosition,
   useOpeningName,
-} from './library'
-import type { BroadcastRun } from './library'
+} from './library-model.ts'
+import type { BroadcastRun } from './library-model.ts'
 
 describe('searchQuery', () => {
   it('sends only the filters that are set', () => {

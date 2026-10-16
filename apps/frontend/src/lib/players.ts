@@ -1,16 +1,10 @@
 import { CATEGORIES, categoryLabel, categoryOf } from '@chess/core'
-import type { Category } from '@chess/core'
+import type { Category, Score } from '@chess/core'
 
 /**
  * Player profiles (player-profiles): the API's shapes and the record grouped into game types. Client-safe; the reads
  * are in `lib/server/players.ts`.
  */
-
-export interface Score {
-  wins: number
-  draws: number
-  losses: number
-}
 
 export interface TimeControlRecord extends Score {
   timeControl: string
@@ -46,13 +40,4 @@ export function recordByCategory(rows: ReadonlyArray<TimeControlRecord>): Array<
       },
     ]
   })
-}
-
-/** Whole percentages for the record bar, losses taking the rounding so they add up to 100. */
-export function scoreShare(s: Score): Score {
-  const games = s.wins + s.draws + s.losses
-  if (games === 0) return { wins: 0, draws: 0, losses: 0 }
-  const wins = Math.round((s.wins / games) * 100)
-  const draws = Math.round((s.draws / games) * 100)
-  return { wins, draws, losses: 100 - wins - draws }
 }
