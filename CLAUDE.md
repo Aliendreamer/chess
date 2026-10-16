@@ -101,8 +101,8 @@ Redpanda Kafka API `127.0.0.1:19092`.
 
 ## Commit rules (load-bearing)
 
-Conventional commits with a **required scope** from `frontend | backend | engine | repo | deps | proxy | ci |
-release`, lower-case subject — enforced by commitlint on `commit-msg`. Nx Release derives version
+Conventional commits with a **required scope** from `frontend | backend | engine | desktop | libs | repo | deps |
+proxy | ci | release`, lower-case subject — enforced by commitlint on `commit-msg`. Nx Release derives version
 bumps and per-project changelogs from these (`projectsRelationship: independent`, tags
 `{project}@{version}`), so a non-conforming message is rejected, not just discouraged.
 `pre-commit` runs `lint-staged --no-stash` (prettier on json/md/yml only; code formatting belongs

@@ -1,5 +1,6 @@
 packages:
   - apps/*
+  - libs/*
   # The BFF's Node telemetry (observability D7): a package of its own, so the prod image ships only its dependencies.
   - apps/frontend/otel
 

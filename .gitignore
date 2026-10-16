@@ -12,6 +12,9 @@ obj/
 !.env.example
 
 # app build outputs
+# Tauri: the Rust build and the Stockfish sidecar fetched by tools/desktop/fetch-stockfish.mjs
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/binaries/
 .output/
 .nitro/
 .tanstack/

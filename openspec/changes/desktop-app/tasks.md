@@ -4,7 +4,7 @@ machine, a release), with the command that proves it.
 
 ## 1. Workspace
 
-- [ ] 1.1 Add `libs/*` to `pnpm-workspace.yaml`, scopes `desktop` and `libs` to commitlint and `openspec/config.yaml`,
+- [x] 1.1 Add `libs/*` to `pnpm-workspace.yaml`, scopes `desktop` and `libs` to commitlint and `openspec/config.yaml`,
       Tauri `target/` and `src-tauri/binaries/` to `.gitignore`. Test first: `echo "feat(libs): x" | pnpm commitlint`
       fails with `scope-enum`.
 - [ ] 1.2 Create `libs/chess-core` and `libs/chess-ui` as Nx projects (`lint`, `test`, `typecheck`; vitest; TS source,

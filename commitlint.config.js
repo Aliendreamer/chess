@@ -13,6 +13,8 @@ export default {
         "frontend",
         "backend",
         "engine",
+        "desktop",
+        "libs",
         "repo",
         "deps",
         "proxy",

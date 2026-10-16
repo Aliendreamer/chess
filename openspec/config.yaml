@@ -17,8 +17,8 @@ context: |
   conversation before any code; defaults in ROADMAP §3/§4 are not settled until then.
 
   Conventions that are load-bearing:
-  - Conventional commits with a required scope (frontend | backend | repo | deps | proxy | ci |
-    release), lower-case subject, body lines <= 100 chars. Nx Release derives versions from them.
+  - Conventional commits with a required scope (frontend | backend | engine | desktop | libs | repo |
+    deps | proxy | ci | release), lower-case subject, body lines <= 100 chars. Nx Release derives versions from them.
   - Exact version pins everywhere — no ^ or ~ in package.json or Directory.Packages.props.
   - Backend: everything internal sealed, warning-clean under AnalysisMode=All +
     TreatWarningsAsErrors, logging through Utils/Log.cs [LoggerMessage] methods.
