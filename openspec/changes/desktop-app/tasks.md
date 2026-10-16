@@ -108,7 +108,7 @@ machine, a release), with the command that proves it.
       (version in `apps/desktop/package.json`, `tauri.conf.json` reads it, `CHANGELOG.md`), `bundle` target (fetch
       Stockfish → `vite build` → `tauri build`). **[human]** `pnpm exec nx run desktop:bundle` in WSL makes the AppImage
       and .deb; on the Windows-side clone it makes the .exe and .msi.
-- [ ] 6.2 `tools/desktop/publish.sh <version>`: `gh release create desktop@<version>` with the changelog section as
+- [x] 6.2 `tools/desktop/publish.sh <version>`: `gh release create desktop@<version>` with the changelog section as
       notes, or `gh release upload` when it exists; installers of the current machine only. Test first: a dry-run mode
       prints the `gh` commands for an existing and a new release, checked by a shell test.
 - [ ] 6.3 CLAUDE.md, ROADMAP Part 7 and the project memory updated; `apps/desktop/README.md` (toolchain: Rust,
