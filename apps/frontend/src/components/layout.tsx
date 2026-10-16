@@ -30,13 +30,26 @@ import { isAdmin } from '#/lib/admin'
  * the site theme, and the board reads animation and coordinates from the context.
  */
 /** Shared components' links (shared-chess-libraries): a path with an optional query, on this router. */
+/** A query as the router reads one: each value JSON when it parses (`ply=12` is a number), else the text. */
+function searchOf(query: string): Record<string, unknown> {
+  return Object.fromEntries(
+    [...new URLSearchParams(query)].map(([key, value]) => {
+      try {
+        return [key, JSON.parse(value) as unknown]
+      } catch {
+        return [key, value]
+      }
+    }),
+  )
+}
+
 export function ClubLink({ to, ...rest }: AppLinkProps) {
   const [path = '', query] = to.split('?')
   // The shared components name routes as strings; the router types them, so the props are handed over as they are.
   const props = {
     ...rest,
     to: path,
-    ...(query ? { search: Object.fromEntries(new URLSearchParams(query)) } : {}),
+    ...(query ? { search: searchOf(query) } : {}),
   } as unknown as LinkProps
   return <Link {...props} />
 }

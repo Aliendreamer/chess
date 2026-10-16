@@ -7,37 +7,12 @@ import {
   LinesTable,
   RunOutcome,
   StudyLinesTable,
-  StudyList,
   TrainedFamilies,
   TrainerSourceSwitch,
-} from './trainer'
+  TrainerStudyList,
+} from './trainer.tsx'
 import type { ReactNode } from 'react'
-import type { TrainerLine } from '#/lib/trainer'
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({
-    children,
-    to,
-    params,
-    search,
-    ...rest
-  }: {
-    children: ReactNode
-    to: string
-    params?: Record<string, string>
-    search?: Record<string, unknown>
-  }) => {
-    const path = Object.entries(params ?? {}).reduce((p, [k, v]) => p.replace(`$${k}`, v), to)
-    return (
-      <a
-        href={`${path}?${new URLSearchParams(search as Record<string, string>).toString()}`}
-        {...rest}
-      >
-        {children}
-      </a>
-    )
-  },
-}))
+import type { TrainerLine } from './trainer-model.ts'
 
 afterEach(cleanup)
 
@@ -76,7 +51,7 @@ describe('FamilyColumns', () => {
       within(screen.getByRole('region', { name: 'Games and others' }))
         .getByRole('link', { name: 'Ruy Lopez' })
         .getAttribute('href'),
-    ).toBe('/trainer/Ruy Lopez?color=black')
+    ).toBe('/trainer/Ruy%20Lopez?color=black')
     expect(screen.getByRole('region', { name: 'Gambits' })).toBeTruthy()
     expect(screen.queryByRole('region', { name: 'Openings and attacks' })).toBeNull()
   })
@@ -164,7 +139,7 @@ describe('TrainedFamilies', () => {
       <TrainedFamilies families={[{ name: 'Ruy Lopez', color: 'white', lines: 41, learned: 2 }]} />,
     )
     expect(screen.getByRole('link', { name: /Ruy Lopez · as White/ }).getAttribute('href')).toBe(
-      '/trainer/Ruy Lopez?color=white',
+      '/trainer/Ruy%20Lopez?color=white',
     )
     rerender(<TrainedFamilies families={[]} />)
     expect(screen.getByText(/No openings trained yet/)).toBeTruthy()
@@ -186,7 +161,7 @@ describe('studies in the trainer (study-repertoire-trainer)', () => {
 
   it('lists my studies with their lines and progress, each opening its drill', () => {
     render(
-      <StudyList
+      <TrainerStudyList
         studies={[
           { id: 's1', title: 'My e4', lines: 2, learned: 1, createdAt: '2026-10-05T10:00:00Z' },
         ]}
@@ -200,7 +175,7 @@ describe('studies in the trainer (study-repertoire-trainer)', () => {
   })
 
   it('points to the studies when there are none', () => {
-    render(<StudyList studies={[]} color="white" />)
+    render(<TrainerStudyList studies={[]} color="white" />)
     expect(screen.getByRole('link', { name: 'Make a study' }).getAttribute('href')).toContain(
       '/studies',
     )

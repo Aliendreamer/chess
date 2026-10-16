@@ -13,7 +13,18 @@ import {
   toInput,
   uciLine,
 } from '@chess/core'
-import { Button, ErrorText, Panel, SectionHeading, useAdoptTyped, useCommand } from '@chess/ui'
+import {
+  AnalysisBoard,
+  Button,
+  ErrorText,
+  Panel,
+  SectionHeading,
+  analysisTitle,
+  useAdoptTyped,
+  useAnalysis,
+  useCommand,
+  useMoveTree,
+} from '@chess/ui'
 import type { ParsedGame } from '@chess/core'
 import type { LibrarySource } from '#/lib/library'
 import {
@@ -24,8 +35,6 @@ import {
   postAnalysis,
   postCreateStudies,
 } from '#/lib/server/api'
-import { analysisTitle, useMoveTree } from '#/lib/studies'
-import { useAnalysis } from '#/lib/analysis'
 import {
   BROADCAST_SOURCE,
   isLibrarySource,
@@ -35,7 +44,6 @@ import {
 } from '#/lib/library'
 import { PositionPanel } from '#/components/library'
 import { pageTitle } from '#/lib/feedback'
-import { AnalysisBoard } from '#/components/studies'
 
 /**
  * The open analysis board (analysis-board): any position or game with the study tree and the engine, nothing saved

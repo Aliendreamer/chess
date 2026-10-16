@@ -20,8 +20,13 @@ import {
   surname,
   useAnswerBoard,
   verdictText,
-} from './training'
-import type { SessionState, TrainingItem, TrainingSource, TrainingVerdict } from './training'
+} from './training-model.ts'
+import type {
+  SessionState,
+  TrainingItem,
+  TrainingSource,
+  TrainingVerdict,
+} from './training-model.ts'
 
 const AFTER_F3_E5 = 'rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2'
 const AFTER_E4 = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'

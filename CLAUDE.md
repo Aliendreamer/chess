@@ -299,12 +299,12 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   by link (random v4 id; a private study is 404 for others), `Version` as the concurrency token (a stale save is 409).
   `Studies/StudyTree` replays every line with `ChessRules.ForStudy` (any FEN, no automatic endings) and stores the
   server's SAN/FEN — the browser sends UCI only; `StudyPgn` exports with variations; `StudyService` holds the logic
-  behind `WebApi/Studies/*` and `POST /api/games/{id}/study`. Frontend: `lib/studies.ts` (tree ops, PGN import with
+  behind `WebApi/Studies/*` and `POST /api/games/{id}/study`. Frontend: `@chess/ui` `studies-model.ts` (tree ops, PGN import with
   `@mliebelt/pgn-parser` — chess.js drops variations — per game, so a broken game is reported), `/studies`,
   `/studies/$id`, `/pgn/study/$id`. A controlled input must adopt text typed before hydration (see the import form).
   **Analysis board (analysis-board)**: `/analysis` analyses any position without saving (`?fen=`, `?game={id}` for a
   finished game only — judged by the live view, `lib/server/games.ts#loadFinishedGame`, since the replica lags; or a
-  pasted FEN/PGN); the study page and it share `components/studies.tsx#AnalysisBoard` + `lib/studies.ts#useMoveTree`.
+  pasted FEN/PGN); the study page and it share `@chess/ui` `studies.tsx#AnalysisBoard` + `studies-model.ts#useMoveTree`.
   The game page's Analyse opens the board; Save as study there makes the study. **Game library (game-library)**:
   `library_games` (moves and factual headers, never annotations, each with `source` and `licence`), `library_positions`
   (every position a game reached, by `PositionKey`) and `openings` (lichess `chess-openings`, CC0, embedded from
@@ -326,8 +326,8 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   0–5 and a due time (`TrainerSchedule`: clean = up a box, due after 0/1/3/7/14/30 days; a mistake = box 0, due now;
   next = lowest due box, then oldest due, then new; learned from box 3), on the primary and only the member's own.
   `GET /api/trainer/families?q&color`, `…/family?name&color`, `…/next`, `POST …/results`, `GET /api/me/trainer`.
-  `/trainer` shows the families in columns by kind (`lib/trainer.ts#openingKind`: gambits, defences, openings,
-  games), each scrolling inside the `wide fill` page (trainer-columns). Frontend: `lib/trainer.ts#useDrill` (the board plays the other side after 400 ms, a wrong move is shown with the
+  `/trainer` shows the families in columns by kind (`@chess/core#openingKind`: gambits, defences, openings,
+  games), each scrolling inside the `wide fill` page (trainer-columns). Frontend: `@chess/ui` `trainer-model.ts#useDrill` (the board plays the other side after 400 ms, a wrong move is shown with the
   right one and must be replaced, `onDone(mistakes)` once), `/trainer`, `/trainer/$family?color=`, the rail's Trainer
   and "Openings trained" on the member's own profile only. **Study lines (study-repertoire-trainer)**: `Trainer/StudyLines`
   makes every start-to-leaf path of the member's OWN study a line (main line first; a path with no move for the side
@@ -342,8 +342,8 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   interactive analysis. `GET …/review` computes the review on read (`Review/GameReviewer`, pure: lichess's winning
   chances, 0.1/0.2/0.3 = ?!/?/??, the engine's own move never marked, a board ending judged from the result, the book
   exit from `openings`); a finished game is reviewed automatically (`Training/AutoReview.cs`, group
-  `chess.auto-review`; not aborted, ply ≥ 2). Frontend: `lib/review.ts` (`useReview` polls every 2 s while running),
-  `components/review.tsx` (`EvalGraph`, `ReviewPanel` on the ended game page with the clickable better line,
+  `chess.auto-review`; not aborted, ply ≥ 2). Frontend: `@chess/ui` `review-model.ts` (`useReview` polls every 2 s while running),
+  `review.tsx` (`EvalGraph`, `ReviewPanel` on the ended game page with the clickable better line,
   move-list marks). **Training (training-sessions)**: `/training` (`/practice` redirects), two modes. _My games_:
   `mistake_drills`, filled lazily by `TrainingService.SyncAsync` from complete reviews (once per member and game,
   `training_synced`). _Master games_: `training_positions`, critical moments mined from `library_positions` by the
@@ -353,8 +353,8 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   sessions: `GET /api/training/next?mode&eco&phase&player&from&to&exclude` (ids `g:{gameId:N}:{ply}` /
   `p:{positionId:N}`), `POST /api/training/answer` (the server judges: master's move or engine-accepted, verdict
   `master|engine|both|none`; Leitner via `TrainerSchedule`, progress in `training_progress`), `GET
-/api/training/summary`. Frontend: `lib/training.ts` (session reducer, verdict text, `useAnswerBoard`),
-  `components/training.tsx`; 10-position sets or endless.
+/api/training/summary`. Frontend: `@chess/ui` `training-model.ts` (session reducer, verdict text, `useAnswerBoard`),
+  `training.tsx`; 10-position sets or endless.
   The local stack allows `RateLimit__PermitLimit=1200` (the e2e suite's pace). **Chess news (chess-news)**: the
   `news-fetcher` cluster singleton (`News/`) runs `INewsRounds` every `News:FetchMinutes` over `News:Feeds` (FIDE,
   ChessBase, Lichess blog, TWIC with its `Accept` header — never chess.com: its terms; only enabled feeds are listed) and every

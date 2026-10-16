@@ -1,30 +1,35 @@
 import { useEffect, useReducer, useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { lineSans, uciSquares } from '@chess/core'
-import { Panel, SectionHeading, useCommand } from '@chess/ui'
-import type { PreviewState } from '#/lib/review'
-import type { TrainingItem, TrainingMode, TrainingSettings, TrainingVerdict } from '#/lib/training'
 import {
   DEFAULT_SETTINGS,
-  answerArrows,
-  excludeIds,
-  initialSession,
-  isTrainingMode,
-  progressStrip,
-  sessionReducer,
-  setComplete,
-  useAnswerBoard,
-} from '#/lib/training'
-import { previewLine } from '#/lib/review'
-import { getTrainingNext, getTrainingSummary, postTrainingAnswer } from '#/lib/server/api'
-import { pageTitle } from '#/lib/feedback'
-import {
+  Panel,
+  SectionHeading,
   TrainingBoard,
   TrainingPanel,
   TrainingStart,
   TrainingSummaryView,
   TrainingVerdictView,
-} from '#/components/training'
+  answerArrows,
+  excludeIds,
+  initialSession,
+  isTrainingMode,
+  previewLine,
+  progressStrip,
+  sessionReducer,
+  setComplete,
+  useAnswerBoard,
+  useCommand,
+} from '@chess/ui'
+import type {
+  PreviewState,
+  TrainingItem,
+  TrainingMode,
+  TrainingSettings,
+  TrainingVerdict,
+} from '@chess/ui'
+import { getTrainingNext, getTrainingSummary, postTrainingAnswer } from '#/lib/server/api'
+import { pageTitle } from '#/lib/feedback'
 
 /**
  * Training (training D5): the member's own mistakes or critical moments from master games, one position at a time.

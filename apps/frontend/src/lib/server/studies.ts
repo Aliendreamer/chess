@@ -1,8 +1,7 @@
 import { isGuid, pgnDownload, readJson, sendCommand } from './upstream'
 import type { CommandOutcome, StudyInput, StudyMoveInput, Think } from '@chess/core'
 import type { CursorPage } from '../play'
-import type { AnalysisView } from '../analysis'
-import type { ImportResult, StudyListItem, StudyView } from '../studies'
+import type { AnalysisView, ImportResult, StudyListItem, StudyView } from '@chess/ui'
 
 /** `POST /api/studies`: one study or an import of up to 20; the server replays every line (studies D2). */
 export function createStudies(

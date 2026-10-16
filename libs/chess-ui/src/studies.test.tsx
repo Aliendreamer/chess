@@ -1,19 +1,12 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_PREFERENCES, STANDARD_START, playMove } from '@chess/core'
-import { PreferencesContext } from '@chess/ui'
-import { AnalysisBoard, MoveTree, StudyList } from './studies'
+import { PreferencesContext } from './board.tsx'
+import { AnalysisBoard, MoveTree, StudyList } from './studies.tsx'
+import { useMoveTree } from './studies-model.ts'
 import type { ReactNode } from 'react'
 import type { StudyMove } from '@chess/core'
-import type { Analysis } from '#/lib/analysis'
-import { useMoveTree } from '#/lib/studies'
-
-// The router's <Link> needs a router; the list only needs an anchor to its study.
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, params }: { children: ReactNode; params: { id: string } }) => (
-    <a href={`/studies/${params.id}`}>{children}</a>
-  ),
-}))
+import type { Analysis } from './analysis.ts'
 
 afterEach(cleanup)
 

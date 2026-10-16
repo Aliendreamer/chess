@@ -6,7 +6,7 @@ import type {
   TrainingNext,
   TrainingSummary,
   TrainingVerdict,
-} from '../training'
+} from '@chess/ui'
 
 /** The query of `GET /api/training/next`: filters only for master games, `exclude` as one comma list. */
 export function trainingQuery(

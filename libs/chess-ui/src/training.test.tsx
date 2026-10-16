@@ -8,7 +8,7 @@ import {
   TrainingSummaryView,
   TrainingVerdictView,
   poolText,
-} from './training'
+} from './training.tsx'
 import type { ReactNode } from 'react'
 import type {
   TrainingAnswer,
@@ -16,27 +16,7 @@ import type {
   TrainingSettings,
   TrainingSummary,
   TrainingVerdict,
-} from '#/lib/training'
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({
-    children,
-    to,
-    params,
-    search,
-  }: {
-    children: ReactNode
-    to: string
-    params?: Record<string, string>
-    search?: Record<string, unknown>
-  }) => {
-    const path = Object.entries(params ?? {}).reduce((p, [k, v]) => p.replace(`$${k}`, v), to)
-    const query = search
-      ? `?${new URLSearchParams(search as Record<string, string>).toString()}`
-      : ''
-    return <a href={`${path}${query}`}>{children}</a>
-  },
-}))
+} from './training-model.ts'
 
 afterEach(cleanup)
 

@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { STANDARD_START, parsePgn } from '@chess/core'
-import { Button, ErrorText, Panel, SectionHeading, buttonClass, useCommand } from '@chess/ui'
-import type { ImportResult } from '#/lib/studies'
+import {
+  Button,
+  ErrorText,
+  Panel,
+  SectionHeading,
+  StudyList,
+  buttonClass,
+  useCommand,
+} from '@chess/ui'
+import type { ImportResult } from '@chess/ui'
 import { getMyStudies, postCreateStudies } from '#/lib/server/api'
-import { StudyList } from '#/components/studies'
 import { pageTitle } from '#/lib/feedback'
 
 /** My studies and the PGN import (studies D3, D7). */

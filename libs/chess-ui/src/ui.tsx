@@ -372,6 +372,18 @@ export const LinkContext = createContext<(props: AppLinkProps) => ReactNode>(({ 
   <a href={to} {...rest} />
 ))
 
+/** A path with its query: `href('/trainer', { color: 'white' })` → `/trainer?color=white`; empty values are left out. */
+export function href(
+  path: string,
+  search: Record<string, string | number | boolean | null | undefined>,
+): string {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(search))
+    if (value !== undefined && value !== null) query.set(key, String(value))
+  const text = query.toString()
+  return text ? `${path}?${text}` : path
+}
+
 /** The app's link, from {@link LinkContext}. */
 export function AppLink(props: AppLinkProps) {
   const Link = use(LinkContext)

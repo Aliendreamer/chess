@@ -1,11 +1,17 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeader, getRequestIP } from '@tanstack/react-start/server'
 import { THINK_LEVELS, isPreferences } from '@chess/core'
+import {
+  MAX_EXCLUDE,
+  UCI_MOVE,
+  cleanFilters,
+  isColor,
+  isTrainingId,
+  isTrainingMode,
+} from '@chess/ui'
 import { CLAIM_OUTCOMES, PRESETS } from '../games'
 import { checkNewMember, isAggregateId, isProjectionGroup } from '../admin'
 import { IMPORT_BATCH, isLibrarySource, searchQuery } from '../library'
-import { isColor } from '../trainer'
-import { MAX_EXCLUDE, UCI_MOVE, cleanFilters, isTrainingId, isTrainingMode } from '../training'
 import { loadMe, loadPreferences, savePreferences } from './auth'
 import { apiUrl, clientIp, forwardClientIp, isGuid } from './upstream'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
@@ -69,8 +75,7 @@ import type { ColourChoice, Preferences, StudyInput, StudyMoveInput, Think } fro
 import type { MemberAction, NewMember } from '../admin'
 import type { ChallengeAnswer } from './members'
 import type { GameCommand } from '../games'
-import type { TrainerColor } from '../trainer'
-import type { TrainingFilters, TrainingMode } from '../training'
+import type { TrainerColor, TrainingFilters, TrainingMode } from '@chess/ui'
 
 /**
  * A `fetch` bound to the internal API that re-attaches the caller's session cookie under its API name and tells the API

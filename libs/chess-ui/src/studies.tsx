@@ -1,5 +1,4 @@
 import { Fragment, useEffect, useRef } from 'react'
-import { Link } from '@tanstack/react-router'
 import {
   THINKS,
   legalTargets,
@@ -10,11 +9,13 @@ import {
   scoreText,
   uciSquares,
 } from '@chess/core'
-import { Board, Button, ErrorText, FlipIcon, MoveNav, Panel, PromotionPicker } from '@chess/ui'
+import { AppLink, Button, ErrorText, Panel } from './ui.tsx'
+import { Board, FlipIcon, PromotionPicker } from './board.tsx'
+import { MoveNav } from './game.tsx'
 import type { ReactNode } from 'react'
-import type { MoveTreeEditor, StudyListItem } from '#/lib/studies'
+import type { MoveTreeEditor, StudyListItem } from './studies-model.ts'
 import type { Evaluation, StudyMove, TreePath } from '@chess/core'
-import type { Analysis } from '#/lib/analysis'
+import type { Analysis } from './analysis.ts'
 
 /**
  * A study's moves (studies D7): the main line inline, each variation in parentheses right after the move it replaces,
@@ -130,13 +131,12 @@ export function StudyList({ studies }: { studies: ReadonlyArray<StudyListItem> }
           key={study.id}
           className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 border-b border-line-divider py-2.5"
         >
-          <Link
-            to="/studies/$id"
-            params={{ id: study.id }}
+          <AppLink
+            to={`/studies/${encodeURIComponent(study.id)}`}
             className="truncate text-fg-primary no-underline hover:text-fg-accent"
           >
             {study.title}
-          </Link>
+          </AppLink>
           <span className="text-sm text-fg-secondary">
             {[
               study.white && study.black ? `${study.white} – ${study.black}` : null,

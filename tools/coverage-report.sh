@@ -17,6 +17,13 @@ pnpm -C apps/frontend run test:coverage
 
 echo ""
 echo "======================================================================"
+echo " Shared libraries coverage (vitest v8): @chess/core, @chess/ui"
+echo "======================================================================"
+pnpm -C libs/chess-core run test:coverage
+pnpm -C libs/chess-ui run test:coverage
+
+echo ""
+echo "======================================================================"
 echo " Backend coverage — unit suite + line gate"
 echo "======================================================================"
 apps/backend/build_test.sh

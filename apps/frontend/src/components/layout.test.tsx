@@ -1,20 +1,26 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_PREFERENCES } from '@chess/core'
-import { NotFound, PendingBar, RouteError, Shell } from './layout'
+import { ClubLink, NotFound, PendingBar, RouteError, Shell } from './layout'
 import type { ReactNode } from 'react'
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
     children,
     to,
+    search,
     activeOptions,
   }: {
     children: ReactNode
     to: string
+    search?: unknown
     activeOptions?: { exact?: boolean }
   }) => (
-    <a href={to} data-exact={String(activeOptions?.exact ?? false)}>
+    <a
+      href={to}
+      data-exact={String(activeOptions?.exact ?? false)}
+      data-search={search === undefined ? undefined : JSON.stringify(search)}
+    >
       {children}
     </a>
   ),
@@ -187,5 +193,19 @@ describe('shell details (ui-polish)', () => {
     )
     const avatar = within(screen.getByRole('complementary')).getByText('A')
     expect(avatar.className).not.toContain('bg-board')
+  })
+})
+
+describe('ClubLink (shared-chess-libraries)', () => {
+  it('hands the router the path and the query as it reads one, numbers as numbers', () => {
+    render(<ClubLink to="/analysis?library=abc&ply=12">Open</ClubLink>)
+    const link = screen.getByRole('link', { name: 'Open' })
+    expect(link.getAttribute('href')).toBe('/analysis')
+    expect(JSON.parse(link.dataset.search ?? '')).toEqual({ library: 'abc', ply: 12 })
+  })
+
+  it('passes a path without a query as it is', () => {
+    render(<ClubLink to="/training">Train</ClubLink>)
+    expect(screen.getByRole('link', { name: 'Train' }).dataset.search).toBeUndefined()
   })
 })

@@ -40,7 +40,7 @@ machine, a release), with the command that proves it.
 - [x] 3.2 Add `LinkContext` and move `components/ui.tsx` primitives, `Board`/`BoardPlaceholder`, move list/tree and
       `CategoryMark` into `@chess/ui`; the club provides its `Link`. Test first: the moved component tests render with a
       test `LinkContext` and fail on missing exports.
-- [ ] 3.3 Move `EvalGraph`, `ReviewPanel`, `AnalysisBoard`/`AnalysisPanel`, the drill board (`useDrill`'s view) and the
+- [x] 3.3 Move `EvalGraph`, `ReviewPanel`, `AnalysisBoard`/`AnalysisPanel`, the drill board (`useDrill`'s view) and the
       training answer board, taking data and commands as props. Test first: the moved tests, red.
 - [ ] 3.4 Club regression gate. **[human]** `tools/e2e.sh` (Docker) passes unchanged; `nx run-many -t test` and the
       frontend coverage gate (75 %) pass.

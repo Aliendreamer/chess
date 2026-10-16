@@ -10,8 +10,8 @@ import {
   sanAt,
   studyLineLabel,
   useDrill,
-} from './trainer'
-import type { TrainerLine } from './trainer'
+} from './trainer-model.ts'
+import type { TrainerLine } from './trainer-model.ts'
 
 const BERLIN: TrainerLine = {
   key: 'k',

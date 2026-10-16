@@ -1,7 +1,7 @@
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { STANDARD_START, playMove } from '@chess/core'
-import { analysisTitle, studyByline, useMoveTree } from './studies'
+import { analysisTitle, studyByline, useMoveTree } from './studies-model.ts'
 import type { StudyMove } from '@chess/core'
 
 const m = (uci: string, san: string, children: Array<StudyMove> = []): StudyMove => ({

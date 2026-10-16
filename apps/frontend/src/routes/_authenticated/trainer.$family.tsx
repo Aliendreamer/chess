@@ -1,19 +1,25 @@
 import { useState } from 'react'
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
-import { Button, ErrorText, Panel, SectionHeading, useCommand } from '@chess/ui'
-import type { ReactNode } from 'react'
-import type { NextLine, RunResult, TrainerColor, TrainerLine } from '#/lib/trainer'
-import { isColor, lineState, useDrill } from '#/lib/trainer'
-import { getTrainerFamily, getTrainerNext, postTrainerResult } from '#/lib/server/api'
-import { pageTitle } from '#/lib/feedback'
 import {
+  Button,
   ColorSwitch,
   DrillLayout,
+  ErrorText,
   LearnedBar,
   LinesTable,
+  Panel,
   RunOutcome,
+  SectionHeading,
   dueText,
-} from '#/components/trainer'
+  isColor,
+  lineState,
+  useCommand,
+  useDrill,
+} from '@chess/ui'
+import type { ReactNode } from 'react'
+import type { NextLine, RunResult, TrainerColor, TrainerLine } from '@chess/ui'
+import { getTrainerFamily, getTrainerNext, postTrainerResult } from '#/lib/server/api'
+import { pageTitle } from '#/lib/feedback'
 
 /** One family's drill (opening-trainer): the next due line on the board, the outcome of each run, and every line's state. */
 export const Route = createFileRoute('/_authenticated/trainer/$family')({

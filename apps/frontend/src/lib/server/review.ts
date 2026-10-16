@@ -1,6 +1,6 @@
 import { postCommand, readJson } from './upstream'
 import type { CommandOutcome } from '@chess/core'
-import type { ReviewView } from '../review'
+import type { ReviewView } from '@chess/ui'
 
 /** `GET /api/games/{id}/review`: null for an unknown game. */
 export async function loadReview(fetchImpl: typeof fetch, id: string): Promise<ReviewView | null> {

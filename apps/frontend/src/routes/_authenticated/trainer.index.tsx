@@ -1,12 +1,20 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Button, LoadMore, Panel, SectionHeading } from '@chess/ui'
-import type { StudyTraining, TrainerColor } from '#/lib/trainer'
+import {
+  Button,
+  ColorSwitch,
+  FamilyColumns,
+  LoadMore,
+  Panel,
+  SectionHeading,
+  TrainerSourceSwitch,
+  TrainerStudyList,
+  isColor,
+} from '@chess/ui'
+import type { StudyTraining, TrainerColor } from '@chess/ui'
 import type { CursorPage } from '#/lib/play'
-import { isColor } from '#/lib/trainer'
 import { useLoadMore } from '#/lib/play'
 import { getTrainerFamilies, getTrainerStudies } from '#/lib/server/api'
 import { pageTitle } from '#/lib/feedback'
-import { ColorSwitch, FamilyColumns, StudyList, TrainerSourceSwitch } from '#/components/trainer'
 
 const PAGE = 30
 
@@ -100,7 +108,7 @@ function Studies({ first, color }: { first: CursorPage<StudyTraining>; color: Tr
   )
   return (
     <section className="flex flex-col gap-3 shell:min-h-0 shell:flex-1" aria-label="My studies">
-      <StudyList studies={pager.items} color={color} />
+      <TrainerStudyList studies={pager.items} color={color} />
       <LoadMore pager={pager} />
     </section>
   )

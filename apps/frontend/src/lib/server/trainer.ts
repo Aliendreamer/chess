@@ -11,7 +11,7 @@ import type {
   TrainedFamily,
   TrainerColor,
   TrainerLine,
-} from '../trainer'
+} from '@chess/ui'
 
 /** `GET /api/trainer/families?q=&color=`: every family (or those matching), with the member's progress. */
 export async function loadFamilies(

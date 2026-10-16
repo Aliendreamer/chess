@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { childrenAt, promote, remove, toInput } from '@chess/core'
-import { Button, ErrorText, Panel, SectionHeading, useCommand } from '@chess/ui'
-import type { StudyView } from '#/lib/studies'
+import {
+  AnalysisBoard,
+  Button,
+  ErrorText,
+  Panel,
+  SectionHeading,
+  studyByline,
+  useAnalysis,
+  useCommand,
+  useMoveTree,
+} from '@chess/ui'
+import type { StudyView } from '@chess/ui'
 import { getStudy, postAnalysis, postShareStudy, putStudy } from '#/lib/server/api'
-import { studyByline, useMoveTree } from '#/lib/studies'
-import { useAnalysis } from '#/lib/analysis'
-import { AnalysisBoard } from '#/components/studies'
 import { pageTitle } from '#/lib/feedback'
 
 /**

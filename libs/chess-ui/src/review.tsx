@@ -1,8 +1,7 @@
-import { Link } from '@tanstack/react-router'
-import { Button, ErrorText, Panel } from '@chess/ui'
-import type { PreviewState, ReviewView } from '#/lib/review'
+import { AppLink, Button, ErrorText, Panel, href } from './ui.tsx'
+import { advantageText, bookLink, graphPoints, moveLabel, scoreLabel } from './review-model.ts'
+import type { PreviewState, ReviewView } from './review-model.ts'
 import type { MoveClass, ReviewCounts, ReviewedMove } from '@chess/core'
-import { advantageText, bookLink, graphPoints, moveLabel, scoreLabel } from '#/lib/review'
 
 /**
  * Game review (game-review): the evaluation graph and the review panel beside a finished game. Presentational;
@@ -248,14 +247,14 @@ export function ReviewPanel({
               {trainer ? (
                 <>
                   {' '}
-                  <Link
-                    to="/trainer/$family"
-                    params={{ family: trainer.family }}
-                    search={{ color: trainer.color }}
+                  <AppLink
+                    to={href(`/trainer/${encodeURIComponent(trainer.family)}`, {
+                      color: trainer.color,
+                    })}
                     className="text-fg-accent"
                   >
                     Train this opening
-                  </Link>
+                  </AppLink>
                 </>
               ) : null}
             </p>
@@ -263,9 +262,9 @@ export function ReviewPanel({
           {mine ? (
             <p className="m-0 text-sm text-fg-secondary" data-testid="review-training">
               Your mistakes from this game join your training on their own.{' '}
-              <Link to="/training" className="text-fg-accent">
+              <AppLink to={'/training'} className="text-fg-accent">
                 Open training
-              </Link>
+              </AppLink>
             </p>
           ) : null}
         </>

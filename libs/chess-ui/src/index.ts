@@ -1,4 +1,14 @@
-// Presentational React shared by the club frontend and the desktop app (shared-chess-libraries).
+// Presentational React shared by the club frontend and the desktop app (shared-chess-libraries): the board and game
+// pieces, the primitives, and per feature its hooks and shapes (`<feature>-model.ts`) and components (`<feature>.tsx`).
+export * from './analysis.ts'
 export * from './board.tsx'
 export * from './game.tsx'
+export * from './review-model.ts'
+export * from './review.tsx'
+export * from './studies-model.ts'
+export * from './studies.tsx'
+export * from './trainer-model.ts'
+export * from './trainer.tsx'
+export * from './training-model.ts'
+export * from './training.tsx'
 export * from './ui.tsx'

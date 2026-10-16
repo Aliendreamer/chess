@@ -1,19 +1,25 @@
 import { useState } from 'react'
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
-import { Button, ErrorText, Panel, SectionHeading, useCommand } from '@chess/ui'
-import type { ReactNode } from 'react'
-import type { NextStudyLine, RunResult, StudyLine, TrainerColor } from '#/lib/trainer'
-import { isColor, lineState, useDrill } from '#/lib/trainer'
-import { getStudyDrill, getStudyNext, postStudyTrainerResult } from '#/lib/server/api'
-import { pageTitle } from '#/lib/feedback'
 import {
+  Button,
   ColorSwitch,
   DrillLayout,
+  ErrorText,
   LearnedBar,
+  Panel,
   RunOutcome,
+  SectionHeading,
   StudyLinesTable,
   dueText,
-} from '#/components/trainer'
+  isColor,
+  lineState,
+  useCommand,
+  useDrill,
+} from '@chess/ui'
+import type { ReactNode } from 'react'
+import type { NextStudyLine, RunResult, StudyLine, TrainerColor } from '@chess/ui'
+import { getStudyDrill, getStudyNext, postStudyTrainerResult } from '#/lib/server/api'
+import { pageTitle } from '#/lib/feedback'
 
 /**
  * One of the member's studies drilled line by line (study-repertoire-trainer): the next due line on the board from the

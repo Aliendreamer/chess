@@ -17,7 +17,7 @@ for a in "$@"; do
 done
 
 echo "==> Unit + lint (fast, Docker-free)…"
-pnpm exec nx run-many -t test lint --projects=frontend,backend
+pnpm exec nx run-many -t test lint --projects=frontend,backend,chess-core,chess-ui
 
 if pnpm exec nx show project backend --json | jq -e '.targets["integration-test"]' >/dev/null 2>&1; then
   echo "==> Backend integration (Testcontainers — needs Docker)…"

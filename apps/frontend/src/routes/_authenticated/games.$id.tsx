@@ -24,15 +24,19 @@ import {
   MoveList,
   MoveNav,
   PromotionPicker,
+  REVIEW_POLL_MS,
+  ReviewPanel,
   buttonClass,
+  previewLine,
   useCommand,
+  useReview,
 } from '@chess/ui'
 import type { GameCommand, GameSummary, GameView, MoveItem } from '#/lib/games'
 import type { LiveFrame } from '#/lib/live'
 import type { Me } from '#/lib/auth'
 import type { SquarePair } from '@chess/core'
 import type { InviteView } from '#/lib/play'
-import type { PreviewState } from '#/lib/review'
+import type { PreviewState } from '@chess/ui'
 import {
   getGameMoves,
   getGamePage,
@@ -57,8 +61,6 @@ import {
 import { applyFrame, liveStatusText, liveTopic, useLiveTopic } from '#/lib/live'
 import { pageTitle, rematchState, tabState, useTabSignals } from '#/lib/feedback'
 import { isInviteView } from '#/lib/play'
-import { REVIEW_POLL_MS, previewLine, useReview } from '#/lib/review'
-import { ReviewPanel } from '#/components/review'
 import { isAdmin } from '#/lib/admin'
 import {
   ClaimPanel,

@@ -1,9 +1,19 @@
-import { Link } from '@tanstack/react-router'
 import { legalTargets, lineSans } from '@chess/core'
-import { Board, Button, Chip, ErrorText, Panel, PromotionPicker, useAdoptTyped } from '@chess/ui'
+import { AppLink, Button, Chip, ErrorText, Panel, href, useAdoptTyped } from './ui.tsx'
+import { Board, PromotionPicker } from './board.tsx'
+import {
+  SET_SIZE,
+  firstMoveLabel,
+  misses,
+  promptText,
+  sanOf,
+  scoreText,
+  sourceText,
+  verdictText,
+} from './training-model.ts'
 import type { ReactNode } from 'react'
 import type { SquarePair } from '@chess/core'
-import type { PreviewState } from '#/lib/review'
+import type { PreviewState } from './review-model.ts'
 import type {
   AnswerBoard,
   Mark,
@@ -14,17 +24,7 @@ import type {
   TrainingSettings,
   TrainingSummary,
   TrainingVerdict,
-} from '#/lib/training'
-import {
-  SET_SIZE,
-  firstMoveLabel,
-  misses,
-  promptText,
-  sanOf,
-  scoreText,
-  sourceText,
-  verdictText,
-} from '#/lib/training'
+} from './training-model.ts'
 
 /**
  * Training sessions (training D5): the start panel, the board and its panel while answering, the summary after a set,
@@ -273,17 +273,16 @@ function SourceLine({ verdict }: { verdict: TrainingVerdict }) {
       {sourceText(s)}
       {' · '}
       {s.kind === 'library' ? (
-        <Link
-          to="/analysis"
-          search={{ library: s.libraryGameId, ply: s.ply }}
+        <AppLink
+          to={href('/analysis', { library: s.libraryGameId, ply: s.ply })}
           className="text-fg-accent"
         >
           the game
-        </Link>
+        </AppLink>
       ) : (
-        <Link to="/games/$id" params={{ id: s.gameId }} className="text-fg-accent">
+        <AppLink to={`/games/${encodeURIComponent(s.gameId)}`} className="text-fg-accent">
           the game
-        </Link>
+        </AppLink>
       )}
     </p>
   )
@@ -497,9 +496,9 @@ export function TrainingCounts({ summary }: { summary: TrainingSummary }) {
       <p className="m-0" data-testid="training-counts-library">
         {`Master games: ${l.seen} seen · ${l.learned} learned · ${l.due} due`}
       </p>
-      <Link to="/training" className="text-fg-accent">
+      <AppLink to={'/training'} className="text-fg-accent">
         Train
-      </Link>
+      </AppLink>
     </div>
   )
 }

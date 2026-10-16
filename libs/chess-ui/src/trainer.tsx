@@ -1,6 +1,7 @@
-import { Link } from '@tanstack/react-router'
 import { STANDARD_START, groupFamilies, legalTargets, uciSquares } from '@chess/core'
-import { Board, Panel, PromotionPicker } from '@chess/ui'
+import { AppLink, Panel, href } from './ui.tsx'
+import { Board, PromotionPicker } from './board.tsx'
+import { lineState, lineText, sanAt, studyLineLabel } from './trainer-model.ts'
 import type { ReactNode } from 'react'
 import type {
   Drill,
@@ -11,8 +12,7 @@ import type {
   TrainedFamily,
   TrainerColor,
   TrainerLine,
-} from '#/lib/trainer'
-import { lineState, lineText, sanAt, studyLineLabel } from '#/lib/trainer'
+} from './trainer-model.ts'
 
 /**
  * The opening trainer (opening-trainer): families with their progress, the drill's feedback, a family's lines, and the
@@ -90,44 +90,39 @@ export function ColorSwitch({
         const label = `As ${COLOR_LABEL[c]}`
         if (family)
           return (
-            <Link
+            <AppLink
+              to={href(`/trainer/${encodeURIComponent(family)}`, { color: c })}
               key={c}
-              to="/trainer/$family"
-              params={{ family }}
-              search={{ color: c }}
               className={className}
               {...current}
             >
               {label}
-            </Link>
+            </AppLink>
           )
         if (study)
           return (
-            <Link
+            <AppLink
+              to={href(`/trainer/study/${encodeURIComponent(study)}`, { color: c })}
               key={c}
-              to="/trainer/study/$id"
-              params={{ id: study }}
-              search={{ color: c }}
               className={className}
               {...current}
             >
               {label}
-            </Link>
+            </AppLink>
           )
         return (
-          <Link
-            key={c}
-            to="/trainer"
-            search={{
+          <AppLink
+            to={href('/trainer', {
               color: c,
               ...(q ? { q } : {}),
               ...(studies ? { source: 'studies' as const } : {}),
-            }}
+            })}
+            key={c}
             className={className}
             {...current}
           >
             {label}
-          </Link>
+          </AppLink>
         )
       })}
     </div>
@@ -170,14 +165,12 @@ export function FamilyColumns({
                   key={f.name}
                   className="flex items-baseline justify-between gap-3 border-b border-line-divider py-2"
                 >
-                  <Link
-                    to="/trainer/$family"
-                    params={{ family: f.name }}
-                    search={{ color }}
+                  <AppLink
+                    to={href(`/trainer/${encodeURIComponent(f.name)}`, { color })}
                     className="min-w-0 truncate text-sm text-fg-primary no-underline hover:text-fg-accent"
                   >
                     {f.name}
-                  </Link>
+                  </AppLink>
                   <LearnedCount learned={f.learned} lines={f.lines} />
                 </li>
               ))}
@@ -277,9 +270,9 @@ export function TrainedFamilies({ families }: { families: ReadonlyArray<TrainedF
     return (
       <p className="m-0 text-sm text-fg-secondary">
         No openings trained yet.{' '}
-        <Link to="/trainer" search={{ color: 'white' }} className="text-fg-accent">
+        <AppLink to={href('/trainer', { color: 'white' })} className="text-fg-accent">
           Open the trainer
-        </Link>
+        </AppLink>
       </p>
     )
   return (
@@ -289,14 +282,12 @@ export function TrainedFamilies({ families }: { families: ReadonlyArray<TrainedF
           key={`${f.name}|${f.color}`}
           className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line-divider py-2"
         >
-          <Link
-            to="/trainer/$family"
-            params={{ family: f.name }}
-            search={{ color: f.color }}
+          <AppLink
+            to={href(`/trainer/${encodeURIComponent(f.name)}`, { color: f.color })}
             className="text-fg-primary no-underline hover:text-fg-accent"
           >
             {`${f.name} · as ${COLOR_LABEL[f.color]}`}
-          </Link>
+          </AppLink>
           <LearnedBar learned={f.learned} lines={f.lines} />
         </li>
       ))}
@@ -316,28 +307,26 @@ export function TrainerSourceSwitch({
     `${CHIP} ${selected ? 'border-line-accent bg-surface-accent-tint text-fg-primary' : 'border-line-default text-fg-body hover:bg-surface-hover'}`
   return (
     <div className="flex gap-2" role="group" aria-label="Train">
-      <Link
-        to="/trainer"
-        search={{ color }}
+      <AppLink
+        to={href('/trainer', { color })}
         className={chip(source === 'named')}
         {...(source === 'named' ? { 'aria-current': 'page' as const } : {})}
       >
         Named openings
-      </Link>
-      <Link
-        to="/trainer"
-        search={{ color, source: 'studies' }}
+      </AppLink>
+      <AppLink
+        to={href('/trainer', { color, source: 'studies' })}
         className={chip(source === 'studies')}
         {...(source === 'studies' ? { 'aria-current': 'page' as const } : {})}
       >
         My studies
-      </Link>
+      </AppLink>
     </div>
   )
 }
 
 /** The member's own studies with their lines for the side, each opening its drill. */
-export function StudyList({
+export function TrainerStudyList({
   studies,
   color,
 }: {
@@ -348,9 +337,9 @@ export function StudyList({
     return (
       <p className="m-0 text-sm text-fg-secondary">
         No studies yet: every line of a study you make can be drilled here.{' '}
-        <Link to="/studies" className="text-fg-accent">
+        <AppLink to={'/studies'} className="text-fg-accent">
           Make a study
-        </Link>
+        </AppLink>
       </p>
     )
   return (
@@ -363,14 +352,12 @@ export function StudyList({
           key={s.id}
           className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line-divider py-2.5"
         >
-          <Link
-            to="/trainer/study/$id"
-            params={{ id: s.id }}
-            search={{ color }}
+          <AppLink
+            to={href(`/trainer/study/${encodeURIComponent(s.id)}`, { color })}
             className="min-w-0 text-fg-primary no-underline hover:text-fg-accent"
           >
             {s.title}
-          </Link>
+          </AppLink>
           <LearnedCount learned={s.learned} lines={s.lines} />
         </li>
       ))}

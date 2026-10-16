@@ -1,29 +1,9 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { EvalGraph, ReviewPanel } from './review'
+import { EvalGraph, ReviewPanel } from './review.tsx'
 import type { ReactNode } from 'react'
-import type { ReviewView } from '#/lib/review'
+import type { ReviewView } from './review-model.ts'
 import type { ReviewedMove } from '@chess/core'
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({
-    children,
-    to,
-    params,
-    search,
-  }: {
-    children: ReactNode
-    to: string
-    params?: Record<string, string>
-    search?: Record<string, unknown>
-  }) => {
-    const path = Object.entries(params ?? {}).reduce((p, [k, v]) => p.replace(`$${k}`, v), to)
-    const query = search
-      ? `?${new URLSearchParams(search as Record<string, string>).toString()}`
-      : ''
-    return <a href={`${path}${query}`}>{children}</a>
-  },
-}))
 
 afterEach(cleanup)
 
@@ -133,7 +113,7 @@ describe('ReviewPanel', () => {
       'Left the book with 2.g4 (White) · A00 Barnes Opening',
     )
     expect(screen.getByRole('link', { name: 'Train this opening' }).getAttribute('href')).toBe(
-      '/trainer/Barnes Opening?color=white',
+      '/trainer/Barnes%20Opening?color=white',
     )
   })
 
