@@ -92,7 +92,7 @@ machine, a release), with the command that proves it.
 - [x] 5.8 News: the four feeds and the tournament list on their intervals while online, stored with `keepDays`
       pruning, events replaced whole, 429 pause, sources switchable, links opened in the system browser, home's News and
       Events and `/news`. Test first: a failing source leaves its stored items and the others are fetched, red.
-- [ ] 5.9 Settings and About: site theme, board theme, animation, coordinates (applied at once, kept); About with the
+- [x] 5.9 Settings and About: site theme, board theme, animation, coordinates (applied at once, kept); About with the
       version and the credits (Stockfish GPLv3 + source, Cburnett BSD-3, openings CC0). Test first: picking Parchment
       sets `data-theme='light'` and survives a reload of settings, red.
 - [ ] 5.10 Offline check: no request leaves the app except to the news hosts (the capability allow-list and CSP), and
