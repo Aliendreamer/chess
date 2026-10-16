@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_PREFERENCES } from '@chess/core'
-import { SettingsForm } from './settings'
+import { SettingsForm } from './settings.tsx'
 
 afterEach(cleanup)
 

@@ -1,5 +1,6 @@
 import { ANIMATIONS, BOARD_THEMES, SITE_THEMES } from '@chess/core'
-import { Board, Chip, ErrorText, Panel, PreferencesContext } from '@chess/ui'
+import { Board, PreferencesContext } from './board.tsx'
+import { Chip, ErrorText, Panel } from './ui.tsx'
 import type { Animation, BoardTheme, Preferences } from '@chess/core'
 
 const THEME_NAMES: Record<BoardTheme, string> = {
