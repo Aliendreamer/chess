@@ -79,7 +79,7 @@ machine, a release), with the command that proves it.
 - [x] 5.4 Studies: list, create, edit with variations, `version` check, PGN import (broken game reported
       by number) and export, from a game. Test first: importing a five-game file with a broken third makes four studies
       and reports game 3, red.
-- [ ] 5.5 Library and explorer: PGN import into `library_games` + `library_positions`, duplicates skipped, search by
+- [x] 5.5 Library and explorer: PGN import into `library_games` + `library_positions`, duplicates skipped, search by
       player/event/year, explorer counts in SQL. Test first: importing a file twice adds nothing the second time; the
       explorer at the start position counts each game once, red.
 - [ ] 5.6 Opening trainer and study lines: families by kind, a family's lines, drill, Leitner progress, study lines of

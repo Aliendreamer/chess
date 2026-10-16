@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as AnalysisRouteImport } from './routes/analysis'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StudiesIndexRouteImport } from './routes/studies.index'
@@ -16,6 +17,11 @@ import { Route as GamesIndexRouteImport } from './routes/games.index'
 import { Route as StudiesIdRouteImport } from './routes/studies.$id'
 import { Route as GamesIdRouteImport } from './routes/games.$id'
 
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalysisRoute = AnalysisRouteImport.update({
   id: '/analysis',
   path: '/analysis',
@@ -50,6 +56,7 @@ const GamesIdRoute = GamesIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
+  '/library': typeof LibraryRoute
   '/games/$id': typeof GamesIdRoute
   '/studies/$id': typeof StudiesIdRoute
   '/games/': typeof GamesIndexRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
+  '/library': typeof LibraryRoute
   '/games/$id': typeof GamesIdRoute
   '/studies/$id': typeof StudiesIdRoute
   '/games': typeof GamesIndexRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRoute
+  '/library': typeof LibraryRoute
   '/games/$id': typeof GamesIdRoute
   '/studies/$id': typeof StudiesIdRoute
   '/games/': typeof GamesIndexRoute
@@ -77,16 +86,25 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/analysis'
+    | '/library'
     | '/games/$id'
     | '/studies/$id'
     | '/games/'
     | '/studies/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analysis' | '/games/$id' | '/studies/$id' | '/games' | '/studies'
+  to:
+    | '/'
+    | '/analysis'
+    | '/library'
+    | '/games/$id'
+    | '/studies/$id'
+    | '/games'
+    | '/studies'
   id:
     | '__root__'
     | '/'
     | '/analysis'
+    | '/library'
     | '/games/$id'
     | '/studies/$id'
     | '/games/'
@@ -96,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalysisRoute: typeof AnalysisRoute
+  LibraryRoute: typeof LibraryRoute
   GamesIdRoute: typeof GamesIdRoute
   StudiesIdRoute: typeof StudiesIdRoute
   GamesIndexRoute: typeof GamesIndexRoute
@@ -104,6 +123,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/analysis': {
       id: '/analysis'
       path: '/analysis'
@@ -152,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalysisRoute: AnalysisRoute,
+  LibraryRoute: LibraryRoute,
   GamesIdRoute: GamesIdRoute,
   StudiesIdRoute: StudiesIdRoute,
   GamesIndexRoute: GamesIndexRoute,

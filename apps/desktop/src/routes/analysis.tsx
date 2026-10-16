@@ -9,19 +9,23 @@ import {
   isFen,
   lineEnd,
   parsePgn,
+  playMove,
   positionKey,
   toInput,
+  uciLine,
 } from '@chess/core'
 import {
   AnalysisBoard,
   Button,
   ErrorText,
   Panel,
+  PositionPanel,
   SectionHeading,
   analysisTitle,
   useAdoptTyped,
   useAnalysis,
   useCommand,
+  useLibraryPosition,
   useMoveTree,
   useOpeningName,
 } from '@chess/ui'
@@ -29,6 +33,7 @@ import type { ParsedGame, StudyMove } from '@chess/core'
 import { PERSON_NAME, loadGame } from '#/lib/data/play'
 import { openingNames } from '#/lib/data/openings'
 import { createStudies } from '#/lib/data/studies'
+import { libraryGame, libraryPosition } from '#/lib/data/library'
 
 interface Start {
   startFen: string
@@ -43,12 +48,32 @@ interface Start {
  * nothing kept until it is saved as a study. Starts from `?fen=`, `?game={id}` (a finished game), or what is pasted.
  */
 export const Route = createFileRoute('/analysis')({
-  validateSearch: (search: Record<string, unknown>): { fen?: string; game?: string } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { fen?: string; game?: string; library?: string; ply?: number } => ({
     ...(typeof search['fen'] === 'string' ? { fen: search['fen'] } : {}),
     ...(typeof search['game'] === 'string' ? { game: search['game'] } : {}),
+    ...(typeof search['library'] === 'string' ? { library: search['library'] } : {}),
+    ...(typeof search['ply'] === 'number' && Number.isInteger(search['ply']) && search['ply'] >= 0
+      ? { ply: search['ply'] }
+      : {}),
   }),
-  loaderDeps: ({ search: { fen, game } }) => ({ fen, game }),
+  loaderDeps: ({ search: { fen, game, library, ply } }) => ({ fen, game, library, ply }),
   loader: async ({ context: { app }, deps }): Promise<Start> => {
+    if (deps.library) {
+      const found = await libraryGame(app.db, deps.library)
+      if (!found)
+        return { startFen: STANDARD_START, tree: [], error: 'There is no such library game.' }
+      const tree = fromInput(STANDARD_START, uciLine(found.moves))
+      const plies = Math.min(deps.ply ?? found.moves.length, found.moves.length)
+      return {
+        startFen: STANDARD_START,
+        tree,
+        path: Array.from({ length: plies }, () => 0),
+        players: { white: found.game.white, black: found.game.black },
+        error: null,
+      }
+    }
     if (deps.game) {
       const game = await loadGame(app.db, deps.game)
       if (!game || game.status !== 'ended')
@@ -97,6 +122,9 @@ function Analysis({ start }: { start: Start }) {
     () => (key: string) => openingNames(app.db, [key]).then((names) => names.get(key) ?? null),
   )
   const opening = useOpeningName(keys, loadOpening)
+  // The library's games at the position on the board (library-explorer); the hook is keyed by what it is given.
+  const [loadPosition] = useState(() => (fen: string) => libraryPosition(app.db, fen))
+  const atPosition = useLibraryPosition(editor.fen, 'all', loadPosition)
   const [request] = useState(
     () => (input: Parameters<typeof app.evaluator.request>[0]) => app.evaluator.request(input),
   )
@@ -163,6 +191,18 @@ function Analysis({ start }: { start: Start }) {
       editor={editor}
       analysis={analysis}
       editable
+      aside={
+        atPosition && atPosition.games > 0 ? (
+          <PositionPanel
+            position={atPosition}
+            fen={editor.fen}
+            onPlay={(uci) => {
+              const move = playMove(editor.fen, uci)
+              if (move) editor.playLine([move])
+            }}
+          />
+        ) : null
+      }
       header={
         <header className="flex flex-col gap-1">
           <SectionHeading size="xl">Analysis</SectionHeading>
