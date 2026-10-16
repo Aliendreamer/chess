@@ -24,7 +24,7 @@ machine, a release), with the command that proves it.
       `TrainerScheduleTests`/`OpeningFamiliesTests`/`StudyLinesTests` cases as vitest, red on missing exports.
 - [x] 2.3 Port `GameReviewer` (winning chances, ?!/?/??, engine move never marked, board ending from the result, book
       exit). Test first: `GameReviewerTests` cases, red.
-- [ ] 2.4 Port the training judge (master / engine / both / none), the miner's keep rule (`MinGap`, `MinPly`,
+- [x] 2.4 Port the training judge (master / engine / both / none), the miner's keep rule (`MinGap`, `MinPly`,
       `PerGame`, two legal moves) and `EngineLevel`. Test first: the matching `TrainingServiceTests` /
       `TrainingMinerTests` cases, red.
 - [ ] 2.5 Port the library PGN import (replay from the start, illegal refused, `DedupeKey`, factual headers only) and
