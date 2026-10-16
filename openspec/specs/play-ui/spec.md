@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Part 1 screens in the owner's Club design: quick pairing and invite links to reach a game, the live game page
+The Part 1 screens in the owner's Club design: quick pairing to reach a game, the live game page
 (board, clocks, move list, controls for players only), history and PGN. The browser gives instant feedback with
 chess.js, but the backend alone decides legality and outcomes.
 
@@ -25,24 +25,17 @@ declare a draw or declare flag fall on its own.
 - **WHEN** the side to move's local countdown reaches 0:00 and no frame has ended the game
 - **THEN** the clock shows 0:00 and the game stays in play until the server's frame says otherwise
 
-### Requirement: Players reach a game by quick pairing or an invite link
+### Requirement: Players reach a game by quick pairing
 
 The home page SHALL offer the D12 presets as quick-pairing tiles. Choosing one MUST join that queue, show the
 waiting count, heartbeat every 25 s, and navigate to the game as soon as a `queue:{tc}` frame names this user in
-its pairing or a heartbeat answers `matched`. Cancel or leaving the page MUST leave the queue. "Play a friend"
-SHALL create an invite and open `/invites/{id}`. There the creator can copy or cancel the link, anyone else can
-accept it, and both are navigated to the game when it is accepted.
+its pairing or a heartbeat answers `matched`. Cancel or leaving the page MUST leave the queue.
 
 #### Scenario: The waiting player is moved into the game
 
 - **WHEN** player A waits on `5+3` and player B chooses `5+3`
 - **THEN** B lands on the new game from the join answer, and A lands on it from the `queue:5+3` frame without
   waiting for a heartbeat
-
-#### Scenario: An accepted invite moves the creator
-
-- **WHEN** the creator is on `/invites/{id}` and a friend accepts
-- **THEN** the creator's page navigates to the game from the `invite:{id}` frame
 
 ### Requirement: The game page shows the game from the viewer's side, and only players act
 

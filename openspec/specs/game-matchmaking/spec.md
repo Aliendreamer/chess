@@ -3,7 +3,7 @@
 ## Purpose
 
 How two players get into a game: a first-come-first-served queue per preset time control (a cluster singleton, kept
-alive by client heartbeats), and 24-hour invite links that start a game with the creator's chosen colour. Both
+alive by client heartbeats), and rematches of a finished game (24-hour invites reserved for the opponent). Both
 start games only through `IGameStarter` and publish their state on the live relay (`queue:{tc}`, `invite:{id}`).
 
 ## Requirements
@@ -82,71 +82,15 @@ game.
 - **THEN** every `queue:5+3` frame with seq up to 3 may still name A's previous game, and only a frame after seq 3
   that names A is A's new game
 
-### Requirement: Invite links start a game with the first signed-in user who accepts
-
-A signed-in user SHALL create an invite with `POST /api/invites` for a D12 preset and a colour (`white`, `black`
-or `random`). The response MUST include a random, unguessable invite id (a v4 Guid in `N` form). Any signed-in
-user other than the creator MAY read it (`GET /api/invites/{id}`) and accept it (`POST /api/invites/{id}/accept`).
-The first accept MUST start the game with the creator's chosen colour (random resolved once at acceptance) and
-answer with the game id. Every later accept MUST be 409. The creator accepting their own invite MUST be 409.
-
-#### Scenario: Friend accepts
-
-- **WHEN** A creates a `10+5` invite as `black`, and B accepts it
-- **THEN** a 10+5 game starts with B as White and A as Black, and both the accept response and the invite show its
-  id
-
-#### Scenario: Too late
-
-- **WHEN** C accepts the same invite after B
-- **THEN** the response is 409 and no second game starts
-
-### Requirement: Invites end when accepted, cancelled or after 24 hours
-
-An invite SHALL be `open` until it is accepted, cancelled by its creator (`POST /api/invites/{id}/cancel`), or 24
-hours have passed since it was created. After that it MUST refuse to be accepted (409) and report its status
-(`accepted` with the game id, `cancelled`, or `expired`). Only the creator MAY cancel. An unknown id MUST be 404.
-Invites MUST survive a node failure.
-
-#### Scenario: Expired
-
-- **WHEN** B opens an invite created 25 hours ago
-- **THEN** it reports `expired`, and accepting it is 409
-
-#### Scenario: Cancel
-
-- **WHEN** the creator cancels an open invite
-- **THEN** it reports `cancelled`, and a stranger's cancel attempt is 403
-
-### Requirement: The creator learns live when the invite is accepted
-
-Each invite SHALL be a live topic `invite:{id}`, whose snapshot and frames carry the invite's status and, once
-accepted, the game id.
-
-#### Scenario: Creator waiting on the link
-
-- **WHEN** A is subscribed to `invite:{id}` and B accepts
-- **THEN** A receives a frame with status `accepted` and the game id
-
-### Requirement: An invite can be reserved for one user
-
-An invite MAY name the one user who can accept it (`ForId`). For a reserved invite, any other user's accept MUST be
-refused as forbidden. An invite without `ForId` SHALL behave as before (the first signed-in user other than the
-creator may accept). Invites recorded before this change SHALL read as unreserved.
-
-#### Scenario: A stranger opens a reserved invite
-
-- **WHEN** a user who is not the reserved guest accepts a reserved invite
-- **THEN** the answer is 403 and the invite stays open
-
 ### Requirement: A finished game can be rematched
 
 `POST /api/games/{id}/rematch` SHALL be allowed only to a player of that game, only once it has ended, and not for a
 game against the computer (400). The rematch is an invite whose id is the game's id, reserved for the other player,
 with the same time control and the caller taking the colour the opponent had. The first call creates the invite
-(the caller is its creator). A call by the reserved guest accepts it and starts the game. A repeated call by the
-creator returns the open invite unchanged. The rematch invite SHALL follow the ordinary invite rules otherwise
-(cancel by the creator, 24-hour lifetime, live on `invite:{id}`).
+(the caller is its creator). A call by the reserved guest accepts it and starts the game; any other user is refused as
+forbidden. A repeated call by the creator returns the open invite unchanged. The rematch invite SHALL be open for 24
+hours, SHALL survive a node failure, and SHALL be a live topic `invite:{id}` whose snapshot and frames carry its status
+and, once accepted, the new game's id.
 
 #### Scenario: Both players press Rematch
 
@@ -158,6 +102,11 @@ creator returns the open invite unchanged. The rematch invite SHALL follow the o
 
 - **WHEN** a user who did not play the game posts to its rematch
 - **THEN** the answer is 403 and no invite exists
+
+#### Scenario: Too late
+
+- **WHEN** the guest presses Rematch 25 hours after the offer
+- **THEN** the rematch is refused as expired
 
 #### Scenario: The game is still on
 

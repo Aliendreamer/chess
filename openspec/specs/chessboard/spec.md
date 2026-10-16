@@ -80,7 +80,7 @@ While a player's opponent is to move, the player SHALL be able to queue one prem
 pieces, ignoring legality in the current position. The queued move's squares SHALL be highlighted in a premove
 colour. When a frame makes it the player's turn, the premove MUST be sent if it is legal in the new position and
 dropped silently otherwise. A click on an empty square or a right-click SHALL cancel it. Premoves SHALL NOT exist in
-studies, in correspondence games or in games against the computer.
+studies or in games against the computer.
 
 #### Scenario: A premove is played
 

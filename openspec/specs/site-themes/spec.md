@@ -26,10 +26,9 @@ expressed only by redefining the semantic tokens (`surface-*`, `fg-*`, `line-*`,
 
 ### Requirement: Each game type has its own colour
 
-The time-control categories SHALL each have a token: bullet, blitz, rapid, classical, correspondence and computer
-(untimed engine games). Quick-pairing tiles, history rows, "Your turn" rows and the game page header SHALL show the
-game's category colour next to its text label, never instead of it. The colours MUST stay distinguishable in both
-themes.
+The time-control categories SHALL each have a token: bullet, blitz, rapid, classical and computer (untimed engine
+games). Quick-pairing tiles, history rows and the game page header SHALL show the game's category colour next to its
+text label, never instead of it. The colours MUST stay distinguishable in both themes.
 
 #### Scenario: A blitz tile
 

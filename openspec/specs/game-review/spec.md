@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Members have their finished games reviewed by the engine on request — mistakes marked with the better move, an evaluation graph, where the game left the book — and practise their own mistakes on a spaced schedule.
+Members have their finished games reviewed by the engine on request — mistakes marked with the better move, an evaluation graph, where the game left the book; the mistakes feed training (capability `training`).
 
 ## Requirements
 
@@ -54,26 +54,3 @@ SHALL name where the game left the named opening lines and who left them.
 
 - **WHEN** a review is still running
 - **THEN** the game page shows the graph and marks of the positions evaluated so far and how many remain
-
-### Requirement: A member practises their own mistakes
-
-A player of a reviewed game SHALL be able to add their own mistakes and blunders to their practice. Practice SHALL show
-one due position at a time from the member's side with the move they played, SHALL accept any move the engine rated
-within 0.1 of its best, SHALL show the engine's move and line after a wrong answer, and SHALL schedule each position as
-the opening trainer schedules lines (a wrong answer brings it back first, a right one later). Practice SHALL be visible
-only to its member.
-
-#### Scenario: Adding mistakes
-
-- **WHEN** a member adds the mistakes of a reviewed game twice
-- **THEN** each of their mistakes and blunders is in their practice once, and none of their opponent's
-
-#### Scenario: A right answer
-
-- **WHEN** the member plays the engine's second line in a practice position
-- **THEN** it is accepted and the position is not due again until the next box's interval
-
-#### Scenario: A wrong answer
-
-- **WHEN** the member plays the same move as in the game
-- **THEN** the practice shows the engine's move and line, and the position is offered again first

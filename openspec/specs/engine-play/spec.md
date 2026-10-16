@@ -113,10 +113,10 @@ game.
 
 ### Requirement: Quiet engine games are woken and judged
 
-The deadline sweep SHALL also ask every untimed game in play whose read row has not changed for
-`Akka:UntimedIdleMinutes` to check itself, at most `MaxPerSweep` games per sweep after the correspondence deadlines.
-A woken game with nobody present MUST end by the abandonment rule above (or the first-move abort when the person never
-moved); a woken game whose person is present MUST continue unchanged.
+An idle-game sweep SHALL ask every untimed game in play whose read row has not changed for `Akka:UntimedIdleMinutes` to
+check itself, oldest first, at most `MaxPerSweep` games per sweep. A woken game with nobody present MUST end by the
+abandonment rule above (or the first-move abort when the person never moved); a woken game whose person is present MUST
+continue unchanged.
 
 #### Scenario: A game left in play before this change
 

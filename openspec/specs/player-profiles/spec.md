@@ -41,7 +41,7 @@ item shape as the signed-in user's own list.
 ### Requirement: The profile page shows the record by game type
 
 The profile page SHALL show the name, member-since date, the overall record, the record per game type (bullet, blitz,
-rapid, classical, correspondence, computer — only types with games), and the games with "Load more".
+rapid, classical, computer — only types with games), and the games with "Load more".
 
 #### Scenario: Grouped by type
 
@@ -50,8 +50,8 @@ rapid, classical, correspondence, computer — only types with games), and the g
 
 ### Requirement: Names lead to profiles
 
-Wherever a player's name is shown (game page, game lists, Club TV) it SHALL link to that player's profile, and the
-navigation SHALL offer the signed-in user's own profile.
+Wherever a player's name is shown (game page, game lists) it SHALL link to that player's profile, and the navigation
+SHALL offer the signed-in user's own profile.
 
 #### Scenario: From a game
 
@@ -68,3 +68,13 @@ engine.
 
 - **WHEN** Alice opens Bob's profile and picks Analyse on one of his finished games
 - **THEN** the game opens on the analysis board, and Save as study keeps it in Alice's studies
+
+### Requirement: The member's own profile shows training
+
+A member's own profile SHALL show their training: mistakes in their pool, learned and due, and master positions seen,
+learned and due. Other members SHALL NOT see it.
+
+#### Scenario: Own profile
+
+- **WHEN** a member opens their own profile
+- **THEN** a Training panel shows their counts, linking to the training page
