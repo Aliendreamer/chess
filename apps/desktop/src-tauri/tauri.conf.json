@@ -6,8 +6,8 @@
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
-    "beforeDevCommand": "pnpm dev",
-    "beforeBuildCommand": "pnpm build"
+    "beforeDevCommand": "pnpm fetch-stockfish && pnpm dev",
+    "beforeBuildCommand": "pnpm fetch-stockfish && pnpm build"
   },
   "app": {
     "windows": [
@@ -35,6 +35,11 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "externalBin": ["binaries/stockfish"],
+    "resources": {
+      "binaries/Copying.txt": "stockfish/Copying.txt",
+      "binaries/SOURCE.txt": "stockfish/SOURCE.txt"
+    }
   }
 }

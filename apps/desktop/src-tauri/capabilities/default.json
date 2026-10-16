@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "What the app's window may reach (desktop-app D1): its own database, files the player picks, the news sources, links in the system browser.",
+  "description": "What the app's window may reach (desktop-app D1): its own database, the bundled Stockfish, files the player picks, the news sources, links in the system browser.",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -11,7 +11,22 @@
     "dialog:allow-save",
     {
       "identifier": "opener:allow-open-url",
-      "allow": [{ "url": "https://*" }]
-    }
+      "allow": [
+        {
+          "url": "https://*"
+        }
+      ]
+    },
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "binaries/stockfish",
+          "sidecar": true
+        }
+      ]
+    },
+    "shell:allow-stdin-write",
+    "shell:allow-kill"
   ]
 }

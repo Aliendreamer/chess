@@ -14,11 +14,12 @@
     "dev": "vite --port 1420 --strictPort",
     "build": "vite build",
     "tauri": "tauri",
-    "test": "vitest run",
+    "test": "vitest run && node --test ../../tools/desktop/fetch-stockfish.test.mjs",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
-    "check": "prettier --check ."
+    "check": "prettier --check .",
+    "fetch-stockfish": "node ../../tools/desktop/fetch-stockfish.mjs"
   },
   "dependencies": {
     "@chess/core": "workspace:*",

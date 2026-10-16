@@ -51,7 +51,7 @@ machine, a release), with the command that proves it.
       dialog/fs, capabilities allow-list, CSP) as an Nx project (`dev`, `build`, `bundle`, `lint`, `test`), exact pins.
       Test first: a vitest that renders the root route with the Shell, red until the app exists. **[human]**
       `pnpm exec nx run desktop:dev` opens the window in WSLg.
-- [ ] 4.2 `tools/desktop/stockfish.json` + `fetch-stockfish.mjs` (pinned `sf_19` Linux and Windows builds, SHA-256
+- [x] 4.2 `tools/desktop/stockfish.json` + `fetch-stockfish.mjs` (pinned `sf_19` Linux and Windows builds, SHA-256
       checked, into `src-tauri/binaries/stockfish-<triple>`), licence and source notice as bundle resources. Test first:
       the script run with a wrong hash in a fixture exits non-zero and leaves no binary.
 - [ ] 4.3 `lib/data/db.ts`: migrations in `src-tauri/migrations/` (all tables of design D4), one serialised writer,

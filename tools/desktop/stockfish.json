@@ -1,0 +1,18 @@
+{
+  "$comment": "The Stockfish the desktop app ships (desktop-app D5): the unmodified official release, SHA-256 pinned. Bump tag, urls and hashes together; the Linux pin is the engine image's.",
+  "tag": "sf_19",
+  "source": "https://github.com/official-stockfish/Stockfish/tree/sf_19",
+  "sourceArchive": "https://github.com/official-stockfish/Stockfish/archive/refs/tags/sf_19.tar.gz",
+  "targets": {
+    "x86_64-unknown-linux-gnu": {
+      "url": "https://github.com/official-stockfish/Stockfish/releases/download/sf_19/stockfish-linux-x86-64-universal.tar.gz",
+      "sha256": "9defc0d4e55d49c65a6d042f3e571a39fcea499ade6dbe741b53b8c65e03611f",
+      "binary": "stockfish/stockfish-linux-x86-64-universal"
+    },
+    "x86_64-pc-windows-msvc": {
+      "url": "https://github.com/official-stockfish/Stockfish/releases/download/sf_19/stockfish-windows-x86-64-universal.zip",
+      "sha256": "3c8bf1f9ea66a09350a40df4f632288285ac206d99f33ab5842c408fc30b48a7",
+      "binary": "stockfish/stockfish-windows-x86-64-universal.exe"
+    }
+  }
+}
