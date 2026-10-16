@@ -12,10 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as AnalysisRouteImport } from './routes/analysis'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TrainerIndexRouteImport } from './routes/trainer.index'
 import { Route as StudiesIndexRouteImport } from './routes/studies.index'
 import { Route as GamesIndexRouteImport } from './routes/games.index'
+import { Route as TrainerFamilyRouteImport } from './routes/trainer.$family'
 import { Route as StudiesIdRouteImport } from './routes/studies.$id'
 import { Route as GamesIdRouteImport } from './routes/games.$id'
+import { Route as TrainerStudyIdRouteImport } from './routes/trainer.study.$id'
 
 const LibraryRoute = LibraryRouteImport.update({
   id: '/library',
@@ -32,6 +35,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrainerIndexRoute = TrainerIndexRouteImport.update({
+  id: '/trainer/',
+  path: '/trainer/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudiesIndexRoute = StudiesIndexRouteImport.update({
   id: '/studies/',
   path: '/studies/',
@@ -40,6 +48,11 @@ const StudiesIndexRoute = StudiesIndexRouteImport.update({
 const GamesIndexRoute = GamesIndexRouteImport.update({
   id: '/games/',
   path: '/games/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrainerFamilyRoute = TrainerFamilyRouteImport.update({
+  id: '/trainer/$family',
+  path: '/trainer/$family',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StudiesIdRoute = StudiesIdRouteImport.update({
@@ -52,6 +65,11 @@ const GamesIdRoute = GamesIdRouteImport.update({
   path: '/games/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrainerStudyIdRoute = TrainerStudyIdRouteImport.update({
+  id: '/trainer/study/$id',
+  path: '/trainer/study/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,8 +77,11 @@ export interface FileRoutesByFullPath {
   '/library': typeof LibraryRoute
   '/games/$id': typeof GamesIdRoute
   '/studies/$id': typeof StudiesIdRoute
+  '/trainer/$family': typeof TrainerFamilyRoute
   '/games/': typeof GamesIndexRoute
   '/studies/': typeof StudiesIndexRoute
+  '/trainer/': typeof TrainerIndexRoute
+  '/trainer/study/$id': typeof TrainerStudyIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -68,8 +89,11 @@ export interface FileRoutesByTo {
   '/library': typeof LibraryRoute
   '/games/$id': typeof GamesIdRoute
   '/studies/$id': typeof StudiesIdRoute
+  '/trainer/$family': typeof TrainerFamilyRoute
   '/games': typeof GamesIndexRoute
   '/studies': typeof StudiesIndexRoute
+  '/trainer': typeof TrainerIndexRoute
+  '/trainer/study/$id': typeof TrainerStudyIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,8 +102,11 @@ export interface FileRoutesById {
   '/library': typeof LibraryRoute
   '/games/$id': typeof GamesIdRoute
   '/studies/$id': typeof StudiesIdRoute
+  '/trainer/$family': typeof TrainerFamilyRoute
   '/games/': typeof GamesIndexRoute
   '/studies/': typeof StudiesIndexRoute
+  '/trainer/': typeof TrainerIndexRoute
+  '/trainer/study/$id': typeof TrainerStudyIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -89,8 +116,11 @@ export interface FileRouteTypes {
     | '/library'
     | '/games/$id'
     | '/studies/$id'
+    | '/trainer/$family'
     | '/games/'
     | '/studies/'
+    | '/trainer/'
+    | '/trainer/study/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -98,8 +128,11 @@ export interface FileRouteTypes {
     | '/library'
     | '/games/$id'
     | '/studies/$id'
+    | '/trainer/$family'
     | '/games'
     | '/studies'
+    | '/trainer'
+    | '/trainer/study/$id'
   id:
     | '__root__'
     | '/'
@@ -107,8 +140,11 @@ export interface FileRouteTypes {
     | '/library'
     | '/games/$id'
     | '/studies/$id'
+    | '/trainer/$family'
     | '/games/'
     | '/studies/'
+    | '/trainer/'
+    | '/trainer/study/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,8 +153,11 @@ export interface RootRouteChildren {
   LibraryRoute: typeof LibraryRoute
   GamesIdRoute: typeof GamesIdRoute
   StudiesIdRoute: typeof StudiesIdRoute
+  TrainerFamilyRoute: typeof TrainerFamilyRoute
   GamesIndexRoute: typeof GamesIndexRoute
   StudiesIndexRoute: typeof StudiesIndexRoute
+  TrainerIndexRoute: typeof TrainerIndexRoute
+  TrainerStudyIdRoute: typeof TrainerStudyIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -144,6 +183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/trainer/': {
+      id: '/trainer/'
+      path: '/trainer'
+      fullPath: '/trainer/'
+      preLoaderRoute: typeof TrainerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/studies/': {
       id: '/studies/'
       path: '/studies'
@@ -156,6 +202,13 @@ declare module '@tanstack/react-router' {
       path: '/games'
       fullPath: '/games/'
       preLoaderRoute: typeof GamesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trainer/$family': {
+      id: '/trainer/$family'
+      path: '/trainer/$family'
+      fullPath: '/trainer/$family'
+      preLoaderRoute: typeof TrainerFamilyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/studies/$id': {
@@ -172,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/trainer/study/$id': {
+      id: '/trainer/study/$id'
+      path: '/trainer/study/$id'
+      fullPath: '/trainer/study/$id'
+      preLoaderRoute: typeof TrainerStudyIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -181,8 +241,11 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryRoute: LibraryRoute,
   GamesIdRoute: GamesIdRoute,
   StudiesIdRoute: StudiesIdRoute,
+  TrainerFamilyRoute: TrainerFamilyRoute,
   GamesIndexRoute: GamesIndexRoute,
   StudiesIndexRoute: StudiesIndexRoute,
+  TrainerIndexRoute: TrainerIndexRoute,
+  TrainerStudyIdRoute: TrainerStudyIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

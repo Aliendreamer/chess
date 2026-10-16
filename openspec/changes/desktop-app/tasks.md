@@ -82,7 +82,7 @@ machine, a release), with the command that proves it.
 - [x] 5.5 Library and explorer: PGN import into `library_games` + `library_positions`, duplicates skipped, search by
       player/event/year, explorer counts in SQL. Test first: importing a file twice adds nothing the second time; the
       explorer at the start position counts each game once, red.
-- [ ] 5.6 Opening trainer and study lines: families by kind, a family's lines, drill, Leitner progress, study lines of
+- [x] 5.6 Opening trainer and study lines: families by kind, a family's lines, drill, Leitner progress, study lines of
       the player's studies (lines dropped when the tree loses them). Test first: a clean drill of a box-2 line stores
       box 3 due in 7 days, red.
 - [ ] 5.7 Training: the miner over library positions (candidates, keep rule, paused while the engine is busy for the
