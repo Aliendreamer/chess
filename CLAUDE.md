@@ -180,10 +180,10 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   entry in the BFF's `KINDS`. Both relay hosts (Nitro route, `devLiveRelay` in `live-relay.ts`) only adapt sockets.
   Pages use `useLiveTopic` from `lib/live.ts` (initial = the loader's state as a frame; it is the baseline at subscribe only).
 - **UI (frontend)** — the Club design (`Design/`, untracked, never committed) as TS: tokens are CSS variables in
-  `styles.css`'s `@theme` (use `bg-surface-*`, `text-fg-*`, `border-line-*`, `font-display`, `rounded-card`; no zinc,
+  `libs/chess-ui/src/theme.css`'s `@theme` (use `bg-surface-*`, `text-fg-*`, `border-line-*`, `font-display`, `rounded-card`; no zinc,
   never a raw ramp like `bg-brass-800` in a component), fonts via `@fontsource` (no third-party requests). **Site
   themes (site-themes)**: dark (Club) is the default; light (Parchment) is a `[data-theme='light']` block that
-  redefines the semantic tokens only (`src/styles.test.ts` checks AA contrast for both). Each game type has a
+  redefines the semantic tokens only (`libs/chess-ui/src/theme.test.ts` checks AA contrast for both). Each game type has a
   `--color-tc-*` token (`categoryOf`, `CategoryMark`, `CategoryIcon`), always next to its name; icons are
   `lucide-react`, decorative beside a label or inside a button with an `aria-label`. **Responsive (responsive-layout)**: one
   breakpoint, `--breakpoint-shell` (900px, `shell:`/`max-shell:` variants): the rail from there up, a top bar with a
@@ -209,7 +209,7 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   render through `components/games.tsx#PlayerLink`; `/players/$id` groups the record into game types (`lib/players.ts`). **chess.js is feedback only**
   (`@chess/core` `board.ts`): the server's answer/frame always wins. **Board (board-look)**: `components/games.tsx#Board` wraps
   `react-chessboard` (MIT), drawn in the browser only (`BoardPlaceholder` is the SSR stand-in, same size, every square
-  keeps `data-square`); pieces are Cburnett SVGs in `public/pieces/cburnett/` (Wikimedia, BSD-3, see
+  keeps `data-square`); pieces are Cburnett SVGs in `libs/chess-ui/src/pieces/`, bundled as assets (Wikimedia, BSD-3, see
   `apps/frontend/ATTRIBUTION.md`; never the lichess GPL copy, never Unicode glyphs); board themes are `--board-*`
   variables picked by `data-board` (Brown default); square highlights are `lib/board.ts`; premove rules and
   click-premove are pure in `@chess/core`. Premoves only in timed games against a person; no sounds anywhere (owner decision). **Preferences

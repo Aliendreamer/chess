@@ -14,6 +14,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { squaresFor } from '@chess/core'
+import { pieceSrc, squareStyles } from '@chess/ui'
 import type { ChessboardOptions, PieceRenderObject } from 'react-chessboard'
 import type { ReactNode } from 'react'
 import type { Piece, SideMaterial, SquarePair } from '@chess/core'
@@ -39,7 +40,6 @@ import {
   reasonText,
   resultText,
 } from '#/lib/games'
-import { pieceSrc, squareStyles } from '#/lib/board'
 
 // Static class strings per game type (site-themes), so Tailwind sees every one.
 const TC_BG: Record<Category, string> = {

@@ -34,7 +34,7 @@ machine, a release), with the command that proves it.
 
 ## 3. Shared UI and the club refactor
 
-- [ ] 3.1 Move the Club tokens (`styles.css` `@theme` + Parchment), fonts and Cburnett pieces into `@chess/ui`; the
+- [x] 3.1 Move the Club tokens (`styles.css` `@theme` + Parchment), fonts and Cburnett pieces into `@chess/ui`; the
       club imports the stylesheet from there. Test first: `styles.test.ts` (AA contrast) moved to the library, red until
       the file moves.
 - [ ] 3.2 Add `LinkContext` and move `components/ui.tsx` primitives, `Board`/`BoardPlaceholder`, move list/tree and

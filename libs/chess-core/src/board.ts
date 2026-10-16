@@ -9,6 +9,10 @@ import type { Square } from 'chess.js'
 
 export type Color = 'white' | 'black'
 
+/** The board themes a player may pick (board-look); Brown is the default. */
+export const BOARD_THEMES = ['brown', 'blue', 'green', 'slate', 'walnut'] as const
+export type BoardTheme = (typeof BOARD_THEMES)[number]
+
 export interface Piece {
   color: 'w' | 'b'
   type: 'p' | 'n' | 'b' | 'r' | 'q' | 'k'

@@ -9,8 +9,10 @@ const CAN_TAKE = 'rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2'
 
 describe('pieceSrc', () => {
   it('names the Cburnett file', () => {
-    expect(pieceSrc('w', 'n')).toBe('/pieces/cburnett/wN.svg')
-    expect(pieceSrc('b', 'k')).toBe('/pieces/cburnett/bK.svg')
+    // Bundled as assets: a file URL, or inlined as a data URL when small.
+    for (const src of [pieceSrc('w', 'n'), pieceSrc('b', 'k')])
+      expect(src).toMatch(/^data:image\/svg\+xml|\.svg$/)
+    expect(pieceSrc('w', 'n')).not.toBe(pieceSrc('b', 'k'))
   })
 })
 

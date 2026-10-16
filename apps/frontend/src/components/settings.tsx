@@ -1,7 +1,7 @@
+import { BOARD_THEMES } from '@chess/core'
 import type { Animation, Preferences } from '#/lib/auth'
-import type { BoardTheme } from '#/lib/board'
+import type { BoardTheme } from '@chess/core'
 import { ANIMATIONS, PreferencesContext, SITE_THEMES } from '#/lib/auth'
-import { BOARD_THEMES } from '#/lib/board'
 import { Board } from '#/components/games'
 import { Chip, ErrorText, Panel } from '#/components/ui'
 

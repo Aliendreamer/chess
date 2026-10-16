@@ -4,10 +4,10 @@ import { describe, expect, it } from 'vitest'
 
 /**
  * site-themes: body text must stay readable (WCAG AA, 4.5:1) on the page and card surfaces in both site themes. The
- * values are read from styles.css itself, so a palette edit that breaks contrast fails here.
+ * values are read from theme.css itself, so a palette edit that breaks contrast fails here.
  */
 // vitest runs from the app's root (jsdom has no file: import.meta.url).
-const css = readFileSync(join(process.cwd(), 'src', 'styles.css'), 'utf8')
+const css = readFileSync(join(process.cwd(), 'src', 'theme.css'), 'utf8')
 
 function block(selector: string): Record<string, string> {
   const start = css.indexOf(`${selector} {`)

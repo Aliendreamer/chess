@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { pieceSrc } from '@chess/ui'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import type { ColourChoice, CommandOutcome } from '#/lib/games'
 import type { Pager } from '#/lib/play'
-import { pieceSrc } from '#/lib/board'
 
 export type ButtonVariant = 'primary' | 'outline' | 'secondary'
 export type ButtonSize = 'sm' | 'md' | 'lg'

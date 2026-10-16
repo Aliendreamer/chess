@@ -1,6 +1,6 @@
 # Attribution
 
-## Chess pieces (`public/pieces/cburnett/`)
+## Chess pieces (`libs/chess-ui/src/pieces/`, shared with the desktop app)
 
 The twelve piece images are the "Cburnett" set by **Colin M.L. Burnett**, taken from Wikimedia Commons
 (`File:Chess_{k,q,r,b,n,p}{l,d}t45.svg`, for example <https://commons.wikimedia.org/wiki/File:Chess_klt45.svg>). The

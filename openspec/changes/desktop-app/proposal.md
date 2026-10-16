@@ -62,6 +62,8 @@ the admin screens, observability, and any change to the backend or the engine wo
 
 - `frontend-layout`: imports may also use the two shared libraries (`@chess/core`, `@chess/ui`); code both apps need
   lives there, not in `apps/frontend/src`.
+- `chessboard`: the pieces and board themes live in `@chess/ui` (pieces bundled as assets, not served from
+  `/pieces/cburnett/`).
 
 ## Impact
 

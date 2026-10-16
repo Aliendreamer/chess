@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { pieceSrc } from '@chess/ui'
 import {
   Board,
   BoardPlaceholder,
@@ -60,8 +61,8 @@ describe('Board', () => {
     const { container } = render(<Board fen={START} orientation="white" />)
     const images = [...container.querySelectorAll('img')].map((i) => i.getAttribute('src'))
     expect(images).toHaveLength(32)
-    expect(images).toContain('/pieces/cburnett/wK.svg')
-    expect(images).toContain('/pieces/cburnett/bN.svg')
+    expect(images).toContain(pieceSrc('w', 'k'))
+    expect(images).toContain(pieceSrc('b', 'n'))
   })
 
   it('from Black, h1 comes first', () => {
@@ -95,10 +96,10 @@ describe('PromotionPicker', () => {
       <PromotionPicker color="black" onPick={() => {}} onCancel={() => {}} />,
     )
     expect([...container.querySelectorAll('img')].map((i) => i.getAttribute('src'))).toEqual([
-      '/pieces/cburnett/bQ.svg',
-      '/pieces/cburnett/bR.svg',
-      '/pieces/cburnett/bB.svg',
-      '/pieces/cburnett/bN.svg',
+      pieceSrc('b', 'q'),
+      pieceSrc('b', 'r'),
+      pieceSrc('b', 'b'),
+      pieceSrc('b', 'n'),
     ])
   })
 })
@@ -126,8 +127,8 @@ describe('game-page-navigation', () => {
       />,
     )
     expect([...container.querySelectorAll('img')].map((i) => i.getAttribute('src'))).toEqual([
-      '/pieces/cburnett/bP.svg',
-      '/pieces/cburnett/bN.svg',
+      pieceSrc('b', 'p'),
+      pieceSrc('b', 'n'),
     ])
     expect(screen.getByTestId('material-plus').textContent).toBe('+4')
   })

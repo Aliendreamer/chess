@@ -139,15 +139,9 @@ importers:
       '@chess/core':
         specifier: workspace:*
         version: link:../../libs/chess-core
-      '@fontsource/ibm-plex-mono':
-        specifier: 5.3.0
-        version: 5.3.0
-      '@fontsource/ibm-plex-sans':
-        specifier: 5.3.0
-        version: 5.3.0
-      '@fontsource/newsreader':
-        specifier: 5.3.0
-        version: 5.3.0
+      '@chess/ui':
+        specifier: workspace:*
+        version: link:../../libs/chess-ui
       '@microsoft/signalr':
         specifier: 10.0.11
         version: 10.0.11
@@ -362,6 +356,19 @@ importers:
         version: 4.1.8(@opentelemetry/api@1.9.1)(@types/node@25.9.2)(@vitest/coverage-v8@4.1.8)(jsdom@29.1.1)(vite@8.0.16(@types/node@25.9.2))
 
   libs/chess-ui:
+    dependencies:
+      '@chess/core':
+        specifier: workspace:*
+        version: link:../chess-core
+      '@fontsource/ibm-plex-mono':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/ibm-plex-sans':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/newsreader':
+        specifier: 5.3.0
+        version: 5.3.0
     devDependencies:
       '@tanstack/eslint-config':
         specifier: 0.4.0
@@ -402,6 +409,9 @@ importers:
       typescript:
         specifier: 6.0.3
         version: 6.0.3
+      vite:
+        specifier: 8.0.16
+        version: 8.0.16(@types/node@25.9.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1)
       vitest:
         specifier: 4.1.8
         version: 4.1.8(@opentelemetry/api@1.9.1)(@types/node@25.9.2)(@vitest/coverage-v8@4.1.8)(jsdom@29.1.1)(vite@8.0.16(@types/node@25.9.2))

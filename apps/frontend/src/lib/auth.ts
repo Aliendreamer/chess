@@ -1,6 +1,6 @@
 import { createContext } from 'react'
-import { BOARD_THEMES } from './board'
-import type { BoardTheme } from './board'
+import { BOARD_THEMES } from '@chess/core'
+import type { BoardTheme } from '@chess/core'
 
 /** Who is signed in, their display preferences, and the same-origin auth entry points. No API host in the client. */
 export const LOGIN_HREF = '/api/auth/login'

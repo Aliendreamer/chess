@@ -1,14 +1,23 @@
 import { checkSquare, placement } from '@chess/core'
+import bB from './pieces/bB.svg?url'
+import bK from './pieces/bK.svg?url'
+import bN from './pieces/bN.svg?url'
+import bP from './pieces/bP.svg?url'
+import bQ from './pieces/bQ.svg?url'
+import bR from './pieces/bR.svg?url'
+import wB from './pieces/wB.svg?url'
+import wK from './pieces/wK.svg?url'
+import wN from './pieces/wN.svg?url'
+import wP from './pieces/wP.svg?url'
+import wQ from './pieces/wQ.svg?url'
+import wR from './pieces/wR.svg?url'
 import type { CSSProperties } from 'react'
 import type { Piece, SquarePair } from '@chess/core'
 
 /**
  * What the board shows on top of the position (board-look): lichess-style highlights as react-chessboard square
- * styles, and the premove rule. The colours are theme variables from `styles.css`, so a board theme changes them all.
+ * styles, and the premove rule. The colours are theme variables from `theme.css`, so a board theme changes them all.
  */
-
-export const BOARD_THEMES = ['brown', 'blue', 'green', 'slate', 'walnut'] as const
-export type BoardTheme = (typeof BOARD_THEMES)[number]
 
 export interface Highlights {
   lastMove?: SquarePair | null | undefined
@@ -25,8 +34,11 @@ const RING = 'radial-gradient(transparent 79%, var(--board-target) 80%)'
 const CHECK =
   'radial-gradient(ellipse at center, rgba(255, 0, 0, 1) 0%, rgba(231, 0, 0, 1) 25%, rgba(169, 0, 0, 0) 89%)'
 
+/** The Cburnett pieces (Wikimedia, BSD-3; see apps/frontend/ATTRIBUTION.md), bundled by each app as assets. */
+const PIECES: Record<string, string> = { bB, bK, bN, bP, bQ, bR, wB, wK, wN, wP, wQ, wR }
+
 export function pieceSrc(color: Piece['color'], type: Piece['type']): string {
-  return `/pieces/cburnett/${color}${type.toUpperCase()}.svg`
+  return PIECES[`${color}${type.toUpperCase()}`]!
 }
 
 /** Square styles for react-chessboard: only the squares that carry a highlight are present. */

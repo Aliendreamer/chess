@@ -1,0 +1,254 @@
+/*
+ * The Club design's tokens, fonts, site themes and board themes (shared-chess-libraries), for both apps. An app's
+ * stylesheet imports Tailwind, then this file, and points Tailwind at libs/chess-ui/src with @source.
+ */
+
+/* Self-hosted fonts (latin subset, only the weights the Club design uses): no third-party request. */
+@import '@fontsource/newsreader/latin-400.css';
+@import '@fontsource/newsreader/latin-500.css';
+@import '@fontsource/newsreader/latin-400-italic.css';
+@import '@fontsource/ibm-plex-sans/latin-400.css';
+@import '@fontsource/ibm-plex-sans/latin-500.css';
+@import '@fontsource/ibm-plex-sans/latin-600.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource/ibm-plex-mono/latin-500.css';
+
+/*
+ * The Club design system (Design/, untracked): one warm near-black ramp, a parchment text ramp and a single brass
+ * accent. The ramps are raw values; components use only the semantic names below, as Tailwind utilities
+ * (bg-surface-card, text-fg-muted, border-line-default, font-display, text-display-xl, rounded-card, ...).
+ * Dark only, like the design.
+ */
+@theme {
+  /* Ramps */
+  --color-ink-950: oklch(0.15 0.008 70);
+  --color-ink-900: oklch(0.17 0.008 70);
+  --color-ink-850: oklch(0.19 0.01 70);
+  --color-ink-800: oklch(0.2 0.01 70);
+  --color-ink-750: oklch(0.22 0.01 70);
+  --color-ink-700: oklch(0.24 0.012 70);
+  --color-ink-650: oklch(0.25 0.01 70);
+  --color-ink-600: oklch(0.28 0.012 70);
+  --color-ink-550: oklch(0.3 0.012 70);
+  --color-ink-500: oklch(0.36 0.015 70);
+  --color-parchment-50: oklch(0.94 0.012 80);
+  --color-parchment-200: oklch(0.86 0.012 80);
+  --color-parchment-300: oklch(0.8 0.015 75);
+  --color-parchment-400: oklch(0.7 0.015 75);
+  --color-parchment-500: oklch(0.62 0.015 75);
+  --color-brass-300: oklch(0.88 0.08 80);
+  --color-brass-400: oklch(0.8 0.1 80);
+  --color-brass-600: oklch(0.5 0.07 80);
+  --color-brass-800: oklch(0.3 0.04 80);
+  --color-brass-900: oklch(0.22 0.03 80);
+  --color-brass-950: oklch(0.2 0.02 80);
+  --color-moss-400: oklch(0.8 0.12 150);
+  --color-clay-400: oklch(0.7 0.14 30);
+
+  /* Surfaces */
+  --color-surface-page: var(--color-ink-900);
+  --color-surface-rail: var(--color-ink-950);
+  --color-surface-card: var(--color-ink-850);
+  --color-surface-raised: var(--color-ink-800);
+  --color-surface-hover: var(--color-ink-750);
+  --color-surface-selected: var(--color-ink-700);
+  --color-surface-inset: var(--color-ink-950);
+  --color-surface-accent-tint: var(--color-brass-900);
+  --color-surface-accent-soft: var(--color-brass-950);
+  /* The move on the board, tinted in move lists and trees. */
+  --color-surface-current: var(--color-brass-800);
+  /* Lines */
+  --color-line-divider: var(--color-ink-650);
+  --color-line-default: var(--color-ink-600);
+  --color-line-strong: var(--color-ink-550);
+  --color-line-accent: var(--color-brass-400);
+  --color-line-accent-soft: var(--color-brass-600);
+  /* Text ("fg": Tailwind's --text-* namespace is font sizes) */
+  --color-fg-primary: var(--color-parchment-50);
+  --color-fg-body: var(--color-parchment-300);
+  --color-fg-secondary: var(--color-parchment-400);
+  --color-fg-muted: var(--color-parchment-500);
+  --color-fg-accent: var(--color-brass-400);
+  --color-fg-on-accent: var(--color-ink-900);
+  /* Status */
+  --color-status-win: var(--color-moss-400);
+  --color-status-loss: var(--color-clay-400);
+  --color-status-draw: var(--color-parchment-400);
+  --color-status-healthy: var(--color-moss-400);
+  --color-status-turn: var(--color-brass-400);
+  --color-status-waiting: var(--color-parchment-500);
+
+  /* Game types (site-themes): one colour each, always shown next to the type's name, never instead of it. */
+  --color-tc-bullet: oklch(0.7 0.17 28);
+  --color-tc-blitz: oklch(0.8 0.14 75);
+  --color-tc-rapid: oklch(0.76 0.14 150);
+  --color-tc-classical: oklch(0.72 0.12 245);
+  --color-tc-computer: oklch(0.72 0.03 250);
+
+  /* Type */
+  --font-display: 'Newsreader', Georgia, serif;
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --text-display-xl: 44px;
+  --text-display-xl--line-height: 1.05;
+  --text-display-lg: 40px;
+  --text-display-lg--line-height: 1.05;
+  --text-display-md: 30px;
+  --text-display-md--line-height: 1.05;
+  --text-display-sm: 28px;
+  --text-display-sm--line-height: 1;
+  --text-display-xs: 22px;
+  --text-display-xs--line-height: 1.05;
+  --text-note: 17px;
+  --text-base: 14px;
+  --text-base--line-height: 1.45;
+  --text-sm: 13px;
+  --text-sm--line-height: 1.45;
+  --text-xs: 12px;
+  --text-xs--line-height: 1.45;
+  --text-2xs: 11px;
+  --text-2xs--line-height: 1.4;
+  --text-clock: 28px;
+  --text-clock--line-height: 1.2;
+  --tracking-eyebrow: 0.08em;
+
+  /* Layout (responsive-layout): the rail beside the content from here up, a top bar below (`shell:` variants). */
+  --breakpoint-shell: 56.25rem;
+  /* Room for three columns beside the rail: the analysis board, its moves and engine, the library's games. */
+  --breakpoint-wide: 100rem;
+
+  /* Shape */
+  --radius-board: 4px;
+  --radius-control: 6px;
+  --radius-card: 8px;
+  --radius-count: 10px;
+  --radius-pill: 16px;
+}
+
+/*
+ * The active board theme's squares as utilities (bg-board-light, ...). `inline`, so the utility reads `--board-*` on
+ * the element itself and follows a `data-board` ancestor instead of the value resolved on :root.
+ */
+@theme inline {
+  --color-board-light: var(--board-light);
+  --color-board-dark: var(--board-dark);
+}
+
+:root {
+  color-scheme: dark;
+  /*
+   * Board themes (board-look). Brown is the default; `data-board` on an ancestor picks another. Square colours follow
+   * lichess's flat themes; the highlights are translucent so they read on every theme.
+   */
+  --board-light: #f0d9b5;
+  --board-dark: #b58863;
+  --board-last: rgba(155, 199, 0, 0.41);
+  --board-selected: rgba(20, 85, 30, 0.5);
+  --board-target: rgba(20, 85, 30, 0.5);
+  --board-premove: rgba(20, 30, 85, 0.4);
+  --board-circle: rgba(21, 120, 27, 0.8);
+  --rail-width: 248px;
+  --content-max: 1120px;
+  /* A page whose `data-layout` names `wide` (home, news, library, profiles) may use this much: its columns need the room. */
+  --content-wide: 1720px;
+  --board-max: 600px;
+}
+
+/*
+ * The light site theme, Parchment (site-themes): it redefines the semantic tokens only, so no component changes for it.
+ * Dark (the Club palette above) stays the default; `data-theme` on the Shell picks this one.
+ */
+[data-theme='light'] {
+  color-scheme: light;
+  --color-surface-page: oklch(0.97 0.008 80);
+  --color-surface-rail: oklch(0.94 0.012 80);
+  --color-surface-card: oklch(0.985 0.005 80);
+  --color-surface-raised: oklch(0.95 0.01 80);
+  --color-surface-hover: oklch(0.92 0.012 80);
+  --color-surface-selected: oklch(0.89 0.015 80);
+  --color-surface-inset: oklch(0.93 0.01 80);
+  --color-surface-accent-tint: oklch(0.9 0.05 85);
+  --color-surface-accent-soft: oklch(0.94 0.035 85);
+  --color-surface-current: oklch(0.88 0.06 85);
+  --color-line-divider: oklch(0.88 0.012 75);
+  --color-line-default: oklch(0.83 0.015 75);
+  --color-line-strong: oklch(0.75 0.015 75);
+  --color-line-accent: oklch(0.55 0.09 75);
+  --color-line-accent-soft: oklch(0.72 0.07 80);
+  --color-fg-primary: oklch(0.2 0.01 70);
+  --color-fg-body: oklch(0.3 0.012 70);
+  --color-fg-secondary: oklch(0.42 0.015 70);
+  --color-fg-muted: oklch(0.5 0.015 70);
+  --color-fg-accent: oklch(0.47 0.09 75);
+  --color-status-win: oklch(0.5 0.13 150);
+  --color-status-loss: oklch(0.52 0.16 30);
+  --color-status-draw: oklch(0.45 0.015 75);
+  --color-status-healthy: oklch(0.5 0.13 150);
+  --color-status-turn: oklch(0.47 0.09 75);
+  --color-status-waiting: oklch(0.5 0.015 75);
+  --color-tc-bullet: oklch(0.56 0.18 28);
+  --color-tc-blitz: oklch(0.62 0.14 70);
+  --color-tc-rapid: oklch(0.55 0.14 150);
+  --color-tc-classical: oklch(0.52 0.13 245);
+  --color-tc-computer: oklch(0.5 0.03 250);
+}
+
+[data-board='blue'] {
+  --board-light: #dee3e6;
+  --board-dark: #8ca2ad;
+}
+
+[data-board='green'] {
+  --board-light: #ffffdd;
+  --board-dark: #86a666;
+}
+
+[data-board='slate'] {
+  --board-light: #c9cfd6;
+  --board-dark: #5d6b7a;
+  --board-last: rgba(120, 190, 255, 0.38);
+  --board-selected: rgba(40, 110, 190, 0.5);
+}
+
+[data-board='walnut'] {
+  --board-light: #ead6b0;
+  --board-dark: #9a6a44;
+  --board-last: rgba(214, 170, 60, 0.55);
+  --board-selected: rgba(214, 170, 60, 0.7);
+}
+
+/* The game-over card's entrance (game-feedback); used as motion-safe:animate-[pop_…]. */
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+/* A pending draw offer to answer (game-feedback): a slow brass glow; used as motion-safe:animate-[offer_…]. */
+@keyframes offer {
+  50% {
+    box-shadow: 0 0 0 3px var(--color-line-accent-soft);
+  }
+}
+
+/* In the base layer, so any utility on an element (a Link styled as a button, say) wins. */
+@layer base {
+  body {
+    margin: 0;
+    background: var(--color-surface-page);
+    color: var(--color-fg-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: var(--color-brass-400);
+  }
+
+  a:hover {
+    color: var(--color-brass-300);
+  }
+}
