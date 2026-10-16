@@ -73,8 +73,10 @@ same props.
   block), the Cburnett pieces and board themes. Navigation comes from a `LinkContext` (`{ Link, navigate }`) each app
   provides, data and commands from props. Nothing imports a router or a server function.
 
-Both are Nx projects with `lint`, `test` (vitest) and `typecheck`; built as TS source (no build step: both apps compile
-them through Vite/TS path mapping), so a change there is in the next app build. `chess.js` is feedback only in the
+Both are Nx projects with `lint` (typecheck, ESLint with a `no-restricted-imports` ban, prettier) and `test` (vitest),
+and pnpm workspace packages whose `exports` point at their TS source: an app depends on them with `workspace:*` and
+compiles them itself (no build step, no path aliases), so a change there is in the next app build. `chess-core`'s
+tsconfig has no DOM lib, so a DOM global fails its typecheck. `chess.js` is feedback only in the
 club and the rules in the desktop app — the same library, used differently by each app.
 
 _Alternative_: copy the code into `apps/desktop` (fast, but two boards and trainers drifting). Rejected by the owner.

@@ -1,0 +1,24 @@
+{
+  "name": "chess-core",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/chess-core/src",
+  "tags": ["scope:libs", "lang:ts"],
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/chess-core",
+        "command": "pnpm test"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/chess-core",
+        "commands": ["pnpm typecheck", "pnpm lint", "pnpm check"],
+        "parallel": false
+      }
+    }
+  }
+}

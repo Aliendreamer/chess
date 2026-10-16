@@ -1,0 +1,24 @@
+{
+  "name": "chess-ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/chess-ui/src",
+  "tags": ["scope:libs", "lang:ts"],
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/chess-ui",
+        "command": "pnpm test"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/chess-ui",
+        "commands": ["pnpm typecheck", "pnpm lint", "pnpm check"],
+        "parallel": false
+      }
+    }
+  }
+}

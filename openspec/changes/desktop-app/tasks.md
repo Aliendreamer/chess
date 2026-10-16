@@ -7,9 +7,9 @@ machine, a release), with the command that proves it.
 - [x] 1.1 Add `libs/*` to `pnpm-workspace.yaml`, scopes `desktop` and `libs` to commitlint and `openspec/config.yaml`,
       Tauri `target/` and `src-tauri/binaries/` to `.gitignore`. Test first: `echo "feat(libs): x" | pnpm commitlint`
       fails with `scope-enum`.
-- [ ] 1.2 Create `libs/chess-core` and `libs/chess-ui` as Nx projects (`lint`, `test`, `typecheck`; vitest; TS source,
-      no build) with path aliases `@chess/core` / `@chess/ui` in both apps' tsconfig and Vite config, and an ESLint
-      `no-restricted-imports` rule (core: no react/DOM/router/tauri; ui: no router/tauri/`lib/server`). Test first: a
+- [x] 1.2 Create `libs/chess-core` and `libs/chess-ui` as Nx projects (`lint`, `test`, `typecheck`; vitest; TS source,
+      no build) as pnpm workspace packages `@chess/core` / `@chess/ui` (apps depend on them with `workspace:*`), and an
+      ESLint `no-restricted-imports` rule (core: no react/DOM/router/tauri; ui: no router/tauri/`lib/server`). Test first: a
       fixture file importing `react` in core makes `nx lint chess-core` fail.
 - [ ] 1.3 Prove Nx Release counts a `libs` change for a dependent app: once 4.1 has made the `desktop` project, run
       `pnpm exec nx release version --dry-run --projects desktop` after a `fix(libs)` commit and expect a patch bump.
