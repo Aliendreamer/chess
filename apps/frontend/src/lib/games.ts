@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
+import type { Color } from '@chess/core'
 /**
  * The game's wire shapes and the pure rules the game page shows them with. Client-safe (no `lib/server` import):
  * the page and its components use these, and none of it decides legality or outcomes — the server does (D3).
  */
 
-export type Color = 'white' | 'black'
+export type { Color }
 
 /** A colour someone may ask for: yours in a game against the computer. */
 export type ColourChoice = Color | 'random'

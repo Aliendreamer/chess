@@ -136,6 +136,9 @@ importers:
 
   apps/frontend:
     dependencies:
+      '@chess/core':
+        specifier: workspace:*
+        version: link:../../libs/chess-core
       '@fontsource/ibm-plex-mono':
         specifier: 5.3.0
         version: 5.3.0
@@ -328,6 +331,13 @@ importers:
         version: 0.6.3(supports-color@10.2.2)
 
   libs/chess-core:
+    dependencies:
+      '@mliebelt/pgn-parser':
+        specifier: 1.4.19
+        version: 1.4.19
+      chess.js:
+        specifier: 1.4.0
+        version: 1.4.0
     devDependencies:
       '@tanstack/eslint-config':
         specifier: 0.4.0

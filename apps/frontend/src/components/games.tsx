@@ -13,9 +13,10 @@ import {
   Timer,
   Zap,
 } from 'lucide-react'
+import { squaresFor } from '@chess/core'
 import type { ChessboardOptions, PieceRenderObject } from 'react-chessboard'
 import type { ReactNode } from 'react'
-import type { SideMaterial, SquarePair } from '#/lib/board'
+import type { Piece, SideMaterial, SquarePair } from '@chess/core'
 import type { RematchState } from '#/lib/feedback'
 import type {
   Category,
@@ -26,7 +27,6 @@ import type {
   GameView,
   PgnResult,
 } from '#/lib/games'
-import type { Piece } from '#/lib/moveInput'
 import type { MyGameItem } from '#/lib/play'
 import { PreferencesContext, animationMs as animationMsOf } from '#/lib/auth'
 import { Button, Panel } from '#/components/ui'
@@ -39,7 +39,6 @@ import {
   reasonText,
   resultText,
 } from '#/lib/games'
-import { squaresFor } from '#/lib/moveInput'
 import { pieceSrc, squareStyles } from '#/lib/board'
 
 // Static class strings per game type (site-themes), so Tailwind sees every one.

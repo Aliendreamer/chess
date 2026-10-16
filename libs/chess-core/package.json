@@ -22,5 +22,9 @@
     "prettier": "3.8.4",
     "typescript": "6.0.3",
     "vitest": "4.1.8"
+  },
+  "dependencies": {
+    "@mliebelt/pgn-parser": "1.4.19",
+    "chess.js": "1.4.0"
   }
 }

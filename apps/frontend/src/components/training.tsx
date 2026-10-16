@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
+import { legalTargets } from '@chess/core'
 import type { ReactNode } from 'react'
-import type { SquarePair } from '#/lib/board'
+import type { SquarePair } from '@chess/core'
 import type { PreviewState } from '#/lib/review'
 import type {
   AnswerBoard,
@@ -24,7 +25,6 @@ import {
   verdictText,
 } from '#/lib/training'
 import { lineSans } from '#/lib/review'
-import { legalTargets } from '#/lib/moveInput'
 import { Board, PromotionPicker } from '#/components/games'
 import { Button, Chip, ErrorText, Panel, useAdoptTyped } from '#/components/ui'
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Copy } from 'lucide-react'
+import { parsePgn } from '@chess/core'
 import type {
   AdminMember,
   CreatedMember,
@@ -11,7 +12,6 @@ import type {
 import type { BroadcastRun, ImportAnswer, ImportBatch, ImportGame } from '#/lib/library'
 import type { CommandOutcome } from '#/lib/games'
 import { IMPORT_BATCH, batches, toImportGame } from '#/lib/library'
-import { parsePgn } from '#/lib/studies'
 import { checkNewMember, firstLine, isSelfHarm } from '#/lib/admin'
 import { lastSeenText, useNow } from '#/lib/members'
 import { Button, ErrorText, Panel, buttonClass, useAdoptTyped, useCommand } from '#/components/ui'

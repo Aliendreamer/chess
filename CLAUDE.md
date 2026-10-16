@@ -163,7 +163,7 @@ to each app's own lint target). Keep `--no-stash`.
   route loaders call server functions (`lib/server/api.ts`) that re-attach the cookie and hit `API_URL`
   server-side. Components are presentational. **No `VITE_API_URL` ever** — the client bundle must not
   mention the API host. Layout (`frontend-layout` spec): files by feature, no tiny files, no one-file folders —
-  `components/{ui,layout,games,pings}.tsx`; client-safe types and helpers in `lib/{auth,live,games,play,pings,moveInput}.ts`;
+  `components/{ui,layout,games,pings}.tsx`; client-safe types and helpers in `lib/{auth,live,games,play,pings}.ts`;
   `lib/server/` = `api.ts` (server functions + input checks), `cookies.ts`, `upstream.ts` (env, `LOGIN_REDIRECT`,
   `isGuid`, `readJson`, `postCommand` — defined once, never copied), and one file per feature (`auth`, `games`, `play`,
   `pings`, `live-relay`, `live-hub`). Client code never imports `lib/server/` except `api.ts`; imports use `#/` only. Pages run commands through
@@ -207,12 +207,12 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   and `…/games` (`WebApi/Players/`, replica). The replica reads `users` only as `Data/ReadModels/PlayerIdentity` (id,
   username, created at), which `ProjectDbContext`'s configuration scan skips; never add private columns to it. Names
   render through `components/games.tsx#PlayerLink`; `/players/$id` groups the record into game types (`lib/players.ts`). **chess.js is feedback only**
-  (`lib/moveInput.ts`): the server's answer/frame always wins. **Board (board-look)**: `components/games.tsx#Board` wraps
+  (`@chess/core` `board.ts`): the server's answer/frame always wins. **Board (board-look)**: `components/games.tsx#Board` wraps
   `react-chessboard` (MIT), drawn in the browser only (`BoardPlaceholder` is the SSR stand-in, same size, every square
   keeps `data-square`); pieces are Cburnett SVGs in `public/pieces/cburnett/` (Wikimedia, BSD-3, see
   `apps/frontend/ATTRIBUTION.md`; never the lichess GPL copy, never Unicode glyphs); board themes are `--board-*`
-  variables picked by `data-board` (Brown default); highlights, premove rules and click-premove are pure in
-  `lib/board.ts`. Premoves only in timed games against a person; no sounds anywhere (owner decision). **Preferences
+  variables picked by `data-board` (Brown default); square highlights are `lib/board.ts`; premove rules and
+  click-premove are pure in `@chess/core`. Premoves only in timed games against a person; no sounds anywhere (owner decision). **Preferences
   (user-preferences)**: `users.preferences` jsonb (null = defaults) behind `GET|PUT /api/me/preferences`
   (`Authentication/Preferences.cs`, cached `Cache:PreferencesMinutes`, evicted on save); `_authenticated.beforeLoad`
   loads them with `getMe()`, the Shell root carries `data-board`/`data-theme` and `PreferencesContext` (the board
@@ -368,7 +368,7 @@ level)`. Engine games are `untimed` (`TimeControl.Untimed`: no clock, flag or in
   `position_evaluations` (PK `(PositionKey, ThinkMs)`; `Analysis/PositionAnalysis.cs`) — a longer think answers a
   shorter request — or produces it to `analysis.requests` (`KafkaAnalysisRequests` owns its producer), unless a
   request for that key and think is younger than `Analysis:RetryAfterSeconds`. `PositionKey.Of` = the FEN's first four
-  fields, en passant kept only when a pawn can take (chess.js and Gera write it differently; `lib/analysis.ts#positionKey`
+  fields, en passant kept only when a pawn can take (chess.js and Gera write it differently; `@chess/core#positionKey`
   mirrors it). The worker's analysis loop (`Engine:AnalysisProcesses`, own consumer group, full strength, MultiPV
   `Analysis:Lines`, scores turned to White's side) answers on `analysis.results`; `AnalysisResultConsumer` stores it,
   keeping the deeper of two answers. Scale with `Engine:AnalysisProcesses` or worker replicas (one group: total

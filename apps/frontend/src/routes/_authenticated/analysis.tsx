@@ -1,6 +1,18 @@
 import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { ParsedGame } from '#/lib/studies'
+import {
+  STANDARD_START,
+  fenAt,
+  fromGame,
+  fromInput,
+  isFen,
+  lineEnd,
+  parsePgn,
+  playMove,
+  positionKey,
+  toInput,
+} from '@chess/core'
+import type { ParsedGame } from '@chess/core'
 import type { LibrarySource } from '#/lib/library'
 import {
   getFinishedGame,
@@ -10,20 +22,8 @@ import {
   postAnalysis,
   postCreateStudies,
 } from '#/lib/server/api'
-import {
-  STANDARD_START,
-  analysisTitle,
-  fenAt,
-  fromGame,
-  fromInput,
-  isFen,
-  lineEnd,
-  parsePgn,
-  playMove,
-  toInput,
-  useMoveTree,
-} from '#/lib/studies'
-import { positionKey, useAnalysis } from '#/lib/analysis'
+import { analysisTitle, useMoveTree } from '#/lib/studies'
+import { useAnalysis } from '#/lib/analysis'
 import {
   BROADCAST_SOURCE,
   isLibrarySource,

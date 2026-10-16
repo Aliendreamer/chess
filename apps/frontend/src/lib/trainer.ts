@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Chess } from 'chess.js'
-import { STANDARD_START } from './studies'
-import { clickSquare, legalTargets, needsPromotion } from './moveInput'
+import { STANDARD_START, clickSquare, legalTargets, needsPromotion } from '@chess/core'
 
 /**
  * The opening trainer (opening-trainer): its API shapes and the drill — the board plays the other side of a named line,

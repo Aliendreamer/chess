@@ -6,7 +6,11 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/frontend/package.json apps/frontend/package.json
 COPY apps/frontend/otel/package.json apps/frontend/otel/package.json
+# The shared libraries (shared-chess-libraries): workspace packages the frontend compiles from source.
+COPY libs/chess-core/package.json libs/chess-core/package.json
+COPY libs/chess-ui/package.json libs/chess-ui/package.json
 RUN pnpm install --frozen-lockfile --config.minimumReleaseAge=0
+COPY libs libs
 COPY apps/frontend apps/frontend
 RUN pnpm --filter chess-frontend build
 # The OpenTelemetry SDK is loaded before the server (`--import`), so it cannot live in the bundle: its own package

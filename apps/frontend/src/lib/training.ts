@@ -1,8 +1,7 @@
 import { useState } from 'react'
+import { clickSquare, legalTargets, needsPromotion, uciSquares } from '@chess/core'
 import { lineSans } from './review'
-import { clickSquare, legalTargets, needsPromotion } from './moveInput'
-import { uciSquares } from './board'
-import type { SquarePair } from './board'
+import type { SquarePair } from '@chess/core'
 
 /**
  * Training sessions (training): the API's shapes, the session the page keeps (the API is stateless: the page sends

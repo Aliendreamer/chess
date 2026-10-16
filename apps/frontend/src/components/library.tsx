@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { playMove } from '@chess/core'
 import type { ExplorerMove, LibraryGameItem, LibraryPosition, LibrarySource } from '#/lib/library'
 import {
   BROADCAST_POSITION_MOVES,
@@ -8,7 +9,6 @@ import {
   lichessUrl,
 } from '#/lib/library'
 import { scoreShare } from '#/lib/players'
-import { playMove } from '#/lib/studies'
 import { Chip, Panel } from '#/components/ui'
 
 /**

@@ -1,9 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import {
+  applyOptimistic,
+  clickSquare,
+  legalTargets,
+  material,
+  needsPromotion,
+  pieceAt,
+  premoveClick,
+  replay,
+  resolvePremove,
+  uciSquares,
+} from '@chess/core'
 import type { GameCommand, GameSummary, GameView, MoveItem } from '#/lib/games'
 import type { LiveFrame } from '#/lib/live'
 import type { Me } from '#/lib/auth'
-import type { SquarePair } from '#/lib/board'
+import type { SquarePair } from '@chess/core'
 import type { InviteView } from '#/lib/play'
 import type { PreviewState } from '#/lib/review'
 import {
@@ -30,14 +42,6 @@ import {
   useLocalClocks,
 } from '#/lib/games'
 import { applyFrame, liveStatusText, liveTopic, useLiveTopic } from '#/lib/live'
-import {
-  applyOptimistic,
-  clickSquare,
-  legalTargets,
-  needsPromotion,
-  pieceAt,
-} from '#/lib/moveInput'
-import { material, premoveClick, replay, resolvePremove, uciSquares } from '#/lib/board'
 import { pageTitle, rematchState, tabState, useTabSignals } from '#/lib/feedback'
 import { isInviteView } from '#/lib/play'
 import { REVIEW_POLL_MS, marksFor, previewLine, useReview } from '#/lib/review'

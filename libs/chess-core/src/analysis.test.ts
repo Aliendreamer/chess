@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { lineMoves, positionKey, remember, scoreText } from './analysis'
-import type { Evaluation } from './analysis'
+import { lineMoves, positionKey, remember, scoreText } from './analysis.ts'
+import type { Evaluation } from './analysis.ts'
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 const START_KEY = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -'

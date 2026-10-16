@@ -1,12 +1,19 @@
 import { Fragment, useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
+import {
+  THINKS,
+  legalTargets,
+  lineEnd,
+  lineMoves,
+  moveNumber,
+  nextPath,
+  scoreText,
+  uciSquares,
+} from '@chess/core'
 import type { ReactNode } from 'react'
-import type { MoveTreeEditor, StudyListItem, StudyMove, TreePath } from '#/lib/studies'
-import type { Analysis, Evaluation } from '#/lib/analysis'
-import { lineEnd, moveNumber, nextPath } from '#/lib/studies'
-import { legalTargets } from '#/lib/moveInput'
-import { uciSquares } from '#/lib/board'
-import { THINKS, lineMoves, scoreText } from '#/lib/analysis'
+import type { MoveTreeEditor, StudyListItem } from '#/lib/studies'
+import type { Evaluation, StudyMove, TreePath } from '@chess/core'
+import type { Analysis } from '#/lib/analysis'
 import { Button, ErrorText, Panel } from '#/components/ui'
 import { Board, FlipIcon, MoveNav, PromotionPicker } from '#/components/games'
 

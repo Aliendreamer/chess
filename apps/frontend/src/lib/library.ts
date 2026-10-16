@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { STANDARD_START } from './studies'
-import type { ParsedGame, StudyMoveInput } from './studies'
+import { STANDARD_START } from '@chess/core'
+import type { ParsedGame, StudyMoveInput } from '@chess/core'
 
 /**
  * The game library (game-library): its API shapes, search query, and turning a parsed PGN game into what the admin

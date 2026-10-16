@@ -461,6 +461,7 @@ services:
       PYROSCOPE_SERVER_ADDRESS: http://pyroscope:4040
     volumes:
       - ../../apps/frontend:/app/apps/frontend
+      - ../../libs:/app/libs
       - ../../package.json:/app/package.json
       - ../../pnpm-lock.yaml:/app/pnpm-lock.yaml
       - ../../pnpm-workspace.yaml:/app/pnpm-workspace.yaml
@@ -469,6 +470,8 @@ services:
       - /app/node_modules
       - /app/apps/frontend/node_modules
       - /app/apps/frontend/otel/node_modules
+      - /app/libs/chess-core/node_modules
+      - /app/libs/chess-ui/node_modules
     extra_hosts:
       - "keycloak.chess.localhost:host-gateway"
     depends_on:

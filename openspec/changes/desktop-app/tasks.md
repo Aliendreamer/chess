@@ -17,7 +17,7 @@ machine, a release), with the command that proves it.
 
 ## 2. Shared core (ports, each with the C# tests' cases)
 
-- [ ] 2.1 Move `lib/studies.ts` tree ops + PGN import/export, `lib/board.ts`, `lib/moveInput.ts` and
+- [x] 2.1 Move `lib/studies.ts` tree ops + PGN import/export, `lib/board.ts`, `lib/moveInput.ts` and
       `lib/analysis.ts#positionKey` into `@chess/core`; the club imports them from there. Test first: the moved tests,
       run from `libs/chess-core`, fail with "module not found" until the code moves.
 - [ ] 2.2 Port `TrainerSchedule`, `OpeningFamilies` (with `lib/trainer.ts#openingKind`) and `StudyLines`. Test first:

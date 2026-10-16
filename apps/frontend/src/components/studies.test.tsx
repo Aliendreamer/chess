@@ -1,10 +1,11 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { STANDARD_START, playMove } from '@chess/core'
 import { AnalysisBoard, MoveTree, StudyList } from './studies'
 import type { ReactNode } from 'react'
-import type { StudyMove } from '#/lib/studies'
+import type { StudyMove } from '@chess/core'
 import type { Analysis } from '#/lib/analysis'
-import { STANDARD_START, playMove, useMoveTree } from '#/lib/studies'
+import { useMoveTree } from '#/lib/studies'
 import { DEFAULT_PREFERENCES, PreferencesContext } from '#/lib/auth'
 
 // The router's <Link> needs a router; the list only needs an anchor to its study.
