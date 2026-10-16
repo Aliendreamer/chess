@@ -102,7 +102,7 @@ function dateOf(raw: string | null): Date | null {
 
 // ---- The tournaments being played (chess-news D6) ----
 
-export interface ChessEvent {
+export interface BroadcastEvent {
   id: string
   name: string
   url: string
@@ -133,10 +133,10 @@ function lichess(url: string | null): string | null {
 }
 
 /** lichess's `api/broadcast/top` → its `active` list. Throws when the answer is not JSON. */
-export function parseBroadcasts(json: string, fetchedAt: Date): Array<ChessEvent> {
+export function parseBroadcasts(json: string, fetchedAt: Date): Array<BroadcastEvent> {
   const active = obj(JSON.parse(json) as Json)?.active
   if (!Array.isArray(active)) return []
-  const events: Array<ChessEvent> = []
+  const events: Array<BroadcastEvent> = []
   for (const entry of active.map(obj)) {
     const tour = obj(entry?.tour)
     const id = str(tour?.id)
@@ -167,8 +167,11 @@ export function parseBroadcasts(json: string, fetchedAt: Date): Array<ChessEvent
 }
 
 /** What home shows: rounds being played first, then the most important, then the earliest to start. */
-export function shownEvents(events: Iterable<ChessEvent>, count: number): Array<ChessEvent> {
-  const start = (e: ChessEvent) => e.startsAt?.getTime() ?? Number.MAX_SAFE_INTEGER
+export function shownEvents(
+  events: Iterable<BroadcastEvent>,
+  count: number,
+): Array<BroadcastEvent> {
+  const start = (e: BroadcastEvent) => e.startsAt?.getTime() ?? Number.MAX_SAFE_INTEGER
   return [...events]
     .sort((a, b) => Number(b.ongoing) - Number(a.ongoing) || b.tier - a.tier || start(a) - start(b))
     .slice(0, count)

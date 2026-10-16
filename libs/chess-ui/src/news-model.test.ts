@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ageText, hostOf, timeControlLabel } from './news'
+import { ageText, hostOf, timeControlLabel } from './news-model.ts'
 
 describe('news helpers', () => {
   const now = Date.parse('2026-10-02T15:00:00Z')

@@ -27,6 +27,8 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
     globals: false,
+    // Page tests render the whole app; under a parallel run of every project they need more than 5 s.
+    testTimeout: 20_000,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],

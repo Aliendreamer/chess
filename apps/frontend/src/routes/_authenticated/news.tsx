@@ -1,9 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Chip, LoadMore, SectionHeading } from '@chess/ui'
+import { Chip, LoadMore, NewsColumns, NewsGrid, SectionHeading } from '@chess/ui'
 import { useLoadMore } from '#/lib/play'
 import { getNews, getNewsSources } from '#/lib/server/api'
 import { pageTitle } from '#/lib/feedback'
-import { NewsColumns, NewsGrid } from '#/components/news'
 
 const PAGE = 20
 /** Headlines per source column when every source is shown. */

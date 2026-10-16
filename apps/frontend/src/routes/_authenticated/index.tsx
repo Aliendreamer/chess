@@ -6,6 +6,8 @@ import {
   CategoryIcon,
   ColourPicker,
   ErrorText,
+  EventsNow,
+  NewsList,
   OptionTile,
   Panel,
   SectionHeading,
@@ -30,7 +32,6 @@ import { PRESETS } from '#/lib/games'
 import { isQueueView, pairingGame, useLobby, waitingIn } from '#/lib/play'
 import { liveStatusText, useLiveTopic } from '#/lib/live'
 import { RecentGames } from '#/components/games'
-import { EventsNow, NewsList } from '#/components/news'
 import { pageTitle } from '#/lib/feedback'
 
 /** Home: quick pairing on a preset, a game against the computer, and your recent games. */

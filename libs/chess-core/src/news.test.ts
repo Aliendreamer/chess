@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { MAX_TITLE, parseBroadcasts, parseFeed, shownEvents } from './news.ts'
-import type { ChessEvent } from './news.ts'
+import type { BroadcastEvent } from './news.ts'
 
 // The backend's FeedParserTests and BroadcastParserTests, case for case, on the same saved samples.
 
@@ -132,7 +132,12 @@ describe('tournaments (BroadcastParserTests)', () => {
   })
 
   it('shows live rounds first, then the most important, then the earliest', () => {
-    const event = (id: string, ongoing: boolean, tier: number, startDay: number): ChessEvent => ({
+    const event = (
+      id: string,
+      ongoing: boolean,
+      tier: number,
+      startDay: number,
+    ): BroadcastEvent => ({
       id,
       name: id,
       url: `https://lichess.org/broadcast/${id}`,

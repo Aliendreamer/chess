@@ -1,14 +1,8 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { EventsNow, NewsColumns, NewsGrid, NewsList } from './news'
+import { EventsNow, NewsColumns, NewsGrid, NewsList } from './news.tsx'
 import type { ReactNode } from 'react'
-import type { ChessEvent, NewsItem } from '#/lib/news'
-
-vi.mock('@tanstack/react-router', () => ({
-  Link: ({ children, search }: { children: ReactNode; search?: { source?: string } }) => (
-    <a href={`/news?source=${search?.source ?? ''}`}>{children}</a>
-  ),
-}))
+import type { ChessEvent, NewsItem } from './news-model.ts'
 
 afterEach(cleanup)
 

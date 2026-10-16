@@ -1,7 +1,6 @@
-import { Link } from '@tanstack/react-router'
-import { Panel } from '@chess/ui'
-import type { ChessEvent, NewsItem, NewsSource } from '#/lib/news'
-import { ageText, hostOf, timeControlLabel } from '#/lib/news'
+import { AppLink, Panel, href } from './ui.tsx'
+import { ageText, hostOf, timeControlLabel } from './news-model.ts'
+import type { ChessEvent, NewsItem, NewsSource } from './news-model.ts'
 
 /**
  * Chess news and the tournaments being played (chess-news): headlines that open the article on its own site, and
@@ -91,9 +90,9 @@ export function NewsColumns({
         >
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="m-0 font-display text-lg font-normal">{source.name}</h2>
-            <Link to="/news" search={{ source: source.id }} className="text-xs text-fg-accent">
+            <AppLink to={href('/news', { source: source.id })} className="text-xs text-fg-accent">
               More
-            </Link>
+            </AppLink>
           </div>
           {items.length === 0 ? (
             <p className="m-0 text-sm text-fg-secondary">No news yet.</p>

@@ -1,6 +1,6 @@
 import { readJson } from './upstream'
 import type { CursorPage } from '../play'
-import type { ChessEvent, NewsItem, NewsSource } from '../news'
+import type { ChessEvent, NewsItem, NewsSource } from '@chess/ui'
 
 /** `GET /api/news`: headlines newest first, one source's or all. */
 export async function loadNews(

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { category } from '@chess/core'
-import { ageText } from './news'
+import { ageText } from '@chess/ui'
 import type { ColourChoice } from '@chess/core'
 import type { InviteView } from './play'
 
