@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { legalTargets, lineSans } from '@chess/core'
+import { Board, Button, Chip, ErrorText, Panel, PromotionPicker, useAdoptTyped } from '@chess/ui'
 import type { ReactNode } from 'react'
 import type { SquarePair } from '@chess/core'
 import type { PreviewState } from '#/lib/review'
@@ -24,8 +25,6 @@ import {
   sourceText,
   verdictText,
 } from '#/lib/training'
-import { Board, PromotionPicker } from '#/components/games'
-import { Button, Chip, ErrorText, Panel, useAdoptTyped } from '#/components/ui'
 
 /**
  * Training sessions (training D5): the start panel, the board and its panel while answering, the summary after a set,

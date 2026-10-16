@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
+import { Button, ErrorText, Panel, SectionHeading, useCommand } from '@chess/ui'
 import type { ReactNode } from 'react'
 import type { NextLine, RunResult, TrainerColor, TrainerLine } from '#/lib/trainer'
 import { isColor, lineState, useDrill } from '#/lib/trainer'
@@ -13,7 +14,6 @@ import {
   RunOutcome,
   dueText,
 } from '#/components/trainer'
-import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
 
 /** One family's drill (opening-trainer): the next due line on the board, the outcome of each run, and every line's state. */
 export const Route = createFileRoute('/_authenticated/trainer/$family')({

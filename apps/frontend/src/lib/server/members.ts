@@ -1,5 +1,5 @@
 import { postCommand, readJson } from './upstream'
-import type { ColourChoice, CommandOutcome } from '../games'
+import type { ColourChoice, CommandOutcome } from '@chess/core'
 import type { MembersView } from '../members'
 import type { InviteView } from '../play'
 

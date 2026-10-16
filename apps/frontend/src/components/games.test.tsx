@@ -1,18 +1,13 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { pieceSrc } from '@chess/ui'
+import { Board, BoardPlaceholder, MoveList, MoveNav, PromotionPicker, pieceSrc } from '@chess/ui'
 import {
-  Board,
-  BoardPlaceholder,
   ClaimPanel,
   GameControls,
   GameOverCard,
   GameResultPanel,
-  MoveList,
-  MoveNav,
   PlayerStrip,
-  PromotionPicker,
   RecentGames,
   RematchOffer,
 } from './games'
@@ -46,63 +41,6 @@ vi.mock('@tanstack/react-router', () => ({
 afterEach(cleanup)
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-
-describe('Board', () => {
-  it('renders an empty board on the server, every square named', () => {
-    const html = renderToString(<Board fen={START} orientation="white" />)
-    expect(html.match(/data-square="/g)?.length).toBe(64)
-    expect(html).not.toContain('<img')
-    // a1 is a dark square and h1 a light one.
-    expect(html).toMatch(/data-square="a1" class="[^"]*bg-board-dark/)
-    expect(html).toMatch(/data-square="h1" class="[^"]*bg-board-light/)
-  })
-
-  it('draws the Cburnett pieces once mounted', () => {
-    const { container } = render(<Board fen={START} orientation="white" />)
-    const images = [...container.querySelectorAll('img')].map((i) => i.getAttribute('src'))
-    expect(images).toHaveLength(32)
-    expect(images).toContain(pieceSrc('w', 'k'))
-    expect(images).toContain(pieceSrc('b', 'n'))
-  })
-
-  it('from Black, h1 comes first', () => {
-    const { container } = render(<Board fen={START} orientation="black" />)
-    const squares = [...container.querySelectorAll('[data-square]')].map((c) =>
-      c.getAttribute('data-square'),
-    )
-    expect([squares[0], squares[7], squares[56], squares[63]]).toEqual(['h1', 'a1', 'h8', 'a8'])
-  })
-
-  it('reports clicks when interactive', () => {
-    const onSquareClick = vi.fn()
-    const { container } = render(
-      <Board fen={START} orientation="white" onSquareClick={onSquareClick} />,
-    )
-    fireEvent.click(container.querySelector('[data-square="e2"]')!)
-    expect(onSquareClick).toHaveBeenCalledWith('e2')
-  })
-})
-
-describe('PromotionPicker', () => {
-  it('offers queen, rook, bishop and knight', () => {
-    const onPick = vi.fn()
-    render(<PromotionPicker color="white" onPick={onPick} onCancel={() => {}} />)
-    fireEvent.click(screen.getByRole('button', { name: 'knight' }))
-    expect(onPick).toHaveBeenCalledWith('n')
-  })
-
-  it('shows the pieces of the promoting side, queen first', () => {
-    const { container } = render(
-      <PromotionPicker color="black" onPick={() => {}} onCancel={() => {}} />,
-    )
-    expect([...container.querySelectorAll('img')].map((i) => i.getAttribute('src'))).toEqual([
-      pieceSrc('b', 'q'),
-      pieceSrc('b', 'r'),
-      pieceSrc('b', 'b'),
-      pieceSrc('b', 'n'),
-    ])
-  })
-})
 
 describe('MoveList and PlayerStrip', () => {
   it('numbers the moves in pairs', () => {
@@ -394,12 +332,5 @@ describe('GameResultPanel (ui-polish)', () => {
   it('writes the reason as the game-over card does', () => {
     render(<GameResultPanel result="0-1" reason="checkmate" pgnHref="/pgn/g1" />)
     expect(screen.getByTestId('result-panel').textContent).toContain('Checkmate')
-  })
-})
-
-describe('BoardPlaceholder (ui-polish)', () => {
-  it('is a named group like the live board', () => {
-    render(<BoardPlaceholder orientation="white" />)
-    expect(screen.getByRole('group', { name: 'Chess board' })).toBeTruthy()
   })
 })

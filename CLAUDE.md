@@ -163,11 +163,11 @@ to each app's own lint target). Keep `--no-stash`.
   route loaders call server functions (`lib/server/api.ts`) that re-attach the cookie and hit `API_URL`
   server-side. Components are presentational. **No `VITE_API_URL` ever** — the client bundle must not
   mention the API host. Layout (`frontend-layout` spec): files by feature, no tiny files, no one-file folders —
-  `components/{ui,layout,games,pings}.tsx`; client-safe types and helpers in `lib/{auth,live,games,play,pings}.ts`;
+  `components/{layout,games,pings}.tsx` (the primitives, board and move list are `@chess/ui`); client-safe types and helpers in `lib/{auth,live,games,play,pings}.ts`;
   `lib/server/` = `api.ts` (server functions + input checks), `cookies.ts`, `upstream.ts` (env, `LOGIN_REDIRECT`,
   `isGuid`, `readJson`, `postCommand` — defined once, never copied), and one file per feature (`auth`, `games`, `play`,
   `pings`, `live-relay`, `live-hub`). Client code never imports `lib/server/` except `api.ts`; imports use `#/` only. Pages run commands through
-  `useCommand()` + `<ErrorText>` (`components/ui.tsx`), name the connection with `liveStatusText()`, give `useLiveTopic`
+  `useCommand()` + `<ErrorText>` (`@chess/ui`), name the connection with `liveStatusText()`, give `useLiveTopic`
   `initial: { seq, payload }`, and keep markup in `components/` (route files = state and wiring).
 - **Live relay (frontend + backend)** — browsers open `/api/ws/live/{kind}/{id}` on `app.`; `lib/server/live-relay.ts`
   checks the kind allow-list, validates the session with `GET /api/me` (4400/4401 otherwise, re-checked every
@@ -207,7 +207,7 @@ payload)` to DistributedPubSub `live`; `HubFanOutActor` pushes it to the topic's
   and `…/games` (`WebApi/Players/`, replica). The replica reads `users` only as `Data/ReadModels/PlayerIdentity` (id,
   username, created at), which `ProjectDbContext`'s configuration scan skips; never add private columns to it. Names
   render through `components/games.tsx#PlayerLink`; `/players/$id` groups the record into game types (`lib/players.ts`). **chess.js is feedback only**
-  (`@chess/core` `board.ts`): the server's answer/frame always wins. **Board (board-look)**: `components/games.tsx#Board` wraps
+  (`@chess/core` `board.ts`): the server's answer/frame always wins. **Board (board-look)**: `@chess/ui#Board` wraps
   `react-chessboard` (MIT), drawn in the browser only (`BoardPlaceholder` is the SSR stand-in, same size, every square
   keeps `data-square`); pieces are Cburnett SVGs in `libs/chess-ui/src/pieces/`, bundled as assets (Wikimedia, BSD-3, see
   `apps/frontend/ATTRIBUTION.md`; never the lichess GPL copy, never Unicode glyphs); board themes are `--board-*`

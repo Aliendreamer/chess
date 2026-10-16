@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { ColourChoice } from '#/lib/games'
+import { SectionHeading, useCommand } from '@chess/ui'
+import type { ColourChoice } from '@chess/core'
 import type { InviteView } from '#/lib/play'
 import type { Member, MembersView } from '#/lib/members'
 import { getMembers, postChallenge, postChallengeAnswer } from '#/lib/server/api'
@@ -9,7 +10,6 @@ import { topicId } from '#/lib/games'
 import { isInviteView } from '#/lib/play'
 import { challengeState, isMembersView, sortMembers, useNow } from '#/lib/members'
 import { pageTitle } from '#/lib/feedback'
-import { SectionHeading, useCommand } from '#/components/ui'
 import { ChallengeForm, ChallengeStatus, MemberList } from '#/components/members'
 
 /** Who is in the club and online, and a challenge to one of them (club-members, challenges). */

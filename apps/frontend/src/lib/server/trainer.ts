@@ -1,5 +1,5 @@
 import { postCommand, readJson } from './upstream'
-import type { CommandOutcome } from '../games'
+import type { CommandOutcome } from '@chess/core'
 import type { CursorPage } from '../play'
 import type {
   FamilyProgress,

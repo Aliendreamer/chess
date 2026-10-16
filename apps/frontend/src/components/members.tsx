@@ -1,6 +1,8 @@
 import { Swords } from 'lucide-react'
+import { categoryOf } from '@chess/core'
+import { Button, CategoryDot, Chip, ColourPicker, ErrorText, Panel } from '@chess/ui'
 import type { ReactNode } from 'react'
-import type { ColourChoice } from '#/lib/games'
+import type { ColourChoice } from '@chess/core'
 import type { Challenge, ChallengeState, Member, MemberState } from '#/lib/members'
 import {
   canChallenge,
@@ -11,9 +13,8 @@ import {
   secondsLeft,
   stateText,
 } from '#/lib/members'
-import { PRESETS, categoryOf } from '#/lib/games'
-import { Button, Chip, ColourPicker, ErrorText, Panel } from '#/components/ui'
-import { CategoryDot, PlayerLink } from '#/components/games'
+import { PRESETS } from '#/lib/games'
+import { PlayerLink } from '#/components/games'
 
 /**
  * Club members (club-members, challenges): the members list with each one's state, the challenge form and my

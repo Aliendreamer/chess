@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { isRedirect } from '@tanstack/react-router'
-import { DEFAULT_PREFERENCES } from '../auth'
+import { DEFAULT_PREFERENCES } from '@chess/core'
 import { loadMe, loadPreferences, proxyAuth, savePreferences } from './auth'
 import type { Me } from '../auth'
 

@@ -1,7 +1,6 @@
 import { isGuid, pgnDownload, readJson, sendCommand } from './upstream'
-import type { CommandOutcome } from '../games'
+import type { CommandOutcome, StudyInput, StudyMoveInput, Think } from '@chess/core'
 import type { CursorPage } from '../play'
-import type { StudyInput, StudyMoveInput, Think } from '@chess/core'
 import type { AnalysisView } from '../analysis'
 import type { ImportResult, StudyListItem, StudyView } from '../studies'
 

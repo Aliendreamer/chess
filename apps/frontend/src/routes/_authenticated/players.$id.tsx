@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
+import { LoadMore, Panel, SectionHeading } from '@chess/ui'
 import { useLoadMore } from '#/lib/play'
 import { getMyTraining, getPlayer, getPlayerGames, getTrainingSummary } from '#/lib/server/api'
-import { LoadMore, Panel, SectionHeading } from '#/components/ui'
 import { RecentGames } from '#/components/games'
 import { PlayerStats } from '#/components/players'
 import { TrainedFamilies } from '#/components/trainer'

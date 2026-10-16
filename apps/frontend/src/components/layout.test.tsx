@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_PREFERENCES } from '@chess/core'
 import { NotFound, PendingBar, RouteError, Shell } from './layout'
 import type { ReactNode } from 'react'
-import { DEFAULT_PREFERENCES } from '#/lib/auth'
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({

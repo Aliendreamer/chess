@@ -1,6 +1,6 @@
 import { redirect } from '@tanstack/react-router'
 import { LOGIN_REDIRECT, postCommand, readJson } from './upstream'
-import type { CommandOutcome } from '../games'
+import type { CommandOutcome } from '@chess/core'
 import type { CursorPage, InviteView, Lobby, MyGameItem, QueueStatus } from '../play'
 
 /**

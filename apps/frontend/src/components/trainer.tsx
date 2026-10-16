@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { STANDARD_START, groupFamilies, legalTargets, uciSquares } from '@chess/core'
+import { Board, Panel, PromotionPicker } from '@chess/ui'
 import type { ReactNode } from 'react'
 import type {
   Drill,
@@ -12,8 +13,6 @@ import type {
   TrainerLine,
 } from '#/lib/trainer'
 import { lineState, lineText, sanAt, studyLineLabel } from '#/lib/trainer'
-import { Board, PromotionPicker } from '#/components/games'
-import { Panel } from '#/components/ui'
 
 /**
  * The opening trainer (opening-trainer): families with their progress, the drill's feedback, a family's lines, and the

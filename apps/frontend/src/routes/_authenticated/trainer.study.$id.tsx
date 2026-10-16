@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, createFileRoute, notFound, useRouter } from '@tanstack/react-router'
+import { Button, ErrorText, Panel, SectionHeading, useCommand } from '@chess/ui'
 import type { ReactNode } from 'react'
 import type { NextStudyLine, RunResult, StudyLine, TrainerColor } from '#/lib/trainer'
 import { isColor, lineState, useDrill } from '#/lib/trainer'
@@ -13,7 +14,6 @@ import {
   StudyLinesTable,
   dueText,
 } from '#/components/trainer'
-import { Button, ErrorText, Panel, SectionHeading, useCommand } from '#/components/ui'
 
 /**
  * One of the member's studies drilled line by line (study-repertoire-trainer): the next due line on the board from the

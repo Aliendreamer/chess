@@ -1,12 +1,12 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { STANDARD_START, playMove } from '@chess/core'
+import { DEFAULT_PREFERENCES, STANDARD_START, playMove } from '@chess/core'
+import { PreferencesContext } from '@chess/ui'
 import { AnalysisBoard, MoveTree, StudyList } from './studies'
 import type { ReactNode } from 'react'
 import type { StudyMove } from '@chess/core'
 import type { Analysis } from '#/lib/analysis'
 import { useMoveTree } from '#/lib/studies'
-import { DEFAULT_PREFERENCES, PreferencesContext } from '#/lib/auth'
 
 // The router's <Link> needs a router; the list only needs an anchor to its study.
 vi.mock('@tanstack/react-router', () => ({

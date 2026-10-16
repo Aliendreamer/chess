@@ -1,6 +1,6 @@
 import { redirect } from '@tanstack/react-router'
 import { LOGIN_REDIRECT, postCommand, readJson, sendCommand } from './upstream'
-import type { CommandOutcome } from '../games'
+import type { CommandOutcome } from '@chess/core'
 import type { CursorPage } from '../play'
 import type {
   AdminMember,

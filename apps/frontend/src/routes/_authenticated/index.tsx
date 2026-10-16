@@ -1,7 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { category } from '@chess/core'
+import {
+  Button,
+  CategoryIcon,
+  ColourPicker,
+  ErrorText,
+  OptionTile,
+  Panel,
+  SectionHeading,
+  buttonClass,
+  categoryBar,
+  useCommand,
+} from '@chess/ui'
 import type { QueueStatus } from '#/lib/play'
-import type { ColourChoice, EngineLevel } from '#/lib/games'
+import type { EngineLevel } from '#/lib/games'
+import type { ColourChoice } from '@chess/core'
 import {
   getEngineLevels,
   getEvents,
@@ -12,20 +26,10 @@ import {
   postLeaveQueue,
   postStartEngineGame,
 } from '#/lib/server/api'
-import { PRESETS, category } from '#/lib/games'
+import { PRESETS } from '#/lib/games'
 import { isQueueView, pairingGame, useLobby, waitingIn } from '#/lib/play'
 import { liveStatusText, useLiveTopic } from '#/lib/live'
-import {
-  Button,
-  ColourPicker,
-  ErrorText,
-  OptionTile,
-  Panel,
-  SectionHeading,
-  buttonClass,
-  useCommand,
-} from '#/components/ui'
-import { CategoryIcon, RecentGames, categoryBar } from '#/components/games'
+import { RecentGames } from '#/components/games'
 import { EventsNow, NewsList } from '#/components/news'
 import { pageTitle } from '#/lib/feedback'
 

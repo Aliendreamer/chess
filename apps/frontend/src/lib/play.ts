@@ -4,7 +4,9 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { PGN_RESULT } from './games'
-import type { Color, ColourChoice, EndReason, ListStatus, PgnResult } from './games'
+import type { Pager } from '@chess/ui'
+import type { Color, EndReason, ListStatus, PgnResult } from './games'
+import type { ColourChoice } from '@chess/core'
 
 /** Mirrors `POST /api/matchmaking/{tc}`'s answer. */
 export interface QueueStatus {
@@ -153,12 +155,6 @@ export function useLobby(
 }
 
 /** A cursor-paged list on a page: what `LoadMore` drives. */
-export interface Pager {
-  hasMore: boolean
-  busy: boolean
-  error: string | null
-  more: () => Promise<void>
-}
 
 /**
  * The loader's first page plus "Load more" (ui-polish): appends each next page and follows its cursor. A failed page

@@ -1,3 +1,4 @@
+import { UNTIMED } from '@chess/core'
 import { useEffect, useState } from 'react'
 import type { Color } from '@chess/core'
 /**
@@ -6,9 +7,6 @@ import type { Color } from '@chess/core'
  */
 
 export type { Color }
-
-/** A colour someone may ask for: yours in a game against the computer. */
-export type ColourChoice = Color | 'random'
 
 /** A result as PGN writes it, which is how the API carries it. */
 export const PGN_RESULT = {
@@ -79,9 +77,6 @@ export interface EngineLevel {
   name: string
 }
 
-/** Games against the computer have no clocks (engine-play D4). */
-export const UNTIMED = 'untimed'
-
 /** A running clock with flag and increment; untimed games have none. */
 export function hasClock(timeControl: string): boolean {
   return timeControl !== UNTIMED
@@ -127,9 +122,6 @@ export interface MoveItem {
   at: string
 }
 
-/** What a command answers (D8): refusals (403/404/409/422) are shown in the page, not thrown. */
-export type CommandOutcome<T> = { ok: true; view: T } | { ok: false; status: number; error: string }
-
 /** A command on a game, as the page sends it; `lib/server/api.ts` checks it again before it reaches the API. */
 export type GameCommand =
   | { kind: 'move'; uci: string }
@@ -167,12 +159,6 @@ export function formatClock(ms: number): string {
 }
 
 /** SAN list → numbered rows `[white, black?]`. */
-export function pairMoves(sans: ReadonlyArray<string>): Array<Array<string>> {
-  const rows: Array<Array<string>> = []
-  for (let i = 0; i < sans.length; i += 2) rows.push(sans.slice(i, i + 2))
-  return rows
-}
-
 export function myColor(view: Pick<GameView, 'whiteId' | 'blackId'>, meId: number): Color | null {
   if (meId === view.whiteId) return 'white'
   if (meId === view.blackId) return 'black'
@@ -273,39 +259,6 @@ export const PRESETS = [
   '30+20',
   '90+30',
 ] as const
-
-export const CATEGORIES = ['bullet', 'blitz', 'rapid', 'classical', 'computer'] as const
-export type Category = (typeof CATEGORIES)[number]
-
-const CATEGORY_LABELS: Record<Category, string> = {
-  bullet: 'Bullet',
-  blitz: 'Blitz',
-  rapid: 'Rapid',
-  classical: 'Classical',
-  computer: 'Untimed',
-}
-
-/**
- * Bullet under 3 minutes, blitz under 10, rapid under 30, classical beyond (by the base time); `untimed` is a game
- * against the computer. The key picks the game type's colour (site-themes).
- */
-export function categoryOf(timeControl: string): Category {
-  if (timeControl === UNTIMED) return 'computer'
-  const base = Number(timeControl.split('+')[0])
-  if (base < 3) return 'bullet'
-  if (base < 10) return 'blitz'
-  if (base < 30) return 'rapid'
-  return 'classical'
-}
-
-/** The category's name for people: "Blitz", "Untimed". */
-export function category(timeControl: string): string {
-  return categoryLabel(categoryOf(timeControl))
-}
-
-export function categoryLabel(c: Category): string {
-  return CATEGORY_LABELS[c]
-}
 
 /** The clocks, counted down locally since the view arrived (D5); re-based on every new view. */
 export function useLocalClocks(view: GameView): { whiteMs: number; blackMs: number } {

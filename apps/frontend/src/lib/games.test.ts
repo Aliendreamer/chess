@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { UNTIMED, category, categoryOf, pairMoves } from '@chess/core'
 import {
-  UNTIMED,
-  category,
-  categoryOf,
   engineToMove,
   formatClock,
   hasClock,
@@ -11,7 +9,6 @@ import {
   mergeMoves,
   myColor,
   orientation,
-  pairMoves,
   reasonText,
   resultText,
   topicId,

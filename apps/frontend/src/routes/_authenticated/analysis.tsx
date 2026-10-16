@@ -13,6 +13,7 @@ import {
   toInput,
   uciLine,
 } from '@chess/core'
+import { Button, ErrorText, Panel, SectionHeading, useAdoptTyped, useCommand } from '@chess/ui'
 import type { ParsedGame } from '@chess/core'
 import type { LibrarySource } from '#/lib/library'
 import {
@@ -35,14 +36,6 @@ import {
 import { PositionPanel } from '#/components/library'
 import { pageTitle } from '#/lib/feedback'
 import { AnalysisBoard } from '#/components/studies'
-import {
-  Button,
-  ErrorText,
-  Panel,
-  SectionHeading,
-  useAdoptTyped,
-  useCommand,
-} from '#/components/ui'
 
 /**
  * The open analysis board (analysis-board): any position or game with the study tree and the engine, nothing saved

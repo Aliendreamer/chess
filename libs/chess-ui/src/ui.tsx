@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
-import { pieceSrc } from '@chess/ui'
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import type { ColourChoice, CommandOutcome } from '#/lib/games'
-import type { Pager } from '#/lib/play'
+import { createContext, use, useEffect, useRef, useState } from 'react'
+import { pieceSrc } from './board.tsx'
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react'
+import type { ColourChoice, CommandOutcome } from '@chess/core'
 
 export type ButtonVariant = 'primary' | 'outline' | 'secondary'
 export type ButtonSize = 'sm' | 'md' | 'lg'
@@ -326,6 +325,14 @@ export function ColourPicker({
 }
 
 /** "Load more" under a paged list (ui-polish): "Loading…" while it loads, the error line when a page fails. */
+/** A paged list's "Load more" state (ui-polish); the app's hook fills it. */
+export interface Pager {
+  hasMore: boolean
+  busy: boolean
+  error: string | null
+  more: () => Promise<void>
+}
+
 export function LoadMore({ pager }: { pager: Pager }) {
   if (!pager.hasMore && !pager.error) return null
   return (
@@ -352,4 +359,21 @@ export function useAdoptTyped<T extends HTMLInputElement | HTMLTextAreaElement>(
     if (ref.current?.value) adopt(ref.current.value)
   }, [])
   return ref
+}
+
+/** A link inside the app: a path (and query) on its own router, never another site. */
+export type AppLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & { to: string }
+
+/**
+ * How shared components link (shared-chess-libraries): each app provides its router's link — the club a TanStack Start
+ * link, the desktop app its SPA's — so nothing here imports a router. The default is a plain anchor.
+ */
+export const LinkContext = createContext<(props: AppLinkProps) => ReactNode>(({ to, ...rest }) => (
+  <a href={to} {...rest} />
+))
+
+/** The app's link, from {@link LinkContext}. */
+export function AppLink(props: AppLinkProps) {
+  const Link = use(LinkContext)
+  return <Link {...props} />
 }

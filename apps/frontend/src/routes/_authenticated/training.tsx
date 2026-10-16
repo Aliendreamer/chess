@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { lineSans, uciSquares } from '@chess/core'
+import { Panel, SectionHeading, useCommand } from '@chess/ui'
 import type { PreviewState } from '#/lib/review'
 import type { TrainingItem, TrainingMode, TrainingSettings, TrainingVerdict } from '#/lib/training'
 import {
@@ -24,7 +25,6 @@ import {
   TrainingSummaryView,
   TrainingVerdictView,
 } from '#/components/training'
-import { Panel, SectionHeading, useCommand } from '#/components/ui'
 
 /**
  * Training (training D5): the member's own mistakes or critical moments from master games, one position at a time.

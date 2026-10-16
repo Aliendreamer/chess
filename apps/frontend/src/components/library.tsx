@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { playMove } from '@chess/core'
+import { Chip, Panel } from '@chess/ui'
 import type { ExplorerMove, LibraryGameItem, LibraryPosition, LibrarySource } from '#/lib/library'
 import {
   BROADCAST_POSITION_MOVES,
@@ -9,7 +10,6 @@ import {
   lichessUrl,
 } from '#/lib/library'
 import { scoreShare } from '#/lib/players'
-import { Chip, Panel } from '#/components/ui'
 
 /**
  * The game library (game-library): search results, and the games at the analysis board's position. Every game opens

@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
-import type { Preferences } from '#/lib/auth'
+import { SectionHeading, useCommand } from '@chess/ui'
+import type { Preferences } from '@chess/core'
 import { putPreferences } from '#/lib/server/api'
 import { SettingsForm } from '#/components/settings'
-import { SectionHeading, useCommand } from '#/components/ui'
 import { pageTitle } from '#/lib/feedback'
 
 /** Display preferences (user-preferences): each change is saved at once; a refusal puts the saved value back. */

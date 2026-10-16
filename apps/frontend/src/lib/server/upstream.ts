@@ -1,7 +1,7 @@
 import { redirect } from '@tanstack/react-router'
 import { loginHref } from '../auth'
 import { cookiesAreSecure, forwardCookieHeader } from './cookies'
-import type { CommandOutcome } from '../games'
+import type { CommandOutcome } from '@chess/core'
 
 /**
  * How the BFF reaches the API: server-side environment (never import from client components), the login redirect,

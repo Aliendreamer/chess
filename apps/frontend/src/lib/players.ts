@@ -1,5 +1,5 @@
-import { CATEGORIES, categoryLabel, categoryOf } from './games'
-import type { Category } from './games'
+import { CATEGORIES, categoryLabel, categoryOf } from '@chess/core'
+import type { Category } from '@chess/core'
 
 /**
  * Player profiles (player-profiles): the API's shapes and the record grouped into game types. Client-safe; the reads

@@ -1,8 +1,8 @@
-import { DEFAULT_PREFERENCES, isPreferences } from '../auth'
+import { DEFAULT_PREFERENCES, isPreferences } from '@chess/core'
 import { cookiesAreSecure, forwardCookieHeader, rehomeSetCookie } from './cookies'
 import { apiUrl, clientIp, forwardClientIp, sendCommand } from './upstream'
-import type { CommandOutcome } from '../games'
-import type { Me, Preferences } from '../auth'
+import type { CommandOutcome, Preferences } from '@chess/core'
+import type { Me } from '../auth'
 
 /**
  * Server-to-server proxy for `/api/auth/<splat>`: forwards the browser's request inward with only the auth

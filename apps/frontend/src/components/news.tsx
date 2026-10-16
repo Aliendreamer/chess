@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
+import { Panel } from '@chess/ui'
 import type { ChessEvent, NewsItem, NewsSource } from '#/lib/news'
 import { ageText, hostOf, timeControlLabel } from '#/lib/news'
-import { Panel } from '#/components/ui'
 
 /**
  * Chess news and the tournaments being played (chess-news): headlines that open the article on its own site, and

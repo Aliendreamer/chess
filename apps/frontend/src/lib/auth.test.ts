@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  ANIMATIONS,
-  DEFAULT_PREFERENCES,
-  LOGIN_HREF,
-  LOGOUT_HREF,
-  animationMs,
-  isPreferences,
-  loginHref,
-} from './auth'
+import { ANIMATIONS, DEFAULT_PREFERENCES, animationMs, isPreferences } from '@chess/core'
+import { LOGIN_HREF, LOGOUT_HREF, loginHref } from './auth'
 
 describe('session hrefs', () => {
   it('are same-origin paths and encode returnTo', () => {

@@ -1,10 +1,12 @@
 import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  AppLink,
   Button,
   Chip,
   ColourPicker,
   ErrorText,
+  LinkContext,
   LoadMore,
   OptionTile,
   Panel,
@@ -12,7 +14,8 @@ import {
   buttonClass,
   useAdoptTyped,
   useCommand,
-} from './ui'
+} from './ui.tsx'
+import type { AppLinkProps } from './ui.tsx'
 
 afterEach(cleanup)
 
@@ -229,5 +232,29 @@ describe('useAdoptTyped', () => {
     }
     render(<Field />)
     expect(adopted).toEqual([])
+  })
+})
+
+describe('AppLink (shared-chess-libraries)', () => {
+  it('is a plain anchor by default', () => {
+    render(<AppLink to="/trainer?color=white">Train</AppLink>)
+    expect(screen.getByRole('link', { name: 'Train' }).getAttribute('href')).toBe(
+      '/trainer?color=white',
+    )
+  })
+
+  it('renders the link the app provides', () => {
+    const AppRouterLink = ({ to, children }: AppLinkProps) => (
+      <a href={`#${to}`} data-app="yes">
+        {children}
+      </a>
+    )
+    render(
+      <LinkContext value={AppRouterLink}>
+        <AppLink to="/studies">Studies</AppLink>
+      </LinkContext>,
+    )
+    const link = screen.getByRole('link', { name: 'Studies' })
+    expect([link.getAttribute('href'), link.dataset.app]).toEqual(['#/studies', 'yes'])
   })
 })

@@ -10,12 +10,11 @@ import {
   scoreText,
   uciSquares,
 } from '@chess/core'
+import { Board, Button, ErrorText, FlipIcon, MoveNav, Panel, PromotionPicker } from '@chess/ui'
 import type { ReactNode } from 'react'
 import type { MoveTreeEditor, StudyListItem } from '#/lib/studies'
 import type { Evaluation, StudyMove, TreePath } from '@chess/core'
 import type { Analysis } from '#/lib/analysis'
-import { Button, ErrorText, Panel } from '#/components/ui'
-import { Board, FlipIcon, MoveNav, PromotionPicker } from '#/components/games'
 
 /**
  * A study's moves (studies D7): the main line inline, each variation in parentheses right after the move it replaces,

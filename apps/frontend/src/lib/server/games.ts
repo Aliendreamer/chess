@@ -1,13 +1,6 @@
 import { isGuid, pgnDownload, postCommand, readJson } from './upstream'
-import type {
-  ColourChoice,
-  CommandOutcome,
-  EngineLevel,
-  GameCommand,
-  GameSummary,
-  GameView,
-  MoveItem,
-} from '../games'
+import type { EngineLevel, GameCommand, GameSummary, GameView, MoveItem } from '../games'
+import type { ColourChoice, CommandOutcome } from '@chess/core'
 
 const COMMAND_PATH: Record<GameCommand['kind'], string> = {
   move: 'moves',

@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { Button } from '@chess/ui'
 import { getPingLive, postPing } from '#/lib/server/api'
 import { PingFeed } from '#/components/pings'
-import { Button } from '#/components/ui'
 import { pageTitle } from '#/lib/feedback'
 
 /**

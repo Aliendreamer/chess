@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
+  UNTIMED,
   applyOptimistic,
+  category,
   clickSquare,
   legalTargets,
   marksFor,
@@ -13,6 +15,18 @@ import {
   resolvePremove,
   uciSquares,
 } from '@chess/core'
+import {
+  Board,
+  Button,
+  CategoryMark,
+  ErrorText,
+  FlipIcon,
+  MoveList,
+  MoveNav,
+  PromotionPicker,
+  buttonClass,
+  useCommand,
+} from '@chess/ui'
 import type { GameCommand, GameSummary, GameView, MoveItem } from '#/lib/games'
 import type { LiveFrame } from '#/lib/live'
 import type { Me } from '#/lib/auth'
@@ -31,8 +45,6 @@ import {
 } from '#/lib/server/api'
 import {
   PRESETS,
-  UNTIMED,
-  category,
   engineToMove,
   hasClock,
   isGameView,
@@ -49,20 +61,13 @@ import { REVIEW_POLL_MS, previewLine, useReview } from '#/lib/review'
 import { ReviewPanel } from '#/components/review'
 import { isAdmin } from '#/lib/admin'
 import {
-  Board,
-  CategoryMark,
   ClaimPanel,
-  FlipIcon,
   GameControls,
   GameOverCard,
   GameResultPanel,
-  MoveList,
-  MoveNav,
   PlayerStrip,
-  PromotionPicker,
   RematchOffer,
 } from '#/components/games'
-import { Button, ErrorText, buttonClass, useCommand } from '#/components/ui'
 
 /**
  * A game (players and spectators). SSR renders the loader's state; the `game:{id}` frames then drive it. Moves

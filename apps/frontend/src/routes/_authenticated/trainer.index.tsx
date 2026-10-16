@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Button, LoadMore, Panel, SectionHeading } from '@chess/ui'
 import type { StudyTraining, TrainerColor } from '#/lib/trainer'
 import type { CursorPage } from '#/lib/play'
 import { isColor } from '#/lib/trainer'
@@ -6,7 +7,6 @@ import { useLoadMore } from '#/lib/play'
 import { getTrainerFamilies, getTrainerStudies } from '#/lib/server/api'
 import { pageTitle } from '#/lib/feedback'
 import { ColorSwitch, FamilyColumns, StudyList, TrainerSourceSwitch } from '#/components/trainer'
-import { Button, LoadMore, Panel, SectionHeading } from '#/components/ui'
 
 const PAGE = 30
 

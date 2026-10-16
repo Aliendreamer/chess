@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { positionKey, remember } from '@chess/core'
-import type { CommandOutcome } from './games'
-import type { Evaluation, Think } from '@chess/core'
+import type { CommandOutcome, Evaluation, Think } from '@chess/core'
 
 /**
  * Engine analysis on the study board (engine-analysis D5): the wire shapes of `POST /api/analysis`, the pure rules the

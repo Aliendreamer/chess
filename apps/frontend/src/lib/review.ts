@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Chess } from 'chess.js'
-import type { CommandOutcome } from './games'
-import type { BookExit, ReviewResult, ReviewedMove } from '@chess/core'
+import type { BookExit, CommandOutcome, ReviewResult, ReviewedMove } from '@chess/core'
 
 /**
  * Game review (game-review): the API's shapes, the marks and scores as shown, the graph's points and the review's

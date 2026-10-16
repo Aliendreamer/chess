@@ -1,8 +1,8 @@
 import { Link } from '@tanstack/react-router'
+import { Button, ErrorText, Panel } from '@chess/ui'
 import type { PreviewState, ReviewView } from '#/lib/review'
 import type { MoveClass, ReviewCounts, ReviewedMove } from '@chess/core'
 import { advantageText, bookLink, graphPoints, moveLabel, scoreLabel } from '#/lib/review'
-import { Button, ErrorText, Panel } from '#/components/ui'
 
 /**
  * Game review (game-review): the evaluation graph and the review panel beside a finished game. Presentational;

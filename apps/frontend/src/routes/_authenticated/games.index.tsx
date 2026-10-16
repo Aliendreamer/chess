@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { LoadMore, SectionHeading } from '@chess/ui'
 import { useLoadMore } from '#/lib/play'
 import { getMyGames } from '#/lib/server/api'
 import { pageTitle } from '#/lib/feedback'
-import { LoadMore, SectionHeading } from '#/components/ui'
 import { RecentGames } from '#/components/games'
 
 const PAGE = 20

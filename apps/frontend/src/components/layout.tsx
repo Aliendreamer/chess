@@ -14,18 +14,33 @@ import {
   UserRound,
   Users,
 } from 'lucide-react'
+import { Button, LinkContext, PreferencesContext, SectionHeading, buttonClass } from '@chess/ui'
+import { DEFAULT_PREFERENCES } from '@chess/core'
 import type { ReactNode } from 'react'
-import type { Me, Preferences } from '#/lib/auth'
+import type { AppLinkProps } from '@chess/ui'
+import type { Me } from '#/lib/auth'
+import type { Preferences } from '@chess/core'
 import type { ErrorComponentProps, LinkProps } from '@tanstack/react-router'
-import { DEFAULT_PREFERENCES, LOGOUT_HREF, PreferencesContext } from '#/lib/auth'
+import { LOGOUT_HREF } from '#/lib/auth'
 import { isAdmin } from '#/lib/admin'
-import { Button, SectionHeading, buttonClass } from '#/components/ui'
 
 /**
  * The Club layout: a 248px rail (wordmark, navigation, who you are) and the content column; a top bar on narrow screens. The user's preferences
  * (user-preferences) are applied here, on the server-rendered root: `data-board` picks the board theme, `data-theme`
  * the site theme, and the board reads animation and coordinates from the context.
  */
+/** Shared components' links (shared-chess-libraries): a path with an optional query, on this router. */
+export function ClubLink({ to, ...rest }: AppLinkProps) {
+  const [path = '', query] = to.split('?')
+  // The shared components name routes as strings; the router types them, so the props are handed over as they are.
+  const props = {
+    ...rest,
+    to: path,
+    ...(query ? { search: Object.fromEntries(new URLSearchParams(query)) } : {}),
+  } as unknown as LinkProps
+  return <Link {...props} />
+}
+
 export function Shell({
   me,
   prefs = DEFAULT_PREFERENCES,
@@ -39,33 +54,35 @@ export function Shell({
   children: ReactNode
 }) {
   return (
-    <PreferencesContext value={prefs}>
-      <div
-        data-testid="shell"
-        data-board={prefs.boardTheme}
-        data-theme={prefs.siteTheme}
-        // Its own ground: the site theme is set here, below <body>. From 900px the rail sits beside the content;
-        // narrower, a top bar with a menu takes its place (responsive-layout).
-        className="min-h-screen bg-surface-page text-fg-primary shell:grid shell:grid-cols-[var(--rail-width)_minmax(0,1fr)]"
-      >
-        <TopBar me={me} />
-        {banner}
-        <aside className="hidden flex-col gap-7 border-r border-line-divider bg-surface-rail px-4 py-6 shell:flex">
-          <Wordmark />
-          <Navigation me={me} />
-          <div className="mt-auto">
-            <Account me={me} testId="identity-name" />
-          </div>
-        </aside>
-        {/* A page opts in with `data-layout`: "wide" may use --content-wide; "fill" gets exactly the screen's height
+    <LinkContext value={ClubLink}>
+      <PreferencesContext value={prefs}>
+        <div
+          data-testid="shell"
+          data-board={prefs.boardTheme}
+          data-theme={prefs.siteTheme}
+          // Its own ground: the site theme is set here, below <body>. From 900px the rail sits beside the content;
+          // narrower, a top bar with a menu takes its place (responsive-layout).
+          className="min-h-screen bg-surface-page text-fg-primary shell:grid shell:grid-cols-[var(--rail-width)_minmax(0,1fr)]"
+        >
+          <TopBar me={me} />
+          {banner}
+          <aside className="hidden flex-col gap-7 border-r border-line-divider bg-surface-rail px-4 py-6 shell:flex">
+            <Wordmark />
+            <Navigation me={me} />
+            <div className="mt-auto">
+              <Account me={me} testId="identity-name" />
+            </div>
+          </aside>
+          {/* A page opts in with `data-layout`: "wide" may use --content-wide; "fill" gets exactly the screen's height
             from the rail breakpoint up, so its lists scroll inside it and the page itself never does. */}
-        <main className="min-w-0 px-4 py-5 shell:px-10 shell:py-8 shell:has-[[data-layout~=fill]]:h-dvh">
-          <div className="mx-auto max-w-(--content-max) has-[[data-layout~=wide]]:max-w-(--content-wide) shell:has-[[data-layout~=fill]]:h-full">
-            {children}
-          </div>
-        </main>
-      </div>
-    </PreferencesContext>
+          <main className="min-w-0 px-4 py-5 shell:px-10 shell:py-8 shell:has-[[data-layout~=fill]]:h-dvh">
+            <div className="mx-auto max-w-(--content-max) has-[[data-layout~=wide]]:max-w-(--content-wide) shell:has-[[data-layout~=fill]]:h-full">
+              {children}
+            </div>
+          </main>
+        </div>
+      </PreferencesContext>
+    </LinkContext>
   )
 }
 
