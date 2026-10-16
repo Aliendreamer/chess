@@ -139,7 +139,9 @@ each source off. Fetching goes through `tauri-plugin-http` (no browser CORS), on
   `apps/desktop/package.json`; `tauri.conf.json` reads it (`"version": "../package.json"`), and `Cargo.toml`'s version
   is not used for the bundle. The first release is cut as 1.0.0 (`nx release version 1.0.0 --projects desktop`).
 - Commits touching `libs/` use scope `libs`; Nx Release counts a library change for the apps that depend on it
-  (`version.updateDependents` / the project graph), which is verified in task 1 before the first release.
+  through the project graph: verified (task 1.3, 2026-10-16) — after a tag `desktop@0.0.0`, a lone `fix(libs)` commit to
+  `libs/chess-ui` made `nx release version --dry-run --projects desktop` propose 0.0.1. The club frontend depends on the
+  libraries too, so the same should hold for it (not probed).
 - `nx run desktop:bundle` = fetch Stockfish → `vite build` → `tauri build`; on Linux it makes `.AppImage` and `.deb`,
   on Windows NSIS `.exe` and `.msi`. `tools/desktop/publish.sh <version>` collects the installers of the current
   machine and runs `gh release create desktop@<version>` (or `gh release upload` when the release exists, so the

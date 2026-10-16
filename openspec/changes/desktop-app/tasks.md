@@ -11,7 +11,7 @@ machine, a release), with the command that proves it.
       no build) as pnpm workspace packages `@chess/core` / `@chess/ui` (apps depend on them with `workspace:*`), and an
       ESLint `no-restricted-imports` rule (core: no react/DOM/router/tauri; ui: no router/tauri/`lib/server`). Test first: a
       fixture file importing `react` in core makes `nx lint chess-core` fail.
-- [ ] 1.3 Prove Nx Release counts a `libs` change for a dependent app: once 4.1 has made the `desktop` project, run
+- [x] 1.3 Prove Nx Release counts a `libs` change for a dependent app: once 4.1 has made the `desktop` project, run
       `pnpm exec nx release version --dry-run --projects desktop` after a `fix(libs)` commit and expect a patch bump.
       Record the result in `design.md` D8; if there is none, add the libraries to the `desktop` group's inputs.
 
