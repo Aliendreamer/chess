@@ -5,8 +5,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { PGN_RESULT } from './games'
 import type { Pager } from '@chess/ui'
-import type { Color, EndReason, ListStatus, PgnResult } from './games'
-import type { ColourChoice } from '@chess/core'
+import type { Color, ListStatus, PgnResult } from './games'
+import type { ColourChoice, EndReason } from '@chess/core'
 
 /** Mirrors `POST /api/matchmaking/{tc}`'s answer. */
 export interface QueueStatus {

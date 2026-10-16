@@ -29,7 +29,7 @@ export interface ReviewInput {
   moves: ReadonlyArray<ReviewMove>
   /** As PGN writes it: `1-0`, `0-1`, `1/2-1/2`. */
   result: string | null
-  /** How it ended, as the backend names it (`Checkmate`, `Resignation`, …). */
+  /** How it ended (`Checkmate` as the backend names it, or `checkmate` as the apps do). */
   reason: string | null
   evaluations: ReadonlyMap<string, Evaluation>
   openings: ReadonlyMap<string, OpeningName>
@@ -101,11 +101,11 @@ const LINE_LENGTH = 6
 
 /** Endings decided on the board: the last position is judged from the result, never by the engine. */
 const BOARD_ENDINGS = new Set([
-  'Checkmate',
-  'Stalemate',
-  'InsufficientMaterial',
-  'ThreefoldRepetition',
-  'FiftyMoveRule',
+  'checkmate',
+  'stalemate',
+  'insufficientmaterial',
+  'threefoldrepetition',
+  'fiftymoverule',
 ])
 
 const MARKS: Record<MoveClass, string> = { none: '', inaccuracy: '?!', mistake: '?', blunder: '??' }
@@ -226,7 +226,8 @@ function fenBefore(input: ReviewInput, ply: number): string {
 }
 
 function terminal(input: ReviewInput): boolean {
-  return input.reason !== null && BOARD_ENDINGS.has(input.reason)
+  // The backend names reasons `Checkmate`, the apps' wire `checkmate`: either is the same ending.
+  return input.reason !== null && BOARD_ENDINGS.has(input.reason.toLowerCase())
 }
 
 function judge(input: ReviewInput, index: number): ReviewedMove {

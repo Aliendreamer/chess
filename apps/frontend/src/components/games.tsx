@@ -22,15 +22,22 @@ import {
   Timer,
   Zap,
 } from 'lucide-react'
-import { animationMs as animationMsOf, categoryOf, pairMoves, squaresFor } from '@chess/core'
+import {
+  animationMs as animationMsOf,
+  categoryOf,
+  pairMoves,
+  reasonLabel,
+  reasonText,
+  squaresFor,
+} from '@chess/core'
 import type { ChessboardOptions, PieceRenderObject } from 'react-chessboard'
 import type { ReactNode } from 'react'
-import type { Category, Piece, SideMaterial, SquarePair } from '@chess/core'
+import type { Category, EndReason, Piece, SideMaterial, SquarePair } from '@chess/core'
 import type { RematchState } from '#/lib/feedback'
-import type { ClaimOutcome, Color, EndReason, GameCommand, GameView, PgnResult } from '#/lib/games'
+import type { ClaimOutcome, Color, GameCommand, GameView, PgnResult } from '#/lib/games'
 import type { MyGameItem } from '#/lib/play'
 import { outcomeFor } from '#/lib/play'
-import { formatClock, reasonLabel, reasonText, resultText } from '#/lib/games'
+import { formatClock, resultText } from '#/lib/games'
 
 export function Clock({ ms, active = false }: { ms: number; active?: boolean }) {
   return (

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { UNTIMED, category, categoryOf, pairMoves } from '@chess/core'
+import { UNTIMED, category, categoryOf, pairMoves, reasonText } from '@chess/core'
 import {
   engineToMove,
   formatClock,
@@ -9,11 +9,11 @@ import {
   mergeMoves,
   myColor,
   orientation,
-  reasonText,
   resultText,
   topicId,
 } from './games'
-import type { EndReason, GameView } from './games'
+import type { GameView } from './games'
+import type { EndReason } from '@chess/core'
 
 const view: GameView = {
   gameId: '0199f1c2-a3b4-7c5d-8e9f-0a1b2c3d4e5f',

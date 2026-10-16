@@ -1,6 +1,6 @@
 import { UNTIMED } from '@chess/core'
 import { useEffect, useState } from 'react'
-import type { Color } from '@chess/core'
+import type { Color, EndReason } from '@chess/core'
 /**
  * The game's wire shapes and the pure rules the game page shows them with. Client-safe (no `lib/server` import):
  * the page and its components use these, and none of it decides legality or outcomes — the server does (D3).
@@ -20,20 +20,6 @@ export type PgnResult = (typeof PGN_RESULT)[keyof typeof PGN_RESULT]
 /** What the remaining player may claim when the opponent has gone (presence-and-abandonment D5). */
 export const CLAIM_OUTCOMES = ['win', 'draw'] as const
 export type ClaimOutcome = (typeof CLAIM_OUTCOMES)[number]
-
-/** Why a game ended: the API's `EndReason`, camel-cased on the wire. */
-export type EndReason =
-  | 'checkmate'
-  | 'stalemate'
-  | 'insufficientMaterial'
-  | 'threefoldRepetition'
-  | 'fiftyMoveRule'
-  | 'resignation'
-  | 'agreement'
-  | 'timeout'
-  | 'timeoutVsInsufficientMaterial'
-  | 'aborted'
-  | 'abandonment'
 
 /** A live game's status (the API's `GameStatus`, lower-case on the wire). */
 export type GameStatus = 'created' | 'playing' | 'ended'
@@ -182,31 +168,6 @@ const known = (texts: Record<string, string>, value: string): string => texts[va
 
 export function resultText(result: PgnResult): string {
   return known(RESULTS, result)
-}
-
-/** Every reason, spelled for people; the type makes a new reason need its text here. */
-const REASONS: Record<EndReason, string> = {
-  checkmate: 'checkmate',
-  stalemate: 'stalemate',
-  insufficientMaterial: 'insufficient material',
-  threefoldRepetition: 'threefold repetition',
-  fiftyMoveRule: '50-move rule',
-  resignation: 'resignation',
-  agreement: 'draw agreed',
-  timeout: 'time',
-  timeoutVsInsufficientMaterial: 'time vs insufficient material',
-  aborted: 'aborted',
-  abandonment: 'abandonment',
-}
-
-export function reasonText(reason: EndReason): string {
-  return known(REASONS, reason)
-}
-
-/** The reason on its own line, capitalised: "Checkmate", "Draw agreed" (ui-polish). */
-export function reasonLabel(reason: EndReason): string {
-  const text = reasonText(reason)
-  return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
 /**

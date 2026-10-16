@@ -1,3 +1,4 @@
+import { Chess } from 'chess.js'
 import type { Color } from './board.ts'
 
 /**
@@ -98,4 +99,135 @@ export function category(timeControl: string): string {
 
 export function categoryLabel(c: Category): string {
   return CATEGORY_LABELS[c]
+}
+
+// ---- How a game ends (D15–D18), and its PGN (D22) ----
+
+/** Why a game ended: the API's `EndReason`, camel-cased on the wire. */
+export type EndReason =
+  | 'checkmate'
+  | 'stalemate'
+  | 'insufficientMaterial'
+  | 'threefoldRepetition'
+  | 'fiftyMoveRule'
+  | 'resignation'
+  | 'agreement'
+  | 'timeout'
+  | 'timeoutVsInsufficientMaterial'
+  | 'aborted'
+  | 'abandonment'
+
+/** Every reason, spelled for people; the type makes a new reason need its text here. */
+const REASONS: Record<EndReason, string> = {
+  checkmate: 'checkmate',
+  stalemate: 'stalemate',
+  insufficientMaterial: 'insufficient material',
+  threefoldRepetition: 'threefold repetition',
+  fiftyMoveRule: '50-move rule',
+  resignation: 'resignation',
+  agreement: 'draw agreed',
+  timeout: 'time',
+  timeoutVsInsufficientMaterial: 'time vs insufficient material',
+  aborted: 'aborted',
+  abandonment: 'abandonment',
+}
+
+export function reasonText(reason: EndReason): string {
+  // A reason newer than this code (a later API) is shown as sent rather than as nothing.
+  return (REASONS as Partial<Record<string, string>>)[reason] ?? reason
+}
+
+/** The reason on its own line, capitalised: "Checkmate", "Draw agreed" (ui-polish). */
+export function reasonLabel(reason: EndReason): string {
+  const text = reasonText(reason)
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+/** A move judged against the game so far: its SAN, the position after it, and how the game ends if it does. */
+export interface JudgedMove {
+  uci: string
+  san: string
+  fenAfter: string
+  end: { result: '1-0' | '0-1' | '1/2-1/2'; reason: EndReason } | null
+}
+
+/**
+ * The move `uci` after `moves` (UCI, from the standard start), with every ending on the board on: checkmate,
+ * stalemate, insufficient material, threefold repetition and the fifty-move rule (as the club's rules adapter turns
+ * them all on). Null when the move is illegal there.
+ */
+export function judgeMove(moves: ReadonlyArray<string>, uci: string): JudgedMove | null {
+  const board = new Chess()
+  for (const m of moves) board.move(uciMove(m))
+  let san: string
+  try {
+    san = board.move(uciMove(uci)).san
+  } catch {
+    return null
+  }
+  const mover = board.turn() === 'w' ? 'black' : 'white'
+  const end: JudgedMove['end'] = board.isCheckmate()
+    ? { result: mover === 'white' ? '1-0' : '0-1', reason: 'checkmate' }
+    : board.isStalemate()
+      ? { result: '1/2-1/2', reason: 'stalemate' }
+      : board.isInsufficientMaterial()
+        ? { result: '1/2-1/2', reason: 'insufficientMaterial' }
+        : board.isThreefoldRepetition()
+          ? { result: '1/2-1/2', reason: 'threefoldRepetition' }
+          : board.isDrawByFiftyMoves()
+            ? { result: '1/2-1/2', reason: 'fiftyMoveRule' }
+            : null
+  return { uci, san, fenAfter: board.fen(), end }
+}
+
+function uciMove(uci: string): { from: string; to: string; promotion?: string } {
+  return { from: uci.slice(0, 2), to: uci.slice(2, 4), ...(uci[4] ? { promotion: uci[4] } : {}) }
+}
+
+/** What a finished game's PGN is built from (D22). */
+export interface PgnGame {
+  event: string
+  site: string
+  date: Date
+  white: string
+  black: string
+  result: string
+  reason: EndReason | null
+  sans: ReadonlyArray<string>
+}
+
+const MAX_LINE = 79
+
+/**
+ * A finished game as PGN: the seven-tag roster and `Termination`, movetext numbered and wrapped under 80 columns,
+ * ending in the result. As the backend's `Pgn.Build`, without a time control (games against the computer are untimed).
+ */
+export function buildPgn(game: PgnGame): string {
+  const tag = (name: string, value: string) =>
+    `[${name} "${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"]`
+  const date = game.date.toISOString().slice(0, 10).replaceAll('-', '.')
+  const termination =
+    game.reason === 'abandonment' || game.reason === 'aborted' ? 'abandoned' : 'normal'
+  const tags = [
+    tag('Event', game.event),
+    tag('Site', game.site),
+    tag('Date', date),
+    tag('Round', '-'),
+    tag('White', game.white),
+    tag('Black', game.black),
+    tag('Result', game.result),
+    tag('Termination', termination),
+  ]
+  const tokens = game.sans.flatMap((san, ply) => (ply % 2 === 0 ? [`${ply / 2 + 1}.`, san] : [san]))
+  tokens.push(game.result)
+  const lines: Array<string> = []
+  let line = ''
+  for (const token of tokens) {
+    if (line && line.length + 1 + token.length > MAX_LINE) {
+      lines.push(line)
+      line = token
+    } else line = line ? `${line} ${token}` : token
+  }
+  lines.push(line)
+  return `${tags.join('\n')}\n\n${lines.join('\n')}\n`
 }
