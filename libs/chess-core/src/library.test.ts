@@ -147,5 +147,5 @@ describe('the openings list (OpeningSeedTests)', () => {
     expect(new Set(all.map((o) => o.key)).size).toBe(all.length)
     expect(all.some((o) => o.eco === 'B20' && o.name === 'Sicilian Defense')).toBe(true)
     expect(all.some((o) => o.key === positionKey(STANDARD_START))).toBe(false)
-  })
+  }, 60_000) // thousands of replays: slow under coverage
 })

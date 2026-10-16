@@ -29,7 +29,7 @@ machine, a release), with the command that proves it.
       `TrainingMinerTests` cases, red.
 - [x] 2.5 Port the library PGN import (replay from the start, illegal refused, `DedupeKey`, factual headers only) and
       the openings TSV reader. Test first: `LibraryImportTests` cases, red.
-- [ ] 2.6 Port `FeedParser` and `BroadcastParser` (no DTDs, plain-text titles, https links only). Test first: the C#
+- [x] 2.6 Port `FeedParser` and `BroadcastParser` (no DTDs, plain-text titles, https links only). Test first: the C#
       fixtures (including a DTD feed) as vitest, red.
 
 ## 3. Shared UI and the club refactor
