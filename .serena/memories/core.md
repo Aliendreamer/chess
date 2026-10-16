@@ -152,3 +152,25 @@ broadcast-explorer (2026-08 imported on the local stack), study-repertoire-train
 pzstd's skippable frames itself; ~1.5 % of kept broadcast games record illegal king moves and are refused). pnpm is not on the agent's PATH: `corepack pnpm` works
 (a shim in the session scratchpad lets the husky hooks run). Actor tests with virtual time: two timers due at the same
 instant re-arm each other at zero delay, which the TestScheduler only fires on the next Advance — keep test timings apart.
+
+## 2026-10-16 — next goal: an offline standalone desktop app (owner)
+
+Owner's direction: a standalone desktop app with no server, for one player — learning (trainer, training, studies),
+analysis (board, review, library/explorer), games against the computer, and collecting news. Play against people
+(matchmaking, rematch, challenges, members, presence) is not in it. This is ROADMAP Part 7's "everything standalone"
+option reduced to one player. It is a new app in `apps/` (owner: "is like new app in apps"), so the web club stays as it is. Still open: the shell (Tauri/Electron), storage,
+and how much of the .NET backend / TanStack frontend is reused. The owner lays the architecture out first (`mem:agent_workflow`).
+Owner, same day: the desktop app is released through Nx Release like the others (versioned, its own tag) and
+published as a GitHub Release (installers attached); no lichess broadcasts in it (no broadcast games in the library);
+news is the club's news part (feeds, and seeing tournaments you missed), fetched by the app itself.
+Owner, same day: shell = **Tauri** (the React UI reused, logic in TS, Stockfish as a sidecar). **No CI release**: the
+installers are built locally and published to a GitHub Release by hand/script (`gh release create`), no pipelines —
+the "no CI" invariant stands.
+Owner, same day: targets **Windows + Linux** (no macOS). Linux built in WSL, Windows built on the Windows side; both
+uploaded to the same GitHub Release.
+Owner, same day: the first release is **1.0.0 with every feature** (no 0.x cut). Windows builds come from a
+Windows-side clone (the owner's plan), never over `\\wsl$`.
+Proposal written: `openspec/changes/desktop-app/` (proposal, design D1–D11, specs desktop-app / desktop-release /
+shared-chess-libraries + frontend-layout delta, 29 tasks in 6 groups). Owner's answers: engine think time is the
+player's choice of 5/10/20 s a move; backup + restore in 1.0.0 (restore replaces); the app's code (`apps/desktop`,
+`libs/`) is MIT, Stockfish stays a separate GPLv3 binary (aggregation).
