@@ -54,8 +54,8 @@ machine, a release), with the command that proves it.
 - [x] 4.2 `tools/desktop/stockfish.json` + `fetch-stockfish.mjs` (pinned `sf_19` Linux and Windows builds, SHA-256
       checked, into `src-tauri/binaries/stockfish-<triple>`), licence and source notice as bundle resources. Test first:
       the script run with a wrong hash in a fixture exits non-zero and leaves no binary.
-- [ ] 4.3 `lib/data/db.ts`: migrations in `src-tauri/migrations/` (all tables of design D4), one serialised writer,
-      WAL, a backup copy before migrating; a `better-sqlite3` adapter for tests. Test first: a migration test on an
+- [x] 4.3 `lib/data/db.ts`: migrations in `src/lib/data/migrations/` (all tables of design D4), one serialised writer,
+      WAL, a backup copy before migrating; a `node:sqlite` adapter for tests. Test first: a migration test on an
       empty database expects every table, red.
 - [ ] 4.4 Load the embedded openings once (version row reloads a changed set). Test first: a second start loads
       nothing; a changed version reloads, red.

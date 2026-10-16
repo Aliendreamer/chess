@@ -84,7 +84,9 @@ _Alternative_: copy the code into `apps/desktop` (fast, but two boards and train
 ### D4. Storage: SQLite through `tauri-plugin-sql`
 
 One database file in the app data directory (`chess.db`). Migrations are numbered SQL files in
-`src-tauri/migrations/`, registered with the plugin and run at start. Tables mirror the club's where the shape is the
+`src/lib/data/migrations/`, run by `lib/data/db.ts` at start and tracked by SQLite's `user_version` (in TypeScript,
+not registered with the plugin, so the same code runs on `node:sqlite` in tests); a database from a newer app is
+refused. Tables mirror the club's where the shape is the
 same, minus users and ownership: `games` + `moves` (one local player; the engine side and level per game), `studies`
 (tree as JSON, `version`), `position_evaluations` (`position_key`, `think_ms`, lines), `reviews`, `trainer_progress`
 (line, colour, box, due), `mistake_drills`, `training_positions`, `training_candidates`, `training_progress`,
@@ -92,8 +94,10 @@ same, minus users and ownership: `games` + `moves` (one local player; the engine
 The explorer's counts are SQL over `library_positions`, as in the club. The openings TSVs are embedded in the bundle and
 loaded once (a version row in `settings` reloads them when the embedded set changes).
 
-Single writer: all writes go through `lib/data/db.ts`, which serialises them on one connection; WAL mode for reads
-during writes.
+Single writer: all writes go through `lib/data/db.ts`, which runs them one after another; WAL mode for reads during
+writes. The plugin's pool may give separate calls separate connections, so a transaction is one call: `BEGIN
+IMMEDIATE; …; COMMIT` with the parameters inlined as SQL literals (a failed batch is rolled back). Before migrating
+a database that has data, `VACUUM INTO chess.db.before-v{n}` keeps a consistent copy.
 
 _Alternatives_: IndexedDB (no SQL for the explorer), a Rust-side ORM (more Rust).
 
@@ -152,9 +156,9 @@ each source off. Fetching goes through `tauri-plugin-http` (no browser CORS), on
 
 `libs/*` and `apps/desktop` use vitest (jsdom) with the 75 % gate. The ported logic gets the C# tests' cases as TS
 tests (same inputs, same answers), so both copies are held to the same behaviour. The UCI client is tested against a
-fake engine (as `Chess.Engine.Tests` does), the data layer against an in-memory SQLite (`better-sqlite3` behind the
-same `db.ts` interface, test only). The club's vitest and Playwright suites must stay green through the refactor; no
-Playwright for the desktop app in 1.0.0 (a manual smoke list in `apps/desktop/README.md` instead).
+fake engine (as `Chess.Engine.Tests` does), the data layer against an in-memory SQLite (Node's own `node:sqlite`, no
+native build, behind the same `db.ts` interface). The club's vitest and Playwright suites must stay green through the
+refactor; no Playwright for the desktop app in 1.0.0 (a manual smoke list in `apps/desktop/README.md` instead).
 
 ## Risks / Trade-offs
 
