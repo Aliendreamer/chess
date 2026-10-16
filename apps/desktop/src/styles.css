@@ -1,0 +1,5 @@
+@import 'tailwindcss';
+/* The Club design (tokens, fonts, themes), shared with the club frontend. */
+@import '@chess/ui/theme.css';
+/* Shared components use utilities too: Tailwind must see their class names. */
+@source '../../../libs/chess-ui/src';

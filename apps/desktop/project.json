@@ -1,0 +1,36 @@
+{
+  "name": "desktop",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/desktop/src",
+  "tags": ["scope:desktop", "lang:ts"],
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": { "cwd": "apps/desktop", "command": "pnpm tauri dev" }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "options": { "cwd": "apps/desktop", "command": "pnpm build" }
+    },
+    "bundle": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": { "cwd": "apps/desktop", "command": "pnpm tauri build" }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": { "cwd": "apps/desktop", "command": "pnpm test" }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/desktop",
+        "commands": ["pnpm typecheck", "pnpm lint", "pnpm check"],
+        "parallel": false
+      }
+    }
+  }
+}
