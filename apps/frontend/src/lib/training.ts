@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { clickSquare, legalTargets, needsPromotion, uciSquares } from '@chess/core'
-import { lineSans } from './review'
+import { clickSquare, legalTargets, lineSans, needsPromotion, uciSquares } from '@chess/core'
 import type { SquarePair } from '@chess/core'
 
 /**

@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
-import type { MoveClass, PreviewState, ReviewCounts, ReviewView, ReviewedMove } from '#/lib/review'
+import type { PreviewState, ReviewView } from '#/lib/review'
+import type { MoveClass, ReviewCounts, ReviewedMove } from '@chess/core'
 import { advantageText, bookLink, graphPoints, moveLabel, scoreLabel } from '#/lib/review'
 import { Button, ErrorText, Panel } from '#/components/ui'
 

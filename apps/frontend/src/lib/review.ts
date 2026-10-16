@@ -1,89 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Chess } from 'chess.js'
 import type { CommandOutcome } from './games'
+import type { BookExit, ReviewResult, ReviewedMove } from '@chess/core'
 
 /**
  * Game review (game-review): the API's shapes, the marks and scores as shown, the graph's points and the review's
  * polling. Client-safe; the reads are in `lib/server/review.ts`.
  */
 
-export type MoveClass = 'none' | 'inaccuracy' | 'mistake' | 'blunder'
-
-export interface ReviewedMove {
-  ply: number
-  uci: string
-  san: string
-  /** The score after the move, from White's side (null until evaluated, or decided by the result). */
-  cp: number | null
-  mate: number | null
-  /** White's winning chances after the move, −1…1. */
-  chances: number | null
-  bestUci: string | null
-  bestSan: string | null
-  /** The engine's line from the position before the move, in SAN. */
-  line: Array<string>
-  /** Null until both positions are evaluated. */
-  class: MoveClass | null
-}
-
-export interface ReviewCounts {
-  inaccuracies: number
-  mistakes: number
-  blunders: number
-}
-
-export interface BookExit {
-  ply: number
-  san: string
-  color: 'white' | 'black'
-  eco: string
-  name: string
-}
-
-export interface ReviewView {
+/** `GET /api/games/{id}/review`: the review as far as it goes, and whether the engine is still at it. */
+export interface ReviewView extends ReviewResult {
   status: 'none' | 'running' | 'complete'
-  evaluated: number
-  positions: number
-  moves: Array<ReviewedMove>
-  white: ReviewCounts
-  black: ReviewCounts
-  bookExit: BookExit | null
 }
 
 /** How often a running review is asked again. */
 export const REVIEW_POLL_MS = 2000
-
-const MARKS: Record<MoveClass, string> = { none: '', inaccuracy: '?!', mistake: '?', blunder: '??' }
-
-export function markOf(cls: MoveClass | null): string {
-  return cls ? MARKS[cls] : ''
-}
-
-/** One mark per ply, for the move list. */
-export function marksFor(moves: ReadonlyArray<ReviewedMove>): Array<string> {
-  return moves.map((m) => markOf(m.class))
-}
-
-/** UCI moves from a position as SAN, as far as they play. */
-export function lineSans(fen: string, ucis: ReadonlyArray<string>): Array<string> {
-  const board = new Chess(fen)
-  const sans: Array<string> = []
-  for (const uci of ucis) {
-    try {
-      const promotion = uci[4]
-      sans.push(
-        board.move({
-          from: uci.slice(0, 2),
-          to: uci.slice(2, 4),
-          ...(promotion ? { promotion } : {}),
-        }).san,
-      )
-    } catch {
-      break
-    }
-  }
-  return sans
-}
 
 /** Which of the engine's moves is on the board: the reviewed ply and how many of its line's moves are played. */
 export interface PreviewState {

@@ -4,6 +4,7 @@ import {
   applyOptimistic,
   clickSquare,
   legalTargets,
+  marksFor,
   material,
   needsPromotion,
   pieceAt,
@@ -44,7 +45,7 @@ import {
 import { applyFrame, liveStatusText, liveTopic, useLiveTopic } from '#/lib/live'
 import { pageTitle, rematchState, tabState, useTabSignals } from '#/lib/feedback'
 import { isInviteView } from '#/lib/play'
-import { REVIEW_POLL_MS, marksFor, previewLine, useReview } from '#/lib/review'
+import { REVIEW_POLL_MS, previewLine, useReview } from '#/lib/review'
 import { ReviewPanel } from '#/components/review'
 import { isAdmin } from '#/lib/admin'
 import {

@@ -22,7 +22,7 @@ machine, a release), with the command that proves it.
       run from `libs/chess-core`, fail with "module not found" until the code moves.
 - [x] 2.2 Port `TrainerSchedule`, `OpeningFamilies` (with `lib/trainer.ts#openingKind`) and `StudyLines`. Test first:
       `TrainerScheduleTests`/`OpeningFamiliesTests`/`StudyLinesTests` cases as vitest, red on missing exports.
-- [ ] 2.3 Port `GameReviewer` (winning chances, ?!/?/??, engine move never marked, board ending from the result, book
+- [x] 2.3 Port `GameReviewer` (winning chances, ?!/?/??, engine move never marked, board ending from the result, book
       exit). Test first: `GameReviewerTests` cases, red.
 - [ ] 2.4 Port the training judge (master / engine / both / none), the miner's keep rule (`MinGap`, `MinPly`,
       `PerGame`, two legal moves) and `EngineLevel`. Test first: the matching `TrainingServiceTests` /

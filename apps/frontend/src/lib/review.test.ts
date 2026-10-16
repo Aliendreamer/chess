@@ -1,16 +1,9 @@
 import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  advantageText,
-  bookLink,
-  graphPoints,
-  markOf,
-  marksFor,
-  previewLine,
-  scoreLabel,
-  useReview,
-} from './review'
-import type { ReviewView, ReviewedMove } from './review'
+import { markOf, marksFor } from '@chess/core'
+import { advantageText, bookLink, graphPoints, previewLine, scoreLabel, useReview } from './review'
+import type { ReviewView } from './review'
+import type { ReviewedMove } from '@chess/core'
 
 const move = (over: Partial<ReviewedMove> = {}): ReviewedMove => ({
   ply: 1,

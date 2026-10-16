@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { uciSquares } from '@chess/core'
+import { lineSans, uciSquares } from '@chess/core'
 import type { PreviewState } from '#/lib/review'
 import type { TrainingItem, TrainingMode, TrainingSettings, TrainingVerdict } from '#/lib/training'
 import {
@@ -14,7 +14,7 @@ import {
   setComplete,
   useAnswerBoard,
 } from '#/lib/training'
-import { lineSans, previewLine } from '#/lib/review'
+import { previewLine } from '#/lib/review'
 import { getTrainingNext, getTrainingSummary, postTrainingAnswer } from '#/lib/server/api'
 import { pageTitle } from '#/lib/feedback'
 import {

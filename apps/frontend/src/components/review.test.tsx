@@ -2,7 +2,8 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EvalGraph, ReviewPanel } from './review'
 import type { ReactNode } from 'react'
-import type { ReviewView, ReviewedMove } from '#/lib/review'
+import type { ReviewView } from '#/lib/review'
+import type { ReviewedMove } from '@chess/core'
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({
