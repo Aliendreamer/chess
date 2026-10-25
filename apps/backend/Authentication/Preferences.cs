@@ -6,10 +6,21 @@ namespace Chess.Backend.Authentication;
 
 /// <summary>
 /// A user's display preferences (user-preferences): board theme, piece set, piece animation, coordinates and site
-/// theme. Stored on <c>users.preferences</c> (jsonb, null = <see cref="Default"/>); the BFF reads them with every page so
-/// the first paint already uses them.
+/// theme, and which of the engine's views show (evaluation-display): the evaluation bar and the best moves on the
+/// analysis board (on by default) and in a game against the computer (off by default). Stored on
+/// <c>users.preferences</c> (jsonb, null = <see cref="Default"/>; a stored row without the engine switches reads with
+/// their defaults); the BFF reads them with every page so the first paint already uses them.
 /// </summary>
-internal sealed record Preferences(string BoardTheme, string PieceSet, string Animation, bool Coordinates, string SiteTheme)
+internal sealed record Preferences(
+    string BoardTheme,
+    string PieceSet,
+    string Animation,
+    bool Coordinates,
+    string SiteTheme,
+    bool AnalysisBar = true,
+    bool AnalysisLines = true,
+    bool PlayBar = false,
+    bool PlayLines = false)
 {
     public static readonly Preferences Default = new("brown", "cburnett", "normal", true, "dark");
 
@@ -35,7 +46,11 @@ internal sealed record Preferences(string BoardTheme, string PieceSet, string An
         PieceSets.Contains(PieceSet) ? PieceSet : Default.PieceSet,
         Animations.Contains(Animation) ? Animation : Default.Animation,
         Coordinates,
-        SiteThemes.Contains(SiteTheme) ? SiteTheme : Default.SiteTheme);
+        SiteThemes.Contains(SiteTheme) ? SiteTheme : Default.SiteTheme,
+        AnalysisBar,
+        AnalysisLines,
+        PlayBar,
+        PlayLines);
 
     private static string Unknown(string field, IReadOnlyList<string> allowed) => $"{field} must be one of {string.Join(", ", allowed)}.";
 }

@@ -23,6 +23,12 @@ public sealed class PreferencesTests
         Assert.Equal(new Preferences("brown", "cburnett", "normal", true, "dark"), Preferences.Default);
 
     [Fact]
+    public void The_engine_is_shown_on_the_analysis_board_and_hidden_while_playing_by_default() =>
+        Assert.Equal(
+            (true, true, false, false),
+            (Preferences.Default.AnalysisBar, Preferences.Default.AnalysisLines, Preferences.Default.PlayBar, Preferences.Default.PlayLines));
+
+    [Fact]
     public void The_defaults_are_allowed() => Assert.Null(Preferences.Default.Problem());
 
     [Fact]
@@ -60,6 +66,18 @@ public sealed class PreferencesTests
     }
 
     [Fact]
+    public async Task The_evaluation_switches_are_saved_and_read_back()
+    {
+        using ProjectDbContext db = TestDb.Create();
+        long id = await UserAsync(db);
+        Preferences shown = Preferences.Default with { AnalysisLines = false, PlayBar = true };
+
+        await Build(db).SetAsync(id, shown, CancellationToken.None);
+
+        Assert.Equal(shown, await Build(db).GetAsync(id, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task An_unknown_value_is_refused_and_nothing_changes()
     {
         using ProjectDbContext db = TestDb.Create();
@@ -92,6 +110,31 @@ public sealed class PutPreferencesRequestValidatorTests
     [Fact]
     public void Allowed_values_pass() =>
         Assert.True(new PutPreferencesRequestValidator().Validate(Request()).IsValid);
+
+    [Fact]
+    public void A_request_without_the_evaluation_switches_keeps_their_defaults() =>
+        Assert.Equal(Preferences.Default, Request().ToPreferences());
+
+    [Fact]
+    public void A_request_sets_each_evaluation_switch()
+    {
+        PutPreferencesRequest request = new()
+        {
+            BoardTheme = "brown",
+            PieceSet = "cburnett",
+            Animation = "normal",
+            Coordinates = true,
+            SiteTheme = "dark",
+            AnalysisBar = false,
+            AnalysisLines = false,
+            PlayBar = true,
+            PlayLines = true,
+        };
+
+        Assert.Equal(
+            Preferences.Default with { AnalysisBar = false, AnalysisLines = false, PlayBar = true, PlayLines = true },
+            request.ToPreferences());
+    }
 
     [Fact]
     public void An_unknown_theme_is_a_400_naming_the_field()

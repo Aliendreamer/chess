@@ -15,7 +15,26 @@ internal sealed class PutPreferencesRequest
 
     public string SiteTheme { get; init; } = string.Empty;
 
-    public Preferences ToPreferences() => new(BoardTheme, PieceSet, Animation, Coordinates, SiteTheme);
+    /// <summary>The engine switches (evaluation-display); left out, each keeps its default, so an older page saving its
+    /// themes does not turn the analysis board's engine off.</summary>
+    public bool? AnalysisBar { get; init; }
+
+    public bool? AnalysisLines { get; init; }
+
+    public bool? PlayBar { get; init; }
+
+    public bool? PlayLines { get; init; }
+
+    public Preferences ToPreferences() => new(
+        BoardTheme,
+        PieceSet,
+        Animation,
+        Coordinates,
+        SiteTheme,
+        AnalysisBar ?? Preferences.Default.AnalysisBar,
+        AnalysisLines ?? Preferences.Default.AnalysisLines,
+        PlayBar ?? Preferences.Default.PlayBar,
+        PlayLines ?? Preferences.Default.PlayLines);
 }
 
 internal sealed class PutPreferencesRequestValidator : Validator<PutPreferencesRequest>
