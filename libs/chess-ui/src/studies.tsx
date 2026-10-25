@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef } from 'react'
 import {
   THINKS,
+  chances,
   legalTargets,
   lineEnd,
   lineMoves,
@@ -230,20 +231,74 @@ export function AnalysisPanel({
   )
 }
 
+/**
+ * The evaluation beside a board while playing: White's winning chances as the white part of a bar, White's end
+ * toward White's side of the board, and the score as its name. Even while the position is not evaluated yet.
+ */
+export function EvalBar({
+  evaluation,
+  orientation,
+}: {
+  evaluation: Evaluation | null
+  orientation: 'white' | 'black'
+}) {
+  const best = evaluation?.lines[0]
+  const white = best ? (chances(best) + 1) / 2 : 0.5
+  return (
+    <div
+      role="img"
+      aria-label={`Evaluation ${best ? scoreText(best) : 'pending'}`}
+      title={best ? scoreText(best) : undefined}
+      data-testid="eval-bar"
+      className={`flex w-3 shrink-0 overflow-hidden rounded-control border border-line-default bg-fg-muted ${
+        orientation === 'white' ? 'flex-col-reverse' : 'flex-col'
+      }`}
+    >
+      <div
+        data-side="white"
+        className="bg-fg-primary transition-[height] duration-300 motion-reduce:transition-none"
+        style={{ height: `${Math.round(white * 1000) / 10}%` }}
+      />
+    </div>
+  )
+}
+
+/** The score and the engine's best line in SAN under a board being played on; or that the engine is on it. */
+export function EngineLine({ fen, evaluation }: { fen: string; evaluation: Evaluation | null }) {
+  const best = evaluation?.lines[0]
+  return (
+    <p className="m-0 flex min-h-6 gap-2 text-sm" data-testid="engine-line" aria-live="polite">
+      {best ? (
+        <>
+          <span className="w-14 shrink-0 font-mono text-fg-primary">{scoreText(best)}</span>
+          <span className="truncate font-mono text-fg-body">
+            {lineMoves(fen, best.pv)
+              .map((m) => m.san)
+              .join(' ')}
+          </span>
+        </>
+      ) : (
+        <span className="text-fg-muted">The engine is thinking…</span>
+      )}
+    </p>
+  )
+}
+
 /** How long a position must stay on the board before the engine is asked: stepping through a game asks only once. */
 const SETTLE_MS = 300
 
 /**
  * Asks the engine for the position on the board once it settles, and again when the think time changes. Positions
- * already known answer from the shared cache, so stepping back and forth costs nothing.
+ * already known answer from the shared cache, so stepping back and forth costs nothing. `enabled` false asks nothing.
  */
-export function useAutoEvaluate(analysis: Analysis, fen: string) {
+export function useAutoEvaluate(analysis: Analysis, fen: string, enabled = true) {
   const ask = useRef(analysis.analyse)
   ask.current = analysis.analyse
   useEffect(() => {
+    if (!enabled) return
     const timer = setTimeout(() => ask.current(fen), SETTLE_MS)
     return () => clearTimeout(timer)
-  }, [fen, analysis.think])
+  }, [fen, analysis.think, enabled])
 }
 
 /**

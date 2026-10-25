@@ -38,8 +38,9 @@ export interface Analysis {
  */
 export function useAnalysis(
   request: (input: { fen: string; think: Think }) => Promise<CommandOutcome<AnalysisView>>,
+  initialThink: Think = 'normal',
 ): Analysis {
-  const [think, setThink] = useState<Think>('normal')
+  const [think, setThink] = useState<Think>(initialThink)
   const [known, setKnown] = useState<ReadonlyMap<string, Evaluation>>(new Map())
   const [waiting, setWaiting] = useState<{ fen: string; think: Think; gen: number } | null>(null)
   const [error, setError] = useState<string | null>(null)

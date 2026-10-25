@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_PREFERENCES, STANDARD_START, playMove } from '@chess/core'
 import { PreferencesContext } from './board.tsx'
-import { AnalysisBoard, MoveTree, StudyList } from './studies.tsx'
+import { AnalysisBoard, EngineLine, EvalBar, MoveTree, StudyList } from './studies.tsx'
 import { useMoveTree } from './studies-model.ts'
 import type { ReactNode } from 'react'
 import type { StudyMove } from '@chess/core'
@@ -144,5 +144,43 @@ describe('AnalysisBoard (analysis-board)', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('EvalBar and EngineLine (the evaluation while playing)', () => {
+  const at = (cp: number | null, mate: number | null, pv: Array<string> = []) => ({
+    thinkMs: 500,
+    depth: 18,
+    lines: [{ cp, mate, pv }],
+  })
+
+  it('fills the bar with White’s chances, White at the bottom when the board shows White', () => {
+    render(<EvalBar evaluation={at(100, null)} orientation="white" />)
+    const bar = screen.getByRole('img', { name: 'Evaluation +1.00' })
+    const white = bar.querySelector('[data-side="white"]') as HTMLElement
+    expect(white.style.height).toBe('59.1%')
+    expect(bar.className).toContain('flex-col-reverse')
+  })
+
+  it('turns with the board and shows a mate as all or nothing', () => {
+    render(<EvalBar evaluation={at(null, -2)} orientation="black" />)
+    const bar = screen.getByRole('img', { name: 'Evaluation #-2' })
+    expect((bar.querySelector('[data-side="white"]') as HTMLElement).style.height).toBe('0%')
+    expect(bar.className).not.toContain('flex-col-reverse')
+  })
+
+  it('stays even while the position is not evaluated yet', () => {
+    render(<EvalBar evaluation={null} orientation="white" />)
+    const bar = screen.getByRole('img', { name: 'Evaluation pending' })
+    expect((bar.querySelector('[data-side="white"]') as HTMLElement).style.height).toBe('50%')
+  })
+
+  it('names the score and the best line in SAN, or that the engine is thinking', () => {
+    const { rerender } = render(
+      <EngineLine fen={STANDARD_START} evaluation={at(35, null, ['e2e4', 'e7e5', 'g1f3'])} />,
+    )
+    expect(screen.getByTestId('engine-line').textContent).toBe('+0.35e4 e5 Nf3')
+    rerender(<EngineLine fen={STANDARD_START} evaluation={null} />)
+    expect(screen.getByTestId('engine-line').textContent).toBe('The engine is thinking…')
   })
 })
