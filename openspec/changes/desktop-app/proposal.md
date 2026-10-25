@@ -45,7 +45,7 @@ In the code:
 - Commit scopes gain `desktop` and `libs`.
 
 Out of scope: play against people (matchmaking, rematches, challenges, members, presence), accounts and login,
-lichess broadcast games in the library, sync between machines or with the club, macOS, an auto-updater, code signing,
+a lichess broadcast importer (the club's library, broadcasts included, ships with the app: design D12), sync between machines or with the club, macOS, an auto-updater, code signing,
 the admin screens, observability, and any change to the backend or the engine worker.
 
 ## Capabilities

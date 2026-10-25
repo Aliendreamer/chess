@@ -102,6 +102,12 @@ machine, a release), with the command that proves it.
       schema version, confirm, keep `chess.db.before-restore`, swap, migrate, reload). Test first: restoring a file from
       a newer schema version is refused and the database is unchanged, red.
 
+- [x] 5.12 The bundled library (design D12): `tools/desktop/export-library.mjs` (club Postgres → `library/library.json.gz`
+      with position keys), `lib/data/bundled.ts` (loaded once per version behind the first screen, only adds, the miner
+      after it), `prepareImport` takes precomputed keys, About credits PGN Mentor and lichess broadcasts. Test first: the
+      first start loads games, judged and critical positions, "magnus" finds the club's positions, a player's copy wins,
+      a new version keeps progress; the real file loads in seconds.
+
 ## 6. Release
 
 - [ ] 6.1 MIT `LICENSE` in `apps/desktop` and `libs/*` (and the installer's licence page); Nx Release group `desktop`

@@ -2,9 +2,9 @@ import { Chess } from 'chess.js'
 import { parsePgn, positionKey, prepareImport, toImportGame } from '@chess/core'
 import { newId } from './db'
 import { openingNames } from './openings'
-import type { ParsedGame } from '@chess/core'
+import type { LibraryGame, LibraryGamePosition, ParsedGame } from '@chess/core'
 import type { ExplorerMove, LibraryGameItem, LibraryGameView, LibraryPosition } from '@chess/ui'
-import type { Db } from './db'
+import type { Db, Statement } from './db'
 
 /**
  * The game library (game-library, library-explorer, desktop-app): the PGN collections the player imports — moves and
@@ -78,41 +78,49 @@ export async function importLibrary(
       continue
     }
     existing.add(prepared.game.dedupeKey)
-    const g = prepared.game
-    await db.batch([
-      {
-        sql: `INSERT INTO library_games (id, white, black, event, site, round, date_text, year, result, eco, opening_name,
-              moves_uci, ply, source, licence, source_ref, dedupe_key, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        params: [
-          g.id,
-          g.white,
-          g.black,
-          g.event,
-          g.site,
-          g.round,
-          g.dateText,
-          g.year,
-          g.result,
-          g.eco,
-          g.openingName,
-          JSON.stringify(g.movesUci),
-          g.ply,
-          g.source,
-          g.licence,
-          g.sourceRef,
-          g.dedupeKey,
-          now.toISOString(),
-        ],
-      },
-      ...prepared.positions.map((p) => ({
-        sql: 'INSERT INTO library_positions (game_id, ply, position_key, next_uci, result, source) VALUES (?, ?, ?, ?, ?, ?)',
-        params: [p.gameId, p.ply, p.positionKey, p.nextUci, p.result, p.source],
-      })),
-    ])
+    await db.batch(gameStatements(prepared.game, prepared.positions, now))
     report.imported++
   }
   return report
+}
+
+/** The writes that store a prepared game and every position it reached. */
+export function gameStatements(
+  g: LibraryGame,
+  positions: ReadonlyArray<LibraryGamePosition>,
+  now: Date,
+): Array<Statement> {
+  return [
+    {
+      sql: `INSERT INTO library_games (id, white, black, event, site, round, date_text, year, result, eco, opening_name,
+            moves_uci, ply, source, licence, source_ref, dedupe_key, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      params: [
+        g.id,
+        g.white,
+        g.black,
+        g.event,
+        g.site,
+        g.round,
+        g.dateText,
+        g.year,
+        g.result,
+        g.eco,
+        g.openingName,
+        JSON.stringify(g.movesUci),
+        g.ply,
+        g.source,
+        g.licence,
+        g.sourceRef,
+        g.dedupeKey,
+        now.toISOString(),
+      ],
+    },
+    ...positions.map((p) => ({
+      sql: 'INSERT INTO library_positions (game_id, ply, position_key, next_uci, result, source) VALUES (?, ?, ?, ?, ?, ?)',
+      params: [p.gameId, p.ply, p.positionKey, p.nextUci, p.result, p.source],
+    })),
+  ]
 }
 
 function item(r: GameRow): LibraryGameItem {

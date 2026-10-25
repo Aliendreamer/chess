@@ -1,5 +1,6 @@
 import { levelOptions } from '@chess/core'
 import { openDb, tauriSql } from './data/db'
+import { ensureBundledLibrary } from './data/bundled'
 import { ensureOpenings } from './data/openings'
 import { AnalysisQueue, EngineSupervisor, sidecarChannel } from './engine'
 import { Evaluator } from './data/analysis'
@@ -72,7 +73,11 @@ export async function startServices(): Promise<AppServices> {
       await mineRound(db, evaluator).catch(() => undefined)
     setTimeout(() => void mine(), MINE_EVERY_MS)
   }
-  setTimeout(() => void mine(), MINE_EVERY_MS)
+  // The bundled library (desktop-app D12) loads behind the first screen; the miner starts after it, so it never asks
+  // a position the club's Stockfish has already judged.
+  void ensureBundledLibrary(db)
+    .catch(() => undefined)
+    .then(() => setTimeout(() => void mine(), MINE_EVERY_MS))
   // News (desktop-app D7): fetched while the app runs; a round that fails (offline) leaves what is kept.
   const fetchText: FetchText = async (url, headers) => {
     const { fetch } = await import('@tauri-apps/plugin-http')

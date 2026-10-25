@@ -12,7 +12,7 @@ wants them as a standalone, offline desktop app (ROADMAP Part 7), decided on 202
 - Windows and Linux; versioned with Nx Release; built locally (Windows on a Windows-side clone, Linux in WSL) and
   published to a GitHub Release by hand — no CI;
 - the first release is 1.0.0 with every feature;
-- no lichess broadcast games; the news is the club's news part (feeds and the tournaments being played).
+- no lichess broadcast importer (the bundled library of D12 ships the club's games, broadcasts included); the news is the club's news part (feeds and the tournaments being played).
 
 Today almost every module of `apps/frontend/src` imports TanStack Router (`Link`, navigation) or the server functions
 (`lib/server/api.ts`); only a few (`lib/studies.ts`, `lib/board.ts`, `lib/moveInput.ts`) are free of both. About 3 800
@@ -192,6 +192,20 @@ The app's code — `apps/desktop` and `libs/` — is MIT (`LICENSE` in each, the
 stays a separate GPLv3 program the app starts as a process, shipped unmodified with its licence and a source link, so
 the MIT code and the GPLv3 binary sit side by side in the installer (aggregation) without the app becoming GPL. The
 installer's licence page shows the MIT text, and About lists every third-party licence.
+
+### D12. The bundled library
+
+Owner, 2026-10-25: the app ships the club's library, so the explorer, "In the library" and Master games training work
+from the first start. `tools/desktop/export-library.mjs` reads the club's Postgres (the local stack) and writes
+`apps/desktop/library/library.json.gz` (committed, ~3.3 MB): every library game but the e2e suite's — 1,030 World
+Championship games (PGN Mentor, moves only) and 2,035 lichess broadcast games of 2026-08 (CC BY-SA 4.0) — each with
+its source, licence and lichess link, and the key of every position it reaches (computed there by `@chess/core`'s
+`prepareImport`: replaying 270k moves with chess.js takes a minute, the keys load in seconds); the 8,989 positions the
+club's Stockfish has judged (so the miner never asks them again) and the 819 critical ones it kept. `lib/data/bundled.ts`
+loads it behind the first screen, again only when its hash changes, and only adds: a game the player already has keeps
+the player's copy (the bundled training points at it), and nothing of the player's is changed. The miner starts after
+it. The games file keeps CC BY-SA 4.0 for the broadcast games (credited on About and per game); the MIT code is
+unaffected. `tools/library/SOURCES.md` allows this one committed file.
 
 ## Migration Plan
 

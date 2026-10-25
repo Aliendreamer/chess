@@ -190,3 +190,14 @@ repairs it; Vite's config is loaded by plain Node, so anything it imports (front
 `.svg` imports or extensionless TS imports (`@chess/core` uses `.ts` extensions); TS drops `x.tsx` from a project when
 `x.ts` sits beside it (hence `<feature>-model.ts`); react-chessboard throws in jsdom when it animates a move (page tests
 stub `matchMedia` for reduced motion).
+
+## 2026-10-25 — desktop: the club's library ships with the app (owner: "we import it all")
+
+The desktop library was empty (training's "magnus" found nothing): its SQLite is separate from the club, and no game
+file was ever committed (the club's games lived only in the `chess_pgdata` volume). Owner: bundle them all. Design D12 /
+task 5.12: `tools/desktop/export-library.mjs` (club Postgres via `docker exec psql` → `apps/desktop/library/library.json.gz`,
+committed, ~3.3 MB: 1,030 WCh + 2,035 broadcast games 2026-08, 8,989 judged candidates, 819 training positions, and
+each game's position keys) → `lib/data/bundled.ts` (loaded by hash, only adds, the miner starts after it). Learned:
+chess.js `move()` costs ~215 µs a ply, so replaying 270k plies takes a minute — keys are precomputed at export
+(`prepareImport(…, keys)`; Node 24 imports `@chess/core`'s `.ts` directly); load is ~5 s. Tauri: a resource folder
+named like the sidecar (`stockfish/`) fails the build with "File exists" — the licences go to `stockfish-licence/`.

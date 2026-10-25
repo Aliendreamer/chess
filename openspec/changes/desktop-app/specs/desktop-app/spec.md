@@ -99,6 +99,17 @@ position: the next moves with White/draw/Black counts and the opening reached. T
 - **WHEN** the player imports the same PGN file twice
 - **THEN** the second import adds no games and reports them as duplicates
 
+#### Scenario: The club's library comes with the app
+
+- **WHEN** the app starts for the first time
+- **THEN** the World Championship and lichess broadcast games are in the library, the positions the club mined are in
+  Master games training (found by a part of a player's name), and the miner never asks a position the club judged
+
+#### Scenario: A new version's library only adds
+
+- **WHEN** a new version ships a changed bundled library
+- **THEN** its new games are added, a game the player already has is not stored twice, and the player's progress is kept
+
 ### Requirement: News that waits for you
 
 While the app runs and the machine is online, it SHALL fetch the club's news feeds (FIDE, ChessBase, Lichess blog, The

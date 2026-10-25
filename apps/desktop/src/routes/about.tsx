@@ -43,6 +43,14 @@ function About() {
           domain (CC0).
         </p>
         <p className="m-0 text-sm text-fg-body">
+          The library comes with the World Championship matches from{' '}
+          <a href="https://www.pgnmentor.com/files.html">PGN Mentor</a> (moves only) and strong
+          games of August 2026 from{' '}
+          <a href="https://database.lichess.org/#broadcasts">lichess broadcasts</a>, under{' '}
+          <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; each broadcast
+          game links to its lichess page.
+        </p>
+        <p className="m-0 text-sm text-fg-body">
           News headlines link to their publishers: FIDE, ChessBase, Lichess and The Week in Chess;
           the tournaments come from lichess's broadcast list.
         </p>

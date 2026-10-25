@@ -27,10 +27,15 @@ Stockfish is the pinned official `sf_19` build (`tools/desktop/stockfish.json`, 
 `src-tauri/binaries/` (git-ignored) by `tools/desktop/fetch-stockfish.mjs`; its licence (`Copying.txt`) and source
 notice (`SOURCE.txt`) ship with the installer.
 
+The library ships with the club's games (`library/library.json.gz`: the World Championships and the 2026-08 lichess
+broadcasts, with the positions the club mined for training), loaded once on the first start. To refresh it, start the
+local stack's `postgres` and run `node tools/desktop/export-library.mjs`, then commit the file.
+
 ## Where things are
 
 - `src/lib/data/` — the SQLite database (`db.ts`, migrations in `migrations/`) and one file per feature: `play`,
-  `analysis`, `review`, `studies`, `library`, `trainer`, `training`, `news`, `openings`, `settings`.
+  `analysis`, `review`, `studies`, `library`, `bundled` (the shipped library), `trainer`, `training`, `news`,
+  `openings`, `settings`.
 - `src/lib/engine.ts` — the UCI client, the supervisor that restarts Stockfish, the analysis queue (board first).
 - `src/lib/app.ts` — the services the pages use (database, engines, dialogs, links, fetching), created at start.
 - `src/routes/` — the pages; the shared board, studies, trainer, review and news components are `@chess/ui`, the rules
