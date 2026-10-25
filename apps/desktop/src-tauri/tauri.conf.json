@@ -38,8 +38,8 @@
     ],
     "externalBin": ["binaries/stockfish"],
     "resources": {
-      "binaries/Copying.txt": "stockfish/Copying.txt",
-      "binaries/SOURCE.txt": "stockfish/SOURCE.txt",
+      "binaries/Copying.txt": "stockfish-licence/Copying.txt",
+      "binaries/SOURCE.txt": "stockfish-licence/SOURCE.txt",
       "../LICENSE": "LICENSE"
     },
     "licenseFile": "../LICENSE",
