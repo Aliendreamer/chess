@@ -48,4 +48,11 @@ describe('what the app may reach', () => {
     expect(csp).not.toMatch(/https?:\/\/(?!ipc\.localhost)/)
     expect(read('index.html')).not.toMatch(/https?:\/\//)
   })
+
+  it('fetches the bundled library from its own files', () => {
+    const connect = config.app.security.csp
+      .split(';')
+      .find((d) => d.trim().startsWith('connect-src'))
+    expect(connect?.trim().split(/\s+/)).toContain("'self'")
+  })
 })

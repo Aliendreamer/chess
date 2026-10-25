@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { readFile } from 'node:fs/promises'
-import { gzipSync } from 'node:zlib'
+import { gunzipSync, gzipSync } from 'node:zlib'
 import { afterEach, describe, expect, it } from 'vitest'
 import { positionKey, prepareImport } from '@chess/core'
 import { openDb } from './db'
@@ -127,6 +127,12 @@ describe('the bundled library (desktop-app D12)', () => {
     expect(await count(d, 'library_positions')).toBe(5)
     expect(await count(d, 'training_candidates')).toBe(2)
     expect(await count(d, 'training_positions')).toBe(1)
+  })
+
+  it('takes the file already unzipped, as the development server hands it over', async () => {
+    const d = await testDb()
+    const unzipped = async () => new Uint8Array(gunzipSync(await file(LIBRARY)()))
+    expect(await ensureBundledLibrary(d, unzipped)).toEqual({ state: 'loaded', games: 1 })
   })
 
   it('keeps the source, the licence and the link of each game', async () => {

@@ -186,7 +186,9 @@ export async function ensureBundledLibrary(
   return { state: 'loaded', games: added }
 }
 
+/** The file's JSON: gzipped as shipped, or already unzipped (Vite's dev server sends it as `Content-Encoding: gzip`). */
 async function gunzip(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
+  if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return new TextDecoder().decode(bytes)
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))
   return new Response(stream).text()
 }
