@@ -1,3 +1,51 @@
+## 0.2.1 (2026-10-25)
+
+### 🚀 Features
+
+- **backend:** club members, presence, challenges and member admin ([54d6470](https://github.com/Aliendreamer/chess/commit/54d6470))
+- **backend:** drop invite links, keep rematch ([92ae326](https://github.com/Aliendreamer/chess/commit/92ae326))
+- **backend:** training sessions, and drop correspondence games and club tv ([2fc983d](https://github.com/Aliendreamer/chess/commit/2fc983d))
+- **backend:** drill your own studies in the trainer ([802b6aa](https://github.com/Aliendreamer/chess/commit/802b6aa))
+- **backend:** an import clears the explorer's cached answers ([12b8fb3](https://github.com/Aliendreamer/chess/commit/12b8fb3))
+- **backend:** the explorer by source ([a4b04d8](https://github.com/Aliendreamer/chess/commit/a4b04d8))
+- **backend:** import a month of lichess broadcasts ([c07ea98](https://github.com/Aliendreamer/chess/commit/c07ea98))
+- **backend:** read lichess broadcast files ([35890f9](https://github.com/Aliendreamer/chess/commit/35890f9))
+- **backend:** the deadline sweep wakes quiet games against the computer ([3abffc2](https://github.com/Aliendreamer/chess/commit/3abffc2))
+- **backend:** leaving a game against the computer loses it ([6f67ead](https://github.com/Aliendreamer/chess/commit/6f67ead))
+- **backend:** game review ([3b3d0dc](https://github.com/Aliendreamer/chess/commit/3b3d0dc))
+- **backend:** the opening trainer ([96238ea](https://github.com/Aliendreamer/chess/commit/96238ea))
+- **backend:** moves played from a library position ([0e8e7b9](https://github.com/Aliendreamer/chess/commit/0e8e7b9))
+- **backend:** chess news and tournaments now ([e80f9ac](https://github.com/Aliendreamer/chess/commit/e80f9ac))
+- **backend:** library search, positions and openings ([3db5e42](https://github.com/Aliendreamer/chess/commit/3db5e42))
+- **backend:** the game library import ([2c0b654](https://github.com/Aliendreamer/chess/commit/2c0b654))
+- **backend:** library tables and opening names ([cb1c97f](https://github.com/Aliendreamer/chess/commit/cb1c97f))
+- **backend:** player profiles ([0c198b5](https://github.com/Aliendreamer/chess/commit/0c198b5))
+- **backend:** the lobby read ([3aa7aeb](https://github.com/Aliendreamer/chess/commit/3aa7aeb))
+- **frontend:** the light site theme ([0bd2c9e](https://github.com/Aliendreamer/chess/commit/0bd2c9e))
+- **backend:** display preferences on the account ([5149e09](https://github.com/Aliendreamer/chess/commit/5149e09))
+- **backend:** reserved invites and rematch offers ([bb28e3f](https://github.com/Aliendreamer/chess/commit/bb28e3f))
+- **backend:** end reasons camel-cased on the wire, and the last literals spelled once ([8899074](https://github.com/Aliendreamer/chess/commit/8899074))
+- **backend:** statuses and sides lower-case on the wire, as enums ([28fdb23](https://github.com/Aliendreamer/chess/commit/28fdb23))
+
+### 🩹 Fixes
+
+- **frontend:** link only to https lichess pages from library games ([d34c9a3](https://github.com/Aliendreamer/chess/commit/d34c9a3))
+- **backend:** a review shows only once a player asks ([4ae52a6](https://github.com/Aliendreamer/chess/commit/4ae52a6))
+- **backend:** a library game must name both players ([7dd249b](https://github.com/Aliendreamer/chess/commit/7dd249b))
+- **backend:** library games replay past unclaimed repetitions ([bc97164](https://github.com/Aliendreamer/chess/commit/bc97164))
+- **backend:** rate limit per signed-in user, per address only when anonymous ([7c33918](https://github.com/Aliendreamer/chess/commit/7c33918))
+- **repo:** load the backend's profiler from compose, not a launch profile ([f69a518](https://github.com/Aliendreamer/chess/commit/f69a518))
+- **backend:** projections return their outcome instead of reading it off the span ([6208507](https://github.com/Aliendreamer/chess/commit/6208507))
+
+### 🔥 Performance
+
+- **backend:** the explorer counts in the database ([500e50e](https://github.com/Aliendreamer/chess/commit/500e50e))
+
+### ❤️ Thank You
+
+- Aliendreamer @Aliendreamer
+- Claude Opus 5.5 (1M context)
+
 ## 0.2.0 (2026-09-29)
 
 ### 🚀 Features

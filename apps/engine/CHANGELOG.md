@@ -1,3 +1,15 @@
+## 0.1.2 (2026-10-25)
+
+### 🚀 Features
+
+- **engine:** the image downloads a pinned stockfish release ([8b80ab4](https://github.com/Aliendreamer/chess/commit/8b80ab4))
+- **engine:** review requests ([40b2f4e](https://github.com/Aliendreamer/chess/commit/40b2f4e))
+
+### ❤️ Thank You
+
+- Aliendreamer
+- Claude Opus 5.5 (1M context)
+
 ## 0.1.1 (2026-09-29)
 
 ### 🚀 Features
