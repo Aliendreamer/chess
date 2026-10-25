@@ -70,6 +70,16 @@ describe('library import (LibraryImportTests)', () => {
     expect([g.eco, g.openingName]).toEqual(['C41', "King's Knight Opening"])
   })
 
+  it('takes the keys of a game prepared before instead of replaying it', () => {
+    const moves = ['e2e4', 'e7e5', 'g1f3', 'b8c6']
+    const before = prepared(game(...moves))
+    const keys = before.positions.map((p) => p.positionKey)
+    const r = prepareImport(game(...moves), SOURCE, OPENINGS, 'id-1', keys)
+    expect(r).toEqual({ ok: true, game: before.game, positions: before.positions })
+    const short = prepareImport(game(...moves), SOURCE, OPENINGS, 'id-1', keys.slice(1))
+    expect(!short.ok && short.error).toBe('4 position keys for 4 moves.')
+  })
+
   it('refuses an illegal move, naming it', () => {
     const r = prepareImport(game('e2e4', 'e7e4'), SOURCE, OPENINGS, 'id')
     expect(!r.ok && r.error).toContain('move 2 (e7e4)')

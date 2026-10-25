@@ -103,12 +103,15 @@ const RESULTS = ['1-0', '0-1', '1/2-1/2', '*']
  * A game made ready to store: it starts from the standard position, every move replays with no automatic draws (a
  * repetition or fifty moves end a real game only when claimed), its positions are keyed like the analysis cache, and its
  * opening is the deepest named position it reaches unless the PGN names its own ECO. `id` is the new game's id.
+ * `keys`, the key of every position from the start (one more than the moves), skips the replay: a game prepared once
+ * already, like the desktop app's bundled library, whose replay would hold the app for a minute.
  */
 export function prepareImport(
   game: ImportGame,
   source: ImportSource,
   openings: ReadonlyMap<string, Pick<Opening, 'eco' | 'name'>>,
   id: string,
+  keys?: ReadonlyArray<string>,
 ): PreparedImport {
   if (unnamed(game.white) || unnamed(game.black))
     return { ok: false, error: 'Both players must be named.' }
@@ -120,34 +123,40 @@ export function prepareImport(
   if (game.moves.length === 0) return { ok: false, error: 'The game has no moves.' }
   if (!RESULTS.includes(game.result)) return { ok: false, error: `Unknown result: ${game.result}.` }
 
-  const board = new Chess(STANDARD_START)
-  const at = (ply: number): LibraryGamePosition => ({
-    positionKey: positionKey(board.fen()),
+  const at = (ply: number, key: string): LibraryGamePosition => ({
+    positionKey: key,
     gameId: id,
     ply,
     nextUci: game.moves[ply] ?? null,
     result: game.result,
     source: source.source,
   })
-  const positions = [at(0)]
-  let opening: Pick<Opening, 'eco' | 'name'> | null = null
-  for (const [i, uci] of game.moves.entries()) {
-    try {
-      board.move({
-        from: uci.slice(0, 2),
-        to: uci.slice(2, 4),
-        ...(uci[4] ? { promotion: uci[4] } : {}),
-      })
-    } catch (e) {
-      return {
-        ok: false,
-        error: `Illegal move ${i + 1} (${uci}): ${e instanceof Error ? e.message : 'not legal'}`,
+  let positions: Array<LibraryGamePosition>
+  if (keys) {
+    if (keys.length !== game.moves.length + 1)
+      return { ok: false, error: `${keys.length} position keys for ${game.moves.length} moves.` }
+    positions = keys.map((key, ply) => at(ply, key))
+  } else {
+    const board = new Chess(STANDARD_START)
+    positions = [at(0, positionKey(board.fen()))]
+    for (const [i, uci] of game.moves.entries()) {
+      try {
+        board.move({
+          from: uci.slice(0, 2),
+          to: uci.slice(2, 4),
+          ...(uci[4] ? { promotion: uci[4] } : {}),
+        })
+      } catch (e) {
+        return {
+          ok: false,
+          error: `Illegal move ${i + 1} (${uci}): ${e instanceof Error ? e.message : 'not legal'}`,
+        }
       }
+      positions.push(at(i + 1, positionKey(board.fen())))
     }
-    const position = at(i + 1)
-    positions.push(position)
-    opening = openings.get(position.positionKey) ?? opening
   }
+  let opening: Pick<Opening, 'eco' | 'name'> | null = null
+  for (const position of positions.slice(1)) opening = openings.get(position.positionKey) ?? opening
 
   const year = yearOf(game.date)
   return {
