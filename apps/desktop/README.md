@@ -19,6 +19,7 @@ libayatana-appindicator3-dev librsvg2-dev pkg-config`. WSL shows the window thro
 
 ```bash
 pnpm desktop                       # from the root: the window with hot reload (= nx run desktop:dev)
+pnpm desktop:release               # the release build, no installers, then started: the speed users get
 pnpm exec nx run desktop:dev       # fetches Stockfish once, then the window with hot reload
 pnpm exec nx run desktop:test      # vitest (data layer, engine client, pages) and the Stockfish fetch test
 pnpm exec nx run desktop:lint      # typecheck, eslint, prettier

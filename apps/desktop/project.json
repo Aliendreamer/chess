@@ -20,6 +20,14 @@
       "cache": false,
       "options": { "cwd": "apps/desktop", "command": "pnpm tauri build" }
     },
+    "start": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "apps/desktop",
+        "command": "pnpm tauri build --no-bundle && ./src-tauri/target/release/chess-desktop"
+      }
+    },
     "bundle-macos": {
       "executor": "nx:run-commands",
       "cache": false,

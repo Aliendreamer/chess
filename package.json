@@ -11,6 +11,7 @@
     "prepare": "husky",
     "pnpm:upgrade": "corepack prepare pnpm@latest --activate && corepack use pnpm@latest",
     "desktop": "nx run desktop:dev",
+    "desktop:release": "nx run desktop:start",
     "desktop:bundle": "nx run desktop:bundle",
     "lint:md": "markdownlint-cli2",
     "lint:md:fix": "markdownlint-cli2 --fix",
