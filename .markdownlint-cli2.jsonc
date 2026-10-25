@@ -13,6 +13,8 @@
     "**/.nx/**",
     "**/bin/**",
     "**/obj/**",
+    "**/src-tauri/target/**",
+    "**/test-results/**",
     ".git",
     ".claude/skills/**",
     ".agents/**",
