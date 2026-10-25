@@ -10,6 +10,10 @@ pnpm-lock.yaml
 
 # Store-installed skills (setup-flow re-fetches them); not authored here.
 .claude/skills/
+.agents/
+.opencode/
+.codex/
+opencode.json
 
 # Plugin-installed slash commands (OpenSpec); not authored here either.
 .claude/commands/opsx/

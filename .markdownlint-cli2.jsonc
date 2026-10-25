@@ -2,7 +2,8 @@
   // Markdown lint config for THIS repo's authored docs. Run: pnpm lint:md (add :fix to auto-correct).
   // Mirrors the DnD ruleset. Vendored caches, build outputs, and generated specs are ignored.
   // `.claude/skills/**` is ignored: those are installed from the ai.skills store by setup-flow, not
-  // authored here. `.claude/commands/**` and CLAUDE.md are first-party and stay under the gate.
+  // authored here; likewise `.agents/`, `.opencode/`, `.codex/` (the Nx agent skills from `nx configure-ai-agents`).
+  // `.claude/commands/**` and CLAUDE.md are first-party and stay under the gate.
   // `openspec/**` stays out — it is generated and is governed by `openspec validate --strict` instead.
   "globs": ["**/*.md"],
   "ignores": [
@@ -14,6 +15,9 @@
     "**/obj/**",
     ".git",
     ".claude/skills/**",
+    ".agents/**",
+    ".opencode/**",
+    ".codex/**",
     ".claude/commands/opsx/**",
     ".claude/loop.md",
     ".github/**",
