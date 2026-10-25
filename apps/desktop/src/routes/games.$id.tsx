@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { createFileRoute, notFound, useNavigate } from '@tanstack/react-router'
+import { use, useCallback, useEffect, useState } from 'react'
+import { createFileRoute, notFound, useNavigate, useRouter } from '@tanstack/react-router'
 import {
   STANDARD_START,
   clickSquare,
@@ -13,13 +13,14 @@ import {
 import {
   Board,
   Button,
-  Chip,
-  EngineLine,
+  EngineLines,
   ErrorText,
   EvalBar,
+  EvaluationTicks,
   MoveList,
   MoveNav,
   Panel,
+  PreferencesContext,
   PromotionPicker,
   REVIEW_POLL_MS,
   ReviewPanel,
@@ -29,7 +30,7 @@ import {
   useCommand,
   useReview,
 } from '@chess/ui'
-import type { PreviewState } from '@chess/ui'
+import type { EvaluationShown, PreviewState } from '@chess/ui'
 import type { EngineStatus } from '#/lib/engine'
 import { GameEndPanel, PlayerLine } from '#/components/play'
 import {
@@ -42,21 +43,13 @@ import {
   toMove,
 } from '#/lib/data/play'
 import { loadReview, reviewable, runReview, startReview } from '#/lib/data/review'
-import { getSetting, setSetting } from '#/lib/data/settings'
-
-/** What the player shows while playing; both come from the second Stockfish, so both start off. Kept in settings. */
-interface EvaluationShown {
-  bar: boolean
-  line: boolean
-}
-const SHOWN_KEY = 'play.evaluation'
-const NOTHING_SHOWN: EvaluationShown = { bar: false, line: false }
+import { updatePreferences } from '#/lib/data/settings'
 
 export const Route = createFileRoute('/games/$id')({
   loader: async ({ context: { app }, params }) => {
     const game = await loadGame(app.db, params.id)
     if (!game) throw notFound()
-    return { game, shown: await getSetting(app.db, SHOWN_KEY, NOTHING_SHOWN) }
+    return game
   },
   component: GamePage,
 })
@@ -70,7 +63,9 @@ type Promotion = 'q' | 'r' | 'b' | 'n'
  */
 function GamePage() {
   const { app } = Route.useRouteContext()
-  const { game: loaded, shown: shownAtStart } = Route.useLoaderData()
+  const loaded = Route.useLoaderData()
+  const prefs = use(PreferencesContext)
+  const router = useRouter()
   const navigate = useNavigate()
   const [game, setGame] = useState(loaded)
   const [viewPly, setViewPly] = useState<number | null>(null)
@@ -127,8 +122,9 @@ function GamePage() {
       : null
   const fen = lined?.fen ?? fenAt(shownPly)
 
-  // The evaluation while playing: the position shown, asked of the second Stockfish at the quick think once it settles.
-  const [shown, setShown] = useState({ ...NOTHING_SHOWN, ...shownAtStart })
+  // The evaluation while playing (the preferences' play switches, both off by default): the position shown, asked of
+  // the second Stockfish at the quick think once it settles.
+  const [shown, setShown] = useState<EvaluationShown>({ bar: prefs.playBar, line: prefs.playLines })
   const evaluating = shown.bar || shown.line
   const [request] = useState(
     () => (input: Parameters<typeof app.evaluator.request>[0]) => app.evaluator.request(input),
@@ -138,7 +134,9 @@ function GamePage() {
   const evaluation = evaluating ? analysis.evaluationOf(fen) : null
   function show(next: EvaluationShown) {
     setShown(next)
-    void setSetting(app.db, SHOWN_KEY, next)
+    void updatePreferences(app.db, { playBar: next.bar, playLines: next.line }).then(() =>
+      router.invalidate(),
+    )
   }
   const live = viewPly === null || viewPly === game.ply
   const myTurn = game.status === 'playing' && toMove(game) === game.personColor && live
@@ -230,7 +228,12 @@ function GamePage() {
           color={game.personColor}
           toMove={game.status === 'playing' && toMove(game) === game.personColor}
         />
-        {shown.line ? <EngineLine fen={fen} evaluation={evaluation} /> : null}
+        <EvaluationTicks
+          shown={shown}
+          onChange={show}
+          note="These run a second Stockfish beside the one you play: it keeps a processor core busy, which can slow a weaker machine."
+        />
+        {shown.line ? <EngineLines fen={fen} evaluation={evaluation} /> : null}
       </div>
       <aside className="flex flex-col gap-4">
         {status ? (
@@ -239,22 +242,6 @@ function GamePage() {
           </p>
         ) : null}
         {engineError ? <ErrorText>{engineError}</ErrorText> : null}
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Show while playing">
-            <Chip selected={shown.bar} onClick={() => show({ ...shown, bar: !shown.bar })}>
-              Evaluation bar
-            </Chip>
-            <Chip selected={shown.line} onClick={() => show({ ...shown, line: !shown.line })}>
-              Best line
-            </Chip>
-          </div>
-          {evaluating ? (
-            <p className="m-0 text-xs text-fg-muted" data-testid="evaluation-warning">
-              These run a second Stockfish beside the one you play: it keeps a processor core busy,
-              which can slow a weaker machine.
-            </p>
-          ) : null}
-        </div>
         {command.error ? <ErrorText>{command.error}</ErrorText> : null}
         <MoveList
           sans={game.moves.map((m) => m.san)}

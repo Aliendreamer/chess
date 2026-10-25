@@ -42,6 +42,29 @@ describe('the analysis board (desktop-app)', () => {
     await waitFor(() => expect(document.body.textContent).toContain('+0.31'))
   })
 
+  it('ticks the evaluation bar and the best moves, and remembers unticking them', async () => {
+    const s = await app()
+    await storeEvaluation(s.db, positionKey(STANDARD_START), {
+      thinkMs: 10_000,
+      depth: 30,
+      lines: [{ cp: 20, mate: null, pv: ['e2e4'] }],
+    })
+    await renderApp('/analysis', s)
+    const bar = await screen.findByRole<HTMLInputElement>('checkbox', { name: 'Evaluation bar' })
+    const lines = screen.getByRole<HTMLInputElement>('checkbox', { name: 'Best moves' })
+    expect([bar.checked, lines.checked]).toEqual([true, true])
+    expect(await screen.findByRole('img', { name: 'Evaluation +0.20' })).toBeTruthy()
+    expect(screen.queryByTestId('evaluation-warning')).toBeNull()
+
+    fireEvent.click(lines)
+    await waitFor(() => expect(screen.queryByTestId('analysis-panel')).toBeNull())
+    cleanup()
+    await renderApp('/analysis', s)
+    const again = await screen.findByRole<HTMLInputElement>('checkbox', { name: 'Best moves' })
+    expect(again.checked).toBe(false)
+    expect(screen.getByTestId('eval-bar')).toBeTruthy()
+  })
+
   it('refuses a game still in play', async () => {
     const s = await app()
     const game = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { use, useState } from 'react'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import {
   STANDARD_START,
   engineName,
@@ -20,6 +20,7 @@ import {
   ErrorText,
   Panel,
   PositionPanel,
+  PreferencesContext,
   SectionHeading,
   analysisTitle,
   useAdoptTyped,
@@ -30,10 +31,13 @@ import {
   useOpeningName,
 } from '@chess/ui'
 import type { ParsedGame, StudyMove } from '@chess/core'
+import type { EvaluationShown } from '@chess/ui'
+import type { AppServices } from '#/lib/app'
 import { PERSON_NAME, loadGame } from '#/lib/data/play'
 import { openingNames } from '#/lib/data/openings'
 import { createStudies } from '#/lib/data/studies'
 import { libraryGame, libraryPosition } from '#/lib/data/library'
+import { updatePreferences } from '#/lib/data/settings'
 
 interface Start {
   startFen: string
@@ -59,7 +63,21 @@ export const Route = createFileRoute('/analysis')({
       : {}),
   }),
   loaderDeps: ({ search: { fen, game, library, ply } }) => ({ fen, game, library, ply }),
-  loader: async ({ context: { app }, deps }): Promise<Start> => {
+  loader: ({ context: { app }, deps }) => startOf(app, deps),
+  component: AnalysisPage,
+})
+
+/** Where the board starts: a library game, a finished game, a FEN, or the standard position. */
+async function startOf(
+  app: AppServices,
+  deps: {
+    fen?: string | undefined
+    game?: string | undefined
+    library?: string | undefined
+    ply?: number | undefined
+  },
+): Promise<Start> {
+  {
     if (deps.library) {
       const found = await libraryGame(app.db, deps.library)
       if (!found)
@@ -96,9 +114,8 @@ export const Route = createFileRoute('/analysis')({
     if (deps.fen !== undefined && !isFen(deps.fen))
       return { startFen: STANDARD_START, tree: [], error: 'That is not a legal position.' }
     return { startFen: deps.fen ?? STANDARD_START, tree: [], error: null }
-  },
-  component: AnalysisPage,
-})
+  }
+}
 
 function AnalysisPage() {
   const start = Route.useLoaderData()
@@ -113,6 +130,19 @@ function AnalysisPage() {
 
 function Analysis({ start }: { start: Start }) {
   const { app } = Route.useRouteContext()
+  // The evaluation bar and the best moves (the preferences' analysis switches, both on by default).
+  const prefs = use(PreferencesContext)
+  const router = useRouter()
+  const [shown, setShown] = useState<EvaluationShown>({
+    bar: prefs.analysisBar,
+    line: prefs.analysisLines,
+  })
+  function show(next: EvaluationShown) {
+    setShown(next)
+    void updatePreferences(app.db, { analysisBar: next.bar, analysisLines: next.line }).then(() =>
+      router.invalidate(),
+    )
+  }
   const editor = useMoveTree(start.startFen, start.tree, start.path ?? lineEnd(start.tree, []))
   // The line's positions (start excluded) name the opening.
   const keys = editor.path.map((_, i) =>
@@ -191,6 +221,8 @@ function Analysis({ start }: { start: Start }) {
       editor={editor}
       analysis={analysis}
       editable
+      shown={shown}
+      onShown={show}
       aside={
         atPosition && atPosition.games > 0 ? (
           <PositionPanel

@@ -59,52 +59,56 @@ describe('playing the computer (desktop-app)', () => {
     expect(moves.textContent).toContain('e4')
   })
 
-  it('shows the evaluation bar and the best line only when switched on, warning what they cost', async () => {
+  it('shows the evaluation bar and the best moves only when ticked, warning what they cost', async () => {
     const s = await app()
     await storeEvaluation(s.db, positionKey(STANDARD_START), {
       thinkMs: 10_000,
       depth: 20,
-      lines: [{ cp: 35, mate: null, pv: ['e2e4', 'e7e5', 'g1f3'] }],
+      lines: [
+        { cp: 35, mate: null, pv: ['e2e4', 'e7e5', 'g1f3'] },
+        { cp: 30, mate: null, pv: ['d2d4', 'd7d5'] },
+      ],
     })
     const game = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
     await renderApp(`/games/${game.id}`, s)
-    const bar = await screen.findByRole('button', { name: 'Evaluation bar' })
-    const line = screen.getByRole('button', { name: 'Best line' })
+    const bar = await screen.findByRole<HTMLInputElement>('checkbox', { name: 'Evaluation bar' })
+    const line = screen.getByRole<HTMLInputElement>('checkbox', { name: 'Best moves' })
+    expect([bar.checked, line.checked]).toEqual([false, false])
     expect(screen.queryByTestId('eval-bar')).toBeNull()
-    expect(screen.queryByTestId('engine-line')).toBeNull()
+    expect(screen.queryByTestId('engine-lines')).toBeNull()
     expect(screen.queryByTestId('evaluation-warning')).toBeNull()
 
     fireEvent.click(bar)
-    expect(
-      (await screen.findByRole('img', { name: 'Evaluation +0.35' })).dataset['testid'],
-    ).toBe('eval-bar')
+    expect((await screen.findByRole('img', { name: 'Evaluation +0.35' })).dataset['testid']).toBe(
+      'eval-bar',
+    )
     expect(screen.getByTestId('evaluation-warning').textContent).toContain('second Stockfish')
-    expect(screen.queryByTestId('engine-line')).toBeNull()
+    expect(screen.queryByTestId('engine-lines')).toBeNull()
 
     fireEvent.click(line)
     await waitFor(() =>
-      expect(screen.getByTestId('engine-line').textContent).toBe('+0.35e4 e5 Nf3'),
+      expect(screen.getAllByTestId('engine-line').map((l) => l.textContent)).toEqual([
+        '+0.35e4 e5 Nf3',
+        '+0.30d4 d5',
+      ]),
     )
     fireEvent.click(bar)
     await waitFor(() => expect(screen.queryByTestId('eval-bar')).toBeNull())
-    expect(screen.getByTestId('engine-line')).toBeTruthy()
+    expect(screen.getByTestId('engine-lines')).toBeTruthy()
   })
 
   it('remembers the evaluation switches for the next game', async () => {
     const s = await app()
     const first = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
     await renderApp(`/games/${first.id}`, s)
-    fireEvent.click(await screen.findByRole('button', { name: 'Best line' }))
-    await screen.findByTestId('engine-line')
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Best moves' }))
+    await screen.findByTestId('engine-lines')
     cleanup()
     const second = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
     await renderApp(`/games/${second.id}`, s)
-    expect(
-      (await screen.findByRole('button', { name: 'Best line' })).getAttribute('aria-pressed'),
-    ).toBe('true')
-    expect(screen.getByRole('button', { name: 'Evaluation bar' }).getAttribute('aria-pressed')).toBe(
-      'false',
-    )
+    const line = await screen.findByRole<HTMLInputElement>('checkbox', { name: 'Best moves' })
+    const bar = screen.getByRole<HTMLInputElement>('checkbox', { name: 'Evaluation bar' })
+    expect([bar.checked, line.checked]).toEqual([false, true])
   })
 
   it('offers a finished game’s PGN and a new game', async () => {
