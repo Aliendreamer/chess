@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 const script = fileURLToPath(new URL("./publish.sh", import.meta.url));
 
 /** A bin folder with `gh` (the release exists or not) and `git` (the tag pushed or not), and a bundle folder. */
-function setup({ released, pushed, installers = true }) {
+function setup({ released, pushed, installers = true, mac = false }) {
   const dir = mkdtempSync(join(tmpdir(), "publish-"));
   const bin = join(dir, "bin");
   mkdirSync(bin);
@@ -29,11 +29,17 @@ function setup({ released, pushed, installers = true }) {
     writeFileSync(join(bundle, "deb", "Chess_1.2.0_amd64.deb"), "");
     writeFileSync(join(bundle, "deb", "Chess_1.1.0_amd64.deb"), ""); // another version: never uploaded
   }
+  // A Mac builds `--target universal-apple-darwin`, so its bundle folder is under that target.
+  const universal = join(dir, "universal");
+  mkdirSync(join(universal, "dmg"), { recursive: true });
+  if (mac)
+    writeFileSync(join(universal, "dmg", "Chess_1.2.0_universal.dmg"), "");
   return {
     env: {
       ...process.env,
       PATH: `${bin}:${process.env.PATH}`,
       BUNDLE_DIR: bundle,
+      UNIVERSAL_BUNDLE_DIR: universal,
     },
   };
 }
@@ -91,5 +97,22 @@ test(
     );
     assert.equal(empty.status, 1);
     assert.match(empty.stderr, /no installers/);
+  },
+);
+
+test(
+  "a Mac uploads its universal disk image",
+  { skip: process.platform === "win32" },
+  () => {
+    const r = run(
+      setup({ released: true, pushed: true, installers: false, mac: true }),
+      "1.2.0",
+      "--dry-run",
+    );
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(
+      r.stdout,
+      /^gh release upload desktop@1\.2\.0 \S*Chess_1\.2\.0_universal\.dmg --clobber/m,
+    );
   },
 );

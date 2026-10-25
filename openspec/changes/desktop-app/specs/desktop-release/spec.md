@@ -11,11 +11,17 @@ A change to a shared library the app uses SHALL count towards its next version. 
 - **WHEN** a `fix(libs): …` commit changes `libs/chess-ui` after `desktop@1.0.0`
 - **THEN** the next release of the app is 1.0.1 and its changelog lists the fix
 
-### Requirement: Installers are built locally for Windows and Linux
+### Requirement: Installers are built locally for Windows, Linux and macOS
 
 `nx run desktop:bundle` SHALL build the installers for the machine it runs on: AppImage and .deb on Linux, NSIS .exe
-and .msi on Windows, each containing the pinned Stockfish for that platform. Nothing SHALL be built or published by a
-CI pipeline.
+and .msi on Windows, each containing the pinned Stockfish for that platform. On a Mac, `nx run desktop:bundle-macos`
+SHALL build one universal .dmg (Apple Silicon and Intel) with the universal Stockfish, ad-hoc signed. Nothing SHALL be
+built or published by a CI pipeline.
+
+#### Scenario: A Mac build
+
+- **WHEN** `nx run desktop:bundle-macos` runs on a Mac with the Xcode Command Line Tools
+- **THEN** it makes `Chess_<version>_universal.dmg`, and `publish.sh <version>` adds it to the release
 
 #### Scenario: A tampered Stockfish download
 
@@ -31,7 +37,8 @@ the Linux and Windows builds end up on one release. Running it is the owner's ac
 #### Scenario: Two machines, one release
 
 - **WHEN** the owner publishes 1.2.0 from WSL and then from the Windows-side clone
-- **THEN** the release `desktop@1.2.0` holds the AppImage, the .deb, the .exe and the .msi
+- **THEN** the release `desktop@1.2.0` holds the AppImage, the .deb, the .exe and the .msi (and the .dmg once a Mac
+  has published)
 
 ### Requirement: The installers carry the licences
 

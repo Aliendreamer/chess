@@ -31,7 +31,8 @@ lines of the logic the app needs live only in C# (`Review/GameReviewer`, `Traine
 **Non-Goals:**
 
 - Play against people, accounts, sync with the club or between machines.
-- macOS, an auto-updater, code signing (Windows SmartScreen will warn on an unsigned installer).
+- an auto-updater, code signing (Windows SmartScreen warns on an unsigned installer; macOS gets only an ad-hoc
+  signature, D13).
 - Lichess broadcast games, the admin screens, observability, the e2e suite for the desktop app.
 - Any change to `apps/backend` or `apps/engine`; their C# logic stays and is not generated from the TS.
 
@@ -206,6 +207,19 @@ loads it behind the first screen, again only when its hash changes, and only add
 the player's copy (the bundled training points at it), and nothing of the player's is changed. The miner starts after
 it. The games file keeps CC BY-SA 4.0 for the broadcast games (credited on About and per game); the MIT code is
 unaffected. `tools/library/SOURCES.md` allows this one committed file.
+
+### D13. macOS, built on a Mac
+
+Owner, 2026-10-25: a friend with a Mac builds it. A Mac build needs macOS (Apple's SDK and linker, the Xcode Command
+Line Tools); nothing cross-compiles from WSL or Windows. Stockfish 19 ships one universal macOS binary (arm64 +
+x86_64, `stockfish-macos-universal.tar.gz`, SHA-256 pinned), so `stockfish.json` maps `aarch64-apple-darwin`,
+`x86_64-apple-darwin` (what `tauri dev` asks for on each Mac) and `universal-apple-darwin` to it. `nx run
+desktop:bundle-macos` builds `--target universal-apple-darwin`: one .dmg for every Mac. `bundle.macOS.signingIdentity`
+is `-` (ad-hoc: Apple Silicon runs only signed code; no Apple Developer account), so the first open goes through
+System Settings → Privacy & Security → Open Anyway. `minimumSystemVersion` 12.0: the bundled library is unzipped with
+`DecompressionStream` (WebKit 16.4+, which Monterey and later receive with Safari updates). `publish.sh` also uploads
+the .dmg from the universal target's bundle folder; the friend either has push rights or hands the .dmg to the owner,
+who runs `gh release upload desktop@<version> <file>`.
 
 ## Migration Plan
 

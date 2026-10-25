@@ -119,6 +119,11 @@ machine, a release), with the command that proves it.
       prints the `gh` commands for an existing and a new release, checked by a shell test.
 - [x] 6.3 CLAUDE.md, ROADMAP Part 7 and the project memory updated; `apps/desktop/README.md` (toolchain: Rust,
       WebKitGTK 4.1 on Linux, WebView2 on Windows; smoke list; how to release).
+- [x] 6.5 macOS prepared (design D13): the universal Stockfish pinned for the three Mac targets, `bundle-macos`
+      (`--target universal-apple-darwin`), `app` + `dmg` targets, ad-hoc signing, macOS 12+, `publish.sh` uploads the
+      .dmg, README for the Mac builder. Test first: the manifest pins every Mac target to the one universal build; a
+      dry run uploads `Chess_<v>_universal.dmg`. **[human]** the friend's Mac runs `nx run desktop:bundle-macos` and
+      the app opens (Open Anyway), plays and analyses.
 - [ ] 6.4 **[human]** First release: `pnpm exec nx release version 1.0.0 --projects desktop`, changelog, tag; bundle
       on both machines; `tools/desktop/publish.sh 1.0.0` on each. Proof: `gh release view desktop@1.0.0` lists four
       installers.

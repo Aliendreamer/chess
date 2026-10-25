@@ -37,6 +37,12 @@ const out = resolve(
 const target = args.target ?? hostTriple();
 
 function hostTriple() {
+  // A Mac takes its own architecture's triple (what `tauri dev` and a plain build ask for); the release bundle
+  // asks for --target universal-apple-darwin. All three are the same universal binary.
+  if (process.platform === "darwin")
+    return process.arch === "arm64"
+      ? "aarch64-apple-darwin"
+      : "x86_64-apple-darwin";
   if (process.arch !== "x64")
     throw new Error(
       `No pinned Stockfish for ${process.platform}/${process.arch}.`,

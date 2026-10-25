@@ -26,7 +26,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["appimage", "deb", "nsis", "msi"],
+    "targets": ["appimage", "deb", "nsis", "msi", "app", "dmg"],
     "category": "BoardGame",
     "shortDescription": "Play the computer, learn and analyse chess, offline",
     "icon": [
@@ -43,6 +43,10 @@
       "../LICENSE": "LICENSE"
     },
     "licenseFile": "../LICENSE",
+    "macOS": {
+      "signingIdentity": "-",
+      "minimumSystemVersion": "12.0"
+    },
     "copyright": "Copyright (c) 2026 Aliendreamer \u2014 MIT; Stockfish: GPLv3"
   }
 }

@@ -18,7 +18,8 @@ An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding five apps a
 - `apps/proxy` — nginx edge for deployment (`/api/` → backend, `/` → frontend, `/hc` local 200).
 - `apps/desktop` — the standalone, offline Tauri 2 app for one player (`chess-desktop`, OpenSpec `desktop-app`): play
   Stockfish (bundled sidecar), analysis, review, studies, trainer, training, library, news; SQLite on the machine.
-  Windows + Linux installers built locally and published to GitHub Releases by the owner (no CI). See its README.
+  Windows + Linux installers built locally and published to GitHub Releases by the owner (no CI); macOS as one universal
+  .dmg built on a friend's Mac (`nx run desktop:bundle-macos`). See its README.
 - `libs/chess-core` (`@chess/core`) — pure TypeScript chess logic both TS apps use (rules feedback, move tree and PGN,
   review, Leitner schedule, trainer families, training judge, library import, feed parsers); no React, DOM or router.
 - `libs/chess-ui` (`@chess/ui`) — presentational React both apps show (board, move list/tree, review, analysis,

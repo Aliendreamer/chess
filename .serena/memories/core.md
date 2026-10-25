@@ -201,3 +201,12 @@ each game's position keys) → `lib/data/bundled.ts` (loaded by hash, only adds,
 chess.js `move()` costs ~215 µs a ply, so replaying 270k plies takes a minute — keys are precomputed at export
 (`prepareImport(…, keys)`; Node 24 imports `@chess/core`'s `.ts` directly); load is ~5 s. Tauri: a resource folder
 named like the sidecar (`stockfish/`) fails the build with "File exists" — the licences go to `stockfish-licence/`.
+
+## 2026-10-25 — desktop: macOS prepared (a friend's Mac builds it)
+
+Design D13 / task 6.5: Stockfish 19 has one universal macOS binary (`stockfish-macos-universal.tar.gz`), pinned for
+`aarch64-`, `x86_64-` and `universal-apple-darwin`; `nx run desktop:bundle-macos` = `--target universal-apple-darwin`
+→ one .dmg; ad-hoc signing (`signingIdentity: "-"`), macOS 12+; `publish.sh` also globs the universal bundle's dmg;
+README "Building on a Mac". Only a Mac builds for macOS (Xcode Command Line Tools suffice). Found the same day: the
+CSP's `connect-src` lacked `'self'`, which would block the bundled library's fetch, and Vite's dev server sends `.gz`
+with `Content-Encoding: gzip` (the loader unzips only on the gzip magic bytes).

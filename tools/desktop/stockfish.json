@@ -1,5 +1,5 @@
 {
-  "$comment": "The Stockfish the desktop app ships (desktop-app D5): the unmodified official release, SHA-256 pinned. Bump tag, urls and hashes together; the Linux pin is the engine image's.",
+  "$comment": "The Stockfish the desktop app ships (desktop-app D5): the unmodified official release, SHA-256 pinned. Bump tag, urls and hashes together; the Linux pin is the engine image's. The macOS build is one universal binary (arm64 + x86_64): every Mac target, and Tauri's universal-apple-darwin, takes it (D13).",
   "tag": "sf_19",
   "source": "https://github.com/official-stockfish/Stockfish/tree/sf_19",
   "sourceArchive": "https://github.com/official-stockfish/Stockfish/archive/refs/tags/sf_19.tar.gz",
@@ -13,6 +13,21 @@
       "url": "https://github.com/official-stockfish/Stockfish/releases/download/sf_19/stockfish-windows-x86-64-universal.zip",
       "sha256": "3c8bf1f9ea66a09350a40df4f632288285ac206d99f33ab5842c408fc30b48a7",
       "binary": "stockfish/stockfish-windows-x86-64-universal.exe"
+    },
+    "aarch64-apple-darwin": {
+      "url": "https://github.com/official-stockfish/Stockfish/releases/download/sf_19/stockfish-macos-universal.tar.gz",
+      "sha256": "a1f0e3bcc5a6927a11fe6fc8e54a779754645f3c2bae2cf13420fd1957adaa77",
+      "binary": "stockfish/stockfish-macos-universal"
+    },
+    "x86_64-apple-darwin": {
+      "url": "https://github.com/official-stockfish/Stockfish/releases/download/sf_19/stockfish-macos-universal.tar.gz",
+      "sha256": "a1f0e3bcc5a6927a11fe6fc8e54a779754645f3c2bae2cf13420fd1957adaa77",
+      "binary": "stockfish/stockfish-macos-universal"
+    },
+    "universal-apple-darwin": {
+      "url": "https://github.com/official-stockfish/Stockfish/releases/download/sf_19/stockfish-macos-universal.tar.gz",
+      "sha256": "a1f0e3bcc5a6927a11fe6fc8e54a779754645f3c2bae2cf13420fd1957adaa77",
+      "binary": "stockfish/stockfish-macos-universal"
     }
   }
 }

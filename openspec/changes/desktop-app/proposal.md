@@ -9,7 +9,7 @@ ours behind it. This is ROADMAP Part 7, the "everything standalone" option reduc
 
 For a player:
 
-- A desktop app for **Windows and Linux**, installed from a versioned GitHub Release (`desktop@1.0.0` first), that
+- A desktop app for **Windows and Linux** (and **macOS**, built on a friend's Mac: design D13), installed from a versioned GitHub Release (`desktop@1.0.0` first), that
   works with no account, no login and no server. One local player; everything is stored on the machine.
 - **Play the computer**: the five levels (Casual … Maximum), untimed, resign and a new game, PGN of every game, the
   game list.
@@ -45,7 +45,7 @@ In the code:
 - Commit scopes gain `desktop` and `libs`.
 
 Out of scope: play against people (matchmaking, rematches, challenges, members, presence), accounts and login,
-a lichess broadcast importer (the club's library, broadcasts included, ships with the app: design D12), sync between machines or with the club, macOS, an auto-updater, code signing,
+a lichess broadcast importer (the club's library, broadcasts included, ships with the app: design D12), sync between machines or with the club, an auto-updater, code signing (macOS gets an ad-hoc signature only),
 the admin screens, observability, and any change to the backend or the engine worker.
 
 ## Capabilities

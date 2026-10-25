@@ -15,6 +15,8 @@ dry=0
 [[ "${2:-}" == "--dry-run" ]] && dry=1
 tag="desktop@${version}"
 bundle="${BUNDLE_DIR:-apps/desktop/src-tauri/target/release/bundle}"
+# A Mac bundles --target universal-apple-darwin (desktop-app D13), which Tauri writes under that target.
+universal="${UNIVERSAL_BUNDLE_DIR:-apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle}"
 
 shopt -s nullglob
 files=(
@@ -22,6 +24,7 @@ files=(
   "$bundle"/deb/*_"${version}"_*.deb
   "$bundle"/nsis/*_"${version}"_*-setup.exe
   "$bundle"/msi/*_"${version}"_*.msi
+  "$universal"/dmg/*_"${version}"_*.dmg
 )
 if [[ ${#files[@]} -eq 0 ]]; then
   echo "publish: no installers of ${version} under ${bundle}; run nx run desktop:bundle first" >&2

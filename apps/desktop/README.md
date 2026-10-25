@@ -2,7 +2,7 @@
 
 The standalone app for one player (OpenSpec change `desktop-app`): play Stockfish, analyse and review games, keep
 studies, train openings and positions, keep a library of PGN games, and read the chess news. Everything is stored on the
-machine; nothing needs a server. Windows and Linux.
+machine; nothing needs a server. Windows, Linux and macOS.
 
 ## Toolchain
 
@@ -12,6 +12,8 @@ machine; nothing needs a server. Windows and Linux.
 libayatana-appindicator3-dev librsvg2-dev pkg-config`. WSL shows the window through WSLg.
 - Windows: the Microsoft C++ Build Tools and WebView2 (present on Windows 10/11). Build from a Windows-side clone, never
   over `\\wsl$`.
+- macOS: the Xcode Command Line Tools (`xcode-select --install`; the full Xcode is not needed) and both Mac targets
+  for Rust: `rustup target add aarch64-apple-darwin x86_64-apple-darwin`. Only a Mac can build for macOS.
 
 ## Commands
 
@@ -21,6 +23,7 @@ pnpm exec nx run desktop:test      # vitest (data layer, engine client, pages) a
 pnpm exec nx run desktop:lint      # typecheck, eslint, prettier
 pnpm exec nx run desktop:build     # the web part only (dist/)
 pnpm exec nx run desktop:bundle    # the installers of this machine (AppImage + .deb, or .exe + .msi)
+pnpm exec nx run desktop:bundle-macos  # on a Mac: one universal .dmg for Apple Silicon and Intel
 ```
 
 Stockfish is the pinned official `sf_19` build (`tools/desktop/stockfish.json`, SHA-256 checked) fetched into
@@ -65,3 +68,18 @@ See `openspec/changes/desktop-app/design.md` D8. In short: `pnpm exec nx release
 (changelog and tag), `pnpm exec nx run desktop:bundle` on each machine, then `tools/desktop/publish.sh <version>` on
 each to put its installers on the GitHub Release `desktop@<version>`. Installers are not signed: Windows SmartScreen
 asks once.
+
+## Building on a Mac
+
+For whoever builds the macOS version (design D13):
+
+1. Install Node 24, then `corepack enable`; the Xcode Command Line Tools; Rust (`rustup`) and its two Mac targets
+   (above).
+2. Clone the repository, check out the release tag (`git checkout desktop@<version>`), and run `pnpm install`.
+3. `pnpm exec nx run desktop:dev` to try it, then `pnpm exec nx run desktop:bundle-macos`. The disk image is
+   `apps/desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg/Chess_<version>_universal.dmg`.
+4. With push rights, `tools/desktop/publish.sh <version>` adds it to the release; otherwise hand the file to the
+   owner, who runs `gh release upload desktop@<version> Chess_<version>_universal.dmg`.
+
+The app is signed ad hoc only (no Apple Developer account), so macOS refuses the first open: open it once, then System
+Settings → Privacy & Security → "Open Anyway". It needs macOS 12 or later with current Safari updates.

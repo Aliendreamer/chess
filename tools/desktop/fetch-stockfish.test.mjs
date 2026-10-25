@@ -107,3 +107,22 @@ test(
     assert.match(run(f).stdout, /is in place/);
   },
 );
+
+test("every Mac target is pinned to the one universal macOS build", () => {
+  const manifest = JSON.parse(
+    readFileSync(new URL("./stockfish.json", import.meta.url), "utf8"),
+  );
+  const mac = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "universal-apple-darwin",
+  ].map((t) => manifest.targets[t]);
+  for (const pin of mac) {
+    assert.match(
+      pin?.url ?? "",
+      /\/sf_19\/stockfish-macos-universal\.tar\.gz$/,
+    );
+    assert.equal(pin.binary, "stockfish/stockfish-macos-universal");
+  }
+  assert.equal(new Set(mac.map((p) => p.sha256)).size, 1);
+});

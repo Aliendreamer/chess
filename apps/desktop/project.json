@@ -20,6 +20,14 @@
       "cache": false,
       "options": { "cwd": "apps/desktop", "command": "pnpm tauri build" }
     },
+    "bundle-macos": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "apps/desktop",
+        "command": "pnpm fetch-stockfish --target universal-apple-darwin && pnpm tauri build --target universal-apple-darwin"
+      }
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": { "cwd": "apps/desktop", "command": "pnpm test" }
