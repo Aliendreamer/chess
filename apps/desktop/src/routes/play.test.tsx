@@ -1,7 +1,9 @@
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { STANDARD_START, positionKey } from '@chess/core'
 import { fakeServices, renderApp } from '#/testing'
 import { createGame, resign } from '#/lib/data/play'
+import { storeEvaluation } from '#/lib/data/analysis'
 
 // jsdom has no layout: react-chessboard cannot measure a square to animate a move, so the board is told to skip it.
 beforeAll(() => {
@@ -55,6 +57,54 @@ describe('playing the computer (desktop-app)', () => {
     const moves = await screen.findByTestId('move-list')
     await waitFor(() => expect(moves.textContent).toContain('e5'))
     expect(moves.textContent).toContain('e4')
+  })
+
+  it('shows the evaluation bar and the best line only when switched on, warning what they cost', async () => {
+    const s = await app()
+    await storeEvaluation(s.db, positionKey(STANDARD_START), {
+      thinkMs: 10_000,
+      depth: 20,
+      lines: [{ cp: 35, mate: null, pv: ['e2e4', 'e7e5', 'g1f3'] }],
+    })
+    const game = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    await renderApp(`/games/${game.id}`, s)
+    const bar = await screen.findByRole('button', { name: 'Evaluation bar' })
+    const line = screen.getByRole('button', { name: 'Best line' })
+    expect(screen.queryByTestId('eval-bar')).toBeNull()
+    expect(screen.queryByTestId('engine-line')).toBeNull()
+    expect(screen.queryByTestId('evaluation-warning')).toBeNull()
+
+    fireEvent.click(bar)
+    expect(
+      (await screen.findByRole('img', { name: 'Evaluation +0.35' })).dataset['testid'],
+    ).toBe('eval-bar')
+    expect(screen.getByTestId('evaluation-warning').textContent).toContain('second Stockfish')
+    expect(screen.queryByTestId('engine-line')).toBeNull()
+
+    fireEvent.click(line)
+    await waitFor(() =>
+      expect(screen.getByTestId('engine-line').textContent).toBe('+0.35e4 e5 Nf3'),
+    )
+    fireEvent.click(bar)
+    await waitFor(() => expect(screen.queryByTestId('eval-bar')).toBeNull())
+    expect(screen.getByTestId('engine-line')).toBeTruthy()
+  })
+
+  it('remembers the evaluation switches for the next game', async () => {
+    const s = await app()
+    const first = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    await renderApp(`/games/${first.id}`, s)
+    fireEvent.click(await screen.findByRole('button', { name: 'Best line' }))
+    await screen.findByTestId('engine-line')
+    cleanup()
+    const second = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    await renderApp(`/games/${second.id}`, s)
+    expect(
+      (await screen.findByRole('button', { name: 'Best line' })).getAttribute('aria-pressed'),
+    ).toBe('true')
+    expect(screen.getByRole('button', { name: 'Evaluation bar' }).getAttribute('aria-pressed')).toBe(
+      'false',
+    )
   })
 
   it('offers a finished game’s PGN and a new game', async () => {

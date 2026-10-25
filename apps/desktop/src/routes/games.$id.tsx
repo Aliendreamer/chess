@@ -13,7 +13,10 @@ import {
 import {
   Board,
   Button,
+  Chip,
+  EngineLine,
   ErrorText,
+  EvalBar,
   MoveList,
   MoveNav,
   Panel,
@@ -21,6 +24,8 @@ import {
   REVIEW_POLL_MS,
   ReviewPanel,
   previewLine,
+  useAnalysis,
+  useAutoEvaluate,
   useCommand,
   useReview,
 } from '@chess/ui'
@@ -37,12 +42,21 @@ import {
   toMove,
 } from '#/lib/data/play'
 import { loadReview, reviewable, runReview, startReview } from '#/lib/data/review'
+import { getSetting, setSetting } from '#/lib/data/settings'
+
+/** What the player shows while playing; both come from the second Stockfish, so both start off. Kept in settings. */
+interface EvaluationShown {
+  bar: boolean
+  line: boolean
+}
+const SHOWN_KEY = 'play.evaluation'
+const NOTHING_SHOWN: EvaluationShown = { bar: false, line: false }
 
 export const Route = createFileRoute('/games/$id')({
   loader: async ({ context: { app }, params }) => {
     const game = await loadGame(app.db, params.id)
     if (!game) throw notFound()
-    return game
+    return { game, shown: await getSetting(app.db, SHOWN_KEY, NOTHING_SHOWN) }
   },
   component: GamePage,
 })
@@ -56,7 +70,7 @@ type Promotion = 'q' | 'r' | 'b' | 'n'
  */
 function GamePage() {
   const { app } = Route.useRouteContext()
-  const loaded = Route.useLoaderData()
+  const { game: loaded, shown: shownAtStart } = Route.useLoaderData()
   const navigate = useNavigate()
   const [game, setGame] = useState(loaded)
   const [viewPly, setViewPly] = useState<number | null>(null)
@@ -112,6 +126,20 @@ function GamePage() {
       ? previewLine(fenAt(preview.ply - 1), previewMove.line, preview.upTo)
       : null
   const fen = lined?.fen ?? fenAt(shownPly)
+
+  // The evaluation while playing: the position shown, asked of the second Stockfish at the quick think once it settles.
+  const [shown, setShown] = useState({ ...NOTHING_SHOWN, ...shownAtStart })
+  const evaluating = shown.bar || shown.line
+  const [request] = useState(
+    () => (input: Parameters<typeof app.evaluator.request>[0]) => app.evaluator.request(input),
+  )
+  const analysis = useAnalysis(request, 'quick')
+  useAutoEvaluate(analysis, fen, evaluating)
+  const evaluation = evaluating ? analysis.evaluationOf(fen) : null
+  function show(next: EvaluationShown) {
+    setShown(next)
+    void setSetting(app.db, SHOWN_KEY, next)
+  }
   const live = viewPly === null || viewPly === game.ply
   const myTurn = game.status === 'playing' && toMove(game) === game.personColor && live
   const side = game.personColor === 'white' ? 'w' : 'b'
@@ -171,20 +199,25 @@ function GamePage() {
           color={top}
           toMove={game.status === 'playing' && toMove(game) === top}
         />
-        <Board
-          fen={fen}
-          orientation={game.personColor}
-          lastMove={lined ? lined.lastMove : uciSquares(game.moves[shownPly - 1]?.uci)}
-          selected={selected}
-          targets={selected && myTurn ? legalTargets(fen, selected) : []}
-          {...(myTurn
-            ? {
-                onSquareClick,
-                onDrop,
-                canDrag: (square: string) => pieceAt(fen, square)?.color === side,
-              }
-            : {})}
-        />
+        <div className="flex gap-2">
+          {shown.bar ? <EvalBar evaluation={evaluation} orientation={game.personColor} /> : null}
+          <div className="min-w-0 flex-1">
+            <Board
+              fen={fen}
+              orientation={game.personColor}
+              lastMove={lined ? lined.lastMove : uciSquares(game.moves[shownPly - 1]?.uci)}
+              selected={selected}
+              targets={selected && myTurn ? legalTargets(fen, selected) : []}
+              {...(myTurn
+                ? {
+                    onSquareClick,
+                    onDrop,
+                    canDrag: (square: string) => pieceAt(fen, square)?.color === side,
+                  }
+                : {})}
+            />
+          </div>
+        </div>
         {promotion ? (
           <PromotionPicker
             color={game.personColor}
@@ -197,6 +230,7 @@ function GamePage() {
           color={game.personColor}
           toMove={game.status === 'playing' && toMove(game) === game.personColor}
         />
+        {shown.line ? <EngineLine fen={fen} evaluation={evaluation} /> : null}
       </div>
       <aside className="flex flex-col gap-4">
         {status ? (
@@ -205,6 +239,22 @@ function GamePage() {
           </p>
         ) : null}
         {engineError ? <ErrorText>{engineError}</ErrorText> : null}
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Show while playing">
+            <Chip selected={shown.bar} onClick={() => show({ ...shown, bar: !shown.bar })}>
+              Evaluation bar
+            </Chip>
+            <Chip selected={shown.line} onClick={() => show({ ...shown, line: !shown.line })}>
+              Best line
+            </Chip>
+          </div>
+          {evaluating ? (
+            <p className="m-0 text-xs text-fg-muted" data-testid="evaluation-warning">
+              These run a second Stockfish beside the one you play: it keeps a processor core busy,
+              which can slow a weaker machine.
+            </p>
+          ) : null}
+        </div>
         {command.error ? <ErrorText>{command.error}</ErrorText> : null}
         <MoveList
           sans={game.moves.map((m) => m.san)}
