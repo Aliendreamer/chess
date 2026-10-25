@@ -40,6 +40,22 @@ test('a game against the computer: it thinks, answers, and takes no draw offers'
   await expect(page.getByTestId('engine-thinking')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Offer draw' })).toHaveCount(0)
 
+  // The evaluation while playing (evaluation-display): off until ticked, then the bar and the scored best moves.
+  const bar = page.getByRole('checkbox', { name: 'Evaluation bar' })
+  const lines = page.getByRole('checkbox', { name: 'Best moves' })
+  await expect(bar).not.toBeChecked()
+  await expect(page.getByTestId('eval-bar')).toHaveCount(0)
+  await bar.check()
+  await lines.check()
+  await expect(page.getByTestId('eval-bar')).toBeVisible()
+  await expect(page.getByTestId('engine-line').first()).toHaveText(/^([+-]?\d+\.\d\d|#-?\d+)/, {
+    timeout: 60_000,
+  })
+  // Kept on the account: unticked again so the other specs see the defaults.
+  await bar.uncheck()
+  await lines.uncheck()
+  await expect(page.getByTestId('engine-lines')).toHaveCount(0)
+
   await page.getByRole('button', { name: 'Resign' }).click()
   await expect(page.getByTestId('game-result')).toHaveText('0–1')
   await expect(page.getByTestId('result-panel')).toContainText('Resignation')

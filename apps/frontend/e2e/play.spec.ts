@@ -28,6 +28,9 @@ test('two players meet through quick pairing and play the fool’s mate', async 
 
   await bothEnded([white, black], '0–1', 'Checkmate')
   await expect(white.getByTestId('move-list')).toHaveText('1.f3e52.g4Qh4#')
+  // A game against a person never offers the engine's evaluation (evaluation-display).
+  await expect(white.getByTestId('evaluation-ticks')).toHaveCount(0)
+  await expect(black.getByTestId('eval-bar')).toHaveCount(0)
 })
 
 test('a player resigns after the opening moves', async ({ browser }) => {

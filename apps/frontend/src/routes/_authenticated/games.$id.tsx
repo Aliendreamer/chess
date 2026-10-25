@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import {
   UNTIMED,
   applyOptimistic,
@@ -19,15 +19,21 @@ import {
   Board,
   Button,
   CategoryMark,
+  EngineLines,
   ErrorText,
+  EvalBar,
+  EvaluationTicks,
   FlipIcon,
   MoveList,
   MoveNav,
+  PreferencesContext,
   PromotionPicker,
   REVIEW_POLL_MS,
   ReviewPanel,
   buttonClass,
   previewLine,
+  useAnalysis,
+  useAutoEvaluate,
   useCommand,
   useReview,
 } from '@chess/ui'
@@ -36,16 +42,18 @@ import type { LiveFrame } from '#/lib/live'
 import type { Me } from '#/lib/auth'
 import type { SquarePair } from '@chess/core'
 import type { InviteView } from '#/lib/play'
-import type { PreviewState } from '@chess/ui'
+import type { EvaluationShown, PreviewState } from '@chess/ui'
 import {
   getGameMoves,
   getGamePage,
   getGameSummary,
   getReview,
+  postAnalysis,
   postGameCommand,
   postRematch,
   postStartEngineGame,
   postStartReview,
+  putPreferences,
 } from '#/lib/server/api'
 import {
   PRESETS,
@@ -370,6 +378,28 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
       ? previewLine(positions[preview.ply - 1]?.fen ?? fen, previewMove.line, preview.upTo)
       : null
 
+  // The evaluation while playing the computer (evaluation-display): only to the person playing it, never in a game
+  // against a person; the preferences' play switches (off by default), the board's position at the quick think.
+  const evaluable = againstEngine && mine !== null
+  const prefs = use(PreferencesContext)
+  const router = useRouter()
+  const [evaluationShown, setEvaluationShown] = useState<EvaluationShown>({
+    bar: prefs.playBar,
+    line: prefs.playLines,
+  })
+  const boardFen = lined?.fen ?? shown?.fen ?? fen
+  const analysis = useAnalysis((input) => postAnalysis({ data: input }), 'quick')
+  const evaluating = evaluable && (evaluationShown.bar || evaluationShown.line)
+  useAutoEvaluate(analysis, boardFen, evaluating)
+  const evaluation = evaluating ? analysis.evaluationOf(boardFen) : null
+  async function showEvaluation(next: EvaluationShown) {
+    setEvaluationShown(next)
+    const saved = await putPreferences({
+      data: { ...prefs, playBar: next.bar, playLines: next.line },
+    })
+    if (saved.ok) await router.invalidate()
+  }
+
   const top = side === 'white' ? 'black' : 'white'
   const strip = (color: 'white' | 'black') => {
     const toMove = playing && current.sideToMove.toLowerCase() === color
@@ -392,34 +422,39 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
     <div className="grid grid-cols-1 items-start gap-6 shell:grid-cols-[minmax(0,var(--board-max))_minmax(0,380px)] shell:gap-8">
       <div className="flex max-w-(--board-max) flex-col gap-3">
         {strip(top)}
-        <div data-my-turn={myTurn} className="relative">
-          <Board
-            fen={lined?.fen ?? shown?.fen ?? fen}
-            orientation={side}
-            lastMove={lined ? lined.lastMove : shown ? shown.lastMove : lastMove}
-            {...(lined?.lastMove ? { arrows: [lined.lastMove] } : {})}
-            selected={shown ? null : selected}
-            targets={shown ? [] : targets}
-            premove={shown ? null : premove}
-            {...(shown || lined
-              ? { onSquareClick: () => go(Number.MAX_SAFE_INTEGER) }
-              : myTurn || premoves
-                ? { onSquareClick, onDrop, canDrag }
-                : {})}
-            onRightClick={() => setPremove(null)}
-          />
-          {gameOver && current.result ? (
-            <GameOverCard
-              result={current.result}
-              reason={current.reason}
-              onClose={() => setGameOver(false)}
-            >
-              {endActions}
-              <Button block variant="outline" onClick={analyse}>
-                Analyse
-              </Button>
-            </GameOverCard>
+        <div className="flex gap-2">
+          {evaluable && evaluationShown.bar ? (
+            <EvalBar evaluation={evaluation} orientation={side} />
           ) : null}
+          <div data-my-turn={myTurn} className="relative min-w-0 flex-1">
+            <Board
+              fen={boardFen}
+              orientation={side}
+              lastMove={lined ? lined.lastMove : shown ? shown.lastMove : lastMove}
+              {...(lined?.lastMove ? { arrows: [lined.lastMove] } : {})}
+              selected={shown ? null : selected}
+              targets={shown ? [] : targets}
+              premove={shown ? null : premove}
+              {...(shown || lined
+                ? { onSquareClick: () => go(Number.MAX_SAFE_INTEGER) }
+                : myTurn || premoves
+                  ? { onSquareClick, onDrop, canDrag }
+                  : {})}
+              onRightClick={() => setPremove(null)}
+            />
+            {gameOver && current.result ? (
+              <GameOverCard
+                result={current.result}
+                reason={current.reason}
+                onClose={() => setGameOver(false)}
+              >
+                {endActions}
+                <Button block variant="outline" onClick={analyse}>
+                  Analyse
+                </Button>
+              </GameOverCard>
+            ) : null}
+          </div>
         </div>
         {strip(side)}
         <MoveNav
@@ -446,6 +481,15 @@ function Game({ id, me, view: loaded, summary: loadedSummary, moves }: GameProps
             }}
             onCancel={() => setPromotion(null)}
           />
+        ) : null}
+        {evaluable ? (
+          <>
+            <EvaluationTicks
+              shown={evaluationShown}
+              onChange={(next) => void showEvaluation(next)}
+            />
+            {evaluationShown.line ? <EngineLines fen={boardFen} evaluation={evaluation} /> : null}
+          </>
         ) : null}
       </div>
 

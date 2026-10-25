@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ANIMATIONS, DEFAULT_PREFERENCES, animationMs, isPreferences } from '@chess/core'
+import { ANIMATIONS, DEFAULT_PREFERENCES, animationMs, isPreferences, withDefaults } from '@chess/core'
 import { LOGIN_HREF, LOGOUT_HREF, loginHref } from './auth'
 
 describe('session hrefs', () => {
@@ -20,6 +20,10 @@ describe('preferences', () => {
       animation: 'normal',
       coordinates: true,
       siteTheme: 'dark',
+      analysisBar: true,
+      analysisLines: true,
+      playBar: false,
+      playLines: false,
     })
   })
 
@@ -32,5 +36,16 @@ describe('preferences', () => {
     expect(isPreferences({ ...DEFAULT_PREFERENCES, boardTheme: 'neon' })).toBe(false)
     expect(isPreferences({ ...DEFAULT_PREFERENCES, coordinates: 'yes' })).toBe(false)
     expect(isPreferences({ ...DEFAULT_PREFERENCES, siteTheme: 'light' })).toBe(true)
+    expect(isPreferences({ ...DEFAULT_PREFERENCES, playBar: 'yes' })).toBe(false)
+  })
+
+  it('accept a set saved before the engine switches, which then take their defaults', () => {
+    const { analysisBar, analysisLines, playBar, playLines, ...older } = DEFAULT_PREFERENCES
+    expect([analysisBar, analysisLines, playBar, playLines]).toEqual([true, true, false, false])
+    expect(isPreferences(older)).toBe(true)
+    expect(withDefaults({ ...older, boardTheme: 'blue' })).toEqual({
+      ...DEFAULT_PREFERENCES,
+      boardTheme: 'blue',
+    })
   })
 })

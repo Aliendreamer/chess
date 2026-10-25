@@ -1,4 +1,4 @@
-import { DEFAULT_PREFERENCES, isPreferences } from '@chess/core'
+import { DEFAULT_PREFERENCES, isPreferences, withDefaults } from '@chess/core'
 import { cookiesAreSecure, forwardCookieHeader, rehomeSetCookie } from './cookies'
 import { apiUrl, clientIp, forwardClientIp, sendCommand } from './upstream'
 import type { CommandOutcome, Preferences } from '@chess/core'
@@ -62,7 +62,7 @@ export async function loadPreferences(fetchImpl: typeof fetch): Promise<Preferen
   const res = await fetchImpl('/api/me/preferences')
   if (!res.ok) return DEFAULT_PREFERENCES
   const body: unknown = await res.json().catch(() => null)
-  return isPreferences(body) ? body : DEFAULT_PREFERENCES
+  return isPreferences(body) ? withDefaults(body) : DEFAULT_PREFERENCES
 }
 
 /** `PUT /api/me/preferences`: the whole set; a value the server does not offer is a 400 outcome. */

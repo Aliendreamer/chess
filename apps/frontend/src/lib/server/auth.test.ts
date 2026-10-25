@@ -140,6 +140,11 @@ describe('preferences', () => {
     await expect(loadPreferences(fetchWith(200, JSON.stringify(blue)))).resolves.toEqual(blue)
   })
 
+  it('fills in the engine switches an older backend leaves out', async () => {
+    const { playBar: _bar, playLines: _lines, ...older } = blue
+    await expect(loadPreferences(fetchWith(200, JSON.stringify(older)))).resolves.toEqual(blue)
+  })
+
   it('falls back to the defaults when signed out or the answer is not usable', async () => {
     await expect(loadPreferences(fetchWith(401, ''))).resolves.toEqual(DEFAULT_PREFERENCES)
     await expect(loadPreferences(fetchWith(200, '{"boardTheme":"neon"}'))).resolves.toEqual(

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { use, useEffect, useState } from 'react'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import {
   STANDARD_START,
   fenAt,
@@ -20,6 +20,7 @@ import {
   ErrorText,
   Panel,
   PositionPanel,
+  PreferencesContext,
   SectionHeading,
   analysisTitle,
   isLibrarySource,
@@ -32,7 +33,7 @@ import {
   useOpeningName,
 } from '@chess/ui'
 import type { ParsedGame } from '@chess/core'
-import type { LibrarySource } from '@chess/ui'
+import type { EvaluationShown, LibrarySource } from '@chess/ui'
 import {
   getFinishedGame,
   getLibraryGame,
@@ -40,6 +41,7 @@ import {
   getOpening,
   postAnalysis,
   postCreateStudies,
+  putPreferences,
 } from '#/lib/server/api'
 import { pageTitle } from '#/lib/feedback'
 
@@ -145,6 +147,20 @@ function Analysis({ start }: { start: ReturnType<typeof Route.useLoaderData> }) 
   const source = Route.useSearch({ select: (search) => search.src ?? 'all' })
   const atPosition = useLibraryPosition(positionKey(editor.fen), source, loadPosition)
   const analysis = useAnalysis((input) => postAnalysis({ data: input }))
+  // The evaluation bar and the best moves (evaluation-display): the preferences' analysis switches, on by default.
+  const prefs = use(PreferencesContext)
+  const router = useRouter()
+  const [evaluationShown, setEvaluationShown] = useState<EvaluationShown>({
+    bar: prefs.analysisBar,
+    line: prefs.analysisLines,
+  })
+  async function showEvaluation(next: EvaluationShown) {
+    setEvaluationShown(next)
+    const saved = await putPreferences({
+      data: { ...prefs, analysisBar: next.bar, analysisLines: next.line },
+    })
+    if (saved.ok) await router.invalidate()
+  }
   const navigate = useNavigate()
   const saving = useCommand()
   const [players, setPlayers] = useState(start.players)
@@ -211,6 +227,8 @@ function Analysis({ start }: { start: ReturnType<typeof Route.useLoaderData> }) 
       editor={editor}
       analysis={analysis}
       editable
+      shown={evaluationShown}
+      onShown={(next) => void showEvaluation(next)}
       aside={
         atPosition ? (
           <PositionPanel

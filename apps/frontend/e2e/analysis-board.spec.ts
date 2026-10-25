@@ -17,6 +17,11 @@ test('a position from a link is analysed and a broken FEN is refused', async ({ 
   const tree = page.getByTestId('move-tree')
   await expect(tree).toContainText('Nc6')
 
+  // The evaluation bar and the best moves are ticked on the analysis board by default (evaluation-display).
+  await expect(page.getByRole('checkbox', { name: 'Evaluation bar' })).toBeChecked()
+  await expect(page.getByRole('checkbox', { name: 'Best moves' })).toBeChecked()
+  await expect(page.getByTestId('eval-bar')).toBeVisible()
+
   const panel = page.getByTestId('analysis-panel')
   await expect(async () => {
     await panel.getByRole('button', { name: 'Quick' }).click()
