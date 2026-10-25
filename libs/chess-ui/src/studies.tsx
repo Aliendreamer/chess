@@ -263,24 +263,67 @@ export function EvalBar({
   )
 }
 
-/** The score and the engine's best line in SAN under a board being played on; or that the engine is on it. */
-export function EngineLine({ fen, evaluation }: { fen: string; evaluation: Evaluation | null }) {
-  const best = evaluation?.lines[0]
+/** The engine's best moves under a board: each line's score and its moves in SAN; or that the engine is on it. */
+export function EngineLines({ fen, evaluation }: { fen: string; evaluation: Evaluation | null }) {
   return (
-    <p className="m-0 flex min-h-6 gap-2 text-sm" data-testid="engine-line" aria-live="polite">
-      {best ? (
-        <>
-          <span className="w-14 shrink-0 font-mono text-fg-primary">{scoreText(best)}</span>
-          <span className="truncate font-mono text-fg-body">
-            {lineMoves(fen, best.pv)
-              .map((m) => m.san)
-              .join(' ')}
-          </span>
-        </>
+    <div className="flex min-h-6 flex-col gap-1" data-testid="engine-lines" aria-live="polite">
+      {evaluation && evaluation.lines.length > 0 ? (
+        evaluation.lines.map((line, i) => (
+          <p key={i} className="m-0 flex gap-2 text-sm" data-testid="engine-line">
+            <span className="w-14 shrink-0 font-mono text-fg-primary">{scoreText(line)}</span>
+            <span className="truncate font-mono text-fg-body">
+              {lineMoves(fen, line.pv)
+                .map((m) => m.san)
+                .join(' ')}
+            </span>
+          </p>
+        ))
       ) : (
-        <span className="text-fg-muted">The engine is thinking…</span>
+        <p className="m-0 text-sm text-fg-muted">The engine is thinking…</p>
       )}
-    </p>
+    </div>
+  )
+}
+
+/** Which of the engine's views a board shows; the engine is asked only while one of them is on. */
+export interface EvaluationShown {
+  bar: boolean
+  line: boolean
+}
+
+/** The tick boxes for the evaluation bar and the best moves, with a note (what they cost) while one is ticked. */
+export function EvaluationTicks({
+  shown,
+  onChange,
+  note,
+}: {
+  shown: EvaluationShown
+  onChange: (shown: EvaluationShown) => void
+  note?: ReactNode
+}) {
+  const tick = (key: keyof EvaluationShown, label: string) => (
+    <label className="flex cursor-pointer items-center gap-2 text-sm text-fg-body pointer-coarse:min-h-11">
+      <input
+        type="checkbox"
+        checked={shown[key]}
+        onChange={(e) => onChange({ ...shown, [key]: e.target.checked })}
+        className="size-4 accent-(--color-fg-accent)"
+      />
+      {label}
+    </label>
+  )
+  return (
+    <div className="flex flex-col gap-1.5" data-testid="evaluation-ticks">
+      <div className="flex flex-wrap gap-x-5 gap-y-1">
+        {tick('bar', 'Evaluation bar')}
+        {tick('line', 'Best moves')}
+      </div>
+      {note && (shown.bar || shown.line) ? (
+        <p className="m-0 text-xs text-fg-muted" data-testid="evaluation-warning">
+          {note}
+        </p>
+      ) : null}
+    </div>
   )
 }
 
@@ -313,6 +356,8 @@ export function AnalysisBoard({
   editable,
   header,
   aside,
+  shown,
+  onShown,
   children,
 }: {
   editor: MoveTreeEditor
@@ -320,10 +365,14 @@ export function AnalysisBoard({
   editable: boolean
   header: ReactNode
   aside?: ReactNode
+  /** With `onShown`: tick boxes under the board for the evaluation bar and the engine's lines (the desktop app). */
+  shown?: EvaluationShown
+  onShown?: (shown: EvaluationShown) => void
   children?: ReactNode
 }) {
   const { fen, selected, promotion, tree, path } = editor
-  useAutoEvaluate(analysis, fen)
+  const ticks = shown && onShown ? shown : null
+  useAutoEvaluate(analysis, fen, !ticks || ticks.bar || ticks.line)
   const scoreOf = (at: string) => {
     const best = analysis.evaluationOf(at)?.lines[0]
     return best ? scoreText(best) : null
@@ -340,14 +389,21 @@ export function AnalysisBoard({
       className={`grid grid-cols-1 gap-6 shell:h-full shell:gap-8 ${grid}`}
     >
       <div className="flex max-w-(--board-max) flex-col gap-3 shell:row-span-2 wide:row-span-1">
-        <Board
-          fen={fen}
-          orientation={editor.orientation}
-          lastMove={uciSquares(editor.current?.uci)}
-          selected={selected}
-          targets={selected ? legalTargets(fen, selected) : []}
-          {...(editable ? { onSquareClick: editor.onSquareClick, onDrop: editor.onDrop } : {})}
-        />
+        <div className="flex gap-2">
+          {ticks?.bar ? (
+            <EvalBar evaluation={analysis.evaluationOf(fen)} orientation={editor.orientation} />
+          ) : null}
+          <div className="min-w-0 flex-1">
+            <Board
+              fen={fen}
+              orientation={editor.orientation}
+              lastMove={uciSquares(editor.current?.uci)}
+              selected={selected}
+              targets={selected ? legalTargets(fen, selected) : []}
+              {...(editable ? { onSquareClick: editor.onSquareClick, onDrop: editor.onDrop } : {})}
+            />
+          </div>
+        </div>
         {promotion ? (
           <PromotionPicker
             color={fen.split(' ')[1] === 'b' ? 'black' : 'white'}
@@ -365,6 +421,7 @@ export function AnalysisBoard({
             <FlipIcon />
           </Button>
         </MoveNav>
+        {ticks && onShown ? <EvaluationTicks shown={ticks} onChange={onShown} /> : null}
       </div>
 
       <div className={column}>
@@ -376,12 +433,14 @@ export function AnalysisBoard({
           onSelect={editor.setPath}
           scoreOf={scoreOf}
         />
-        <AnalysisPanel
-          analysis={analysis}
-          fen={fen}
-          evaluation={analysis.evaluationOf(fen)}
-          onPlayLine={editable ? editor.playLine : undefined}
-        />
+        {!ticks || ticks.line ? (
+          <AnalysisPanel
+            analysis={analysis}
+            fen={fen}
+            evaluation={analysis.evaluationOf(fen)}
+            onPlayLine={editable ? editor.playLine : undefined}
+          />
+        ) : null}
         {children}
       </div>
 

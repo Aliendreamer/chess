@@ -2,8 +2,9 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_PREFERENCES, STANDARD_START, playMove } from '@chess/core'
 import { PreferencesContext } from './board.tsx'
-import { AnalysisBoard, EngineLine, EvalBar, MoveTree, StudyList } from './studies.tsx'
+import { AnalysisBoard, EngineLines, EvalBar, MoveTree, StudyList } from './studies.tsx'
 import { useMoveTree } from './studies-model.ts'
+import type { EvaluationShown } from './studies.tsx'
 import type { ReactNode } from 'react'
 import type { StudyMove } from '@chess/core'
 import type { Analysis } from './analysis.ts'
@@ -93,7 +94,15 @@ describe('AnalysisBoard (analysis-board)', () => {
     error: null,
   }
 
-  function Harness({ editable }: { editable: boolean }) {
+  function Harness({
+    editable,
+    shown,
+    onShown,
+  }: {
+    editable: boolean
+    shown?: EvaluationShown
+    onShown?: (shown: EvaluationShown) => void
+  }) {
     const e4 = playMove(STANDARD_START, 'e2e4')!
     const editor = useMoveTree(STANDARD_START, [
       { ...e4, children: [{ ...playMove(e4.fen, 'e7e5')!, children: [] }] },
@@ -106,6 +115,7 @@ describe('AnalysisBoard (analysis-board)', () => {
           analysis={analysis}
           editable={editable}
           header={<h1>Heading</h1>}
+          {...(shown && onShown ? { shown, onShown } : {})}
         >
           <p>tools</p>
         </AnalysisBoard>
@@ -126,6 +136,39 @@ describe('AnalysisBoard (analysis-board)', () => {
     render(<Harness editable={false} />)
     fireEvent.click(screen.getByRole('button', { name: /e4/ }))
     expect(screen.getByRole('button', { name: /e4/ }).getAttribute('aria-current')).toBe('step')
+  })
+
+  it('has no tick boxes and always shows the engine unless a page asks for them', () => {
+    render(<Harness editable />)
+    expect(screen.queryByRole('checkbox')).toBeNull()
+    expect(screen.getByTestId('analysis-panel')).toBeTruthy()
+    expect(screen.queryByTestId('eval-bar')).toBeNull()
+  })
+
+  it('shows the bar and the best moves as ticked, and asks nothing with both off', () => {
+    vi.mocked(analysis.analyse).mockClear()
+    vi.useFakeTimers()
+    try {
+      const onShown = vi.fn()
+      const { rerender } = render(
+        <Harness editable shown={{ bar: true, line: false }} onShown={onShown} />,
+      )
+      expect(screen.getByTestId('eval-bar')).toBeTruthy()
+      expect(screen.queryByTestId('analysis-panel')).toBeNull()
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Best moves' }))
+      expect(onShown).toHaveBeenCalledWith({ bar: true, line: true })
+      act(() => vi.advanceTimersByTime(300))
+      expect(analysis.analyse).toHaveBeenCalledTimes(1)
+
+      vi.mocked(analysis.analyse).mockClear()
+      rerender(<Harness editable shown={{ bar: false, line: false }} onShown={onShown} />)
+      fireEvent.click(screen.getByRole('button', { name: /e4/ }))
+      act(() => vi.advanceTimersByTime(1000))
+      expect(analysis.analyse).not.toHaveBeenCalled()
+      expect(screen.queryByTestId('eval-bar')).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('asks the engine for the position once it settles on the board', () => {
@@ -175,12 +218,23 @@ describe('EvalBar and EngineLine (the evaluation while playing)', () => {
     expect((bar.querySelector('[data-side="white"]') as HTMLElement).style.height).toBe('50%')
   })
 
-  it('names the score and the best line in SAN, or that the engine is thinking', () => {
-    const { rerender } = render(
-      <EngineLine fen={STANDARD_START} evaluation={at(35, null, ['e2e4', 'e7e5', 'g1f3'])} />,
-    )
-    expect(screen.getByTestId('engine-line').textContent).toBe('+0.35e4 e5 Nf3')
-    rerender(<EngineLine fen={STANDARD_START} evaluation={null} />)
-    expect(screen.getByTestId('engine-line').textContent).toBe('The engine is thinking…')
+  it('lists the best moves, each with its score and line in SAN, or that the engine is thinking', () => {
+    const evaluation = {
+      thinkMs: 500,
+      depth: 18,
+      lines: [
+        { cp: 35, mate: null, pv: ['e2e4', 'e7e5', 'g1f3'] },
+        { cp: 30, mate: null, pv: ['d2d4', 'd7d5'] },
+        { cp: 12, mate: null, pv: ['g1f3'] },
+      ],
+    }
+    const { rerender } = render(<EngineLines fen={STANDARD_START} evaluation={evaluation} />)
+    expect(screen.getAllByTestId('engine-line').map((l) => l.textContent)).toEqual([
+      '+0.35e4 e5 Nf3',
+      '+0.30d4 d5',
+      '+0.12Nf3',
+    ])
+    rerender(<EngineLines fen={STANDARD_START} evaluation={null} />)
+    expect(screen.getByTestId('engine-lines').textContent).toBe('The engine is thinking…')
   })
 })

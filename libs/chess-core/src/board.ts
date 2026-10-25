@@ -19,14 +19,24 @@ export const SITE_THEMES = ['dark', 'light'] as const
 export type SiteTheme = (typeof SITE_THEMES)[number]
 export const PIECE_SETS = ['cburnett'] as const
 
-/** A player's display preferences (user-preferences): the club's `GET api/me/preferences`, the desktop's settings. */
+/**
+ * A player's display preferences (user-preferences): the club's `GET api/me/preferences`, the desktop's settings.
+ * The engine switches (evaluation-display): the evaluation bar and the best moves on the analysis board (on by
+ * default) and in a game against the computer (off by default: there they take a second engine's work).
+ */
 export interface Preferences {
   boardTheme: BoardTheme
   pieceSet: (typeof PIECE_SETS)[number]
   animation: Animation
   coordinates: boolean
   siteTheme: SiteTheme
+  analysisBar: boolean
+  analysisLines: boolean
+  playBar: boolean
+  playLines: boolean
 }
+
+const SWITCHES = ['analysisBar', 'analysisLines', 'playBar', 'playLines'] as const
 
 export const DEFAULT_PREFERENCES: Preferences = {
   boardTheme: 'brown',
@@ -34,6 +44,10 @@ export const DEFAULT_PREFERENCES: Preferences = {
   animation: 'normal',
   coordinates: true,
   siteTheme: 'dark',
+  analysisBar: true,
+  analysisLines: true,
+  playBar: false,
+  playLines: false,
 }
 
 const ANIMATION_MS: Record<Animation, number> = { off: 0, fast: 120, normal: 200 }
@@ -42,6 +56,10 @@ export function animationMs(animation: Animation): number {
   return ANIMATION_MS[animation]
 }
 
+/**
+ * Every value one the site offers. The engine switches may be missing (a set saved before them): such a set passes and
+ * {@link withDefaults} completes it.
+ */
 export function isPreferences(value: unknown): value is Preferences {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>
@@ -52,8 +70,14 @@ export function isPreferences(value: unknown): value is Preferences {
     one(PIECE_SETS, v['pieceSet']) &&
     one(ANIMATIONS, v['animation']) &&
     typeof v['coordinates'] === 'boolean' &&
-    one(SITE_THEMES, v['siteTheme'])
+    one(SITE_THEMES, v['siteTheme']) &&
+    SWITCHES.every((s) => v[s] === undefined || typeof v[s] === 'boolean')
   )
+}
+
+/** A stored set with whatever it lacks taken from the defaults. */
+export function withDefaults(stored: Partial<Preferences>): Preferences {
+  return { ...DEFAULT_PREFERENCES, ...stored }
 }
 
 export interface Piece {
