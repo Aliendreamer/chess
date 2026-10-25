@@ -12,9 +12,13 @@
         "codeload.github.com",
         "github.com",
         "registry.npmjs.org",
-        "registry.yarnpkg.com"
+        "registry.yarnpkg.com",
+        "www.google-analytics.com"
       ],
-      "allowUnixSockets": ["/tmp/.nx", "~/.nx"]
+      "allowUnixSockets": [
+        "/tmp/.nx",
+        "~/.nx"
+      ]
     },
     "filesystem": {
       "allowWrite": [
@@ -28,11 +32,18 @@
         "/tmp/.nx",
         "~/.nx"
       ],
-      "allowRead": ["/tmp/.nx", "~/.nx"]
+      "allowRead": [
+        "/tmp/.nx",
+        "~/.nx"
+      ]
     }
   },
   "permissions": {
-    "allow": ["Bash(git*)", "SKILL(*)", "mcp__plugin_serena_serena__*"],
+    "allow": [
+      "Bash(git*)",
+      "SKILL(*)",
+      "mcp__plugin_serena_serena__*"
+    ],
     "deny": [
       "Bash(git branch --delete --force*)",
       "Bash(git branch -D*)",
