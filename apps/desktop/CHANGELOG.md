@@ -1,3 +1,15 @@
+## 0.0.2 (2026-10-28)
+
+### 🚀 Features
+
+- **desktop:** evaluation bar and best moves on analysis and in play ([315a041](https://github.com/Aliendreamer/chess/commit/315a041))
+- **desktop:** evaluation while playing the computer ([b2c7c0b](https://github.com/Aliendreamer/chess/commit/b2c7c0b))
+
+### ❤️ Thank You
+
+- Aliendreamer @Aliendreamer
+- Claude Opus 5.5 (1M context)
+
 ## 0.0.1 (2026-10-25)
 
 ### 🚀 Features

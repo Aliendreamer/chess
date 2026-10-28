@@ -1,3 +1,14 @@
+## 0.1.4 (2026-10-28)
+
+### 🚀 Features
+
+- **frontend:** evaluation bar and best moves on analysis and in engine games ([df199b4](https://github.com/Aliendreamer/chess/commit/df199b4))
+
+### ❤️ Thank You
+
+- Aliendreamer
+- Claude Opus 5.5 (1M context)
+
 ## 0.1.3 (2026-10-25)
 
 ### 🚀 Features

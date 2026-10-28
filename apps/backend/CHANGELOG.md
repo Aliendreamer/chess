@@ -1,3 +1,14 @@
+## 0.2.2 (2026-10-28)
+
+### 🚀 Features
+
+- **backend:** engine switches in the preferences ([10bc773](https://github.com/Aliendreamer/chess/commit/10bc773))
+
+### ❤️ Thank You
+
+- Aliendreamer @Aliendreamer
+- Claude Opus 5.5 (1M context)
+
 ## 0.2.1 (2026-10-25)
 
 ### 🚀 Features
