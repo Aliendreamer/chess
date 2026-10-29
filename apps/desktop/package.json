@@ -1,6 +1,6 @@
 {
   "name": "chess-desktop",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "description": "The standalone chess app for one player: play the computer, learn, analyse, read the news (desktop-app).",
   "license": "MIT",

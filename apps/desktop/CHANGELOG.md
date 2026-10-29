@@ -1,3 +1,14 @@
+## 0.0.3 (2026-10-29)
+
+### 🚀 Features
+
+- **desktop:** premoves, take-backs, offers, a fitted game page and window controls ([7f6de85](https://github.com/Aliendreamer/chess/commit/7f6de85))
+
+### ❤️ Thank You
+
+- Aliendreamer @Aliendreamer
+- Claude Opus 5.5
+
 ## 0.0.2 (2026-10-28)
 
 ### 🚀 Features
