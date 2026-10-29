@@ -3,3 +3,9 @@
 @import '@chess/ui/theme.css';
 /* Shared components use utilities too: Tailwind must see their class names. */
 @source '../../../libs/chess-ui/src';
+
+/* The whole UI grows with the window's height (every size is in rem): 16px up to a ~1080px-high window, larger on a
+   big screen (26px at most), so the text, panels and menu keep pace with the board. */
+html {
+  font-size: clamp(16px, calc(0.85vh + 7px), 26px);
+}

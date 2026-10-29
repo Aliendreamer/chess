@@ -11,6 +11,7 @@ import { EVENTS_EVERY_MS, NEWS_EVERY_MS, eventsRound, newsRound } from './data/n
 import type { Db, Sql } from './data/db'
 import type { EnginePlayer } from './data/play'
 import type { FetchText } from './data/news'
+import type { WindowChange } from './window'
 
 /** How often the miner looks for critical moments in the library. */
 const MINE_EVERY_MS = 10_000
@@ -35,6 +36,14 @@ export interface AppServices {
   openText: (extensions: ReadonlyArray<string>) => Promise<string | null>
   /** Opens a link in the system browser, never inside the app. */
   openLink: (url: string) => Promise<void>
+  /** Switches the window between full screen and a window (F11). */
+  toggleFullscreen: () => Promise<void>
+  /** The window 10% larger or smaller (centred, on the screen), or back to the start: filling the screen. */
+  resizeWindow: (change: WindowChange | 'fit') => Promise<void>
+  /** Whether the system draws the window's title bar; without one (Linux) the app shows its own window buttons. */
+  hasTitleBar: () => Promise<boolean>
+  minimizeWindow: () => Promise<void>
+  closeWindow: () => Promise<void>
   /** A GET to a news source (the capability's allow-list decides which hosts). */
   fetchText: FetchText
   /** Backup and restore (D10): where to write a backup, which file to restore, and opening that file on its own. */
@@ -155,6 +164,47 @@ export async function startServices(): Promise<AppServices> {
     openLink: async (url) => {
       const { openUrl } = await import('@tauri-apps/plugin-opener')
       await openUrl(url)
+    },
+    toggleFullscreen: async () => {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window')
+      const window = getCurrentWindow()
+      await window.setFullscreen(!(await window.isFullscreen()))
+    },
+    // Linux runs without the system's title bar (`tauri.linux.conf.json`); asking the window is not reliable under
+    // WSLg, so the platform decides, as the config does.
+    hasTitleBar: () => Promise.resolve(!/linux/i.test(navigator.userAgent)),
+    minimizeWindow: async () => {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window')
+      await getCurrentWindow().minimize()
+    },
+    closeWindow: async () => {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window')
+      await getCurrentWindow().close()
+    },
+    resizeWindow: async (change) => {
+      const { LogicalSize, currentMonitor, getCurrentWindow } =
+        await import('@tauri-apps/api/window')
+      const { nextWindowSize } = await import('./window')
+      const window = getCurrentWindow()
+      if (await window.isFullscreen()) await window.setFullscreen(false)
+      const scale = await window.scaleFactor()
+      const current = (await window.innerSize()).toLogical(scale)
+      const monitor = await currentMonitor()
+      const screen = monitor ? monitor.size.toLogical(monitor.scaleFactor) : current
+      if (change === 'fit') {
+        // Maximize; where the window manager ignores that (WSLg), the screen's size, centred.
+        await window.unmaximize()
+        await window.maximize()
+        if (!(await window.isMaximized())) {
+          await window.setSize(new LogicalSize(screen.width, screen.height))
+          await window.center()
+        }
+        return
+      }
+      if (await window.isMaximized()) await window.unmaximize()
+      const next = nextWindowSize(current, change, screen)
+      await window.setSize(new LogicalSize(next.width, next.height))
+      await window.center()
     },
   }
 }

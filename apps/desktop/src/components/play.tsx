@@ -53,7 +53,9 @@ export function EngineForm({
         <span className="text-sm text-fg-secondary">a move.</span>
       </div>
       <div className="flex items-center justify-between gap-4">
-        <span className="text-sm text-fg-secondary">Untimed: no clocks, no draw offers.</span>
+        <span className="text-sm text-fg-secondary">
+          Untimed: no clocks. You can take moves back, offer a draw or ask the computer to resign.
+        </span>
         <Button variant="primary" disabled={busy} onClick={onStart}>
           Play the computer
         </Button>

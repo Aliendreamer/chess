@@ -59,6 +59,160 @@ describe('playing the computer (desktop-app)', () => {
     expect(moves.textContent).toContain('e4')
   })
 
+  it('queues a premove while the engine thinks and plays it once the engine has answered', async () => {
+    const s = await app()
+    const answers = ['e7e5', 'b8c6']
+    let answer: (uci: string) => void = () => undefined
+    s.player.bestMove = () => new Promise((resolve) => (answer = resolve))
+    const game = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    const { container } = await renderApp(`/games/${game.id}`, s)
+    await screen.findByText('Your move.')
+    fireEvent.click(square(container, 'e2'))
+    fireEvent.click(square(container, 'e4'))
+    await screen.findByText(/is thinking/)
+    fireEvent.click(square(container, 'g1'))
+    fireEvent.click(square(container, 'f3'))
+    answer(answers.shift()!)
+    const moves = await screen.findByTestId('move-list')
+    await waitFor(() => expect(moves.textContent).toContain('Nf3'))
+    answer(answers.shift()!)
+    await waitFor(() => expect(moves.textContent).toContain('Nc6'))
+  })
+
+  it('takes back the last move and the engine’s answer', async () => {
+    const s = await app(['e7e5'])
+    const game = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    const { container } = await renderApp(`/games/${game.id}`, s)
+    await screen.findByText('Your move.')
+    expect(screen.getByRole('button', { name: 'Take back' }).hasAttribute('disabled')).toBe(true)
+    fireEvent.click(square(container, 'e2'))
+    fireEvent.click(square(container, 'e4'))
+    const moves = await screen.findByTestId('move-list')
+    await waitFor(() => expect(moves.textContent).toContain('e5'))
+    fireEvent.click(screen.getByRole('button', { name: 'Take back' }))
+    await screen.findByText('No moves yet.')
+    await screen.findByText('Your move.')
+    expect(screen.getByRole('button', { name: 'Take back' }).hasAttribute('disabled')).toBe(true)
+  })
+
+  it('plays on from a move picked in the list, the moves after it gone', async () => {
+    const s = await app(['e7e5', 'b8c6'])
+    const game = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    const { container } = await renderApp(`/games/${game.id}`, s)
+    await screen.findByText('Your move.')
+    fireEvent.click(square(container, 'e2'))
+    fireEvent.click(square(container, 'e4'))
+    await waitFor(() => expect(screen.getByTestId('move-list').textContent).toContain('e5'))
+    fireEvent.click(square(container, 'g1'))
+    fireEvent.click(square(container, 'f3'))
+    await waitFor(() => expect(screen.getByTestId('move-list').textContent).toContain('Nc6'))
+    fireEvent.click(within(screen.getByTestId('move-list')).getByText('e5'))
+    fireEvent.click(screen.getByRole('button', { name: 'Play from here' }))
+    await waitFor(() => expect(screen.getByTestId('move-list').textContent).not.toContain('Nf3'))
+    expect(screen.getByTestId('move-list').textContent).toContain('e5')
+    await screen.findByText('Your move.')
+  })
+
+  it('plays on from an earlier position when a move is made there', async () => {
+    const s = await app(['e7e5', 'b8c6', 'g8f6'])
+    const game = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    const { container } = await renderApp(`/games/${game.id}`, s)
+    await screen.findByText('Your move.')
+    fireEvent.click(square(container, 'e2'))
+    fireEvent.click(square(container, 'e4'))
+    await waitFor(() => expect(screen.getByTestId('move-list').textContent).toContain('e5'))
+    fireEvent.click(square(container, 'g1'))
+    fireEvent.click(square(container, 'f3'))
+    await waitFor(() => expect(screen.getByTestId('move-list').textContent).toContain('Nc6'))
+    // Back to after 1...e5 and a different second move.
+    fireEvent.click(within(screen.getByTestId('move-list')).getByText('e5'))
+    await screen.findByText('Your move from here: the later moves will be gone.')
+    fireEvent.click(square(container, 'f1'))
+    fireEvent.click(square(container, 'c4'))
+    await waitFor(() => expect(screen.getByTestId('move-list').textContent).toContain('Bc4'))
+    expect(screen.getByTestId('move-list').textContent).not.toContain('Nf3')
+    await waitFor(() => expect(screen.getByTestId('move-list').textContent).toContain('Nf6'))
+  })
+
+  it('tells when the engine declines a draw, and ends the game when it resigns', async () => {
+    const s = await app()
+    let cp = 0
+    s.evaluator.evaluate = () =>
+      Promise.resolve({ thinkMs: 1500, depth: 20, lines: [{ cp, mate: null, pv: [] }] })
+    const game = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    await renderApp(`/games/${game.id}`, s)
+    await screen.findByText('Your move.')
+    fireEvent.click(screen.getByRole('button', { name: 'Offer draw' }))
+    expect((await screen.findByTestId('offer-declined')).textContent).toBe(
+      'Stockfish (Casual) declines the draw.',
+    )
+    cp = 900
+    fireEvent.click(screen.getByRole('button', { name: 'Ask to resign' }))
+    await screen.findByTestId('game-end')
+  })
+
+  it('drops a premove that is no longer legal', async () => {
+    const s = await app()
+    let answer: (uci: string) => void = () => undefined
+    s.player.bestMove = () => new Promise((resolve) => (answer = resolve))
+    const game = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    const { container } = await renderApp(`/games/${game.id}`, s)
+    await screen.findByText('Your move.')
+    fireEvent.click(square(container, 'e2'))
+    fireEvent.click(square(container, 'e4'))
+    await screen.findByText(/is thinking/)
+    // e4–e5 is blocked once the engine answers 1...e5.
+    fireEvent.click(square(container, 'e4'))
+    fireEvent.click(square(container, 'e5'))
+    answer('e7e5')
+    await screen.findByText('Your move.')
+    expect((await screen.findByTestId('move-list')).textContent).not.toMatch(/2\./)
+  })
+
+  it('switches full screen with F11 or the rail’s button, and sizes the window on demand', async () => {
+    const s = await app()
+    let toggled = 0
+    s.toggleFullscreen = () => {
+      toggled++
+      return Promise.resolve()
+    }
+    await renderApp('/', s)
+    await screen.findByRole('button', { name: 'Play the computer' })
+    fireEvent.keyDown(window, { key: 'F11' })
+    expect(toggled).toBe(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Full screen' }))
+    expect(toggled).toBe(2)
+    const resized: Array<string> = []
+    s.resizeWindow = (change) => {
+      resized.push(change)
+      return Promise.resolve()
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Smaller window' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Larger window' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Fit screen' }))
+    expect(resized).toEqual(['shrink', 'grow', 'fit'])
+    // A window with a system title bar: no minimize or close of the app's own.
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull()
+  })
+
+  it('shows its own minimize and close when the window has no title bar (Linux)', async () => {
+    const s = await app()
+    const calls: Array<string> = []
+    s.hasTitleBar = () => Promise.resolve(false)
+    s.minimizeWindow = () => {
+      calls.push('minimize')
+      return Promise.resolve()
+    }
+    s.closeWindow = () => {
+      calls.push('close')
+      return Promise.resolve()
+    }
+    await renderApp('/', s)
+    fireEvent.click(await screen.findByRole('button', { name: 'Minimize' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(calls).toEqual(['minimize', 'close'])
+  })
+
   it('shows the evaluation bar and the best moves only when ticked, warning what they cost', async () => {
     const s = await app()
     await storeEvaluation(s.db, positionKey(STANDARD_START), {

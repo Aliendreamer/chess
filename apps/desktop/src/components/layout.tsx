@@ -2,12 +2,18 @@ import { Link } from '@tanstack/react-router'
 import {
   BookOpen,
   Crosshair,
+  Expand,
   GraduationCap,
   Library,
+  Maximize,
   Microscope,
+  Minus,
   Newspaper,
+  Scaling,
   Settings,
+  Shrink,
   Swords,
+  X,
 } from 'lucide-react'
 import { DEFAULT_PREFERENCES } from '@chess/core'
 import { LinkContext, PreferencesContext, SectionHeading } from '@chess/ui'
@@ -40,6 +46,9 @@ function searchOf(query: string): Record<string, unknown> {
   )
 }
 
+const RAIL_BUTTON =
+  'flex cursor-pointer items-center rounded-control border-0 bg-transparent py-2 text-left text-fg-secondary hover:bg-surface-hover hover:text-fg-primary'
+
 const NAV: ReadonlyArray<{ to: string; label: string; icon: typeof Swords; exact?: boolean }> = [
   { to: '/', label: 'Play', icon: Swords, exact: true },
   { to: '/analysis', label: 'Analysis', icon: Microscope },
@@ -58,11 +67,20 @@ const NAV: ReadonlyArray<{ to: string; label: string; icon: typeof Swords; exact
 export function Shell({
   prefs = DEFAULT_PREFERENCES,
   onExternalLink,
+  onFullscreen,
+  onResize,
+  windowButtons,
   children,
 }: {
   prefs?: Preferences
   /** Where a link to another site goes: the system browser, never this window (desktop-app D7). */
   onExternalLink?: (url: string) => void
+  /** Switches the window to full screen and back (also F11); some title bars (WSLg) offer no maximize. */
+  onFullscreen?: () => void
+  /** The window 10% smaller or larger, or back to filling the screen. */
+  onResize?: (change: 'shrink' | 'grow' | 'fit') => void
+  /** Minimize and close, when the window has no system title bar (Linux): the rail's top is then the title bar. */
+  windowButtons?: { onMinimize: () => void; onClose: () => void }
   children: ReactNode
 }) {
   return (
@@ -79,10 +97,42 @@ export function Shell({
             event.preventDefault()
             onExternalLink?.(url)
           }}
-          className="grid min-h-screen grid-cols-[var(--rail-width)_minmax(0,1fr)] bg-surface-page text-fg-primary"
+          className="grid h-screen grid-cols-[var(--rail-width)_minmax(0,1fr)] overflow-hidden bg-surface-page text-fg-primary"
         >
-          <aside className="flex flex-col gap-7 border-r border-line-divider bg-surface-rail px-4 py-6">
-            <p className="m-0 font-display text-display-sm text-fg-primary">Chess</p>
+          {/* The window's height exactly: the rail never scrolls away with a long page (its window buttons stay in
+              view), and only the page scrolls. */}
+          <aside className="flex min-h-0 flex-col gap-7 overflow-y-auto border-r border-line-divider bg-surface-rail px-4 py-6">
+            {/* The window is dragged by the rail's top (a double click maximizes it), the title bar's job. */}
+            <div data-tauri-drag-region className="flex items-center gap-1">
+              <p
+                data-tauri-drag-region
+                className="m-0 flex-1 cursor-default font-display text-display-sm text-fg-primary select-none"
+              >
+                Chess
+              </p>
+              {windowButtons ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={windowButtons.onMinimize}
+                    aria-label="Minimize"
+                    title="Minimize"
+                    className={`${RAIL_BUTTON} justify-center px-2`}
+                  >
+                    <Minus aria-hidden size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={windowButtons.onClose}
+                    aria-label="Close"
+                    title="Close"
+                    className={`${RAIL_BUTTON} justify-center px-2 hover:text-status-loss`}
+                  >
+                    <X aria-hidden size={16} />
+                  </button>
+                </>
+              ) : null}
+            </div>
             <nav aria-label="Main" className="flex flex-col gap-1">
               {NAV.map(({ to, label, icon: Icon, exact }) => (
                 <Link
@@ -96,9 +146,56 @@ export function Shell({
                 </Link>
               ))}
             </nav>
+            {onFullscreen || onResize ? (
+              <div className="mt-auto flex flex-col gap-1" role="group" aria-label="Window">
+                {onFullscreen ? (
+                  <button
+                    type="button"
+                    onClick={onFullscreen}
+                    title="Full screen (F11)"
+                    aria-keyshortcuts="F11"
+                    className={`${RAIL_BUTTON} gap-3 px-3`}
+                  >
+                    <Maximize aria-hidden size={16} />
+                    Full screen
+                  </button>
+                ) : null}
+                {onResize ? (
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onResize('shrink')}
+                      aria-label="Smaller window"
+                      title="Smaller window"
+                      className={`${RAIL_BUTTON} justify-center px-3`}
+                    >
+                      <Shrink aria-hidden size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onResize('grow')}
+                      aria-label="Larger window"
+                      title="Larger window"
+                      className={`${RAIL_BUTTON} justify-center px-3`}
+                    >
+                      <Expand aria-hidden size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onResize('fit')}
+                      title="Fill the screen, as at the start"
+                      className={`${RAIL_BUTTON} flex-1 gap-2 px-3`}
+                    >
+                      <Scaling aria-hidden size={16} />
+                      Fit screen
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </aside>
-          <main className="min-w-0 px-10 py-8">
-            <div className="mx-auto max-w-(--content-max) has-[[data-layout~=wide]]:max-w-(--content-wide)">
+          <main className="min-h-0 min-w-0 overflow-y-auto px-10 py-8">
+            <div className="mx-auto max-w-(--content-max) has-[[data-layout~=fill]]:h-full has-[[data-layout~=wide]]:max-w-(--content-wide)">
               {children}
             </div>
           </main>

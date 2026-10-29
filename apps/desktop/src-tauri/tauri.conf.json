@@ -16,8 +16,9 @@
         "title": "Chess",
         "width": 1440,
         "height": 900,
-        "minWidth": 1024,
-        "minHeight": 700
+        "minWidth": 800,
+        "minHeight": 600,
+        "maximized": true
       }
     ],
     "security": {

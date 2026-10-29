@@ -126,7 +126,10 @@ A crashed process is restarted and its request asked again; the game page shows 
 `lib/data/play.ts` owns a game: chess.js is the rules (legal moves, check/mate, stalemate, threefold, fifty moves,
 insufficient material — all on, as the club's adapter turns `All` on), moves are written to SQLite as they are made, a
 game in play is resumed after a restart, the engine move is asked whenever it is the engine's turn. Resign ends a game;
-untimed games, no clocks, no draw offers (as in the club). On the end, the PGN is built and the review queued (D5),
+untimed games, no clocks. Unlike the club (one player, no opponent to wrong): take-backs to any earlier position,
+premoves, a draw offer and a request to resign, which the engine answers from the analysis engine's score
+(`DRAW_FROM_PLY`, `DRAW_AT_MOST_CP`, `RESIGN_AT_MOST_CP` in `play.ts`); the engine's late answer counts only for the
+position it was asked about. On the end, the PGN is built and the review queued (D5),
 then its mistakes enter the training pool (`mistake_drills`) once.
 
 ### D7. News fetched by the app

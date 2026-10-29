@@ -47,7 +47,8 @@ function Home() {
   }
 
   return (
-    <div className="flex flex-col gap-8" data-layout="wide">
+    // The page fits the window: the games and the news scroll inside their columns, never the page.
+    <div className="flex h-full flex-col gap-8" data-layout="wide fill">
       <section className="flex flex-col gap-4">
         <SectionHeading size="xl">Play the computer</SectionHeading>
         <EngineForm
@@ -62,17 +63,21 @@ function Home() {
           onStart={() => void start()}
         />
       </section>
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8">
-        <section className="flex flex-col gap-3">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8">
+        <section className="flex min-h-0 flex-col gap-3">
           <SectionHeading>Your games</SectionHeading>
-          <GameRows games={recent} />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <GameRows games={recent} />
+          </div>
         </section>
-        <section className="flex flex-col gap-6">
+        <section className="flex min-h-0 flex-col gap-6">
           {events.length > 0 ? <EventsNow events={events} /> : null}
-          <div className="flex flex-col gap-3">
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
             <SectionHeading>News</SectionHeading>
             {news.length > 0 ? (
-              <NewsList items={news} nowMs={Date.now()} />
+              <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                <NewsList items={news} nowMs={Date.now()} />
+              </div>
             ) : (
               <p className="text-sm text-fg-muted">
                 The news is fetched once the computer is online.

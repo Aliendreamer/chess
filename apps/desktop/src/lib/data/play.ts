@@ -6,14 +6,16 @@ import type {
   CommandOutcome,
   EndReason,
   EngineLevel,
+  Evaluation,
   ThinkSeconds,
 } from '@chess/core'
 import type { Db } from './db'
 
 /**
  * Games against the computer (desktop-app D6): chess.js is the rules, every move is written as it is made, a game in
- * play is resumed after a restart, and the engine is asked whenever it is its turn. Untimed: no clocks and no draw
- * offers; the person may resign. A game's end writes its PGN; the caller queues its review.
+ * play is resumed after a restart, and the engine is asked whenever it is its turn. Untimed: no clocks. The person may
+ * take moves back, resign, offer a draw or ask the engine to resign; the engine answers those from the analysis
+ * engine's judgement of the position. A game's end writes its PGN; the caller queues its review.
  */
 
 /** Who plays the engine's side: `bestMove` at a level and think time, or null when it has no move. */
@@ -138,13 +140,52 @@ export async function engineMove(
   const game = await loadGame(db, id)
   if (!game || !engineToMove(game)) return game
   const uci = await engine.bestMove(game.fen, game.level, game.thinkSeconds * 1000)
-  // The person may have resigned while the engine thought, or the game was otherwise settled: ask again.
+  // The person may have resigned or taken back while the engine thought (and maybe played again since): the answer
+  // counts only for the very position it was asked about.
   const now_ = now()
   const current = await loadGame(db, id)
-  if (!uci || !current || !engineToMove(current) || current.ply !== game.ply) return current
+  if (!uci || !current || !engineToMove(current) || current.fen !== game.fen) return current
   const outcome = await play(db, current, uci, now_)
   if (!outcome.ok) throw new Error(`The engine played an illegal move: ${uci} (${outcome.error})`)
   return outcome.view
+}
+
+/** The ply of the person's last move (1-based), or 0 when they have not moved yet. */
+export function lastPersonPly(game: Pick<DesktopGame, 'ply' | 'personColor'>): number {
+  // White plays the odd plies, Black the even ones.
+  const parity = game.personColor === 'white' ? 1 : 0
+  const last = game.ply % 2 === parity ? game.ply : game.ply - 1
+  return last > 0 ? last : 0
+}
+
+/**
+ * Takes the game back to ply `toPly` (0 = the start), every move after it gone; without it, to before the person's last
+ * move (the engine's answer, if it came, goes too), so the person is to move again where they were. Back to a position
+ * where the engine is to move, it plays again. An engine still thinking finds the game changed and drops its move
+ * (`engineMove`).
+ */
+export async function takeBack(
+  db: Db,
+  id: string,
+  toPly?: number,
+  now = new Date(),
+): Promise<CommandOutcome<DesktopGame>> {
+  const game = await loadGame(db, id)
+  if (!game) return { ok: false, status: 404, error: 'There is no such game.' }
+  if (game.status !== 'playing') return { ok: false, status: 409, error: 'The game is over.' }
+  const target = toPly ?? lastPersonPly(game) - 1
+  if (target < 0 || target >= game.ply || !Number.isInteger(target))
+    return { ok: false, status: 409, error: 'There is no move to take back.' }
+  const from = target + 1
+  const fen = target === 0 ? STANDARD_START : game.moves[target - 1]!.fenAfter
+  await db.batch([
+    { sql: 'DELETE FROM moves WHERE game_id = ? AND ply >= ?', params: [id, from] },
+    {
+      sql: 'UPDATE games SET ply = ?, fen = ?, updated_at = ? WHERE id = ?',
+      params: [from - 1, fen, now.toISOString(), id],
+    },
+  ])
+  return { ok: true, view: (await loadGame(db, id))! }
 }
 
 export async function resign(
@@ -157,6 +198,79 @@ export async function resign(
   if (game.status !== 'playing') return { ok: false, status: 409, error: 'The game is over.' }
   await end(db, game, game.personColor === 'white' ? '0-1' : '1-0', 'resignation', now, [])
   return { ok: true, view: (await loadGame(db, id))! }
+}
+
+/** What judges a draw offer or a request to resign: the analysis engine (`Evaluator#evaluate`). */
+export interface PositionJudge {
+  evaluate: (fen: string, thinkMs: number, priority: 'board') => Promise<Evaluation>
+}
+
+/** How long the analysis engine looks at the position before the engine answers an offer. */
+export const OFFER_THINK_MS = 1500
+/** The engine takes a draw only from move 15 on (both sides' 15th move played)… */
+export const DRAW_FROM_PLY = 30
+/** …and only when it is not better: its score at most this (centipawns, from its side). */
+export const DRAW_AT_MOST_CP = 0
+/** The engine resigns when it is this far behind (centipawns, from its side), or mated. */
+export const RESIGN_AT_MOST_CP = -500
+
+/** The engine's score from its own side, in centipawns; a mate counts as ±100 000. */
+export function engineScore(evaluation: Evaluation, engineColor: Color): number | null {
+  const best = evaluation.lines[0]
+  if (!best) return null
+  const white = best.mate !== null ? Math.sign(best.mate || -1) * 100_000 : (best.cp ?? 0)
+  return engineColor === 'white' ? white : -white
+}
+
+export type OfferOutcome = { accepted: boolean; game: DesktopGame }
+
+/**
+ * The person offers a draw: the engine agrees when the game is far enough along and it is not better (by the analysis
+ * engine), and the game ends drawn by agreement; otherwise it plays on.
+ */
+export function offerDraw(
+  db: Db,
+  judge: PositionJudge,
+  id: string,
+  now = new Date(),
+): Promise<CommandOutcome<OfferOutcome>> {
+  return answerOffer(db, judge, id, now, (score, game) =>
+    game.ply >= DRAW_FROM_PLY && score <= DRAW_AT_MOST_CP ? '1/2-1/2' : null,
+  )
+}
+
+/** The person asks the engine to resign: it does when it is lost (by the analysis engine); otherwise it plays on. */
+export function askToResign(
+  db: Db,
+  judge: PositionJudge,
+  id: string,
+  now = new Date(),
+): Promise<CommandOutcome<OfferOutcome>> {
+  return answerOffer(db, judge, id, now, (score, game) =>
+    score <= RESIGN_AT_MOST_CP ? (game.personColor === 'white' ? '1-0' : '0-1') : null,
+  )
+}
+
+async function answerOffer(
+  db: Db,
+  judge: PositionJudge,
+  id: string,
+  now: Date,
+  decide: (score: number, game: DesktopGame) => string | null,
+): Promise<CommandOutcome<OfferOutcome>> {
+  const game = await loadGame(db, id)
+  if (!game) return { ok: false, status: 404, error: 'There is no such game.' }
+  if (game.status !== 'playing') return { ok: false, status: 409, error: 'The game is over.' }
+  const engineColor: Color = game.personColor === 'white' ? 'black' : 'white'
+  const score = engineScore(await judge.evaluate(game.fen, OFFER_THINK_MS, 'board'), engineColor)
+  // The game may have moved on (or ended) while the position was judged: the answer was about another one.
+  const current = await loadGame(db, id)
+  if (!current || current.status !== 'playing' || current.fen !== game.fen)
+    return { ok: false, status: 409, error: 'The game moved on; offer again.' }
+  const result = score === null ? null : decide(score, current)
+  if (!result) return { ok: true, view: { accepted: false, game: current } }
+  await end(db, current, result, result === '1/2-1/2' ? 'agreement' : 'resignation', now, [])
+  return { ok: true, view: { accepted: true, game: (await loadGame(db, id))! } }
 }
 
 async function play(

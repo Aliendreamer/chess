@@ -33,8 +33,11 @@ asked again; the page MUST show that the engine is restarting rather than fail.
 
 The player SHALL be able to start an untimed game against any of the five levels (Casual, Club, Expert, Master, Maximum)
 with a chosen or random colour and the engine's think time of 5, 10 or 20 s a move. The app SHALL enforce the rules,
-including checkmate, stalemate, threefold repetition, the fifty-move rule and insufficient material; the player MAY
-resign; there are no clocks and no draw offers. A finished game SHALL have its PGN, be listed in the game list, and be
+including checkmate, stalemate, threefold repetition, the fifty-move rule and insufficient material; there are no
+clocks. The player MAY resign, take back any number of moves (or play on from an earlier position), premove on the
+engine's turn, offer a draw (the engine SHALL accept only from move 15 and when it is not better) and ask the engine to
+resign (it SHALL accept only when it is at least five pawns down or mated), the engine answering from the analysis
+engine's evaluation. A finished game SHALL have its PGN, be listed in the game list, and be
 reviewed automatically.
 
 #### Scenario: A finished game

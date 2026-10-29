@@ -82,6 +82,11 @@ export async function fakeServices(moves: Array<string> = []): Promise<
       return Promise.resolve(true)
     },
     openText: () => Promise.resolve(null),
+    toggleFullscreen: () => Promise.resolve(),
+    resizeWindow: () => Promise.resolve(),
+    hasTitleBar: () => Promise.resolve(true),
+    minimizeWindow: () => Promise.resolve(),
+    closeWindow: () => Promise.resolve(),
     openLink: (url) => {
       opened.push(url)
       return Promise.resolve()
