@@ -152,6 +152,9 @@ export interface BoardProps {
 }
 
 /** The board's frame: one size for the placeholder and the live board, so nothing moves when it appears. */
+/** How far the pointer must move before a press becomes a drag. */
+const DRAG_DISTANCE_PX = 6
+
 const FRAME = 'aspect-square w-full max-w-(--board-max) overflow-hidden rounded-board'
 
 /**
@@ -212,6 +215,9 @@ export function Board({
     showAnimations: !reducedMotion && slide > 0,
     showNotation: prefs.coordinates,
     allowDragging: onDrop !== undefined,
+    // A click that wobbles a pixel or two is still a click: the library's default (1px) turned it into a drag that
+    // went nowhere, so the piece was not selected.
+    dragActivationDistance: DRAG_DISTANCE_PX,
     allowDragOffBoard: false,
     allowDrawingArrows: true,
     arrowOptions: ARROW_OPTIONS,
@@ -225,10 +231,15 @@ export function Board({
     ...(onSquareClick ? { onSquareClick: ({ square }) => onSquareClick(square) } : {}),
     ...(onDrop
       ? {
-          onPieceDrop: ({ sourceSquare, targetSquare }) =>
-            targetSquare !== null &&
-            targetSquare !== sourceSquare &&
-            onDrop(sourceSquare, targetSquare),
+          onPieceDrop: ({ sourceSquare, targetSquare }) => {
+            if (targetSquare === null) return false
+            // A drag back onto its own square is a click on it (it selects the piece).
+            if (targetSquare === sourceSquare) {
+              onSquareClick?.(sourceSquare)
+              return false
+            }
+            return onDrop(sourceSquare, targetSquare)
+          },
         }
       : {}),
     onSquareRightClick: ({ square }) => {

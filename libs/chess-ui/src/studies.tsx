@@ -15,7 +15,7 @@ import { Board, FlipIcon, PromotionPicker } from './board.tsx'
 import { MoveNav } from './game.tsx'
 import type { ReactNode } from 'react'
 import type { MoveTreeEditor, StudyListItem } from './studies-model.ts'
-import type { Evaluation, StudyMove, TreePath } from '@chess/core'
+import type { Evaluation, EvaluationLine, StudyMove, TreePath } from '@chess/core'
 import type { Analysis } from './analysis.ts'
 
 /**
@@ -231,9 +231,16 @@ export function AnalysisPanel({
   )
 }
 
+/** The score as a bar shows it, at the end of the side ahead: `0.4`, `2.1`, `M3` (no sign: the end says whose). */
+export function barScore(line: Pick<EvaluationLine, 'cp' | 'mate'>): string {
+  if (line.mate !== null) return `M${Math.abs(line.mate)}`
+  return (Math.abs(line.cp ?? 0) / 100).toFixed(1)
+}
+
 /**
  * The evaluation beside a board while playing: White's winning chances as the white part of a bar, White's end
- * toward White's side of the board, and the score as its name. Even while the position is not evaluated yet.
+ * toward White's side of the board, the score written at the end of the side ahead and as the bar's name. Even while
+ * the position is not evaluated yet.
  */
 export function EvalBar({
   evaluation,
@@ -244,13 +251,16 @@ export function EvalBar({
 }) {
   const best = evaluation?.lines[0]
   const white = best ? (chances(best) + 1) / 2 : 0.5
+  const whiteAhead = white >= 0.5
+  // White's end is at the bottom when the board shows White from below.
+  const atBottom = whiteAhead === (orientation === 'white')
   return (
     <div
       role="img"
       aria-label={`Evaluation ${best ? scoreText(best) : 'pending'}`}
       title={best ? scoreText(best) : undefined}
       data-testid="eval-bar"
-      className={`flex w-3 shrink-0 overflow-hidden rounded-control border border-line-default bg-fg-muted ${
+      className={`relative flex w-7 shrink-0 overflow-hidden rounded-control border border-line-default bg-fg-muted ${
         orientation === 'white' ? 'flex-col-reverse' : 'flex-col'
       }`}
     >
@@ -259,25 +269,61 @@ export function EvalBar({
         className="bg-fg-primary transition-[height] duration-300 motion-reduce:transition-none"
         style={{ height: `${Math.round(white * 1000) / 10}%` }}
       />
+      {best ? (
+        <span
+          aria-hidden
+          data-testid="eval-score"
+          className={`absolute inset-x-0 text-center font-mono text-[10px] leading-4 font-semibold ${
+            atBottom ? 'bottom-0.5' : 'top-0.5'
+          } ${whiteAhead ? 'text-surface-page' : 'text-fg-primary'}`}
+        >
+          {barScore(best)}
+        </span>
+      ) : null}
     </div>
   )
 }
 
 /** The engine's best moves under a board: each line's score and its moves in SAN; or that the engine is on it. */
-export function EngineLines({ fen, evaluation }: { fen: string; evaluation: Evaluation | null }) {
+export function EngineLines({
+  fen,
+  evaluation,
+  onPlay,
+}: {
+  fen: string
+  evaluation: Evaluation | null
+  /** When given, each line is a button that plays its first move (UCI). */
+  onPlay?: (uci: string) => void
+}) {
   return (
     <div className="flex min-h-6 flex-col gap-1" data-testid="engine-lines" aria-live="polite">
       {evaluation && evaluation.lines.length > 0 ? (
-        evaluation.lines.map((line, i) => (
-          <p key={i} className="m-0 flex gap-2 text-sm" data-testid="engine-line">
-            <span className="w-14 shrink-0 font-mono text-fg-primary">{scoreText(line)}</span>
-            <span className="truncate font-mono text-fg-body">
-              {lineMoves(fen, line.pv)
-                .map((m) => m.san)
-                .join(' ')}
-            </span>
-          </p>
-        ))
+        evaluation.lines.map((line, i) => {
+          const sans = lineMoves(fen, line.pv).map((m) => m.san)
+          const body = (
+            <>
+              <span className="w-14 shrink-0 font-mono text-fg-primary">{scoreText(line)}</span>
+              <span className="truncate font-mono text-fg-body">{sans.join(' ')}</span>
+            </>
+          )
+          const first = line.pv[0]
+          return onPlay && first && sans.length > 0 ? (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onPlay(first)}
+              title={`Play ${sans[0]}`}
+              className="flex cursor-pointer gap-2 rounded-control border-0 bg-transparent px-1 py-0.5 text-left text-sm hover:bg-surface-hover"
+              data-testid="engine-line"
+            >
+              {body}
+            </button>
+          ) : (
+            <p key={i} className="m-0 flex gap-2 text-sm" data-testid="engine-line">
+              {body}
+            </p>
+          )
+        })
       ) : (
         <p className="m-0 text-sm text-fg-muted">The engine is thinking…</p>
       )}

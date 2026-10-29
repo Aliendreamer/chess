@@ -1,7 +1,7 @@
 import { STANDARD_START, groupFamilies, legalTargets, uciSquares } from '@chess/core'
-import { AppLink, Panel, href } from './ui.tsx'
+import { AppLink, Button, Panel, href } from './ui.tsx'
 import { Board, PromotionPicker } from './board.tsx'
-import { lineState, lineText, sanAt, studyLineLabel } from './trainer-model.ts'
+import { lineState, lineText, movesText, sanAt, studyLineLabel } from './trainer-model.ts'
 import type { ReactNode } from 'react'
 import type {
   Drill,
@@ -191,6 +191,7 @@ export function DrillStatus({
   yourMove,
   wrong,
   otherLine = null,
+  hint = null,
   startFen = STANDARD_START,
 }: {
   line: { moves: ReadonlyArray<string> }
@@ -198,6 +199,7 @@ export function DrillStatus({
   yourMove: boolean
   wrong: Drill['wrong']
   otherLine?: Drill['otherLine']
+  hint?: Drill['hint']
   startFen?: string
 }) {
   const san = (uci?: string) => sanAt(line.moves, ply, uci, startFen)
@@ -205,9 +207,11 @@ export function DrillStatus({
     ? `${san(wrong.played)} is not the line. Play ${san()}.`
     : otherLine
       ? `${san(otherLine.played)} is your other line here. This one goes ${san()}.`
-      : yourMove
-        ? 'Your move.'
-        : 'The board plays…'
+      : hint
+        ? `Hint: ${san()}.`
+        : yourMove
+          ? 'Your move.'
+          : 'The board plays…'
   return (
     <p
       className={`m-0 text-sm ${wrong ? 'text-status-loss' : 'text-fg-secondary'}`}
@@ -433,6 +437,7 @@ export function DrillLayout({
   startFen?: string
   children?: ReactNode
 }) {
+  const hintArrow = uciSquares(drill.hint)
   return (
     <div className="grid grid-cols-1 items-start gap-6 shell:grid-cols-[minmax(0,var(--board-max))_minmax(0,360px)] shell:gap-8">
       <div className="flex max-w-(--board-max) flex-col gap-3" data-testid="drill-board">
@@ -440,6 +445,7 @@ export function DrillLayout({
           fen={drill.fen}
           orientation={color}
           lastMove={uciSquares(moves[drill.ply - 1])}
+          arrows={hintArrow ? [hintArrow] : []}
           selected={drill.selected}
           targets={drill.selected ? legalTargets(drill.fen, drill.selected) : []}
           {...(drill.yourMove ? { onSquareClick: drill.onSquareClick, onDrop: drill.onDrop } : {})}
@@ -459,6 +465,11 @@ export function DrillLayout({
         <p className="m-0 min-h-5 font-mono text-sm text-fg-body" data-testid="drill-moves">
           {lineText(moves, drill.ply, startFen)}
         </p>
+        {drill.lineShown && !drill.done ? (
+          <p className="m-0 font-mono text-sm text-fg-secondary" data-testid="drill-coming">
+            Still to come: {movesText(moves, drill.ply, moves.length, startFen)}
+          </p>
+        ) : null}
         {drill.done ? null : (
           <DrillStatus
             line={{ moves }}
@@ -466,8 +477,30 @@ export function DrillLayout({
             yourMove={drill.yourMove}
             wrong={drill.wrong}
             otherLine={drill.otherLine}
+            hint={drill.hint}
             startFen={startFen}
           />
+        )}
+        {drill.done ? null : (
+          <div className="flex flex-wrap gap-2">
+            {drill.lineShown ? (
+              <Button size="sm" onClick={drill.hideLine} data-testid="drill-hide-line">
+                Hide the line
+              </Button>
+            ) : (
+              <Button size="sm" onClick={drill.showLine} data-testid="drill-show-line">
+                Show the line
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={drill.askHint}
+              disabled={!drill.yourMove || drill.hint !== null}
+              data-testid="drill-hint"
+            >
+              Hint
+            </Button>
+          </div>
         )}
         {children}
       </Panel>

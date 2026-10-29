@@ -22,6 +22,9 @@ const BERLIN: TrainerLine = {
   dueAt: null,
 }
 
+/** The same line once trained: the drill starts with the line hidden. */
+const BERLIN_TRAINED: TrainerLine = { ...BERLIN, box: 1, dueAt: '2026-10-01T00:00:00Z' }
+
 describe('drill rules', () => {
   it('knows whose move each ply is', () => {
     expect([0, 1, 2].map((p) => isMemberMove(p, 'white'))).toEqual([true, false, true])
@@ -54,7 +57,7 @@ describe('useDrill', () => {
   it('plays the other side, waits for the member, and finishes clean', async () => {
     vi.useFakeTimers()
     const onDone = vi.fn()
-    const { result } = renderHook(() => useDrill(BERLIN, 'black', onDone, 300))
+    const { result } = renderHook(() => useDrill(BERLIN_TRAINED, 'black', onDone, 300))
     expect(result.current.ply).toBe(0)
     await act(() => vi.advanceTimersByTimeAsync(300)) // the board plays 1.e4
     expect(result.current.ply).toBe(1)
@@ -100,13 +103,63 @@ describe('useDrill', () => {
   it('a line that ends on the other side finishes after the board plays it', async () => {
     vi.useFakeTimers()
     const onDone = vi.fn()
-    const { result } = renderHook(() => useDrill(BERLIN, 'white', onDone, 300))
+    const { result } = renderHook(() => useDrill(BERLIN_TRAINED, 'white', onDone, 300))
     for (const uci of ['e2e4', 'g1f3', 'f1b5']) {
       act(() => result.current.play(uci))
       await act(() => vi.advanceTimersByTimeAsync(300))
     }
     expect(result.current.done).toBe(true)
     expect(onDone).toHaveBeenCalledWith(0)
+  })
+})
+
+describe('useDrill: learning a line', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
+
+  it('shows a line to learn, and a run that showed it counts one mistake so the line comes back', async () => {
+    vi.useFakeTimers()
+    const onDone = vi.fn()
+    const { result } = renderHook(() => useDrill({ ...BERLIN, learn: true }, 'white', onDone, 300))
+    expect(result.current.lineShown).toBe(true)
+    for (const uci of ['e2e4', 'g1f3', 'f1b5']) {
+      act(() => result.current.play(uci))
+      await act(() => vi.advanceTimersByTimeAsync(300))
+    }
+    expect(result.current.mistakes).toBe(0)
+    expect(onDone).toHaveBeenCalledWith(1)
+  })
+
+  it('hides a trained line until asked; showing it marks the run, hiding it again does not undo that', async () => {
+    vi.useFakeTimers()
+    const onDone = vi.fn()
+    const { result } = renderHook(() => useDrill(BERLIN_TRAINED, 'white', onDone, 300))
+    expect(result.current.lineShown).toBe(false)
+    act(() => result.current.showLine())
+    expect(result.current.lineShown).toBe(true)
+    act(() => result.current.hideLine())
+    expect(result.current.lineShown).toBe(false)
+    for (const uci of ['e2e4', 'g1f3', 'f1b5']) {
+      act(() => result.current.play(uci))
+      await act(() => vi.advanceTimersByTimeAsync(300))
+    }
+    expect(onDone).toHaveBeenCalledWith(1)
+  })
+
+  it("a hint points at the move, counts once per move, and only on the member's turn", async () => {
+    vi.useFakeTimers()
+    const { result } = renderHook(() => useDrill(BERLIN_TRAINED, 'black', vi.fn(), 300))
+    act(() => result.current.askHint()) // the board's move: ignored
+    expect(result.current.hint).toBeNull()
+    await act(() => vi.advanceTimersByTimeAsync(300))
+    act(() => result.current.askHint())
+    act(() => result.current.askHint())
+    expect(result.current.hint).toBe('e7e5')
+    expect(result.current.mistakes).toBe(1)
+    act(() => result.current.play('e7e5'))
+    expect(result.current.hint).toBeNull()
   })
 })
 

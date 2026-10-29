@@ -203,6 +203,9 @@ describe('EvalBar and EngineLine (the evaluation while playing)', () => {
     const white = bar.querySelector('[data-side="white"]') as HTMLElement
     expect(white.style.height).toBe('59.1%')
     expect(bar.className).toContain('flex-col-reverse')
+    // The number at White's end, at the bottom.
+    const score = screen.getByTestId('eval-score')
+    expect([score.textContent, score.className.includes('bottom-0.5')]).toEqual(['1.0', true])
   })
 
   it('turns with the board and shows a mate as all or nothing', () => {
@@ -210,6 +213,9 @@ describe('EvalBar and EngineLine (the evaluation while playing)', () => {
     const bar = screen.getByRole('img', { name: 'Evaluation #-2' })
     expect((bar.querySelector('[data-side="white"]') as HTMLElement).style.height).toBe('0%')
     expect(bar.className).not.toContain('flex-col-reverse')
+    // Black ahead, Black's end at the bottom when the board shows Black.
+    const score = screen.getByTestId('eval-score')
+    expect([score.textContent, score.className.includes('bottom-0.5')]).toEqual(['M2', true])
   })
 
   it('stays even while the position is not evaluated yet', () => {
@@ -236,5 +242,26 @@ describe('EvalBar and EngineLine (the evaluation while playing)', () => {
     ])
     rerender(<EngineLines fen={STANDARD_START} evaluation={null} />)
     expect(screen.getByTestId('engine-lines').textContent).toBe('The engine is thinking…')
+  })
+
+  it('plays a line’s first move when the page lets it', () => {
+    const played: Array<string> = []
+    const evaluation = {
+      thinkMs: 500,
+      depth: 18,
+      lines: [
+        { cp: 35, mate: null, pv: ['e2e4', 'e7e5'] },
+        { cp: 30, mate: null, pv: ['d2d4'] },
+      ],
+    }
+    render(
+      <EngineLines
+        fen={STANDARD_START}
+        evaluation={evaluation}
+        onPlay={(uci) => played.push(uci)}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /d4/ }))
+    expect(played).toEqual(['d2d4'])
   })
 })

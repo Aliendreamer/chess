@@ -88,6 +88,10 @@ describe('DrillStatus', () => {
       '3...a6 is not the line. Play 3...Nf6.',
     )
   })
+  it('names the hinted move', () => {
+    render(<DrillStatus line={line()} ply={5} yourMove wrong={null} hint="g8f6" />)
+    expect(screen.getByTestId('drill-status').textContent).toBe('Hint: 3...Nf6.')
+  })
 })
 
 describe('RunOutcome', () => {

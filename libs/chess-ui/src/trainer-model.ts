@@ -156,7 +156,7 @@ export function lineText(
 }
 
 /** Moves `from`–`to` in numbered notation; the first one shown keeps its number even when it is Black's. */
-function movesText(
+export function movesText(
   moves: ReadonlyArray<string>,
   from: number,
   to: number,
@@ -207,6 +207,8 @@ export function studyLineLabel(
 export interface DrillLine {
   key: string
   moves: Array<string>
+  /** Start with the whole line shown: a named line the member never trained (its first run is for learning it). */
+  learn?: boolean
 }
 
 export interface Drill {
@@ -218,6 +220,14 @@ export interface Drill {
   otherLine: { played: string; expected: string } | null
   mistakes: number
   done: boolean
+  /** The whole line is on view; a run that had it on view counts at least one mistake, so the line comes back next. */
+  lineShown: boolean
+  showLine: () => void
+  hideLine: () => void
+  /** The move the hint points at (UCI) while it is the member's turn; null without a hint. */
+  hint: string | null
+  /** Points at the line's move on the board; counts one mistake per move. */
+  askHint: () => void
   /** The member's move, as UCI; ignored while it is not their turn. */
   play: (uci: string) => void
   /** Board input, as on the study board: click-to-move, drag, and the promotion choice. */
@@ -231,8 +241,10 @@ export interface Drill {
 
 /**
  * One run through a line: the board plays the other side `delayMs` after it is its turn; the member's moves are checked
- * against the line, a wrong one stays shown (and counted) until the right one is played. `onDone(mistakes)` is called
- * once when the line ends. A new line needs a new hook (key the component by the line).
+ * against the line, a wrong one stays shown (and counted) until the right one is played. A `learn` line starts with
+ * the whole line shown, to learn before it is tested; a hint counts a mistake, and a run that showed the line
+ * reports at least one, so the line comes back next to play from memory. `onDone(mistakes)` is called once when the
+ * line ends. A new line needs a new hook (key the component by the line).
  */
 export function useDrill(
   line: DrillLine,
@@ -248,6 +260,9 @@ export function useDrill(
   const [mistakes, setMistakes] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)
   const [promotion, setPromotion] = useState<Drill['promotion']>(null)
+  const [lineShown, setLineShown] = useState(line.learn === true)
+  const [seen, setSeen] = useState(line.learn === true)
+  const [hintAt, setHintAt] = useState<number | null>(null)
   const finished = useRef(false)
   const done = ply >= line.moves.length
   const yourMove = !done && isMemberMove(ply, color, startFen)
@@ -261,9 +276,9 @@ export function useDrill(
   useEffect(() => {
     if (done && !finished.current) {
       finished.current = true
-      onDone(mistakes)
+      onDone(seen ? Math.max(mistakes, 1) : mistakes)
     }
-  }, [done, mistakes, onDone])
+  }, [done, mistakes, seen, onDone])
 
   function play(uci: string) {
     if (!yourMove) return
@@ -293,6 +308,18 @@ export function useDrill(
     otherLine,
     mistakes,
     done,
+    lineShown,
+    showLine: () => {
+      setLineShown(true)
+      setSeen(true)
+    },
+    hideLine: () => setLineShown(false),
+    hint: yourMove && hintAt === ply ? line.moves[ply]! : null,
+    askHint: () => {
+      if (!yourMove || hintAt === ply) return
+      setHintAt(ply)
+      setMistakes((m) => m + 1)
+    },
     play,
     selected,
     promotion,
