@@ -144,8 +144,9 @@ function StudyDrillBoard({
   onDone: (lineKey: string, mistakes: number) => void
   children: ReactNode
 }) {
+  // A line never trained opens shown: its first run is for learning it.
   const drill = useDrill(
-    line,
+    { ...line, learn: line.box === null },
     color,
     (mistakes) => onDone(line.key, mistakes),
     400,

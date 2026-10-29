@@ -125,7 +125,10 @@ function DrillBoard({
   onDone: (lineKey: string, mistakes: number) => void
   children: ReactNode
 }) {
-  const drill = useDrill(line, color, (mistakes) => onDone(line.key, mistakes))
+  // A line never trained opens shown: its first run is for learning it.
+  const drill = useDrill({ ...line, learn: line.box === null }, color, (mistakes) =>
+    onDone(line.key, mistakes),
+  )
   return (
     <DrillLayout drill={drill} color={color} title={`${line.eco} ${line.name}`} moves={line.moves}>
       {children}

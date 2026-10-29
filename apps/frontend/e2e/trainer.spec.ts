@@ -95,7 +95,8 @@ test('a line is drilled, missed, offered again and played cleanly', async ({ bro
 
 /**
  * study-repertoire-trainer: a member imports a study with one variation (1.e4 e5 2.Nf3, 2.f4), trains it as White from
- * the study page, plays the other line's move once (named, not counted), and finishes both lines cleanly.
+ * the study page. A new line opens shown, so its first run comes back at once; played again from memory, with the other
+ * line's move once (named, not counted), it is clean.
  */
 test("a study's lines are drilled, the other line named without a mistake", async ({ browser }) => {
   test.setTimeout(150_000)
@@ -117,22 +118,34 @@ test("a study's lines are drilled, the other line named without a mistake", asyn
   await expect(page.getByRole('img', { name: '0 of 2 learned' })).toBeVisible()
 
   const status = page.getByTestId('drill-status')
-  // The main line first: 1.e4, the board's 1...e5, then 2.f4 is the other line's move here.
+  const outcome = page.getByTestId('run-outcome')
+  // The main line first, new: shown while it is played, so it comes back first.
+  await expect(page.getByTestId('drill-coming')).toContainText('1.e4 e5 2.Nf3')
+  await expect(status).toHaveText('Your move.', { timeout: 15_000 })
+  await move(page, 'e2', 'e4')
+  await expect(status).toHaveText('Your move.', { timeout: 15_000 })
+  await move(page, 'g1', 'f3')
+  await expect(outcome).toContainText('This line comes back first.')
+
+  // Again, from memory: 1.e4, the board's 1...e5, then 2.f4 is the other line's move here.
+  await page.getByRole('button', { name: 'Next line' }).click()
+  await expect(outcome).toBeHidden()
+  await expect(page.getByTestId('drill-coming')).toBeHidden()
   await expect(status).toHaveText('Your move.', { timeout: 15_000 })
   await move(page, 'e2', 'e4')
   await expect(status).toHaveText('Your move.', { timeout: 15_000 })
   await move(page, 'f2', 'f4')
   await expect(status).toHaveText('2.f4 is your other line here. This one goes 2.Nf3.')
   await move(page, 'g1', 'f3')
-  await expect(page.getByTestId('run-outcome')).toContainText('Clean.')
+  await expect(outcome).toContainText('Clean.')
 
-  // The variation next, cleanly.
+  // The variation next: new, so shown and back first.
   await page.getByRole('button', { name: 'Next line' }).click()
   await expect(status).toHaveText('Your move.', { timeout: 15_000 })
   await move(page, 'e2', 'e4')
   await expect(status).toHaveText('Your move.', { timeout: 15_000 })
   await move(page, 'f2', 'f4')
-  await expect(page.getByTestId('run-outcome')).toContainText('Clean.')
+  await expect(outcome).toContainText('This line comes back first.')
 
   const lines = page.getByRole('table', { name: 'Lines' })
   await expect(lines.getByRole('row', { name: /Main line/ })).toContainText('learning')
