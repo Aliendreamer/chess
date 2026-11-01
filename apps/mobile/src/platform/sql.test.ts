@@ -1,26 +1,6 @@
-import { DatabaseSync } from 'node:sqlite'
 import { createStudies, listStudies, openDb, schemaVersion } from '@chess/local'
+import { nodeDatabase } from '@/testing/node-sql'
 import { expoSql } from './sql'
-import type { ExpoDatabase } from './sql'
-
-/** expo-sqlite's async database, played by Node's own SQLite: the adapter is tested against a real engine. */
-function nodeDatabase(): ExpoDatabase & { close: () => void } {
-  const db = new DatabaseSync(':memory:')
-  return {
-    getAllAsync: <T>(sql: string, params: Array<string | number | null>) =>
-      Promise.resolve(db.prepare(sql).all(...params) as Array<T>),
-    runAsync: (sql: string, params: Array<string | number | null>) =>
-      Promise.resolve({
-        changes: Number(db.prepare(sql).run(...params).changes),
-        lastInsertRowId: 0,
-      }),
-    execAsync: (sql: string) => {
-      db.exec(sql)
-      return Promise.resolve()
-    },
-    close: () => db.close(),
-  }
-}
 
 test('runs the shared data layer: migrations, a batch, reads', async () => {
   const native = nodeDatabase()

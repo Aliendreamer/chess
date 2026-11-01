@@ -97,7 +97,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
 - [x] 4.2 `src/platform/assets.ts` (`LocalAssets` over `expo-asset` + `expo-file-system`; `library.json.gz` and the
       openings as assets), `fetch` as `FetchText`, `Linking.openURL` for links.
       Test first: an asset test expects the bundled library's bytes and fails.
-- [ ] 4.3 `src/lib/app.ts`: build the services (database, one-channel scheduler, review queue, miner off by default,
+- [x] 4.3 `src/lib/app.ts`: build the services (database, one-channel scheduler, review queue, miner off by default,
       news timers) and hook `AppState` to `hold`/`resume` (D8).
       Test first: `app.test.ts` sends `AppState` → `background` and expects `hold()` on the scheduler and a stopped
       news timer, and fails.
