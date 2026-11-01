@@ -75,6 +75,9 @@ apps/mobile/dist/
 apps/mobile/build/
 apps/mobile/expo-env.d.ts
 apps/mobile/modules/stockfish/vendor/
+# Gradle's CMake and build output for the Stockfish module.
+apps/mobile/modules/stockfish/android/.cxx/
+apps/mobile/modules/stockfish/android/build/
 *.jks
 *.keystore
 apps/mobile/modules/stockfish/.host-build/
