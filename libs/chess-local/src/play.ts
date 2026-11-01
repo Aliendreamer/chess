@@ -1,4 +1,5 @@
 import { STANDARD_START, buildPgn, engineName, findLevel, judgeMove, seat } from '@chess/core'
+import { PositionFailed } from './crash.ts'
 import { newId } from './db.ts'
 import type {
   Color,
@@ -272,10 +273,14 @@ async function answerOffer(
   if (!game) return { ok: false, status: 404, error: 'There is no such game.' }
   if (game.status !== 'playing') return { ok: false, status: 409, error: 'The game is over.' }
   const engineColor: Color = game.personColor === 'white' ? 'black' : 'white'
-  const score = engineScore(
-    await judge.evaluate(game.fen, OFFER_THINK_MS, 'judgement'),
-    engineColor,
-  )
+  // A position that crashed the engine is not judged again (mobile-app D13): the engine plays on.
+  const evaluation = await judge
+    .evaluate(game.fen, OFFER_THINK_MS, 'judgement')
+    .catch((e: unknown) => {
+      if (e instanceof PositionFailed) return null
+      throw e
+    })
+  const score = evaluation ? engineScore(evaluation, engineColor) : null
   // The game may have moved on (or ended) while the position was judged: the answer was about another one.
   const current = await loadGame(db, id)
   if (!current || current.status !== 'playing' || current.fen !== game.fen)

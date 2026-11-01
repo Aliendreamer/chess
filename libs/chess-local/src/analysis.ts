@@ -1,4 +1,5 @@
 import { positionKey } from '@chess/core'
+import { PositionFailed, isBackground, isFailedPosition } from './crash.ts'
 import type { AnalysisView, CommandOutcome, Evaluation, EvaluationLine, Think } from '@chess/core'
 import type { AnalysisPriority, EngineScheduler } from './engine.ts'
 import type { Db } from './db.ts'
@@ -123,6 +124,9 @@ export class Evaluator {
     const key = positionKey(fen)
     const stored = await storedEvaluation(this.db, key, thinkMs)
     if (stored) return stored
+    // A position that crashed the engine is not asked again by work the player did not ask for (mobile-app D13).
+    if (isBackground(priority) && (await isFailedPosition(this.db, fen)))
+      throw new PositionFailed(fen)
     const id = `${key}|${thinkMs}`
     let running = this.inFlight.get(id)
     if (!running) {

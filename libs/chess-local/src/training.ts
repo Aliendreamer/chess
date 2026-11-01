@@ -71,6 +71,7 @@ export async function mineRound(
     `SELECT lp.position_key, lp.game_id, lp.ply, lp.next_uci FROM library_positions lp
      WHERE lp.ply >= ? AND lp.next_uci IS NOT NULL
        AND NOT EXISTS (SELECT 1 FROM training_candidates c WHERE c.position_key = lp.position_key)
+       AND NOT EXISTS (SELECT 1 FROM engine_failures f WHERE f.position_key = lp.position_key)
        AND (SELECT count(*) FROM training_candidates c WHERE c.game_id = lp.game_id) < ?
      LIMIT 2000`,
     [options.minPly, options.perGame],

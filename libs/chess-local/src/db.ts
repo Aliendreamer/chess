@@ -1,4 +1,5 @@
 import init from './migrations/0001_init.ts'
+import engineFailures from './migrations/0002_engine_failures.ts'
 
 /**
  * The app's one database (desktop-app D4): a SQLite file in the app data directory, reached through `tauri-plugin-sql`
@@ -20,7 +21,7 @@ export interface Statement {
 }
 
 /** The migrations, in order: the n-th takes the database to `user_version` n. */
-export const MIGRATIONS: ReadonlyArray<string> = [init]
+export const MIGRATIONS: ReadonlyArray<string> = [init, engineFailures]
 
 export interface Db {
   /** A read: it runs at once, beside any write in flight (WAL). */

@@ -1,5 +1,6 @@
 import { STANDARD_START, missing, positionKey, practice, review, trainingIds } from '@chess/core'
 import { storedEvaluations } from './analysis.ts'
+import { isFailedPosition } from './crash.ts'
 import { openingNames } from './openings.ts'
 import { loadGame } from './play.ts'
 import type { CommandOutcome, ReviewInput, ReviewView } from '@chess/core'
@@ -40,8 +41,16 @@ export async function loadReview(db: Db, gameId: string): Promise<ReviewView | n
     [gameId],
   )
   const input = await inputOf(db, game)
-  const status = !row ? 'none' : missing(input).length === 0 ? 'complete' : 'running'
+  const left = await unfailed(db, missing(input))
+  const status = !row ? 'none' : left.length === 0 ? 'complete' : 'running'
   return { status, ...review(input) }
+}
+
+/** The positions still to evaluate, without those the engine crashed on. */
+async function unfailed<T extends { fen: string }>(db: Db, positions: Array<T>): Promise<Array<T>> {
+  const kept: Array<T> = []
+  for (const p of positions) if (!(await isFailedPosition(db, p.fen))) kept.push(p)
+  return kept
 }
 
 /** Whether a game is reviewed at all: ended, with two moves or more, not aborted. */
@@ -65,7 +74,8 @@ export async function runReview(
     'INSERT INTO reviews (game_id, requested_at) VALUES (?, ?) ON CONFLICT (game_id) DO NOTHING',
     [gameId, now.toISOString()],
   )
-  for (const position of missing(await inputOf(db, game))) {
+  // A position that crashed the engine is skipped (mobile-app D13): the review completes without its score.
+  for (const position of await unfailed(db, missing(await inputOf(db, game)))) {
     await evaluator.evaluate(position.fen, REVIEW_THINK_MS, 'review')
   }
   await db.execute('UPDATE reviews SET complete = 1 WHERE game_id = ?', [gameId])

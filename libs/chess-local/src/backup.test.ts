@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { openDb } from './db.ts'
+import { MIGRATIONS, openDb } from './db.ts'
 import { backupTo, restoreFrom } from './backup.ts'
 import { createGame, listGames } from './play.ts'
 import { createStudies, listStudies } from './studies.ts'
@@ -45,6 +45,21 @@ describe('backup and restore (desktop-app D10)', () => {
       siteTheme: 'light',
     })
     expect(existsSync(join(d, 'there.before-restore'))).toBe(true)
+  })
+
+  it('restores a backup from the first schema: later migrations add only what a backup does not carry', async () => {
+    const d = dir()
+    const db = await openDb(file(join(d, 'main.db')))
+    const old = file(join(d, 'old.db'))
+    const first = await openDb(old, undefined, MIGRATIONS.slice(0, 1))
+    await createStudies(first, [{ title: 'From the first schema', tree: [] }])
+    const restored = await restoreFrom(
+      db,
+      { path: join(d, 'old.db'), open: opener(join(d, 'old.db')) },
+      join(d, 'aside'),
+    )
+    expect(restored).toMatchObject({ ok: true })
+    expect((await listStudies(db)).map((s) => s.title)).toEqual(['From the first schema'])
   })
 
   it('refuses a file that is not a backup, or one from a newer version, changing nothing', async () => {

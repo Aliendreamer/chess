@@ -15,6 +15,7 @@ const fresh = (path?: string) => {
 
 const TABLES = [
   'chess_events',
+  'engine_failures',
   'games',
   'library_games',
   'library_positions',

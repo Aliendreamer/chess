@@ -6,6 +6,7 @@ import { STANDARD_START, findLevel, levelOptions } from '@chess/core'
 import {
   EngineExited,
   EngineScheduler,
+  EngineStuck,
   EngineSupervisor,
   EngineTimeout,
   UciEngine,
@@ -166,6 +167,42 @@ const supervisor = (fake: ReturnType<typeof fakeEngine>) =>
   new EngineSupervisor(() => Promise.resolve(fake.channel))
 const CASUAL = levelOptions(findLevel('1320')!)
 
+describe('an engine that stops answering (mobile-app D13)', () => {
+  it('is restarted when it misses a deadline, and the request asked again', async () => {
+    let starts = 0
+    const supervised = new EngineSupervisor(
+      () => {
+        starts++
+        return Promise.resolve(fakeEngine({ searchMs: starts === 1 ? 10_000 : 10 }).channel)
+      },
+      { slackMs: 50, quitMs: 200 },
+    )
+    const move = await supervised.run((engine) => engine.bestMove(STANDARD_START, CASUAL, 10))
+    expect(move).toBe('e2e4')
+    expect(starts).toBe(2)
+    expect(supervised.state).toBe('ready')
+  })
+
+  it('is stuck when it does not quit either, and refuses every request after', async () => {
+    const fake = fakeEngine({ searchMs: 10_000 })
+    const channel = { ...fake.channel, kill: () => new Promise<void>(() => undefined) }
+    const supervised = new EngineSupervisor(() => Promise.resolve(channel), {
+      slackMs: 50,
+      quitMs: 100,
+    })
+    const states: Array<string> = []
+    supervised.subscribe((s) => states.push(s))
+    await expect(
+      supervised.run((engine) => engine.bestMove(STANDARD_START, CASUAL, 10)),
+    ).rejects.toBeInstanceOf(EngineStuck)
+    expect(supervised.state).toBe('stuck')
+    expect(states).toContain('stuck')
+    await expect(
+      supervised.run((engine) => engine.analyse(AFTER_E4, 10, 1)),
+    ).rejects.toBeInstanceOf(EngineStuck)
+  })
+})
+
 describe('the engine scheduler (desktop-app D5, mobile-app D7)', () => {
   it('stops a review for the board, answers the board first, then asks the review again', async () => {
     const fake = fakeEngine({ searchMs: 200 })
@@ -232,6 +269,21 @@ describe('the engine scheduler (desktop-app D5, mobile-app D7)', () => {
     await review
     expect(analysis.lines).toHaveLength(2)
     expect(fake.searches()).toBe(3) // the board, stopped; the board again; the review
+  })
+
+  it('marks each search with its request when asked to, for the crash record', async () => {
+    const fake = fakeEngine({ searchMs: 10 })
+    const scheduler = new EngineScheduler({ analysis: supervisor(fake) }, { markRequests: true })
+    await scheduler.analyse(AFTER_E4, 10, 3, 'board')
+    const mark = fake.sent.findIndex((l) => l.startsWith('# request '))
+    expect(JSON.parse(fake.sent[mark]!.slice('# request '.length))).toEqual({
+      kind: 'board',
+      fen: AFTER_E4,
+    })
+    expect(fake.sent.findIndex((l) => l.startsWith('go'))).toBeGreaterThan(mark)
+    const unmarked = fakeEngine({ searchMs: 10 })
+    await new EngineScheduler({ analysis: supervisor(unmarked) }).analyse(AFTER_E4, 10, 3, 'board')
+    expect(unmarked.sent.some((l) => l.startsWith('#'))).toBe(false)
   })
 
   it('plays on its own engine when it has one, beside the analysis', async () => {

@@ -26,6 +26,13 @@ export class EngineExited extends Error {
 
 export class EngineTimeout extends Error {}
 
+/** The engine missed a deadline and did not quit when told: it cannot be stopped inside the app (mobile-app D13). */
+export class EngineStuck extends Error {
+  constructor() {
+    super('Stockfish stopped responding. Close and reopen the app; your games are saved.')
+  }
+}
+
 const HANDSHAKE_MS = 10_000
 
 /** An analysis: the depth reached and the best lines, best first. */
@@ -115,6 +122,14 @@ export class UciEngine {
     }
   }
 
+  /**
+   * Tells the native bridge what the next search is for (mobile-app D13): a comment line it keeps for the crash
+   * record and never passes to Stockfish.
+   */
+  mark(request: { kind: string; fen: string }): Promise<void> {
+    return this.channel.write(`# request ${JSON.stringify(request)}`)
+  }
+
   /** Ends the search in progress: the engine answers `bestmove` at once with what it has. */
   stop(): Promise<void> {
     return this.channel.write('stop')
@@ -201,11 +216,13 @@ export function parseInfo(
   }
 }
 
-export type EngineStatus = 'starting' | 'ready' | 'restarting'
+export type EngineStatus = 'starting' | 'ready' | 'restarting' | 'stuck'
 
 /**
- * One engine process kept alive: started on first use, restarted when it exits, and a request that the exit cut short
- * asked once more on the new process. Requests run one at a time.
+ * One engine process kept alive: started on first use, restarted when it exits or misses a deadline, and a request
+ * that was cut short asked once more on the new engine. An engine that misses a deadline and does not quit within
+ * `quitMs` is stuck (mobile-app D13: a thread inside the app cannot be killed): every request is refused from then on.
+ * Requests run one at a time.
  */
 export class EngineSupervisor {
   private engine: Promise<UciEngine> | null = null
@@ -213,7 +230,12 @@ export class EngineSupervisor {
   private status: EngineStatus = 'starting'
   private readonly listeners = new Set<(status: EngineStatus) => void>()
 
-  constructor(private readonly start: () => Promise<UciChannel>) {}
+  private stuck = false
+
+  constructor(
+    private readonly start: () => Promise<UciChannel>,
+    private readonly options: { slackMs?: number; quitMs?: number } = {},
+  ) {}
 
   get state(): EngineStatus {
     return this.status
@@ -247,11 +269,20 @@ export class EngineSupervisor {
   }
 
   private async attempt<T>(work: (engine: UciEngine) => Promise<T>, retry: boolean): Promise<T> {
+    if (this.stuck) throw new EngineStuck()
     const engine = await this.ensure()
     try {
       return await work(engine)
     } catch (e) {
-      if (!(e instanceof EngineExited) || !retry) throw e
+      if (e instanceof EngineTimeout) {
+        this.engine = null
+        if (!(await settles(engine.quit(), this.options.quitMs ?? QUIT_MS))) {
+          this.stuck = true
+          this.setStatus('stuck')
+          throw new EngineStuck()
+        }
+      } else if (!(e instanceof EngineExited)) throw e
+      if (!retry) throw e
       this.engine = null
       this.setStatus('restarting')
       return this.attempt(work, false)
@@ -261,7 +292,10 @@ export class EngineSupervisor {
   private ensure(): Promise<UciEngine> {
     if (this.engine) return this.engine
     const starting = (async () => {
-      const engine = new UciEngine(await this.start())
+      const engine = new UciEngine(await this.start(), {
+        hashMb: 64,
+        slackMs: this.options.slackMs ?? 5_000,
+      })
       await engine.initialize()
       this.setStatus('ready')
       return engine
@@ -311,11 +345,15 @@ export class EngineScheduler {
   private stopped = false
   private held = false
 
-  constructor(private readonly engines: { analysis: EngineSupervisor; play?: EngineSupervisor }) {}
+  constructor(
+    private readonly engines: { analysis: EngineSupervisor; play?: EngineSupervisor },
+    /** Marks each search with its request for the native bridge's crash record (the mobile app). */
+    private readonly options: { markRequests?: boolean } = {},
+  ) {}
 
   /** The engine's move at a strength (`levelOptions`) after thinking `thinkMs`; null when it has none. */
   bestMove(fen: string, strength: ReadonlyArray<string>, thinkMs: number): Promise<string | null> {
-    const work = (engine: UciEngine) => engine.bestMove(fen, strength, thinkMs)
+    const work = this.marked('game', fen, (engine) => engine.bestMove(fen, strength, thinkMs))
     return this.engines.play ? this.engines.play.run(work) : this.enqueue('game', work)
   }
 
@@ -326,7 +364,10 @@ export class EngineScheduler {
     lines: number,
     priority: AnalysisPriority,
   ): Promise<EngineAnalysis> {
-    return this.enqueue(priority, (engine) => engine.analyse(fen, thinkMs, lines))
+    return this.enqueue(
+      priority,
+      this.marked(priority, fen, (engine) => engine.analyse(fen, thinkMs, lines)),
+    )
   }
 
   /** Requests waiting at a priority: the miner tops up only while little background work waits. */
@@ -346,6 +387,18 @@ export class EngineScheduler {
   resume(): void {
     this.held = false
     this.pump()
+  }
+
+  private marked<T>(
+    kind: EnginePriority,
+    fen: string,
+    work: (engine: UciEngine) => Promise<T>,
+  ): (engine: UciEngine) => Promise<T> {
+    if (!this.options.markRequests) return work
+    return async (engine) => {
+      await engine.mark({ kind, fen })
+      return work(engine)
+    }
   }
 
   private enqueue<T>(
@@ -395,3 +448,23 @@ export class EngineScheduler {
 }
 
 const rank = (priority: EnginePriority) => ENGINE_PRIORITIES.indexOf(priority)
+
+/** How long a stuck engine is given to quit before it is called stuck. */
+const QUIT_MS = 2_000
+
+/** Whether `promise` settles within `ms`. */
+function settles(promise: Promise<unknown>, ms: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(false), ms)
+    promise.then(
+      () => {
+        clearTimeout(timer)
+        resolve(true)
+      },
+      () => {
+        clearTimeout(timer)
+        resolve(true)
+      },
+    )
+  })
+}

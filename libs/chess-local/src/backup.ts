@@ -3,6 +3,12 @@ import type { CommandOutcome } from '@chess/core'
 import type { Db, Sql } from './db.ts'
 
 /**
+ * The oldest schema a backup may have. A backup from an older schema restores when every table it carries is unchanged
+ * since: migration 2 only added `engine_failures`, which backups leave out (it is about one device's engine).
+ */
+const OLDEST_RESTORABLE = 1
+
+/**
  * Backup and restore (desktop-app D10): a backup is the whole database copied with `VACUUM INTO` (consistent while the
  * app runs). A restore takes a file only when it is one of this app's (its marker row) and not from a newer version,
  * keeps the current data aside, then replaces every table's rows with the backup's in one transaction, the backup
@@ -55,7 +61,7 @@ export async function checkBackup(
       ok: false,
       error: 'That backup was made by a newer version of the app: update the app first.',
     }
-  if (version < MIGRATIONS.length)
+  if (version < OLDEST_RESTORABLE)
     return {
       ok: false,
       error: 'That backup was made by an older version of the app.',
