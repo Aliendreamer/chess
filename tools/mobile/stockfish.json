@@ -1,0 +1,16 @@
+{
+  "$comment": "The Stockfish compiled into the mobile app (mobile-app D6): the unmodified sf_19 source and the one network it names (evaluate.h's EvalFileDefaultName), each SHA-256 pinned; Stockfish embeds the network at build time. Bump with tools/desktop/stockfish.json (same tag) and the engine image.",
+  "tag": "sf_19",
+  "source": {
+    "url": "https://github.com/official-stockfish/Stockfish/archive/refs/tags/sf_19.tar.gz",
+    "sha256": "519b653d0d1ffb96531d982ccbe5c6a19425e8388e0e3c2f70f34b424ab32d76",
+    "root": "Stockfish-sf_19"
+  },
+  "networks": [
+    {
+      "name": "nn-1a298aa575a0.nnue",
+      "url": "https://github.com/official-stockfish/networks/raw/master/nn-1a298aa575a0.nnue",
+      "sha256": "1a298aa575a085434d29027978dc36867fe9c5bcea9376654b7a8eba1e52dfc2"
+    }
+  ]
+}

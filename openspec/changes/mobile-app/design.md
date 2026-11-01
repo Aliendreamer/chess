@@ -127,10 +127,11 @@ its own module, `apps/mobile/modules/stockfish` (Expo Modules API, autolinked). 
 carries UCI text lines both ways and knows no chess. Everything that understands UCI stays in TypeScript, in the
 client desktop already tests.
 
-- **Source:** `tools/mobile/fetch-stockfish-src.mjs` downloads the `sf_19` source archive and the two NNUE networks
-  it names, each SHA-256-pinned in `tools/mobile/stockfish.json`. It refuses a mismatch, as desktop's fetch does, and
-  writes into `modules/stockfish/vendor/` (git-ignored). The nets are embedded in the library at build time, as
-  Stockfish's own build does, so no file has to be found at run time.
+- **Source:** `tools/mobile/fetch-stockfish-src.mjs` downloads the `sf_19` source archive and the one NNUE network it
+  names (`evaluate.h`'s `EvalFileDefaultName`, `nn-1a298aa575a0.nnue`, 98.5 MB), each SHA-256-pinned in
+  `tools/mobile/stockfish.json`. It refuses a mismatch, as desktop's fetch does, and writes into
+  `modules/stockfish/vendor/` (git-ignored). The net is embedded in the library at build time, as Stockfish's own
+  build does, so no file has to be found at run time.
 - **Bridge (`modules/stockfish/cpp/bridge.cpp`):** Stockfish's sources are compiled **unmodified**. Before starting
   Stockfish's UCI loop on its own thread, the bridge swaps the `rdbuf` of `std::cin` and `std::cout`:
   - **In:** a stream buffer that waits on a locked line queue, which `send` pushes to.
@@ -345,7 +346,8 @@ backup moves between the apps.
   `desktop-app` notes say Node runs `@chess/core` directly, which needs `.ts`) or a Metro resolver hook maps them.
 - **Stockfish's build on the NDK or Xcode needs flags or fails.** The bridge is built and smoke-tested on Android
   before any feature uses it (group 3). The WASM-in-WebView fallback (D6) stays available for iOS.
-- **The APK is large because of the embedded nets** (tens of MB). Accepted. A split per ABI halves it if needed.
+- **The APK is large because of the embedded net** (98.5 MB per ABI). The release APK carries `arm64-v8a` only
+  (every phone of the last years), so about 100 MB; `x86_64` is for the emulator's development builds.
 - **The data layer moves out of desktop and something breaks.** It moves first, in small steps, with the desktop's
   tests moving along and its smoke list re-run by the owner before mobile uses it.
 - **A signal handler is installed beside Hermes's and React Native's.** It chains: it acts only on the engine thread

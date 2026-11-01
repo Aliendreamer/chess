@@ -57,7 +57,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
 
 ## 3. Stockfish module
 
-- [ ] 3.1 `tools/mobile/fetch-stockfish-src.mjs` + `stockfish.json` (`sf_19` source archive and both nets, SHA-256
+- [x] 3.1 `tools/mobile/fetch-stockfish-src.mjs` + `stockfish.json` (`sf_19` source archive and both nets, SHA-256
       each) → `modules/stockfish/vendor/`, refusing a mismatch.
       Test first: `fetch-stockfish-src.test.mjs` with a wrong hash expects a rejection and no files written.
 - [ ] 3.2 C++ bridge (`cpp/bridge.cpp`), with Stockfish's own sources unmodified:

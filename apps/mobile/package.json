@@ -11,11 +11,12 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint .",
     "check": "prettier --check .",
-    "test": "jest",
+    "test": "jest && node --test ../../tools/mobile/fetch-stockfish-src.test.mjs",
     "check:pins": "node scripts/check-pins.js",
     "expo:doctor": "node scripts/expo-doctor.js",
     "doctor:android": "node scripts/doctor-android.js",
-    "build:development": "scripts/build-android.sh development"
+    "build:development": "scripts/build-android.sh development",
+    "fetch-stockfish": "node ../../tools/mobile/fetch-stockfish-src.mjs"
   },
   "dependencies": {
     "@chess/core": "workspace:*",
