@@ -163,8 +163,9 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
 
 ## 6. Release
 
-- [ ] 6.1 Nx Release group `mobile` (`apps/mobile/package.json`, tag `mobile@{version}`). Check with
+- [x] 6.1 Nx Release group `mobile` (`apps/mobile/package.json`, tag `mobile@{version}`). Check with
       `nx release version --dry-run --projects mobile` after a `fix(libs)` commit that a patch bump is proposed.
+      (Checked in a throwaway worktree with a temporary `mobile@0.1.0` tag: a lone `fix(libs)` proposed 0.1.1.)
 - [ ] 6.2 The release `apk` target: a signing config plugin reading `CHESS_ANDROID_KEYSTORE*`, failing early when one
       is missing. Test first: a plugin test without the variables expects the error naming the variable, and fails.
       **[human]** Create the keystore, back it up, and run `nx run mobile:apk`;

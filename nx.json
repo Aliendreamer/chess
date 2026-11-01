@@ -72,6 +72,12 @@
         "version": {
           "conventionalCommits": true
         }
+      },
+      "mobile": {
+        "projects": ["mobile"],
+        "version": {
+          "conventionalCommits": true
+        }
       }
     }
   },
