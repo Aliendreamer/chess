@@ -10,45 +10,14 @@ import {
   nodeAt,
   playMove,
 } from '@chess/core'
-import type { Color, StudyMove, TreePath } from '@chess/core'
+import type { Color, StudyMove, StudyView, TreePath } from '@chess/core'
+
+export type { StudyView, StudyListItem, ImportResult } from '@chess/core'
 
 /**
  * Studies in the club (studies D1–D3): the API's study shapes, the byline, and the move-tree editor the study and
  * analysis pages share. The tree itself and PGN import are `@chess/core`.
  */
-
-export interface StudyView {
-  id: string
-  ownerId: number
-  ownerName: string
-  title: string
-  startFen: string
-  tree: Array<StudyMove>
-  white: string | null
-  black: string | null
-  result: string | null
-  date: string | null
-  shared: boolean
-  version: number
-  mine: boolean
-  createdAt: string
-  updatedAt: string
-}
-
-export interface StudyListItem {
-  id: string
-  title: string
-  white: string | null
-  black: string | null
-  shared: boolean
-  createdAt: string
-  updatedAt: string
-}
-
-export interface ImportResult {
-  created: Array<Pick<StudyListItem, 'id' | 'title'>>
-  refused: Array<{ index: number; error: string }>
-}
 
 /** The line under a study's title (ui-polish): the players, a known result, and the owner when it is not yours. */
 export function studyByline(

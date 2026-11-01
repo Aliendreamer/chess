@@ -1,81 +1,40 @@
 import { useState } from 'react'
-import { clickSquare, legalTargets, lineSans, needsPromotion, uciSquares } from '@chess/core'
-import type { SquarePair } from '@chess/core'
+import {
+  TRAINING_MODES,
+  TRAINING_PHASES,
+  clickSquare,
+  legalTargets,
+  lineSans,
+  needsPromotion,
+  uciSquares,
+} from '@chess/core'
+import type {
+  SquarePair,
+  TrainingFilters,
+  TrainingItem,
+  TrainingMode,
+  TrainingNext,
+  TrainingSource,
+  TrainingVerdict,
+} from '@chess/core'
+
+export type {
+  TrainingMode,
+  TrainingPhase,
+  TrainingFilters,
+  TrainingItem,
+  TrainingNext,
+  TrainingSource,
+  TrainingVerdict,
+  TrainingSummary,
+} from '@chess/core'
+export { TRAINING_MODES, TRAINING_PHASES } from '@chess/core'
 
 /**
  * Training sessions (training): the API's shapes, the session the page keeps (the API is stateless: the page sends
  * what it has seen), the verdict and source in words, and the answer board. Client-safe; the reads are in
  * `lib/server/training.ts`.
  */
-
-export const TRAINING_MODES = ['games', 'library'] as const
-export type TrainingMode = (typeof TRAINING_MODES)[number]
-
-export const TRAINING_PHASES = ['any', 'middlegame', 'endgame'] as const
-export type TrainingPhase = (typeof TRAINING_PHASES)[number]
-
-/** Master-game filters (mode library only; the API ignores them for the member's own games). */
-export interface TrainingFilters {
-  /** An ECO prefix (`B9`, `B90`) or part of an opening's name. */
-  opening?: string
-  phase?: TrainingPhase
-  /** Part of White's or Black's name. */
-  player?: string
-  from?: number | undefined
-  to?: number | undefined
-}
-
-export interface TrainingItem {
-  id: string
-  mode: TrainingMode
-  fen: string
-  sideToMove: 'white' | 'black'
-  /** The member's Leitner box for the position; null = never trained. */
-  box: number | null
-}
-
-export interface TrainingNext {
-  item: TrainingItem | null
-  /** How many positions match (mode games: the member's mistakes). */
-  pool: number
-}
-
-export type TrainingSource =
-  | {
-      kind: 'library'
-      libraryGameId: string
-      white: string
-      black: string
-      event: string | null
-      year: number | null
-      /** The ply of the position: the master's move is ply + 1. */
-      ply: number
-    }
-  | {
-      kind: 'game'
-      gameId: string
-      /** The ply of the move the member played in the game. */
-      ply: number
-      opponent: string
-    }
-
-export interface TrainingVerdict {
-  correct: boolean
-  verdict: 'master' | 'engine' | 'both' | 'none'
-  masterUci: string | null
-  playedUci: string | null
-  acceptedUci: Array<string>
-  bestLine: Array<string>
-  source: TrainingSource
-  box: number
-  dueAt: string
-  learned: boolean
-}
-
-export interface TrainingSummary {
-  games: { positions: number; learned: number; due: number }
-  library: { pool: number; seen: number; learned: number; due: number }
-}
 
 export type SessionLength = 10 | 'endless'
 

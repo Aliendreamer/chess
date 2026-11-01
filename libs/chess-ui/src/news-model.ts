@@ -1,34 +1,9 @@
+export type { NewsItem, NewsSource, ChessEvent } from '@chess/core'
+
 /**
  * Chess news and the tournaments being played now (chess-news): the API's shapes and how they read. Client-safe; the
  * reads are in `lib/server/news.ts`.
  */
-
-export interface NewsItem {
-  id: string
-  source: string
-  sourceName: string
-  title: string
-  url: string
-  publishedAt: string
-}
-
-export interface NewsSource {
-  id: string
-  name: string
-}
-
-export interface ChessEvent {
-  id: string
-  name: string
-  url: string
-  roundName: string | null
-  roundUrl: string | null
-  ongoing: boolean
-  location: string | null
-  fideTc: string | null
-  startsAt: string | null
-  endsAt: string | null
-}
 
 /** "just now", "45 min ago", "5 h ago", "2 days ago". */
 export function ageText(iso: string, nowMs: number): string {

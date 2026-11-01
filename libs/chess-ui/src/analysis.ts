@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { positionKey, remember } from '@chess/core'
-import type { CommandOutcome, Evaluation, Think } from '@chess/core'
+import type { AnalysisView, CommandOutcome, Evaluation, Think } from '@chess/core'
+
+export type { AnalysisView } from '@chess/core'
 
 /**
  * Engine analysis on the study board (engine-analysis D5): the wire shapes of `POST /api/analysis`, the pure rules the
@@ -10,15 +12,6 @@ import type { CommandOutcome, Evaluation, Think } from '@chess/core'
 
 /** How often the board asks again while the engine is still working on the position. */
 export const POLL_MS = 1500
-
-/** `POST /api/analysis`: the position, with its evaluation once one at this think time or longer is known. */
-export interface AnalysisView {
-  key: string
-  fen: string
-  think: Think
-  thinkMs: number
-  evaluation: Evaluation | null
-}
 
 export interface Analysis {
   think: Think

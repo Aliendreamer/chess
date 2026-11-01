@@ -1,48 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ImportGame } from '@chess/core'
+import type { ImportGame, LibraryPosition } from '@chess/core'
+
+export type {
+  LibraryGameItem,
+  LibraryGameView,
+  PositionGame,
+  ExplorerMove,
+  LibraryPosition,
+} from '@chess/core'
 
 /**
  * The game library (game-library): its API shapes and search query; turning a parsed PGN game into an import is
  * `@chess/core`. Client-safe; the reads are in `lib/server/library.ts`.
  */
-
-export interface LibraryGameItem {
-  id: string
-  white: string
-  black: string
-  event: string | null
-  site: string | null
-  round: string | null
-  date: string | null
-  year: number | null
-  result: string
-  eco: string | null
-  opening: string | null
-  worldChampionship: boolean
-  ply: number
-  source: string
-  licence: string
-}
-
-export interface LibraryGameView {
-  game: LibraryGameItem
-  moves: Array<string>
-  sourceRef: string | null
-}
-
-export interface PositionGame {
-  id: string
-  white: string
-  black: string
-  year: number | null
-  event: string | null
-  result: string
-  ply: number
-  /** Where it came from, e.g. "lichess broadcasts". */
-  source: string
-  /** The source's own link: a broadcast game's lichess page (its attribution). */
-  sourceRef: string | null
-}
 
 /** Which games the library counts (broadcast-explorer D8): every one, the curated ones, or lichess broadcasts. */
 export type LibrarySource = 'all' | 'wc' | 'broadcasts'
@@ -120,27 +90,6 @@ export interface BroadcastRun {
   error: string | null
   startedAt: string
   finishedAt: string | null
-}
-
-/** A move played from the position in the library's games (library-explorer). */
-export interface ExplorerMove {
-  uci: string
-  games: number
-  whiteWins: number
-  draws: number
-  blackWins: number
-  eco: string | null
-  opening: string | null
-}
-
-export interface LibraryPosition {
-  games: number
-  whiteWins: number
-  draws: number
-  blackWins: number
-  items: Array<PositionGame>
-  /** Most played first. */
-  moves: Array<ExplorerMove>
 }
 
 export interface OpeningView {

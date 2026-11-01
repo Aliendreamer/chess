@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Chess } from 'chess.js'
-import type { BookExit, CommandOutcome, ReviewResult, ReviewedMove } from '@chess/core'
+import type { BookExit, CommandOutcome, ReviewResult, ReviewView, ReviewedMove } from '@chess/core'
+
+export type { ReviewView } from '@chess/core'
 
 /**
  * Game review (game-review): the API's shapes, the marks and scores as shown, the graph's points and the review's
  * polling. Client-safe; the reads are in `lib/server/review.ts`.
  */
-
-/** `GET /api/games/{id}/review`: the review as far as it goes, and whether the engine is still at it. */
-export interface ReviewView extends ReviewResult {
-  status: 'none' | 'running' | 'complete'
-}
 
 /** How often a running review is asked again. */
 export const REVIEW_POLL_MS = 2000

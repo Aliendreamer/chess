@@ -7,7 +7,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
 - [x] 1.1 Add scope `mobile` to commitlint and `openspec/config.yaml`. Add `apps/mobile/{android,ios}`,
       `apps/mobile/modules/stockfish/vendor/` and `*.jks`/`*.keystore` to `.gitignore`.
       Test first: `echo "feat(mobile): x" | pnpm commitlint` fails with `scope-enum`.
-- [ ] 1.2 Move the view shapes (types) from `@chess/ui`'s `<feature>-model.ts` files into `@chess/core`
+- [x] 1.2 Move the view shapes (types) from `@chess/ui`'s `<feature>-model.ts` files into `@chess/core`
       (`views.ts`). `@chess/ui` re-exports them, so no importer changes yet.
       Test first: a type test in `libs/chess-core` importing `ReviewView` fails to compile.
 - [ ] 1.3 Create `libs/chess-view` (`@chess/view`): Nx project, pnpm package, vitest, ESLint ban on

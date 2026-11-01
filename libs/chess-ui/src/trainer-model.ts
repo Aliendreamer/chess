@@ -1,6 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { Chess } from 'chess.js'
 import { STANDARD_START, clickSquare, legalTargets, needsPromotion } from '@chess/core'
+import type { TrainerLine } from '@chess/core'
+
+export type {
+  TrainerLine,
+  FamilyProgress,
+  NextLine,
+  RunResult,
+  StudyTraining,
+  StudyLineState as StudyLine,
+  StudyDrill,
+  NextStudyLine,
+} from '@chess/core'
 
 /**
  * The opening trainer (opening-trainer): its API shapes and the drill — the board plays the other side of a named line,
@@ -10,70 +22,11 @@ import { STANDARD_START, clickSquare, legalTargets, needsPromotion } from '@ches
 
 export type TrainerColor = 'white' | 'black'
 
-/** One line of a family with the member's progress on it (box null = never trained). */
-export interface TrainerLine {
-  key: string
-  name: string
-  eco: string
-  moves: Array<string>
-  box: number | null
-  dueAt: string | null
-}
-
-export interface FamilyProgress {
-  name: string
-  lines: number
-  learned: number
-}
-
-export interface NextLine {
-  line: TrainerLine | null
-  /** When nothing is due: when the next line is. */
-  nextDueAt: string | null
-}
-
-export interface RunResult {
-  lineKey: string
-  box: number
-  dueAt: string
-  learned: boolean
-}
-
 export interface TrainedFamily {
   name: string
   color: TrainerColor
   lines: number
   learned: number
-}
-
-/** One of the member's studies in the trainer (study-repertoire-trainer), for one side. */
-export interface StudyTraining {
-  id: string
-  title: string
-  lines: number
-  learned: number
-  createdAt: string
-}
-
-/** A study line with the member's state (box null = never trained); the moves run from the study's start. */
-export interface StudyLine {
-  key: string
-  moves: Array<string>
-  box: number | null
-  dueAt: string | null
-}
-
-export interface StudyDrill {
-  id: string
-  title: string
-  startFen: string
-  /** Tree order: the main line first. */
-  lines: Array<StudyLine>
-}
-
-export interface NextStudyLine {
-  line: StudyLine | null
-  nextDueAt: string | null
 }
 
 /** From box 3 a line counts as learned (the server's rule, mirrored for the labels). */
