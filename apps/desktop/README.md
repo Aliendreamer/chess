@@ -38,11 +38,12 @@ local stack's `postgres` and run `node tools/desktop/export-library.mjs`, then c
 
 ## Where things are
 
-- `src/lib/data/` — the SQLite database (`db.ts`, migrations in `migrations/`) and one file per feature: `play`,
-  `analysis`, `review`, `studies`, `library`, `bundled` (the shipped library), `trainer`, `training`, `news`,
-  `openings`, `settings`.
-- `src/lib/engine.ts` — the UCI client, the supervisor that restarts Stockfish, the analysis queue (board first).
-- `src/lib/app.ts` — the services the pages use (database, engines, dialogs, links, fetching), created at start.
+- `libs/chess-local` (`@chess/local`, shared with the mobile app) — the SQLite database (`db.ts`, migrations in
+  `migrations/`) and one file per feature: `play`, `analysis`, `review`, `studies`, `library`, `bundled` (the shipped
+  library), `trainer`, `training`, `news`, `openings`, `settings`, `drafts`, `crash`; `engine.ts` is the UCI client,
+  the supervisor that restarts Stockfish, and the scheduler (game, board, judgement, review, miner).
+- `src/lib/platform.ts` — the desktop's side of it: SQLite through the plugin, the Stockfish sidecar, the shipped files.
+- `src/lib/app.tsx` — the services the pages use (database, engines, dialogs, links, fetching), created at start.
 - `src/routes/` — the pages; the shared board, studies, trainer, review and news components are `@chess/ui`, the rules
   `@chess/core`.
 - `src-tauri/` — the Rust shell (plugins only), `tauri.conf.json` (CSP, bundle), `capabilities/default.json` (what the
@@ -56,8 +57,10 @@ With the network **off**:
 2. Play Casual with 5 s: a move by drag and one by click; the engine answers; resign; the game shows "You lost" and
    its review starts; Save PGN writes a file.
 3. Close the app in the middle of a game, start it again: the game is still in play at the same position.
-4. Analysis: paste a PGN, step through it; the engine evaluates the position shown; Save as study opens the study.
-5. Studies: import a PGN file with a broken game (reported by number); edit a study, Save, Save PGN.
+4. Analysis: paste a PGN, step through it; the engine evaluates the position shown; close the app and start it again:
+   Analysis opens with the same moves; Save as study opens the study.
+5. Studies: import a PGN file with a broken game (reported by number); edit a study, close the app without saving and
+   start it again: the edit is still there; Save, Save PGN.
 6. Library: import a PGN collection; search a player; open a game on the analysis board, "In the library" shows.
 7. Trainer: a family's line, then a study's line; Training: My games (after a review with a mistake).
 8. Settings: Parchment and another board theme apply at once and are kept after a restart. About names Stockfish 19.

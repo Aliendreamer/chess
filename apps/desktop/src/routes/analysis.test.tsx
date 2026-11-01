@@ -1,7 +1,15 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { STANDARD_START, positionKey } from '@chess/core'
-import { createGame, ensureOpenings, personMove, storeEvaluation } from '@chess/local'
+import { STANDARD_START, fromInput, positionKey } from '@chess/core'
+import {
+  DRAFTS,
+  createGame,
+  draftWriter,
+  ensureOpenings,
+  loadBoardDraft,
+  personMove,
+  storeEvaluation,
+} from '@chess/local'
 import { fakeServices, renderApp } from '#/testing'
 
 beforeAll(() => {
@@ -69,5 +77,22 @@ describe('the analysis board (desktop-app)', () => {
     await personMove(s.db, game.id, 'e2e4')
     await renderApp(`/analysis?game=${game.id}`, s)
     expect((await screen.findByTestId('paste-error')).textContent).toContain('once it has ended')
+  })
+
+  it('opens where the player left it after the app closed, and keeps the board as it changes', async () => {
+    const s = await app()
+    const writer = draftWriter(s.db, DRAFTS.analysis, 0)
+    const tree = fromInput(STANDARD_START, [
+      { uci: 'd2d4', children: [{ uci: 'd7d5', children: [] }] },
+    ])
+    writer.write({ startFen: STANDARD_START, tree, path: [0, 0] })
+    await writer.flush()
+    await renderApp('/analysis', s)
+    await waitFor(() => expect(screen.getByTestId('move-tree').textContent).toContain('d5'))
+    fireEvent.change(await screen.findByLabelText('FEN or PGN'), { target: { value: '1. e4' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Load' }))
+    await waitFor(async () => expect((await loadBoardDraft(s.db))?.tree[0]?.san).toBe('e4'), {
+      timeout: 2000,
+    })
   })
 })

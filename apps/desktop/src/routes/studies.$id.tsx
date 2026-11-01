@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createFileRoute, notFound } from '@tanstack/react-router'
 import { childrenAt, promote, remove, toInput } from '@chess/core'
 import {
@@ -12,32 +12,34 @@ import {
   useCommand,
   useMoveTree,
 } from '@chess/ui'
-import { loadStudy, saveStudy, studyAsPgn } from '@chess/local'
+import { DRAFTS, draftWriter, loadStudy, loadStudyDraft, saveStudy, studyAsPgn } from '@chess/local'
+import type { StudyDraft } from '@chess/local'
 import type { StudyView } from '@chess/ui'
 
 /**
  * A study (studies D7): the board, its move tree and the tools around it. Moves played on the board go into the tree;
- * Save keeps it, replayed, and a stale save is refused.
+ * Save keeps it, replayed, and a stale save is refused. Unsaved edits are kept as a draft (mobile-app D13) and come
+ * back when the study is opened again on the same version.
  */
 export const Route = createFileRoute('/studies/$id')({
   loader: async ({ context: { app }, params }) => {
     const study = await loadStudy(app.db, params.id)
     if (!study) throw notFound()
-    return study
+    return { study, draft: await loadStudyDraft(app.db, study.id, study.version) }
   },
   component: StudyPage,
 })
 
 function StudyPage() {
-  const study = Route.useLoaderData()
-  return <Study key={study.id} loaded={study} />
+  const { study, draft } = Route.useLoaderData()
+  return <Study key={study.id} loaded={study} draft={draft} />
 }
 
-function Study({ loaded }: { loaded: StudyView }) {
+function Study({ loaded, draft }: { loaded: StudyView; draft: StudyDraft | null }) {
   const { app } = Route.useRouteContext()
   const [saved, setSaved] = useState(loaded)
-  const [title, setTitle] = useState(loaded.title)
-  const editor = useMoveTree(loaded.startFen, loaded.tree)
+  const [title, setTitle] = useState(draft?.title ?? loaded.title)
+  const editor = useMoveTree(loaded.startFen, draft?.tree ?? loaded.tree, draft?.path)
   const { tree, path, current } = editor
   const saving = useCommand()
   const [request] = useState(
@@ -47,11 +49,19 @@ function Study({ loaded }: { loaded: StudyView }) {
   const dirty =
     title !== saved.title || JSON.stringify(toInput(tree)) !== JSON.stringify(toInput(saved.tree))
 
+  const [drafts] = useState(() => draftWriter<StudyDraft>(app.db, DRAFTS.study(loaded.id)))
+  useEffect(() => {
+    if (dirty) drafts.write({ title, startFen: saved.startFen, tree, path, version: saved.version })
+    else void drafts.clear().catch(() => undefined)
+  }, [drafts, dirty, title, tree, path, saved.startFen, saved.version])
+  useEffect(() => () => void drafts.flush().catch(() => undefined), [drafts])
+
   async function save() {
     const next = await saving.run(() =>
       saveStudy(app.db, { id: saved.id, title, tree: toInput(tree), version: saved.version }),
     )
     if (next) {
+      await drafts.clear()
       setSaved(next)
       editor.setTree(next.tree)
     }

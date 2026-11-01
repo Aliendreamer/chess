@@ -27,7 +27,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       one per role. Desktop wires it with its two processes.
       Test first: against the fake engine, a review search is stopped by a board request, and a `setoption` is sent
       mid-search. Both fail.
-- [ ] 1.6 Crash-safety pieces in `@chess/local` (D13):
+- [x] 1.6 Crash-safety pieces in `@chess/local` (D13):
   - drafts (`draft.analysis`, `draft.study.<id>`, debounced) and the desktop pages restoring them;
   - migration 0002 `engine_failures`, with review, miner and judgement skipping a failed position;
   - the scheduler sending `# request {json}` before each `go`, and its `stuck` state when `quit` gets no answer in 2 s;

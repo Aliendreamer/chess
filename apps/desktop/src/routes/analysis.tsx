@@ -1,4 +1,4 @@
-import { use, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import {
   STANDARD_START,
@@ -31,10 +31,13 @@ import {
   useOpeningName,
 } from '@chess/ui'
 import {
+  DRAFTS,
   PERSON_NAME,
   createStudies,
+  draftWriter,
   libraryGame,
   libraryPosition,
+  loadBoardDraft,
   loadGame,
   openingNames,
   updatePreferences,
@@ -53,7 +56,8 @@ interface Start {
 
 /**
  * The analysis board (analysis-board, desktop-app): any position or game with the move tree and the bundled engine,
- * nothing kept until it is saved as a study. Starts from `?fen=`, `?game={id}` (a finished game), or what is pasted.
+ * nothing kept until it is saved as a study. Starts from `?fen=`, `?game={id}` (a finished game), or what is pasted;
+ * with none of them, where the player left it (the draft, mobile-app D13).
  */
 export const Route = createFileRoute('/analysis')({
   validateSearch: (
@@ -115,6 +119,10 @@ async function startOf(
         error: null,
       }
     }
+    if (deps.fen === undefined) {
+      const draft = await loadBoardDraft(app.db)
+      if (draft) return { ...draft, path: [...draft.path], error: null }
+    }
     if (deps.fen !== undefined && !isFen(deps.fen))
       return { startFen: STANDARD_START, tree: [], error: 'That is not a legal position.' }
     return { startFen: deps.fen ?? STANDARD_START, tree: [], error: null }
@@ -170,6 +178,17 @@ function Analysis({ start }: { start: Start }) {
   const pasteBox = useAdoptTyped<HTMLTextAreaElement>(setPasted)
   const navigate = useNavigate()
   const saving = useCommand()
+  // The board as it changes, so the app closing loses nothing (mobile-app D13); saved as a study, it is dropped.
+  const [draft] = useState(() => draftWriter(app.db, DRAFTS.analysis))
+  useEffect(() => {
+    draft.write({
+      startFen: editor.startFen,
+      tree: editor.tree,
+      path: editor.path,
+      ...(players ? { players } : {}),
+    })
+  }, [draft, editor.startFen, editor.tree, editor.path, players])
+  useEffect(() => () => void draft.flush().catch(() => undefined), [draft])
 
   async function save() {
     const result = await saving.run(async () => ({
@@ -185,7 +204,10 @@ function Analysis({ start }: { start: Start }) {
       ]),
     }))
     const created = result?.created[0]
-    if (created) void navigate({ to: '/studies/$id', params: { id: created.id } })
+    if (created) {
+      await draft.clear()
+      void navigate({ to: '/studies/$id', params: { id: created.id } })
+    }
   }
 
   /** A FEN replaces the position; a PGN its moves (one game at once, several offered to pick from). */

@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { STANDARD_START } from '@chess/core'
-import { createStudies, listStudies } from '@chess/local'
+import { DRAFTS, createStudies, getSetting, listStudies } from '@chess/local'
 import { fakeServices, renderApp } from '#/testing'
 
 beforeAll(() => {
@@ -50,5 +50,29 @@ describe('studies (desktop-app)', () => {
     await screen.findByRole('button', { name: 'Saved' })
     fireEvent.click(screen.getByRole('button', { name: 'Save PGN' }))
     await waitFor(() => expect(s.saved[0]?.text.trim().endsWith('1. e4 *')).toBe(true))
+  })
+
+  it('keeps an unsaved edit after the app closed, and drops it once saved', async () => {
+    const s = await app()
+    const { created } = await createStudies(s.db, [
+      { title: 'Mine', startFen: STANDARD_START, tree: [] },
+    ])
+    const id = created[0]!.id
+    const first = await renderApp(`/studies/${id}`, s)
+    await screen.findByLabelText('Title')
+    fireEvent.click(first.container.querySelector('[data-square="e2"]') as Element)
+    fireEvent.click(first.container.querySelector('[data-square="e4"]') as Element)
+    await waitFor(
+      async () => expect(await getSetting(s.db, DRAFTS.study(id), null)).not.toBeNull(),
+      {
+        timeout: 2000,
+      },
+    )
+    cleanup()
+    await renderApp(`/studies/${id}`, s)
+    await waitFor(() => expect(screen.getByTestId('move-tree').textContent).toContain('e4'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Save' }))
+    await screen.findByRole('button', { name: 'Saved' })
+    expect(await getSetting(s.db, DRAFTS.study(id), null)).toBeNull()
   })
 })
