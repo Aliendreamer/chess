@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
-import Home from '@/app/index'
+import PlayHome from '@/app/(tabs)/play/index'
+import { libraryProgress } from '@/lib/services'
 import { ServicesProvider } from '@/lib/services-context'
 import type { MobileServices } from '@/lib/services'
 
@@ -7,30 +8,26 @@ function services(crash: MobileServices['crash']): () => Promise<MobileServices>
   const s = {
     crash,
     engine: { state: 'ready', subscribe: () => () => undefined },
+    libraryProgress: libraryProgress(),
     dispose: () => undefined,
   } as unknown as MobileServices
   return () => Promise.resolve(s)
 }
 
-test('the placeholder home shows the shared libraries at work', async () => {
+test('the Play tab opens with no notice when the last run went well', async () => {
   await render(
     <ServicesProvider start={services(null)}>
-      <Home />
+      <PlayHome />
     </ServicesProvider>,
   )
-  expect((await screen.findByTestId('title')).props.children).toBe('Chess')
-  expect(screen.getByTestId('start-key').props.children).toBe(
-    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -',
-  )
-  expect(screen.getByTestId('schema').props.children).toBe('Schema 2')
-  expect(screen.getByTestId('side').props.children).toBe('white')
+  expect(await screen.findByRole('header', { name: 'Play' })).toBeTruthy()
   expect(screen.queryByText(/Stockfish crashed/)).toBeNull()
 })
 
-test('after a crash, home says so until the player closes the notice', async () => {
+test('after a crash, Play says so until the player closes the notice', async () => {
   await render(
     <ServicesProvider start={services({ kind: 'review', fen: null, signal: 'SIGSEGV', at: 'now' })}>
-      <Home />
+      <PlayHome />
     </ServicesProvider>,
   )
   expect(await screen.findByText(/Stockfish crashed and the app had to close/)).toBeTruthy()

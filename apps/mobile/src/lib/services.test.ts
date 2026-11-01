@@ -1,49 +1,8 @@
 import { EngineScheduler, getSetting, isFailedPosition } from '@chess/local'
-import { expoSql } from '@/platform/sql'
-import { nodeDatabase } from '@/testing/node-sql'
-import { startServices } from './services'
-import type { Platform } from './services'
-import type { UciChannel } from '@chess/local'
+import { testPlatform as platform } from '@/testing/platform'
+import { libraryProgress, startServices } from './services'
 
 const FEN = '8/8/8/8/8/8/8/K6k w - - 0 1'
-
-function platform(overrides: Partial<Platform> = {}) {
-  const native = nodeDatabase()
-  const appListeners: Array<(state: string) => void> = []
-  const fetched: Array<string> = []
-  const channel: UciChannel = {
-    write: () => Promise.resolve(),
-    onLine: () => {},
-    onExit: () => {},
-    kill: () => Promise.resolve(),
-  }
-  const p: Platform = {
-    sql: expoSql(native),
-    backupPath: (v) => `/data/chess.db.before-v${v}`,
-    channel: () => Promise.resolve(channel),
-    assets: {
-      openings: () => Promise.resolve(["eco\tname\tpgn\nB00\tKing's Pawn\t1. e4"]),
-      bundledLibrary: () =>
-        Promise.resolve(
-          new TextEncoder().encode('{"format":1,"games":[],"candidates":[],"positions":[]}'),
-        ),
-    },
-    fetchText: (url) => {
-      fetched.push(url)
-      return Promise.resolve({ status: 200, text: '<rss version="2.0"><channel></channel></rss>' })
-    },
-    openLink: () => Promise.resolve(),
-    appState: {
-      addEventListener: (_type, listener) => {
-        appListeners.push(listener)
-        return { remove: () => undefined }
-      },
-    },
-    crashFiles: () => ({ crash: null, marker: null }),
-    ...overrides,
-  }
-  return { p, native, fetched, goTo: (state: string) => appListeners.forEach((l) => l(state)) }
-}
 
 afterEach(() => {
   jest.useRealTimers()
@@ -98,4 +57,29 @@ test('in the background the engine holds and the news stops; back in front both 
   expect(fetched.length).toBeGreaterThan(first)
   services.dispose()
   native.close()
+})
+
+test('the library’s first load says how far it has got, and nothing once it is done', async () => {
+  const { p } = platform()
+  const services = await startServices(p)
+  const seen: Array<number | null> = [services.libraryProgress.current()]
+  const unsubscribe = services.libraryProgress.subscribe(() =>
+    seen.push(services.libraryProgress.current()),
+  )
+  await services.library
+  unsubscribe()
+  expect(seen.at(-1)).toBeNull()
+  services.dispose()
+})
+
+test('progress is a share of the games, and a library with none shows none', () => {
+  const progress = libraryProgress()
+  const heard: Array<number | null> = []
+  progress.subscribe(() => heard.push(progress.current()))
+  progress.report(0, 4)
+  progress.report(1, 4)
+  progress.report(4, 4)
+  progress.report(0, 0)
+  progress.done()
+  expect(heard).toEqual([0, 0.25, 1, null, null])
 })

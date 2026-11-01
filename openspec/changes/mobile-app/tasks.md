@@ -126,8 +126,11 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       (Done as: `src/components/board.tsx`, one responder over the board for taps and drags, each square's
       "activate" action for screen readers, premoves through `onPremove`; flip is the screen's `orientation`. The
       review's arrows come with 5.6.)
-- [ ] 5.4 Tabs and shell: Expo Router tabs, safe areas, Club dark / Parchment light, and the first-start library
+- [x] 5.4 Tabs and shell: Expo Router tabs, safe areas, Club dark / Parchment light, and the first-start library
       progress line.
+      (Done as: `src/app/(tabs)/` with a stack per tab and `/` redirecting to Play; `PreferencesProvider` themes the app
+      from the database; `Screen` carries the safe area, status bar and the progress line, which
+      `ensureBundledLibrary`'s new `onProgress` feeds. The tab icons are Lucide's (ISC): About lists them in 5.10.)
 - [ ] 5.5 Play: home, new game (level, colour, think time), game screen (premoves, take-back, draw offer, resign
       request, resign, engine status), game list, PGN share. Test first: the desktop's play cases on the screen
       (an engine move appears after the player's move) fail.

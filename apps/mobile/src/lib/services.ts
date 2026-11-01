@@ -58,9 +58,37 @@ export interface MobileServices {
   crash: CrashNotice | null
   /** The bundled library's first load (D9), behind the first screen. */
   library: Promise<{ state: 'loaded' | 'current'; games: number } | null>
+  /** How far that load has got, for "Preparing the library … n %". */
+  libraryProgress: LibraryProgress
   /** Whether the miner runs: off on the phone until the player turns it on (D8). */
   minerOn: () => Promise<boolean>
   dispose: () => void
+}
+
+/** A share of the library loaded (0–1), or null when nothing is loading; heard through `subscribe`. */
+export interface LibraryProgress {
+  current: () => number | null
+  subscribe: (listener: () => void) => () => void
+  report: (done: number, total: number) => void
+  done: () => void
+}
+
+export function libraryProgress(): LibraryProgress {
+  let share: number | null = null
+  const listeners = new Set<() => void>()
+  const set = (next: number | null) => {
+    share = next
+    for (const listener of listeners) listener()
+  }
+  return {
+    current: () => share,
+    subscribe: (listener) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    report: (done, total) => set(total > 0 ? done / total : null),
+    done: () => set(null),
+  }
 }
 
 const MINE_EVERY_MS = 10_000
@@ -121,8 +149,15 @@ export async function startServices(platform: Platform): Promise<MobileServices>
   })()
 
   // The bundled library loads behind the first screen; the miner starts after it.
-  const library = ensureBundledLibrary(db, platform.assets.bundledLibrary)
+  const progress = libraryProgress()
+  const library = ensureBundledLibrary(
+    db,
+    platform.assets.bundledLibrary,
+    new Date(),
+    progress.report,
+  )
     .catch(() => null)
+    .finally(progress.done)
     .then((loaded) => {
       rounds.set('miner', {
         every: MINE_EVERY_MS,
@@ -161,6 +196,7 @@ export async function startServices(platform: Platform): Promise<MobileServices>
     openLink: platform.openLink,
     crash,
     library,
+    libraryProgress: progress,
     minerOn,
     dispose: () => {
       disposed = true

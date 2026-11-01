@@ -1,5 +1,6 @@
 import { Redirect } from 'expo-router'
 import { STANDARD_START, findLevel } from '@chess/core'
+import { Screen } from '@/components/screen'
 import { useServices } from '@/lib/services-context'
 import { EngineSmoke } from '@/screens/engine-smoke'
 
@@ -8,10 +9,12 @@ export default function EngineCheck() {
   const services = useServices()
   if (!__DEV__) return <Redirect href="/" />
   return (
-    <EngineSmoke
-      left={services.crash}
-      bestMove={() => services.player.bestMove(STANDARD_START, findLevel('max')!, 1000)}
-      crashTest={() => services.engine.run((engine) => engine.note('crash-test'))}
-    />
+    <Screen title="Engine check">
+      <EngineSmoke
+        left={services.crash}
+        bestMove={() => services.player.bestMove(STANDARD_START, findLevel('max')!, 1000)}
+        crashTest={() => services.engine.run((engine) => engine.note('crash-test'))}
+      />
+    </Screen>
   )
 }
