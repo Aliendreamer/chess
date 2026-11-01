@@ -159,6 +159,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       restore confirmed first; About with the GPLv3, the source at the `mobile@<version>` tag and every licence,
       the icons' and fonts' too.)
 - [ ] 5.11 Write the manual smoke list in `apps/mobile/README.md`. **[human]** Run it on an Android phone.
+      (The list is written; the box waits for the run on a phone.)
 
 ## 6. Release
 

@@ -22,3 +22,36 @@ https://github.com/official-stockfish/Stockfish/tree/sf_19, and the exact archiv
 The source of every release is this repository at the tag `mobile@<version>`. The shared libraries in `libs/` are MIT
 (each has its `LICENSE`); MIT code may be part of a GPL program. The bundled library's broadcast games are CC BY-SA 4.0
 (lichess), credited in the app's About and on each game.
+
+## Smoke list (before each release, on an Android phone)
+
+Install the APK (`adb install -r apps/mobile/build/<profile>.apk`, or open it on the phone). With the network **off**:
+
+1. First start: the splash, then Play; "Preparing the library … n %" runs along the top and goes when it is done.
+   News says it has nothing yet.
+2. Play Casual with 5 s as White: one move by tapping the piece and its square, one by dragging; the engine answers
+   and the move slides in. While it thinks, tap a piece and a square: the premove is tinted and played after its
+   answer. Promote a pawn (the picker), flip the board, take a move back, offer a draw (declined).
+3. Switch to another app mid-game and back after a minute: the engine answers again if it was its turn. Close the
+   app from the recent apps and start it: the game is still in play at the same position.
+4. Resign (it asks first): "You lost", the review starts and fills its graph; tap a marked move and its better line;
+   Save PGN opens the share sheet.
+5. Analyse: tap Library, import a PGN file from the phone (the picker), search a player, open a game; the bar and
+   the lines show, "In the library" opens its sheet; step through the game; paste a FEN. Close the app and start it
+   again: the board is as it was; Save as study opens the study.
+6. Learn → Studies: import a PGN with a broken game (reported by number); edit a study, close the app without saving
+   and start it again: the edit is back; Make main line, Delete move, Save, Save PGN.
+7. Learn → Trainer: a family's new line opens in Learn and is played through; switch to Test, a wrong move is named,
+   Hint draws its arrow; As Black. Train a study's lines. Learn → Training: Master games, a position answered, Finish.
+8. More → Settings: Parchment and another board theme apply at once and are kept after a restart; coordinates off;
+   animation off (and the system's "remove animations" also stops the slides). The miner is off; switch it on.
+9. More → Backup: Back up to the share sheet (save it to Files); add a study; Restore that file (it asks first): the
+   study added after is gone. A desktop `.chessbackup` restores too.
+10. More → About: version, GPLv3, the source link opens github.com in the browser at `mobile@<version>`.
+11. Development build only: Play → Engine check: a move within 2 s; Crash test closes the app, and the next start says
+    Stockfish crashed.
+12. TalkBack on: the tabs, a game's buttons and the board's squares ("e2, white pawn") are read; double-tap a piece
+    and a square plays the move.
+
+With the network **on**: News fills within a minute or so of the start; a headline opens in the browser, not the app;
+the tournaments show under "Events now".
