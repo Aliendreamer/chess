@@ -52,6 +52,45 @@ export function Button({
   )
 }
 
+/** One of a few choices (a level, a think time): `selected` marks the one taken. */
+export function Chip({
+  label,
+  selected,
+  onPress,
+  accessibilityLabel,
+  children,
+}: {
+  label: string
+  selected: boolean
+  onPress: () => void
+  accessibilityLabel?: string
+  /** Shown before the label (a piece). */
+  children?: ReactNode
+}) {
+  const { colors } = useTheme()
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ selected }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.chip,
+        {
+          backgroundColor: selected ? colors.surfaceAccentSoft : colors.surfaceRaised,
+          borderColor: selected ? colors.lineAccent : colors.lineStrong,
+        },
+        pressed && { opacity: 0.8 },
+      ]}
+    >
+      {children}
+      <Text style={[styles.chipText, { color: selected ? colors.fgAccent : colors.fgPrimary }]}>
+        {label}
+      </Text>
+    </Pressable>
+  )
+}
+
 function Chevron({ color }: { color: string }) {
   return (
     <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2}>
@@ -209,6 +248,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonText: { fontFamily: FONTS.sansSemiBold, fontSize: TEXT.base.size },
+  chip: {
+    minHeight: TOUCH,
+    paddingHorizontal: 12,
+    borderRadius: RADIUS.control,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  chipText: { fontFamily: FONTS.sansMedium, fontSize: TEXT.sm.size },
   row: {
     minHeight: TOUCH,
     paddingHorizontal: 14,

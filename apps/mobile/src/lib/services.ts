@@ -16,6 +16,7 @@ import {
   reviewsToRun,
   runReview,
 } from '@chess/local'
+import { mobileFiles, type FilePlatform } from '@/platform/files'
 import type {
   CrashNotice,
   Db,
@@ -42,6 +43,8 @@ export interface Platform {
   }
   /** What the last run left (read and removed once). */
   crashFiles: () => { crash: EngineCrashRecord | null; marker: EngineRequestMarker | null }
+  /** The cache, the share sheet and the file picker. */
+  files: FilePlatform
 }
 
 export interface MobileServices {
@@ -54,6 +57,8 @@ export interface MobileServices {
   player: EnginePlayer
   fetchText: FetchText
   openLink: (url: string) => Promise<void>
+  /** Backup, restore and PGN through the share sheet and the picker. */
+  files: ReturnType<typeof mobileFiles>
   /** The start-up notice when Stockfish crashed the last run (D13), or null. */
   crash: CrashNotice | null
   /** The bundled library's first load (D9), behind the first screen. */
@@ -194,6 +199,7 @@ export async function startServices(platform: Platform): Promise<MobileServices>
     },
     fetchText: platform.fetchText,
     openLink: platform.openLink,
+    files: mobileFiles(db, platform.files),
     crash,
     library,
     libraryProgress: progress,

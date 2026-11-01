@@ -11,6 +11,9 @@ export function testPlatform(overrides: Partial<Platform> = {}) {
   const native = nodeDatabase()
   const appListeners: Array<(state: string) => void> = []
   const fetched: Array<string> = []
+  const written = new Map<string, string>()
+  /** What went to the share sheet: the file's name and its text. */
+  const shared: Array<{ name: string; text: string }> = []
   const channel: UciChannel = {
     write: () => Promise.resolve(),
     onLine: () => {},
@@ -40,7 +43,29 @@ export function testPlatform(overrides: Partial<Platform> = {}) {
       },
     },
     crashFiles: () => ({ crash: null, marker: null }),
+    files: {
+      cacheDir: '/cache',
+      dataDir: '/data',
+      pick: () => Promise.resolve(null),
+      share: (path) => {
+        shared.push({ name: path.slice(path.lastIndexOf('/') + 1), text: written.get(path) ?? '' })
+        return Promise.resolve()
+      },
+      open: () => Promise.reject(new Error('no files in tests')),
+      readText: (path) => Promise.resolve(written.get(path) ?? ''),
+      writeText: (path, text) => {
+        written.set(path, text)
+        return Promise.resolve()
+      },
+      now: () => new Date('2026-11-01T10:00:00Z'),
+    },
     ...overrides,
   }
-  return { p, native, fetched, goTo: (state: string) => appListeners.forEach((l) => l(state)) }
+  return {
+    p,
+    native,
+    fetched,
+    shared,
+    goTo: (state: string) => appListeners.forEach((l) => l(state)),
+  }
 }

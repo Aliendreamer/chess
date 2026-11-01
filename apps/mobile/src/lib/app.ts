@@ -2,6 +2,7 @@ import '@/platform/polyfills'
 import { AppState } from 'react-native'
 import { expoAssets } from '@/platform/assets'
 import { nativeChannel, takeCrashFiles } from '@/platform/engine'
+import { expoFilePlatform } from '@/platform/files'
 import { fetchText, openLink } from '@/platform/net'
 import { openExpoSql } from '@/platform/sql'
 import { startServices } from './services'
@@ -21,5 +22,6 @@ export async function startMobileServices(): Promise<MobileServices> {
     openLink,
     appState: AppState,
     crashFiles: () => takeCrashFiles(),
+    files: await expoFilePlatform(),
   })
 }
