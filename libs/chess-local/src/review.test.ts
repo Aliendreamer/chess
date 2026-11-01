@@ -96,6 +96,17 @@ describe('game review (game-review, desktop-app)', () => {
     expect(asked).toHaveLength(3)
   })
 
+  it('answers a start with the review running, before the engine has looked at anything', async () => {
+    const db = await testDb()
+    const id = await foolsMate(db)
+    // An engine that never answers: the review stays at its first position.
+    const never = new Evaluator(db, {
+      analyse: () => new Promise(() => undefined),
+    } as unknown as EngineScheduler)
+    const started = await startReview(db, never, id)
+    expect(started.ok && started.view.status).toBe('running')
+  })
+
   it('is not run on a game of one move, and is offered again at start when left unfinished', async () => {
     const db = await testDb()
     const short = await createGame(db, {

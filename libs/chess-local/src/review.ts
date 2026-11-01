@@ -70,10 +70,7 @@ export async function runReview(
 ): Promise<void> {
   const game = await loadGame(db, gameId)
   if (!game || !reviewable(game)) return
-  await db.execute(
-    'INSERT INTO reviews (game_id, requested_at) VALUES (?, ?) ON CONFLICT (game_id) DO NOTHING',
-    [gameId, now.toISOString()],
-  )
+  await requestReview(db, gameId, now)
   // A position that crashed the engine is skipped (mobile-app D13): the review completes without its score.
   for (const position of await unfailed(db, missing(await inputOf(db, game)))) {
     await evaluator.evaluate(position.fen, REVIEW_THINK_MS, 'review')
@@ -91,8 +88,18 @@ export async function startReview(
   const game = await loadGame(db, gameId)
   if (!game) return { ok: false, status: 404, error: 'There is no such game.' }
   if (!reviewable(game)) return { ok: false, status: 409, error: 'This game cannot be reviewed.' }
+  // Asked for before the answer, so the page reads it as running and keeps reading it.
+  await requestReview(db, gameId)
   void runReview(db, evaluator, gameId).catch(() => undefined)
   return { ok: true, view: (await loadReview(db, gameId))! }
+}
+
+/** Marks a game's review as asked for (once): from then on it is running until every position is evaluated. */
+function requestReview(db: Db, gameId: string, now = new Date()) {
+  return db.execute(
+    'INSERT INTO reviews (game_id, requested_at) VALUES (?, ?) ON CONFLICT (game_id) DO NOTHING',
+    [gameId, now.toISOString()],
+  )
 }
 
 /** Copies the person's mistakes of a complete review into training, once per game. */
