@@ -18,6 +18,8 @@ node scripts/doctor-android.js >/dev/null || { node scripts/doctor-android.js; e
 export NODE_ENV=development
 export EXPO_NO_TELEMETRY=1
 
+# Stockfish's pinned source and network, compiled in by modules/stockfish (D6); reused when already in place.
+node ../../tools/mobile/fetch-stockfish-src.mjs
 pnpm exec expo prebuild --platform android --clean --no-install
 (cd android && ./gradlew "$task")
 

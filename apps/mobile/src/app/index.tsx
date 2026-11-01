@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native'
+import { Link } from 'expo-router'
 import { STANDARD_START, positionKey } from '@chess/core'
 import { MIGRATIONS } from '@chess/local'
 import { useMoveTree } from '@chess/view'
@@ -16,6 +17,7 @@ export default function Home() {
       <Text testID="start-key">{positionKey(STANDARD_START)}</Text>
       <Text testID="schema">{`Schema ${MIGRATIONS.length}`}</Text>
       <Text testID="side">{editor.orientation}</Text>
+      {__DEV__ ? <Link href="/dev/engine">Engine check</Link> : null}
     </View>
   )
 }

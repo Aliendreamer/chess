@@ -349,4 +349,24 @@ void quit() {
     r->onExit("quit");
 }
 
+namespace {
+std::string takeFile(const std::string& path) {
+    std::string text;
+    if (FILE* f = std::fopen(path.c_str(), "r"))
+    {
+        char   buf[4096];
+        size_t n;
+        while ((n = std::fread(buf, 1, sizeof(buf), f)) > 0)
+            text.append(buf, n);
+        std::fclose(f);
+        std::remove(path.c_str());
+    }
+    return text;
+}
+}  // namespace
+
+LeftFiles takeFiles(const std::string& filesDir) {
+    return {takeFile(filesDir + "/engine-crash.json"), takeFile(filesDir + "/engine-request.json")};
+}
+
 }  // namespace sfbridge

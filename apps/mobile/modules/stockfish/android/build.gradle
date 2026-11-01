@@ -1,0 +1,36 @@
+// Stockfish 19 compiled into the app (mobile-app D6): the unmodified sources from ../vendor (fetched by
+// tools/mobile/fetch-stockfish-src.mjs), the bridge in ../cpp and the JNI glue, as one shared library.
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'io.github.aliendreamer.chess'
+version = '1.0.0'
+
+def reactNativeArchitectures() {
+  def value = project.getProperties().get("reactNativeArchitectures")
+  // Phones are arm64; x86_64 is the emulator. The release APK carries arm64-v8a only (the network is 98.5 MB an ABI).
+  return value ? value.split(",") : ["arm64-v8a", "x86_64"]
+}
+
+android {
+  namespace "expo.modules.stockfish"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+    consumerProguardFiles "proguard-rules.pro"
+    externalNativeBuild {
+      cmake {
+        abiFilters (*reactNativeArchitectures())
+        arguments "-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+      }
+    }
+  }
+  externalNativeBuild {
+    cmake {
+      path "CMakeLists.txt"
+      version "3.22.1"
+    }
+  }
+}

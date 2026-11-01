@@ -31,4 +31,13 @@ void send(const std::string& line);
 /** Sends `quit` and waits for the engine thread to end. */
 void quit();
 
+/** What the last run left in `filesDir`: the crash record and the request marker ("" when absent). */
+struct LeftFiles {
+    std::string crash;
+    std::string marker;
+};
+
+/** Reads and removes the crash record and the request marker (mobile-app D13), before the engine starts again. */
+LeftFiles takeFiles(const std::string& filesDir);
+
 }  // namespace sfbridge

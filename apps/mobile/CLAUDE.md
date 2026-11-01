@@ -35,3 +35,8 @@ Inside the agent sandbox run Expo commands with `EXPO_NO_TELEMETRY=1` (telemetry
   network). `modules/stockfish/cpp/bridge.cpp` runs Stockfish's UCI loop on its own thread with `cin`/`cout` swapped;
   Stockfish's files are never edited. `# request {json}` and `# crash-test` (only with `SFBRIDGE_CRASH_TEST`) are
   the bridge's own lines and never reach Stockfish.
+- The Android side of the module: `modules/stockfish/android` (Kotlin `StockfishModule`, JNI glue, `CMakeLists.txt`
+  compiling Stockfish + the bridge at `-O3` in every build; `-Wa,-I<src>` so INCBIN finds the network). The
+  crash test is compiled into Debug only. Cross-compiling with the NDK's clang works in the sandbox (Gradle does not).
+- `/dev/engine` (development builds only, linked from home) is the engine check: what the last run left, a move with
+  its time, and the crash test.

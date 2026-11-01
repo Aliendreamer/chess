@@ -8,6 +8,11 @@ const globals = require('globals')
 module.exports = defineConfig([
   expoConfig,
   eslintConfigPrettier,
+  // The shared libraries' style (TanStack's config): Array<T>, so code moves between them without churn.
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    rules: { '@typescript-eslint/array-type': ['warn', { default: 'generic' }] },
+  },
   {
     ignores: [
       'dist/*',

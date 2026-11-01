@@ -157,6 +157,11 @@ void recordsACrashOnTheEngineThread() {
     CHECK(crash.find("\"signal\":\"SIGSEGV\"") != std::string::npos, "the crash record names the signal");
     CHECK(crash.find("8/8/8/8/8/8/8/K6k") != std::string::npos, "the crash record holds the request");
     CHECK(crash.find("\"atMs\":") != std::string::npos, "the crash record has its time");
+    auto taken = sfbridge::takeFiles(dir);
+    CHECK(taken.crash == crash, "takeFiles hands the crash record over");
+    CHECK(taken.marker.empty(), "no marker: no search was asked");
+    CHECK(!exists(dir + "/engine-crash.json"), "takeFiles removes what it hands over");
+    CHECK(sfbridge::takeFiles(dir).crash.empty(), "and hands it over once");
 }
 
 void blamesNothingOnStockfishForAnotherThread() {
