@@ -39,6 +39,11 @@ export function LearnHome() {
           onPress={() => router.push('/learn/trainer')}
         />
         <Row
+          label="Training"
+          detail="Your mistakes and master games' critical moments"
+          onPress={() => router.push('/learn/training')}
+        />
+        <Row
           label="Studies"
           detail="Your analyses and imported games, with variations"
           onPress={() => router.push('/learn/studies')}

@@ -145,7 +145,10 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       (Done as: `src/screens/studies.tsx` under Learn; the board, tree and engine are `TreeBoard`, shared with the
       analysis board; import by paste or a picked file, export through the share sheet. Found on the way: Make main
       line left the board on the other move, so Delete move deleted that one; fixed here, on desktop and in the club.)
-- [ ] 5.8 Trainer (families, learn then test, study lines) and training sessions.
+- [x] 5.8 Trainer (families, learn then test, study lines) and training sessions.
+      (Done as: `src/screens/trainer.tsx` and `src/screens/training.tsx` under Learn; Learn/Test is a switch above the
+      board (Learn shows the whole line), with the line's box and the count beside whose move it is; the board draws
+      the hint and the answers as arrows.)
 - [ ] 5.9 Library: search, game view, explorer, openings.
 - [ ] 5.10 News and tournaments, Settings (incl. the miner switch), About (licences, source link), Backup.
 - [ ] 5.11 Write the manual smoke list in `apps/mobile/README.md`. **[human]** Run it on an Android phone.
