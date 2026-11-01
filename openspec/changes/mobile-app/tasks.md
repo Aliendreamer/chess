@@ -121,8 +121,11 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       (Done as: hex tokens, since React Native takes no oklch(); `ThemeProvider` from the preferences; the pieces as
       `SvgXml` text checked against `@chess/ui`'s files. The app has no `LinkContext` (it does not use `@chess/ui`), so
       `MobileLink` takes the desktop's paths and `mobileRoute` maps them under their tab.)
-- [ ] 5.3 The board: tap-tap, drag, legal targets, last move, check, promotion picker, flip, coordinates, themes,
+- [x] 5.3 The board: tap-tap, drag, legal targets, last move, check, promotion picker, flip, coordinates, themes,
       reduced animation. Test first: `board.test.tsx` taps e2 then e4 and expects `onMove('e2e4')`, and fails.
+      (Done as: `src/components/board.tsx`, one responder over the board for taps and drags, each square's
+      "activate" action for screen readers, premoves through `onPremove`; flip is the screen's `orientation`. The
+      review's arrows come with 5.6.)
 - [ ] 5.4 Tabs and shell: Expo Router tabs, safe areas, Club dark / Parchment light, and the first-start library
       progress line.
 - [ ] 5.5 Play: home, new game (level, colour, think time), game screen (premoves, take-back, draw offer, resign
