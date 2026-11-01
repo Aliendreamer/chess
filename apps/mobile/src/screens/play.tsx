@@ -14,7 +14,6 @@ import {
   STANDARD_START,
   applyOptimistic,
   engineName,
-  playMove,
   resolvePremove,
   uciSquares,
 } from '@chess/core'

@@ -6,6 +6,9 @@ const own = (name) => path.dirname(require.resolve(`${name}/package.json`, { pat
 
 module.exports = {
   preset: 'jest-expo',
+  // The route tests render the whole app (services, router, tabs): ~2 s each alone, longer while other projects'
+  // tests run beside them.
+  testTimeout: 20_000,
   transformIgnorePatterns: [
     'node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|react-native-svg|standard-navigation|@chess/.*))',
   ],

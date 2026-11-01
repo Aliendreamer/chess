@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native'
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router'
 import {
   STANDARD_START,
@@ -7,13 +7,10 @@ import {
   fromInput,
   isFen,
   lineEnd,
-  nextPath,
   parsePgn,
   playMove,
   positionKey,
-  scoreText,
   toInput,
-  uciSquares,
 } from '@chess/core'
 import {
   DRAFTS,
@@ -26,7 +23,6 @@ import {
 import {
   analysisTitle,
   useAnalysis,
-  useAutoEvaluate,
   useCommand,
   useLibraryPosition,
   useMoveTree,
@@ -34,21 +30,11 @@ import {
 } from '@chess/view'
 import type { ParsedGame } from '@chess/core'
 import type { AnalysisStart } from '@chess/local'
-import {
-  EngineLines,
-  EvalBar,
-  EvaluationSwitches,
-  LibraryPanel,
-  MoveNav,
-  MoveTree,
-  NavButton,
-  ThinkChips,
-  type EvaluationShown,
-} from '@/components/analysis'
-import { Board } from '@/components/board'
+import { LibraryPanel, type EvaluationShown } from '@/components/analysis'
 import { ErrorLine } from '@/components/play'
 import { Button, Section, Sheet, TOUCH } from '@/components/primitives'
 import { Screen } from '@/components/screen'
+import { TreeBoard } from '@/components/tree-board'
 import { appHref, mobileRoute } from '@/lib/links'
 import { usePreferences } from '@/lib/preferences'
 import { useServices } from '@/lib/services-context'
@@ -98,7 +84,6 @@ function AnalysisBoard({ start }: { start: AnalysisStart }) {
   const { colors } = useTheme()
   const { preferences, update } = usePreferences()
   const router = useRouter()
-  const { width } = useWindowDimensions()
   const editor = useMoveTree(start.startFen, start.tree, start.path)
   const [shown, setShown] = useState<EvaluationShown>({
     bar: preferences.analysisBar,
@@ -113,8 +98,6 @@ function AnalysisBoard({ start }: { start: AnalysisStart }) {
       services.evaluator.request(input),
   )
   const analysis = useAnalysis(request)
-  useAutoEvaluate(analysis, editor.fen, shown.bar || shown.line)
-  const evaluation = analysis.evaluationOf(editor.fen)
 
   // The line's positions (start excluded) name the opening.
   const keys = editor.path.map((_, i) =>
@@ -203,12 +186,6 @@ function AnalysisBoard({ start }: { start: AnalysisStart }) {
     setChoices([])
   }
 
-  const scoreOf = (at: string) => {
-    const best = analysis.evaluationOf(at)?.lines[0]
-    return best ? scoreText(best) : null
-  }
-  const { tree, path } = editor
-
   return (
     <Screen title="Analysis">
       <View style={styles.head}>
@@ -235,44 +212,7 @@ function AnalysisBoard({ start }: { start: AnalysisStart }) {
         ) : null}
       </View>
       {pasteError ? <ErrorLine text={pasteError} /> : null}
-      {shown.bar ? <EvalBar evaluation={evaluation} orientation={editor.orientation} /> : null}
-      {/* Edge to edge: the board keeps the full width (mobile-app D5). */}
-      <View style={styles.bleed}>
-        <Board
-          fen={editor.fen}
-          orientation={editor.orientation}
-          size={width}
-          lastMove={uciSquares(editor.current?.uci)}
-          onMove={playUci}
-        />
-      </View>
-      <MoveNav
-        onFirst={() => editor.setPath([])}
-        onPrevious={() => editor.setPath(path.slice(0, -1))}
-        onNext={() => editor.setPath(nextPath(tree, path) ?? path)}
-        onLast={() => editor.setPath(lineEnd(tree, path))}
-      >
-        <NavButton label="Flip board" glyph="⇅" onPress={editor.flip} />
-      </MoveNav>
-      {shown.line ? (
-        <View style={styles.engine}>
-          <EngineLines
-            fen={editor.fen}
-            evaluation={evaluation}
-            error={analysis.error}
-            onPlay={editor.playLine}
-          />
-          <ThinkChips analysis={analysis} />
-        </View>
-      ) : null}
-      <MoveTree
-        tree={tree}
-        startFen={editor.startFen}
-        current={path}
-        onSelect={editor.setPath}
-        scoreOf={scoreOf}
-      />
-      <EvaluationSwitches shown={shown} onChange={show} />
+      <TreeBoard editor={editor} analysis={analysis} shown={shown} onShown={show} />
       <Button
         label="Save as study"
         kind="primary"
@@ -339,8 +279,6 @@ function AnalysisBoard({ start }: { start: AnalysisStart }) {
 const styles = StyleSheet.create({
   head: { gap: 2 },
   libraryLine: { minHeight: TOUCH - 12, justifyContent: 'center' },
-  bleed: { marginHorizontal: -16 },
-  engine: { gap: 8 },
   start: { padding: 12, gap: 10 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   input: {

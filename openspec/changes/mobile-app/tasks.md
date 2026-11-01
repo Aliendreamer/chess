@@ -141,7 +141,10 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       (Done as: `src/screens/analysis.tsx` on the Analyse tab, "In the library" a line above the bar that opens the
       explorer in a sheet; the review panel under a finished game, as on desktop; the play-time evaluation switches
       on the game screen. `analysisStart` and `useAutoEvaluate` moved into the libraries.)
-- [ ] 5.7 Studies: list, editor with variations, import/export.
+- [x] 5.7 Studies: list, editor with variations, import/export.
+      (Done as: `src/screens/studies.tsx` under Learn; the board, tree and engine are `TreeBoard`, shared with the
+      analysis board; import by paste or a picked file, export through the share sheet. Found on the way: Make main
+      line left the board on the other move, so Delete move deleted that one; fixed here, on desktop and in the club.)
 - [ ] 5.8 Trainer (families, learn then test, study lines) and training sessions.
 - [ ] 5.9 Library: search, game view, explorer, openings.
 - [ ] 5.10 News and tournaments, Settings (incl. the miner switch), About (licences, source link), Backup.

@@ -32,6 +32,11 @@ export async function startApp(setUp: SetUp = {}): Promise<TestApp> {
   return ready
 }
 
+/** The app opened again on the same database: the next render takes these services. */
+export function reopen(app: TestApp) {
+  ready = app
+}
+
 /** The services the last render started (or took from {@link startApp}). */
 export function testApp(): TestApp {
   if (!current) throw new Error('no app started')
