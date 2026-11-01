@@ -1,4 +1,6 @@
--- The desktop app's data (desktop-app D4): the club's shapes for one local player, so no users and no owners.
+// The first schema (desktop-app D4). A TS string rather than a `.sql` file read with Vite's `?raw`, so every bundler
+// (Vite, Metro) and Node load it the same way (mobile-app D1). A new migration is a new numbered file in MIGRATIONS.
+export default `-- The desktop app's data (desktop-app D4): the club's shapes for one local player, so no users and no owners.
 -- Ids are UUID v7 text; times ISO-8601 UTC text; lists and trees JSON text.
 
 CREATE TABLE settings (
@@ -195,3 +197,4 @@ CREATE TABLE chess_events (
 
 -- Marks the file as this app's, so a restore can tell a backup of ours from any other SQLite file.
 INSERT INTO settings (key, value) VALUES ('app.marker', '"chess-desktop"');
+`

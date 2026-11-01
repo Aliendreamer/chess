@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { importLibrary, searchLibrary } from '@chess/local'
 import { fakeServices, renderApp } from '#/testing'
-import { importLibrary, searchLibrary } from '#/lib/data/library'
 
 beforeAll(() => {
   window.matchMedia = (query: string) =>

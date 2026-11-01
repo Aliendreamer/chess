@@ -139,6 +139,9 @@ importers:
       '@chess/core':
         specifier: workspace:*
         version: link:../../libs/chess-core
+      '@chess/local':
+        specifier: workspace:*
+        version: link:../../libs/chess-local
       '@chess/ui':
         specifier: workspace:*
         version: link:../../libs/chess-ui
@@ -445,6 +448,40 @@ importers:
       eslint:
         specifier: 10.4.1
         version: 10.4.1(supports-color@10.2.2)
+      prettier:
+        specifier: 3.8.4
+        version: 3.8.4
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 4.1.8
+        version: 4.1.8(@opentelemetry/api@1.9.1)(@types/node@25.9.2)(@vitest/coverage-v8@4.1.8)(jsdom@29.1.1)(vite@8.0.16(@types/node@25.9.2))
+
+  libs/chess-local:
+    dependencies:
+      '@chess/core':
+        specifier: workspace:*
+        version: link:../chess-core
+      chess.js:
+        specifier: 1.4.0
+        version: 1.4.0
+      fflate:
+        specifier: 0.8.3
+        version: 0.8.3
+    devDependencies:
+      '@tanstack/eslint-config':
+        specifier: 0.4.0
+        version: 0.4.0(@typescript-eslint/utils@8.70.0(eslint@10.4.1(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.4.1(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
+      '@types/node':
+        specifier: 25.9.2
+        version: 25.9.2
+      '@vitest/coverage-v8':
+        specifier: 4.1.8
+        version: 4.1.8(vitest@4.1.8)
+      eslint:
+        specifier: 10.4.1
+        version: 10.4.1(jiti@2.7.0)(supports-color@10.2.2)
       prettier:
         specifier: 3.8.4
         version: 3.8.4
@@ -4177,6 +4214,9 @@ packages:
 
   fetchdts@0.1.7:
     resolution: {integrity: sha512-YoZjBdafyLIop9lSxXVI33oLD5kN31q4Td+CasofLLYeLXRFeOsuOw0Uo+XNRi9PZlbfdlN2GmRtm4tCEQ9/KA==}
+
+  fflate@0.8.3:
+    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
 
   figures@3.2.0:
     resolution: {integrity: sha512-yaduQFRKLXYOGgEn6AZau90j3ggSOyiqXU0F9JZfeXYhNa+Jk4X+s45A2zg5jns87GAFa34BBm2kXw4XpNcbdg==}
@@ -10428,6 +10468,8 @@ snapshots:
       tough-cookie: 4.1.4
 
   fetchdts@0.1.7: {}
+
+  fflate@0.8.3: {}
 
   figures@3.2.0:
     dependencies:

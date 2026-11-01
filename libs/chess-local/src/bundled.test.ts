@@ -3,12 +3,12 @@ import { readFile } from 'node:fs/promises'
 import { gunzipSync, gzipSync } from 'node:zlib'
 import { afterEach, describe, expect, it } from 'vitest'
 import { positionKey, prepareImport } from '@chess/core'
-import { openDb } from './db'
-import { ensureBundledLibrary } from './bundled'
-import { importLibrary } from './library'
-import { nextTraining } from './training'
-import type { BundledGame, BundledLibrary } from './bundled'
-import { memorySql } from '#/testing'
+import { openDb } from './db.ts'
+import { ensureBundledLibrary } from './bundled.ts'
+import { importLibrary } from './library.ts'
+import { nextTraining } from './training.ts'
+import { memorySql } from './testing.ts'
+import type { BundledGame, BundledLibrary } from './bundled.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -100,10 +100,17 @@ const LIBRARY = {
       createdAt: '2026-10-10T10:08:20Z',
     },
   ],
-} satisfies Omit<BundledLibrary, 'games'> & { games: Array<Omit<BundledGame, 'keys'>> }
+} satisfies Omit<BundledLibrary, 'games'> & {
+  games: Array<Omit<BundledGame, 'keys'>>
+}
 /** The file as the export writes it: each game with its position keys (none for an illegal one). */
 const file =
-  (library: Omit<BundledLibrary, 'games'> & { games: Array<Omit<BundledGame, 'keys'>> }) => () => {
+  (
+    library: Omit<BundledLibrary, 'games'> & {
+      games: Array<Omit<BundledGame, 'keys'>>
+    },
+  ) =>
+  () => {
     const games = library.games.map((g) => {
       const p = prepareImport(
         { ...g, moves: g.moves.split(' '), startFen: null },
@@ -121,8 +128,14 @@ const count = async (d: Awaited<ReturnType<typeof testDb>>, table: string) =>
 describe('the bundled library (desktop-app D12)', () => {
   it('is loaded on the first start, and not again while it is the same', async () => {
     const d = await testDb()
-    expect(await ensureBundledLibrary(d, file(LIBRARY))).toEqual({ state: 'loaded', games: 1 })
-    expect(await ensureBundledLibrary(d, file(LIBRARY))).toEqual({ state: 'current', games: 0 })
+    expect(await ensureBundledLibrary(d, file(LIBRARY))).toEqual({
+      state: 'loaded',
+      games: 1,
+    })
+    expect(await ensureBundledLibrary(d, file(LIBRARY))).toEqual({
+      state: 'current',
+      games: 0,
+    })
     expect(await count(d, 'library_games')).toBe(1)
     expect(await count(d, 'library_positions')).toBe(5)
     expect(await count(d, 'training_candidates')).toBe(2)
@@ -132,16 +145,25 @@ describe('the bundled library (desktop-app D12)', () => {
   it('takes the file already unzipped, as the development server hands it over', async () => {
     const d = await testDb()
     const unzipped = async () => new Uint8Array(gunzipSync(await file(LIBRARY)()))
-    expect(await ensureBundledLibrary(d, unzipped)).toEqual({ state: 'loaded', games: 1 })
+    expect(await ensureBundledLibrary(d, unzipped)).toEqual({
+      state: 'loaded',
+      games: 1,
+    })
   })
 
   it('keeps the source, the licence and the link of each game', async () => {
     const d = await testDb()
     await ensureBundledLibrary(d, file(LIBRARY))
-    const [game] = await d.select<{ source: string; licence: string; year: number }>(
-      'SELECT source, licence, year FROM library_games',
-    )
-    expect(game).toEqual({ source: 'PGN Mentor', licence: 'moves only (facts)', year: 2018 })
+    const [game] = await d.select<{
+      source: string
+      licence: string
+      year: number
+    }>('SELECT source, licence, year FROM library_games')
+    expect(game).toEqual({
+      source: 'PGN Mentor',
+      licence: 'moves only (facts)',
+      year: 2018,
+    })
   })
 
   it('trains the positions the club mined, found by a part of a player’s name', async () => {
@@ -155,9 +177,10 @@ describe('the bundled library (desktop-app D12)', () => {
   it('never has the miner ask a judged position again', async () => {
     const d = await testDb()
     await ensureBundledLibrary(d, file(LIBRARY))
-    const judged = await d.select<{ critical: number; judged_at: string | null }>(
-      'SELECT critical, judged_at FROM training_candidates ORDER BY ply',
-    )
+    const judged = await d.select<{
+      critical: number
+      judged_at: string | null
+    }>('SELECT critical, judged_at FROM training_candidates ORDER BY ply')
     expect(judged.map((c) => c.critical)).toEqual([0, 1])
     expect(judged.every((c) => c.judged_at)).toBe(true)
   })
@@ -170,7 +193,10 @@ describe('the bundled library (desktop-app D12)', () => {
       'mine.pgn',
     )
     const [own] = await d.select<{ id: string }>('SELECT id FROM library_games')
-    expect(await ensureBundledLibrary(d, file(LIBRARY))).toEqual({ state: 'loaded', games: 0 })
+    expect(await ensureBundledLibrary(d, file(LIBRARY))).toEqual({
+      state: 'loaded',
+      games: 0,
+    })
     expect(await count(d, 'library_games')).toBe(1)
     const [position] = await d.select<{ library_game_id: string }>(
       'SELECT library_game_id FROM training_positions',
@@ -196,7 +222,10 @@ describe('the bundled library (desktop-app D12)', () => {
         },
       ],
     }
-    expect(await ensureBundledLibrary(d, file(next))).toEqual({ state: 'loaded', games: 1 })
+    expect(await ensureBundledLibrary(d, file(next))).toEqual({
+      state: 'loaded',
+      games: 1,
+    })
     expect(await count(d, 'library_games')).toBe(2)
     const [progress] = await d.select<{ box: number }>('SELECT box FROM training_progress')
     expect(progress!.box).toBe(3)
@@ -206,7 +235,7 @@ describe('the bundled library (desktop-app D12)', () => {
     const d = await testDb()
     const started = performance.now()
     const shipped = () =>
-      readFile(new URL('../../../library/library.json.gz', import.meta.url)).then(
+      readFile(new URL('../../../apps/desktop/library/library.json.gz', import.meta.url)).then(
         (b) => new Uint8Array(b),
       )
     const { games } = await ensureBundledLibrary(d, shipped)

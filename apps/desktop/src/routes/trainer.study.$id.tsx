@@ -16,9 +16,9 @@ import {
   useCommand,
   useDrill,
 } from '@chess/ui'
+import { nextStudyLine, recordRun, studyDrill } from '@chess/local'
 import type { ReactNode } from 'react'
 import type { NextStudyLine, RunResult, StudyLine, TrainerColor } from '@chess/ui'
-import { nextStudyLine, recordRun, studyDrill } from '#/lib/data/trainer'
 
 /**
  * One of the member's studies drilled line by line (study-repertoire-trainer): the next due line on the board from the

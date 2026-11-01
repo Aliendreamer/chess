@@ -42,7 +42,10 @@ export class UciEngine {
 
   constructor(
     private readonly channel: UciChannel,
-    private readonly options: { hashMb: number; slackMs: number } = { hashMb: 64, slackMs: 5_000 },
+    private readonly options: { hashMb: number; slackMs: number } = {
+      hashMb: 64,
+      slackMs: 5_000,
+    },
   ) {
     channel.onLine((line) => {
       this.lines.push(line)
@@ -99,7 +102,10 @@ export class UciEngine {
       const line = await this.next('bestmove', deadline)
       if (line.startsWith('bestmove')) {
         await this.channel.write('setoption name MultiPV value 1')
-        return { depth, lines: [...best.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1]) }
+        return {
+          depth,
+          lines: [...best.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1]),
+        }
       }
       const parsed = parseInfo(line, whiteToMove)
       if (parsed) {
@@ -187,7 +193,11 @@ export function parseInfo(
   return {
     multiPv,
     depth,
-    line: { cp: cp === null ? null : cp * sign, mate: mate === null ? null : mate * sign, pv },
+    line: {
+      cp: cp === null ? null : cp * sign,
+      mate: mate === null ? null : mate * sign,
+      pv,
+    },
   }
 }
 
@@ -332,25 +342,5 @@ export class AnalysisQueue {
         this.running = null
         this.pump()
       })
-  }
-}
-
-/** The bundled Stockfish as a {@link UciChannel}, through Tauri's shell plugin; loaded lazily, so tests never import it. */
-export async function sidecarChannel(): Promise<UciChannel> {
-  const { Command } = await import('@tauri-apps/plugin-shell')
-  const command = Command.sidecar('binaries/stockfish')
-  const lineListeners: Array<(line: string) => void> = []
-  const exitListeners: Array<() => void> = []
-  command.stdout.on('data', (chunk: string) => {
-    for (const line of chunk.split(/\r?\n/)) if (line !== '') lineListeners.forEach((l) => l(line))
-  })
-  command.on('close', () => exitListeners.forEach((l) => l()))
-  command.on('error', () => exitListeners.forEach((l) => l()))
-  const child = await command.spawn()
-  return {
-    write: (line) => child.write(`${line}\n`),
-    onLine: (listener) => lineListeners.push(listener),
-    onExit: (listener) => exitListeners.push(listener),
-    kill: () => child.kill(),
   }
 }

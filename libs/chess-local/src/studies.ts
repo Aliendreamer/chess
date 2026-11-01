@@ -1,8 +1,15 @@
 import { STANDARD_START, fromInput, isFen, studyLines, studyPgn, toInput } from '@chess/core'
-import { newId } from './db'
-import type { CommandOutcome, StudyInput, StudyMove, StudyMoveInput } from '@chess/core'
-import type { ImportResult, StudyListItem, StudyView } from '@chess/ui'
-import type { Db } from './db'
+import { newId } from './db.ts'
+import type {
+  CommandOutcome,
+  ImportResult,
+  StudyInput,
+  StudyListItem,
+  StudyMove,
+  StudyMoveInput,
+  StudyView,
+} from '@chess/core'
+import type { Db } from './db.ts'
 
 /**
  * Studies (studies D1–D3, desktop-app): rows in `studies` with the tree as JSON, the player's own. Every tree is
@@ -120,7 +127,12 @@ export async function createStudies(
 /** A save: refused when the study changed since it was read (`version`), or when the tree does not replay. */
 export async function saveStudy(
   db: Db,
-  change: { id: string; title: string; tree: ReadonlyArray<StudyMoveInput>; version: number },
+  change: {
+    id: string
+    title: string
+    tree: ReadonlyArray<StudyMoveInput>
+    version: number
+  },
   now = new Date(),
 ): Promise<CommandOutcome<StudyView>> {
   const study = await loadStudy(db, change.id)
@@ -162,7 +174,12 @@ export async function saveStudy(
 export function studyAsPgn(study: StudyView): string {
   return studyPgn(
     study.title,
-    { white: study.white, black: study.black, result: study.result, date: study.date },
+    {
+      white: study.white,
+      black: study.black,
+      result: study.result,
+      date: study.date,
+    },
     study.startFen,
     study.tree,
     'Chess desktop',

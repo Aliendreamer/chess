@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
+import { newsRound } from '@chess/local'
 import { fakeServices, renderApp } from '#/testing'
-import { newsRound } from '#/lib/data/news'
 
 const services: Array<{ close: () => void }> = []
 afterEach(() => {

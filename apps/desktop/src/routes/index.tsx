@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { EventsNow, NewsList, SectionHeading, useCommand } from '@chess/ui'
+import {
+  createGame,
+  currentEvents,
+  getSetting,
+  latestNews,
+  listGames,
+  setSetting,
+} from '@chess/local'
 import type { ColourChoice, ThinkSeconds } from '@chess/core'
 import { EngineForm, GameRows } from '#/components/play'
-import { createGame, listGames } from '#/lib/data/play'
-import { getSetting, setSetting } from '#/lib/data/settings'
-import { currentEvents, latestNews } from '#/lib/data/news'
 
 /** The last choices, so the next game starts where the last one did (the think time: owner, 2026-10-16). */
 interface PlayChoice {

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { STANDARD_START } from '@chess/core'
-import { openDb } from './db'
-import { ensureOpenings } from './openings'
-import { createStudies } from './studies'
+import { openDb } from './db.ts'
+import { ensureOpenings } from './openings.ts'
+import { createStudies } from './studies.ts'
 import {
   familyLines,
   isNamedLine,
@@ -12,8 +12,8 @@ import {
   studyDrill,
   trainerFamilies,
   trainerStudies,
-} from './trainer'
-import { memorySql } from '#/testing'
+} from './trainer.ts'
+import { memorySql } from './testing.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -89,7 +89,12 @@ describe('the opening trainer (opening-trainer, desktop-app)', () => {
     expect(drill.lines.map((l) => l.moves.join(' '))).toEqual(['e2e4 e7e5', 'e2e4 c7c5'])
     await recordRun(
       db,
-      { lineKey: drill.lines[0]!.key, color: 'white', mistakes: 0, studyId: id },
+      {
+        lineKey: drill.lines[0]!.key,
+        color: 'white',
+        mistakes: 0,
+        studyId: id,
+      },
       NOW,
     )
     expect((await nextStudyLine(db, id, 'white', NOW))?.line?.key).toBe(drill.lines[1]!.key)

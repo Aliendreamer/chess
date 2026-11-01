@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { STANDARD_START, positionKey } from '@chess/core'
-import { openDb } from './db'
-import { Evaluator, storeEvaluation } from './analysis'
-import { createGame, engineMove, personMove, resign } from './play'
-import { loadReview, reviewsToRun, runReview, startReview } from './review'
-import type { AnalysisQueue, EngineAnalysis } from '../engine'
-import type { Db } from './db'
-import { memorySql } from '#/testing'
+import { openDb } from './db.ts'
+import { Evaluator, storeEvaluation } from './analysis.ts'
+import { createGame, engineMove, personMove, resign } from './play.ts'
+import { loadReview, reviewsToRun, runReview, startReview } from './review.ts'
+import { memorySql } from './testing.ts'
+import type { AnalysisQueue, EngineAnalysis } from './engine.ts'
+import type { Db } from './db.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -20,7 +20,11 @@ async function testDb() {
 async function foolsMate(db: Db) {
   const moves = ['e7e5', 'd8h4']
   const engine = { bestMove: () => Promise.resolve(moves.shift() ?? null) }
-  const game = await createGame(db, { level: '1320', color: 'white', thinkSeconds: 5 })
+  const game = await createGame(db, {
+    level: '1320',
+    color: 'white',
+    thinkSeconds: 5,
+  })
   await personMove(db, game.id, 'f2f3')
   await engineMove(db, engine, game.id)
   await personMove(db, game.id, 'g2g4')
@@ -94,7 +98,11 @@ describe('game review (game-review, desktop-app)', () => {
 
   it('is not run on a game of one move, and is offered again at start when left unfinished', async () => {
     const db = await testDb()
-    const short = await createGame(db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    const short = await createGame(db, {
+      level: '1320',
+      color: 'white',
+      thinkSeconds: 5,
+    })
     await personMove(db, short.id, 'e2e4')
     await resign(db, short.id)
     expect(

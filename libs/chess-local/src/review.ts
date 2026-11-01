@@ -1,12 +1,11 @@
 import { STANDARD_START, missing, positionKey, practice, review, trainingIds } from '@chess/core'
-import { storedEvaluations } from './analysis'
-import { openingNames } from './openings'
-import { loadGame } from './play'
-import type { CommandOutcome, ReviewInput } from '@chess/core'
-import type { ReviewView } from '@chess/ui'
-import type { Evaluator } from './analysis'
-import type { Db } from './db'
-import type { DesktopGame } from './play'
+import { storedEvaluations } from './analysis.ts'
+import { openingNames } from './openings.ts'
+import { loadGame } from './play.ts'
+import type { CommandOutcome, ReviewInput, ReviewView } from '@chess/core'
+import type { Evaluator } from './analysis.ts'
+import type { Db } from './db.ts'
+import type { DesktopGame } from './play.ts'
 
 /**
  * Game review (game-review, desktop-app): every finished game with two moves or more is reviewed without anyone
@@ -112,7 +111,10 @@ async function syncDrills(db: Db, game: DesktopGame, now: Date) {
         at,
       ],
     })),
-    { sql: 'UPDATE reviews SET synced = 1 WHERE game_id = ?', params: [game.id] },
+    {
+      sql: 'UPDATE reviews SET synced = 1 WHERE game_id = ?',
+      params: [game.id],
+    },
   ])
 }
 

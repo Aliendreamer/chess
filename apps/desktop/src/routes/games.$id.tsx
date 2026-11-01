@@ -33,10 +33,6 @@ import {
   useCommand,
   useReview,
 } from '@chess/ui'
-import type { SquarePair } from '@chess/core'
-import type { EvaluationShown, PreviewState } from '@chess/ui'
-import type { EngineStatus } from '#/lib/engine'
-import { GameEndPanel, PlayerLine } from '#/components/play'
 import {
   PERSON_NAME,
   askToResign,
@@ -44,14 +40,21 @@ import {
   engineToMove,
   lastPersonPly,
   loadGame,
+  loadReview,
   offerDraw,
   personMove,
   resign,
+  reviewable,
+  runReview,
+  startReview,
   takeBack,
   toMove,
-} from '#/lib/data/play'
-import { loadReview, reviewable, runReview, startReview } from '#/lib/data/review'
-import { updatePreferences } from '#/lib/data/settings'
+  updatePreferences,
+} from '@chess/local'
+import type { SquarePair } from '@chess/core'
+import type { EvaluationShown, PreviewState } from '@chess/ui'
+import type { EngineStatus } from '@chess/local'
+import { GameEndPanel, PlayerLine } from '#/components/play'
 
 export const Route = createFileRoute('/games/$id')({
   loader: async ({ context: { app }, params }) => {

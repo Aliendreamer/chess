@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Outlet, createRootRouteWithContext } from '@tanstack/react-router'
+import { getPreferences } from '@chess/local'
 import type { RouterContext } from '#/lib/app'
 import { Shell } from '#/components/layout'
-import { getPreferences } from '#/lib/data/settings'
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   // The player's display settings, for the Shell (board and site theme) and every board (animation, coordinates,

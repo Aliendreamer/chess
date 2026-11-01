@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { STANDARD_START } from '@chess/core'
-import { openDb } from './db'
-import { ensureOpenings } from './openings'
-import { importLibrary, libraryGame, libraryPosition, searchLibrary } from './library'
-import { memorySql } from '#/testing'
+import { openDb } from './db.ts'
+import { ensureOpenings } from './openings.ts'
+import { importLibrary, libraryGame, libraryPosition, searchLibrary } from './library.ts'
+import { memorySql } from './testing.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))

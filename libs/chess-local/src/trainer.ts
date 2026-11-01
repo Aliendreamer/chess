@@ -1,8 +1,8 @@
 import { OpeningFamilies, afterRun, familyName, isLearned, nextLine, studyLines } from '@chess/core'
-import { allOpenings } from './openings'
-import { loadStudy } from './studies'
-import type { Color } from '@chess/core'
+import { allOpenings } from './openings.ts'
+import { loadStudy } from './studies.ts'
 import type {
+  Color,
   FamilyProgress,
   NextLine,
   NextStudyLine,
@@ -10,8 +10,8 @@ import type {
   StudyDrill,
   StudyTraining,
   TrainerLine,
-} from '@chess/ui'
-import type { Db } from './db'
+} from '@chess/core'
+import type { Db } from './db.ts'
 
 /**
  * The opening trainer (opening-trainer, study-repertoire-trainer, desktop-app): the named lines grouped into families,
@@ -112,7 +112,11 @@ export async function nextFamilyLine(
 }
 
 function progressMap(
-  lines: ReadonlyArray<{ key: string; box: number | null; dueAt: string | null }>,
+  lines: ReadonlyArray<{
+    key: string
+    box: number | null
+    dueAt: string | null
+  }>,
 ) {
   return new Map(
     lines.flatMap((l) =>

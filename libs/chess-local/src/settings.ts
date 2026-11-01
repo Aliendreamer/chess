@@ -1,6 +1,6 @@
 import { withDefaults } from '@chess/core'
 import type { Preferences } from '@chess/core'
-import type { Db } from './db'
+import type { Db } from './db.ts'
 
 /** Small values the app keeps between starts (desktop-app D4): JSON under a key in `settings`. */
 export async function getSetting<T>(db: Db, key: string, fallback: T): Promise<T> {

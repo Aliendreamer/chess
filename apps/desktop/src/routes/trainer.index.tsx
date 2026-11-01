@@ -9,8 +9,8 @@ import {
   TrainerStudyList,
   isColor,
 } from '@chess/ui'
+import { trainerFamilies, trainerStudies } from '@chess/local'
 import type { TrainerColor } from '@chess/ui'
-import { trainerFamilies, trainerStudies } from '#/lib/data/trainer'
 
 /**
  * The opening trainer (opening-trainer): the families of the named lines, searched, each with the member's progress;

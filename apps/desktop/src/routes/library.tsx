@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { Button, ErrorText, LibraryList, Panel, SectionHeading, useCommand } from '@chess/ui'
-import type { LibraryImportReport, LibraryQuery } from '#/lib/data/library'
-import { importLibrary, libraryCount, searchLibrary } from '#/lib/data/library'
+import { importLibrary, libraryCount, searchLibrary } from '@chess/local'
+import type { LibraryImportReport, LibraryQuery } from '@chess/local'
 
 /**
  * Your game library (game-library, desktop-app): the PGN collections you import, searched by player, event and years;

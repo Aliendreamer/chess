@@ -2,8 +2,8 @@ import { existsSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { MIGRATIONS, inline, literal, openDb, schemaVersion } from './db'
-import { memorySql } from '#/testing'
+import { MIGRATIONS, inline, literal, openDb, schemaVersion } from './db.ts'
+import { memorySql } from './testing.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -67,13 +67,25 @@ describe('openDb (desktop-app D4)', () => {
     const sql = fresh()
     const db = await openDb(sql)
     await db.batch([
-      { sql: 'INSERT INTO settings (key, value) VALUES (?, ?)', params: ['a', '1'] },
-      { sql: 'INSERT INTO settings (key, value) VALUES (?, ?)', params: ['b', "it's"] },
+      {
+        sql: 'INSERT INTO settings (key, value) VALUES (?, ?)',
+        params: ['a', '1'],
+      },
+      {
+        sql: 'INSERT INTO settings (key, value) VALUES (?, ?)',
+        params: ['b', "it's"],
+      },
     ])
     await expect(
       db.batch([
-        { sql: 'INSERT INTO settings (key, value) VALUES (?, ?)', params: ['c', '3'] },
-        { sql: 'INSERT INTO settings (key, value) VALUES (?, ?)', params: ['a', 'clash'] },
+        {
+          sql: 'INSERT INTO settings (key, value) VALUES (?, ?)',
+          params: ['c', '3'],
+        },
+        {
+          sql: 'INSERT INTO settings (key, value) VALUES (?, ?)',
+          params: ['a', 'clash'],
+        },
       ]),
     ).rejects.toThrow()
     const rows = await db.select<{ key: string; value: string }>(

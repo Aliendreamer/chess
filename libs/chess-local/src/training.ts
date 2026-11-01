@@ -12,19 +12,19 @@ import {
   pickSpots,
   trainingIds,
 } from '@chess/core'
-import { newId } from './db'
-import { REVIEW_THINK_MS } from './review'
-import type { CommandOutcome } from '@chess/core'
+import { newId } from './db.ts'
+import { REVIEW_THINK_MS } from './review.ts'
 import type {
+  CommandOutcome,
   TrainingFilters,
   TrainingItem,
   TrainingMode,
   TrainingNext,
   TrainingSummary,
   TrainingVerdict,
-} from '@chess/ui'
-import type { Evaluator } from './analysis'
-import type { Db } from './db'
+} from '@chess/core'
+import type { Evaluator } from './analysis.ts'
+import type { Db } from './db.ts'
 
 /**
  * Training (training D1–D4, desktop-app): two pools that fill themselves — the person's own mistakes (copied from
@@ -109,7 +109,10 @@ export async function mineRound(
     )
     const evaluation = await evaluator.evaluate(fen, REVIEW_THINK_MS, 'background')
     const moment = judgeCritical(fen, evaluation.lines, options.minGap)
-    const statements: Array<{ sql: string; params: Array<string | number | null> }> = [
+    const statements: Array<{
+      sql: string
+      params: Array<string | number | null>
+    }> = [
       {
         sql: 'UPDATE training_candidates SET judged_at = ?, critical = ? WHERE position_key = ?',
         params: [at, moment ? 1 : 0, spot.positionKey],
@@ -179,7 +182,10 @@ interface PositionRow {
 const like = (text: string) => `%${text.trim().replace(/[%_\\]/g, (c) => `\\${c}`)}%`
 
 /** The master positions matching the filters, as SQL. */
-function filterSql(filters: TrainingFilters): { where: string; params: Array<string | number> } {
+function filterSql(filters: TrainingFilters): {
+  where: string
+  params: Array<string | number>
+} {
   const where: Array<string> = []
   const params: Array<string | number> = []
   const opening = filters.opening?.trim()
@@ -235,7 +241,13 @@ export async function nextTraining(
     const drill = drills.find((d) => d.id === id)
     return {
       item: drill
-        ? { id: drill.id, mode, fen: drill.fen, sideToMove: sideOf(drill.fen), box: drill.box }
+        ? {
+            id: drill.id,
+            mode,
+            fen: drill.fen,
+            sideToMove: sideOf(drill.fen),
+            box: drill.box,
+          }
         : null,
       pool: drills.length,
     }
@@ -310,7 +322,11 @@ export async function answerTraining(
           gameId: drill.game_id,
           ply: drill.ply,
           opponent: engineName(
-            findLevel(drill.engine_level) ?? { level: 'max', userId: -5, label: 'Maximum' },
+            findLevel(drill.engine_level) ?? {
+              level: 'max',
+              userId: -5,
+              label: 'Maximum',
+            },
           ),
         },
         box: next.box,
@@ -363,19 +379,31 @@ export async function answerTraining(
 /** Both pools in numbers, for the training page. */
 export async function trainingSummary(db: Db, now = new Date()): Promise<TrainingSummary> {
   const t = now.toISOString()
-  const [games] = await db.select<{ positions: number; learned: number; due: number }>(
+  const [games] = await db.select<{
+    positions: number
+    learned: number
+    due: number
+  }>(
     `SELECT count(*) AS positions, coalesce(sum(coalesce(box, 0) >= 3), 0) AS learned,
             coalesce(sum(coalesce(due_at, updated_at) <= ?), 0) AS due FROM mistake_drills`,
     [t],
   )
   const [pool] = await db.select<{ n: number }>('SELECT count(*) AS n FROM training_positions')
-  const [seen] = await db.select<{ seen: number; learned: number; due: number }>(
+  const [seen] = await db.select<{
+    seen: number
+    learned: number
+    due: number
+  }>(
     `SELECT count(*) AS seen, coalesce(sum(box >= 3), 0) AS learned, coalesce(sum(due_at <= ?), 0) AS due
      FROM training_progress`,
     [t],
   )
   return {
-    games: { positions: games?.positions ?? 0, learned: games?.learned ?? 0, due: games?.due ?? 0 },
+    games: {
+      positions: games?.positions ?? 0,
+      learned: games?.learned ?? 0,
+      due: games?.due ?? 0,
+    },
     library: {
       pool: pool?.n ?? 0,
       seen: seen?.seen ?? 0,

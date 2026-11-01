@@ -1,7 +1,7 @@
 import { cleanup, screen } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { ensureOpenings } from '@chess/local'
 import { fakeServices, renderApp } from '#/testing'
-import { ensureOpenings } from '#/lib/data/openings'
 
 beforeAll(() => {
   window.matchMedia = (query: string) =>

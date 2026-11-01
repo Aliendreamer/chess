@@ -16,7 +16,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       to `>=19.2.3 <19.3.0` here and in `@chess/ui` (D3).
       Test first: the moved hook tests, run from `libs/chess-view`, fail with "module not found". A fixture reading
       `document` fails the typecheck.
-- [ ] 1.4 Create `libs/chess-local` (`@chess/local`) and move `apps/desktop/src/lib/data/*` (except the Tauri
+- [x] 1.4 Create `libs/chess-local` (`@chess/local`) and move `apps/desktop/src/lib/data/*` (except the Tauri
       adapter in `db.ts`) and `src/lib/engine.ts` (except `sidecarChannel`). Make the migrations TS string modules,
       and add the `LocalAssets` interface for the openings and the bundled library. Use `fflate` for gunzip in place
       of `DecompressionStream`. Desktop keeps `tauriSql`, `sidecarChannel`, Vite asset loaders and `app.tsx`.

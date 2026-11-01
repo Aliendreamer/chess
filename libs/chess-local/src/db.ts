@@ -1,4 +1,4 @@
-import init from './migrations/0001_init.sql?raw'
+import init from './migrations/0001_init.ts'
 
 /**
  * The app's one database (desktop-app D4): a SQLite file in the app data directory, reached through `tauri-plugin-sql`
@@ -122,20 +122,6 @@ export function literal(value: SqlValue): string {
   }
   if (value.includes('\0')) throw new Error('Text with a NUL character cannot be stored.')
   return `'${value.replaceAll("'", "''")}'`
-}
-
-/** `tauri-plugin-sql`'s database as {@link Sql}; loaded lazily, so tests never import the plugin. */
-export async function tauriSql(path = 'sqlite:chess.db'): Promise<Sql> {
-  const { default: Database } = await import('@tauri-apps/plugin-sql')
-  const db = await Database.load(path)
-  return {
-    select: <T>(text: string, params: ReadonlyArray<SqlValue> = []) =>
-      db.select<Array<T>>(text, [...params]),
-    execute: async (text, params = []) => {
-      const result = await db.execute(text, [...params])
-      return { rowsAffected: result.rowsAffected }
-    },
-  }
 }
 
 /** A UUID v7 (D11): 48 bits of milliseconds, then random bits, so ids sort by creation time. */

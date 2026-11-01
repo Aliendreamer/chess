@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { positionKey } from '@chess/core'
-import { openDb } from './db'
-import { allOpenings, embeddedOpenings, ensureOpenings, openingNames } from './openings'
-import { memorySql } from '#/testing'
+import { openDb } from './db.ts'
+import { allOpenings, ensureOpenings, openingNames } from './openings.ts'
+import { memorySql, openingFiles } from './testing.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -45,7 +45,7 @@ describe('the openings list (desktop-app D4)', () => {
   })
 
   it('bundles the backend’s five files, thousands of named positions', async () => {
-    const files = await embeddedOpenings()
+    const files = await openingFiles()
     expect(files).toHaveLength(5)
     expect(files.every((f) => f.startsWith(HEADER))).toBe(true)
   })
@@ -53,7 +53,7 @@ describe('the openings list (desktop-app D4)', () => {
   it('loads the real list in one batch', async () => {
     const d = await testDb()
     const started = performance.now()
-    expect(await ensureOpenings(d)).toBe('loaded')
+    expect(await ensureOpenings(d, openingFiles)).toBe('loaded')
     const [row] = await d.select<{ n: number }>('SELECT count(*) AS n FROM openings')
     expect(row!.n).toBeGreaterThan(3000)
     expect(performance.now() - started).toBeLessThan(30_000)

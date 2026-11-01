@@ -1,5 +1,5 @@
 import { STANDARD_START, buildPgn, engineName, findLevel, judgeMove, seat } from '@chess/core'
-import { newId } from './db'
+import { newId } from './db.ts'
 import type {
   Color,
   ColourChoice,
@@ -9,7 +9,7 @@ import type {
   Evaluation,
   ThinkSeconds,
 } from '@chess/core'
-import type { Db } from './db'
+import type { Db } from './db.ts'
 
 /**
  * Games against the computer (desktop-app D6): chess.js is the rules, every move is written as it is made, a game in
@@ -94,10 +94,12 @@ export async function createGame(
 export async function loadGame(db: Db, id: string): Promise<DesktopGame | null> {
   const [row] = await db.select<GameRow>('SELECT * FROM games WHERE id = ?', [id])
   if (!row) return null
-  const moves = await db.select<{ ply: number; uci: string; san: string; fen_after: string }>(
-    'SELECT ply, uci, san, fen_after FROM moves WHERE game_id = ? ORDER BY ply',
-    [id],
-  )
+  const moves = await db.select<{
+    ply: number
+    uci: string
+    san: string
+    fen_after: string
+  }>('SELECT ply, uci, san, fen_after FROM moves WHERE game_id = ? ORDER BY ply', [id])
   return {
     id: row.id,
     status: row.status,
@@ -111,7 +113,12 @@ export async function loadGame(db: Db, id: string): Promise<DesktopGame | null> 
     pgn: row.pgn,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    moves: moves.map((m) => ({ ply: m.ply, uci: m.uci, san: m.san, fenAfter: m.fen_after })),
+    moves: moves.map((m) => ({
+      ply: m.ply,
+      uci: m.uci,
+      san: m.san,
+      fenAfter: m.fen_after,
+    })),
   }
 }
 
@@ -179,7 +186,10 @@ export async function takeBack(
   const from = target + 1
   const fen = target === 0 ? STANDARD_START : game.moves[target - 1]!.fenAfter
   await db.batch([
-    { sql: 'DELETE FROM moves WHERE game_id = ? AND ply >= ?', params: [id, from] },
+    {
+      sql: 'DELETE FROM moves WHERE game_id = ? AND ply >= ?',
+      params: [id, from],
+    },
     {
       sql: 'UPDATE games SET ply = ?, fen = ?, updated_at = ? WHERE id = ?',
       params: [from - 1, fen, now.toISOString(), id],
@@ -270,7 +280,10 @@ async function answerOffer(
   const result = score === null ? null : decide(score, current)
   if (!result) return { ok: true, view: { accepted: false, game: current } }
   await end(db, current, result, result === '1/2-1/2' ? 'agreement' : 'resignation', now, [])
-  return { ok: true, view: { accepted: true, game: (await loadGame(db, id))! } }
+  return {
+    ok: true,
+    view: { accepted: true, game: (await loadGame(db, id))! },
+  }
 }
 
 async function play(
@@ -359,7 +372,10 @@ export async function listGames(
   db: Db,
   limit: number,
   after?: { updatedAt: string; id: string },
-): Promise<{ items: Array<GameListItem>; next: { updatedAt: string; id: string } | null }> {
+): Promise<{
+  items: Array<GameListItem>
+  next: { updatedAt: string; id: string } | null
+}> {
   const rows = await db.select<GameRow>(
     after
       ? 'SELECT * FROM games WHERE (updated_at, id) < (?, ?) ORDER BY updated_at DESC, id DESC LIMIT ?'

@@ -1,9 +1,8 @@
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { STANDARD_START, positionKey } from '@chess/core'
+import { createGame, resign, storeEvaluation } from '@chess/local'
 import { fakeServices, renderApp } from '#/testing'
-import { createGame, resign } from '#/lib/data/play'
-import { storeEvaluation } from '#/lib/data/analysis'
 
 // jsdom has no layout: react-chessboard cannot measure a square to animate a move, so the board is told to skip it.
 beforeAll(() => {
@@ -290,7 +289,7 @@ describe('the review on a finished game (game-review)', () => {
   it('starts by itself and shows the review panel', async () => {
     const s = await app(['e7e5', 'd8h4'])
     const game = await createGame(s.db, { level: '1320', color: 'white', thinkSeconds: 5 })
-    const { personMove, engineMove } = await import('#/lib/data/play')
+    const { personMove, engineMove } = await import('@chess/local')
     await personMove(s.db, game.id, 'f2f3')
     await engineMove(s.db, s.player, game.id)
     await personMove(s.db, game.id, 'g2g4')

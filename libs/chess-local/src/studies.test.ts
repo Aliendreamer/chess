@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { STANDARD_START, parsePgn, studyLines, toInput } from '@chess/core'
-import { openDb } from './db'
-import { createStudies, listStudies, loadStudy, saveStudy, studyAsPgn } from './studies'
-import { memorySql } from '#/testing'
+import { openDb } from './db.ts'
+import { createStudies, listStudies, loadStudy, saveStudy, studyAsPgn } from './studies.ts'
+import { memorySql } from './testing.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -62,7 +62,10 @@ describe('studies (studies D1–D3, desktop-app)', () => {
       tree: [{ uci: 'd2d4', children: [] }],
       version: 1,
     })
-    expect(saved).toMatchObject({ ok: true, view: { title: 'Renamed', version: 2 } })
+    expect(saved).toMatchObject({
+      ok: true,
+      view: { title: 'Renamed', version: 2 },
+    })
     expect(saved.ok && saved.view.tree[0]?.san).toBe('d4')
     expect(await saveStudy(db, { id: study.id, title: 'Old', tree: [], version: 1 })).toMatchObject(
       { ok: false, status: 409 },
@@ -87,7 +90,10 @@ describe('studies (studies D1–D3, desktop-app)', () => {
         "INSERT INTO trainer_progress (line_key, color, study_id, box, due_at, updated_at) VALUES (?, 'white', ?, 1, '2026-01-01', '2026-01-01')",
         [line.key, study.id],
       )
-    const kept = { ...study.tree[0]!, children: study.tree[0]!.children.slice(0, 1) }
+    const kept = {
+      ...study.tree[0]!,
+      children: study.tree[0]!.children.slice(0, 1),
+    }
     await saveStudy(db, {
       id: study.id,
       title: 'Rep',

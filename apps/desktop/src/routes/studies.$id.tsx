@@ -12,8 +12,8 @@ import {
   useCommand,
   useMoveTree,
 } from '@chess/ui'
+import { loadStudy, saveStudy, studyAsPgn } from '@chess/local'
 import type { StudyView } from '@chess/ui'
-import { loadStudy, saveStudy, studyAsPgn } from '#/lib/data/studies'
 
 /**
  * A study (studies D7): the board, its move tree and the tools around it. Moves played on the board go into the tree;

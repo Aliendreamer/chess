@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Chip, NewsColumns, NewsGrid, SectionHeading } from '@chess/ui'
-import { FEEDS, latestNews } from '#/lib/data/news'
+import { FEEDS, latestNews } from '@chess/local'
 
 const PER_SOURCE = 15
 

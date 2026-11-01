@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@chess/core": "workspace:*",
+    "@chess/local": "workspace:*",
     "@chess/ui": "workspace:*",
     "@tailwindcss/vite": "4.3.0",
     "@tanstack/react-router": "1.170.15",

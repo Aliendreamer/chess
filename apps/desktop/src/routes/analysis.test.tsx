@@ -1,10 +1,8 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { STANDARD_START, positionKey } from '@chess/core'
+import { createGame, ensureOpenings, personMove, storeEvaluation } from '@chess/local'
 import { fakeServices, renderApp } from '#/testing'
-import { storeEvaluation } from '#/lib/data/analysis'
-import { ensureOpenings } from '#/lib/data/openings'
-import { createGame, personMove } from '#/lib/data/play'
 
 beforeAll(() => {
   window.matchMedia = (query: string) =>

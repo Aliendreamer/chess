@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { openDb } from './db'
-import { Evaluator } from './analysis'
-import { importLibrary } from './library'
-import { answerTraining, mineRound, nextTraining, trainingSummary } from './training'
-import type { AnalysisQueue, EngineAnalysis } from '../engine'
-import { memorySql } from '#/testing'
+import { openDb } from './db.ts'
+import { Evaluator } from './analysis.ts'
+import { importLibrary } from './library.ts'
+import { answerTraining, mineRound, nextTraining, trainingSummary } from './training.ts'
+import { memorySql } from './testing.ts'
+import type { AnalysisQueue, EngineAnalysis } from './engine.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -100,9 +100,15 @@ describe('training sessions (training D4)', () => {
       [id],
     )
     const right = await answerTraining(db, 'library', id, position!.master_uci, now)
-    expect(right).toMatchObject({ ok: true, view: { correct: true, verdict: 'master', box: 1 } })
+    expect(right).toMatchObject({
+      ok: true,
+      view: { correct: true, verdict: 'master', box: 1 },
+    })
     const wrong = await answerTraining(db, 'library', id, 'h2h4', now)
-    expect(wrong).toMatchObject({ ok: true, view: { correct: false, verdict: 'none', box: 0 } })
+    expect(wrong).toMatchObject({
+      ok: true,
+      view: { correct: false, verdict: 'none', box: 0 },
+    })
     // Answered: due now again, and never offered twice in one session.
     expect((await nextTraining(db, 'library', {}, [id], now, () => 0)).item?.id).not.toBe(id)
     expect((await trainingSummary(db, now)).library).toEqual({
@@ -115,7 +121,10 @@ describe('training sessions (training D4)', () => {
 
   it('says the pool of my games is empty when no review has found a mistake', async () => {
     const db = await testDb()
-    expect(await nextTraining(db, 'games', {}, [])).toEqual({ item: null, pool: 0 })
+    expect(await nextTraining(db, 'games', {}, [])).toEqual({
+      item: null,
+      pool: 0,
+    })
     expect(await answerTraining(db, 'games', 'g:0:1', 'e2e4')).toMatchObject({
       ok: false,
       status: 404,

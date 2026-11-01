@@ -16,9 +16,9 @@ import {
   useCommand,
   useDrill,
 } from '@chess/ui'
+import { familyLines, nextFamilyLine, recordRun } from '@chess/local'
 import type { ReactNode } from 'react'
 import type { NextLine, RunResult, TrainerColor, TrainerLine } from '@chess/ui'
-import { familyLines, nextFamilyLine, recordRun } from '#/lib/data/trainer'
 
 /** One family's drill (opening-trainer): the next due line on the board, the outcome of each run, and every line's state. */
 export const Route = createFileRoute('/trainer/$family')({

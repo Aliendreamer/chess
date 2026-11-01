@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { openDb } from './db'
-import { currentEvents, eventsRound, latestNews, newsRound, setSourceEnabled } from './news'
-import type { FetchText } from './news'
-import { memorySql } from '#/testing'
+import { openDb } from './db.ts'
+import { currentEvents, eventsRound, latestNews, newsRound, setSourceEnabled } from './news.ts'
+import { memorySql } from './testing.ts'
+import type { FetchText } from './news.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -17,9 +17,9 @@ const rss = (title: string, url: string, date: string) =>
 const NOW = new Date('2026-10-16T12:00:00Z')
 
 /** Answers by URL; anything not listed fails as a network error would. */
-function web(
-  answers: Record<string, { status: number; text: string }>,
-): FetchText & { asked: Array<{ url: string; headers: Record<string, string> }> } {
+function web(answers: Record<string, { status: number; text: string }>): FetchText & {
+  asked: Array<{ url: string; headers: Record<string, string> }>
+} {
   const asked: Array<{ url: string; headers: Record<string, string> }> = []
   const fetchText = (url: string, headers: Record<string, string>) => {
     asked.push({ url, headers })
@@ -87,9 +87,21 @@ describe('news (chess-news, desktop-app D7)', () => {
     const db = await testDb()
     const list = JSON.stringify({
       active: [
-        { tour: { id: 'a1', name: 'Calm', url: 'https://lichess.org/broadcast/calm/a1', tier: 5 } },
         {
-          tour: { id: 'b2', name: 'Live', url: 'https://lichess.org/broadcast/live/b2', tier: 3 },
+          tour: {
+            id: 'a1',
+            name: 'Calm',
+            url: 'https://lichess.org/broadcast/calm/a1',
+            tier: 5,
+          },
+        },
+        {
+          tour: {
+            id: 'b2',
+            name: 'Live',
+            url: 'https://lichess.org/broadcast/live/b2',
+            tier: 3,
+          },
           round: { ongoing: true },
         },
       ],
@@ -97,7 +109,12 @@ describe('news (chess-news, desktop-app D7)', () => {
     expect(
       await eventsRound(
         db,
-        web({ 'https://lichess.org/api/broadcast/top?page=1': { status: 200, text: list } }),
+        web({
+          'https://lichess.org/api/broadcast/top?page=1': {
+            status: 200,
+            text: list,
+          },
+        }),
         NOW,
       ),
     ).toBe('ok')
@@ -105,7 +122,12 @@ describe('news (chess-news, desktop-app D7)', () => {
     expect(
       await eventsRound(
         db,
-        web({ 'https://lichess.org/api/broadcast/top?page=1': { status: 429, text: '' } }),
+        web({
+          'https://lichess.org/api/broadcast/top?page=1': {
+            status: 429,
+            text: '',
+          },
+        }),
         NOW,
       ),
     ).toBe('paused')

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { newId, openDb } from './db'
+import { newId, openDb } from './db.ts'
 import {
   DRAW_FROM_PLY,
   askToResign,
@@ -14,9 +14,9 @@ import {
   personMove,
   resign,
   takeBack,
-} from './play'
-import type { EnginePlayer, PositionJudge } from './play'
-import { memorySql } from '#/testing'
+} from './play.ts'
+import { memorySql } from './testing.ts'
+import type { EnginePlayer, PositionJudge } from './play.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -44,7 +44,11 @@ describe('a game against the computer (desktop-app D6)', () => {
   it('ends 0-1 by checkmate in fool’s mate, with its PGN, first in the list', async () => {
     const db = await testDb()
     const engine = scripted('e7e5', 'd8h4')
-    const game = await createGame(db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    const game = await createGame(db, {
+      level: '1320',
+      color: 'white',
+      thinkSeconds: 5,
+    })
     expect(engineToMove(game)).toBe(false)
     await personMove(db, game.id, 'f2f3')
     await engineMove(db, engine, game.id)
@@ -63,7 +67,11 @@ describe('a game against the computer (desktop-app D6)', () => {
 
   it('lets the engine open when the person plays Black, and resumes from what was stored', async () => {
     const db = await testDb()
-    const game = await createGame(db, { level: 'max', color: 'black', thinkSeconds: 20 })
+    const game = await createGame(db, {
+      level: 'max',
+      color: 'black',
+      thinkSeconds: 20,
+    })
     expect(engineToMove(game)).toBe(true)
     await engineMove(db, scripted('e2e4'), game.id)
     expect(await gamesInPlay(db)).toEqual([game.id])
@@ -77,27 +85,49 @@ describe('a game against the computer (desktop-app D6)', () => {
 
   it('refuses an illegal move, a move out of turn and a move after the end', async () => {
     const db = await testDb()
-    const game = await createGame(db, { level: '1600', color: 'white', thinkSeconds: 10 })
-    expect(await personMove(db, game.id, 'e2e5')).toMatchObject({ ok: false, status: 422 })
+    const game = await createGame(db, {
+      level: '1600',
+      color: 'white',
+      thinkSeconds: 10,
+    })
+    expect(await personMove(db, game.id, 'e2e5')).toMatchObject({
+      ok: false,
+      status: 422,
+    })
     await personMove(db, game.id, 'e2e4')
-    expect(await personMove(db, game.id, 'd2d4')).toMatchObject({ ok: false, status: 409 })
+    expect(await personMove(db, game.id, 'd2d4')).toMatchObject({
+      ok: false,
+      status: 409,
+    })
     await resign(db, game.id)
     expect(await personMove(db, game.id, 'e7e5')).toMatchObject({
       ok: false,
       error: 'The game is over.',
     })
-    expect(await personMove(db, 'nope', 'e2e4')).toMatchObject({ ok: false, status: 404 })
+    expect(await personMove(db, 'nope', 'e2e4')).toMatchObject({
+      ok: false,
+      status: 404,
+    })
   })
 
   it('ends by resignation for the engine, and a move the engine finished after it is not played', async () => {
     const db = await testDb()
-    const game = await createGame(db, { level: '2000', color: 'white', thinkSeconds: 5 })
+    const game = await createGame(db, {
+      level: '2000',
+      color: 'white',
+      thinkSeconds: 5,
+    })
     await personMove(db, game.id, 'e2e4')
     let release: (move: string) => void = () => {}
-    const slow: EnginePlayer = { bestMove: () => new Promise((resolve) => (release = resolve)) }
+    const slow: EnginePlayer = {
+      bestMove: () => new Promise((resolve) => (release = resolve)),
+    }
     const thinking = engineMove(db, slow, game.id)
     const resigned = await resign(db, game.id)
-    expect(resigned).toMatchObject({ ok: true, view: { result: '0-1', reason: 'resignation' } })
+    expect(resigned).toMatchObject({
+      ok: true,
+      view: { result: '0-1', reason: 'resignation' },
+    })
     release('e7e5')
     expect((await thinking)?.ply).toBe(1)
     expect(await resign(db, game.id)).toMatchObject({ ok: false, status: 409 })
@@ -122,8 +152,15 @@ describe('a game against the computer (desktop-app D6)', () => {
 describe('taking back (desktop-app)', () => {
   it('takes back the person’s move and the engine’s answer, to the person’s turn', async () => {
     const db = await testDb()
-    const game = await createGame(db, { level: '1320', color: 'white', thinkSeconds: 5 })
-    expect(await takeBack(db, game.id)).toMatchObject({ ok: false, status: 409 })
+    const game = await createGame(db, {
+      level: '1320',
+      color: 'white',
+      thinkSeconds: 5,
+    })
+    expect(await takeBack(db, game.id)).toMatchObject({
+      ok: false,
+      status: 409,
+    })
     await personMove(db, game.id, 'e2e4')
     await engineMove(db, scripted('e7e5'), game.id)
     await personMove(db, game.id, 'g1f3')
@@ -142,9 +179,16 @@ describe('taking back (desktop-app)', () => {
 
   it('as Black keeps the engine’s first move', async () => {
     const db = await testDb()
-    const game = await createGame(db, { level: '1320', color: 'black', thinkSeconds: 5 })
+    const game = await createGame(db, {
+      level: '1320',
+      color: 'black',
+      thinkSeconds: 5,
+    })
     await engineMove(db, scripted('e2e4'), game.id)
-    expect(await takeBack(db, game.id)).toMatchObject({ ok: false, status: 409 })
+    expect(await takeBack(db, game.id)).toMatchObject({
+      ok: false,
+      status: 409,
+    })
     await personMove(db, game.id, 'e7e5')
     const back = await takeBack(db, game.id)
     expect(back.ok && back.view.moves.map((m) => m.san)).toEqual(['e4'])
@@ -152,10 +196,16 @@ describe('taking back (desktop-app)', () => {
 
   it('drops the answer of an engine that was thinking, even after the person plays again', async () => {
     const db = await testDb()
-    const game = await createGame(db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    const game = await createGame(db, {
+      level: '1320',
+      color: 'white',
+      thinkSeconds: 5,
+    })
     await personMove(db, game.id, 'e2e4')
     let release: (move: string) => void = () => {}
-    const slow: EnginePlayer = { bestMove: () => new Promise((resolve) => (release = resolve)) }
+    const slow: EnginePlayer = {
+      bestMove: () => new Promise((resolve) => (release = resolve)),
+    }
     const thinking = engineMove(db, slow, game.id)
     await takeBack(db, game.id)
     await personMove(db, game.id, 'd2d4')
@@ -165,7 +215,11 @@ describe('taking back (desktop-app)', () => {
 
   it('goes back several moves at once, to the person’s turn or to the engine’s', async () => {
     const db = await testDb()
-    const game = await createGame(db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    const game = await createGame(db, {
+      level: '1320',
+      color: 'white',
+      thinkSeconds: 5,
+    })
     const engine = scripted('e7e5', 'b8c6', 'g8f6')
     for (const uci of ['e2e4', 'g1f3', 'f1c4']) {
       await personMove(db, game.id, uci)
@@ -176,8 +230,14 @@ describe('taking back (desktop-app)', () => {
     // Back to after the person's move: the engine is to move again.
     const toOne = await takeBack(db, game.id, 1)
     expect(toOne.ok && engineToMove(toOne.view)).toBe(true)
-    expect(await takeBack(db, game.id, 1)).toMatchObject({ ok: false, status: 409 })
-    expect(await takeBack(db, game.id, -1)).toMatchObject({ ok: false, status: 409 })
+    expect(await takeBack(db, game.id, 1)).toMatchObject({
+      ok: false,
+      status: 409,
+    })
+    expect(await takeBack(db, game.id, -1)).toMatchObject({
+      ok: false,
+      status: 409,
+    })
     expect((await takeBack(db, game.id, 0)).ok).toBe(true)
   })
 
@@ -194,13 +254,22 @@ describe('taking back (desktop-app)', () => {
 /** An analysis engine that scores every position the same, from White's side. */
 function judging(cp: number | null, mate: number | null = null): PositionJudge {
   return {
-    evaluate: () => Promise.resolve({ thinkMs: 1500, depth: 20, lines: [{ cp, mate, pv: [] }] }),
+    evaluate: () =>
+      Promise.resolve({
+        thinkMs: 1500,
+        depth: 20,
+        lines: [{ cp, mate, pv: [] }],
+      }),
   }
 }
 
 /** A game as White with `plies` moves played, the person to move: pawns one step at a time, never a repetition. */
 async function gameOf(db: Awaited<ReturnType<typeof testDb>>, plies: number) {
-  const game = await createGame(db, { level: '1320', color: 'white', thinkSeconds: 5 })
+  const game = await createGame(db, {
+    level: '1320',
+    color: 'white',
+    thinkSeconds: 5,
+  })
   const steps = (rank: [number, number, number]) =>
     'abcdefgh'
       .split('')
@@ -229,9 +298,15 @@ describe('offers to the engine (desktop-app)', () => {
       view: { accepted: false },
     })
     expect(await offerDraw(db, judging(0), later.id)).toMatchObject({
-      view: { accepted: true, game: { result: '1/2-1/2', reason: 'agreement' } },
+      view: {
+        accepted: true,
+        game: { result: '1/2-1/2', reason: 'agreement' },
+      },
     })
-    expect(await offerDraw(db, judging(0), later.id)).toMatchObject({ ok: false, status: 409 })
+    expect(await offerDraw(db, judging(0), later.id)).toMatchObject({
+      ok: false,
+      status: 409,
+    })
   })
 
   it('resigns when it is lost, and plays on otherwise', async () => {
@@ -251,10 +326,17 @@ describe('offers to the engine (desktop-app)', () => {
     const moving: PositionJudge = {
       evaluate: async () => {
         await personMove(db, game.id, 'e2e4')
-        return { thinkMs: 1500, depth: 20, lines: [{ cp: 900, mate: null, pv: [] }] }
+        return {
+          thinkMs: 1500,
+          depth: 20,
+          lines: [{ cp: 900, mate: null, pv: [] }],
+        }
       },
     }
-    expect(await askToResign(db, moving, game.id)).toMatchObject({ ok: false, status: 409 })
+    expect(await askToResign(db, moving, game.id)).toMatchObject({
+      ok: false,
+      status: 409,
+    })
   })
 })
 

@@ -1,6 +1,8 @@
+import { gunzipSync, strFromU8 } from 'fflate'
 import { prepareImport, sha256 } from '@chess/core'
-import { gameStatements } from './library'
-import type { Db, Statement } from './db'
+import { gameStatements } from './library.ts'
+import type { Db, Statement } from './db.ts'
+import type { LocalAssets } from './assets.ts'
 
 /**
  * The bundled library (desktop-app D12): the club's library as the app ships it — the World Championship matches
@@ -72,16 +74,10 @@ export interface BundledLibrary {
   positions: Array<BundledPosition>
 }
 
-/** The file as shipped, gzipped; fetched lazily so it stays out of the first screen's code. */
-export async function embeddedLibrary(): Promise<Uint8Array<ArrayBuffer>> {
-  const { default: url } = await import('../../../library/library.json.gz?url')
-  return new Uint8Array(await (await fetch(url)).arrayBuffer())
-}
-
 /** Loads the bundled library when it is missing or changed; says which, and how many games it added. */
 export async function ensureBundledLibrary(
   db: Db,
-  file: () => Promise<Uint8Array<ArrayBuffer>> = embeddedLibrary,
+  file: LocalAssets['bundledLibrary'],
   now = new Date(),
 ): Promise<{ state: 'loaded' | 'current'; games: number }> {
   const bytes = await file()
@@ -92,9 +88,11 @@ export async function ensureBundledLibrary(
   if (stored?.value === version) return { state: 'current', games: 0 }
   const library = JSON.parse(await gunzip(bytes)) as BundledLibrary
 
-  const openingRows = await db.select<{ position_key: string; eco: string; name: string }>(
-    'SELECT position_key, eco, name FROM openings',
-  )
+  const openingRows = await db.select<{
+    position_key: string
+    eco: string
+    name: string
+  }>('SELECT position_key, eco, name FROM openings')
   const openings = new Map(openingRows.map((o) => [o.position_key, { eco: o.eco, name: o.name }]))
   // Bundled id → the id the game has here: its own, or that of the player's copy with the same dedupe key.
   const ids = new Map<string, string>()
@@ -187,10 +185,10 @@ export async function ensureBundledLibrary(
 }
 
 /** The file's JSON: gzipped as shipped, or already unzipped (Vite's dev server sends it as `Content-Encoding: gzip`). */
-async function gunzip(bytes: Uint8Array<ArrayBuffer>): Promise<string> {
-  if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return new TextDecoder().decode(bytes)
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))
-  return new Response(stream).text()
+/** The file's text, unzipped when it is gzip (`fflate`: React Native has no `DecompressionStream`, mobile-app D1). */
+function gunzip(bytes: Uint8Array): Promise<string> {
+  const plain = bytes[0] === 0x1f && bytes[1] === 0x8b ? gunzipSync(bytes) : bytes
+  return Promise.resolve(strFromU8(plain))
 }
 
 const hex = (bytes: Uint8Array) => [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('')

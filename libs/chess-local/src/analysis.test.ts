@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { STANDARD_START, positionKey } from '@chess/core'
-import { openDb } from './db'
-import { Evaluator, storeEvaluation, storedEvaluation, storedEvaluations } from './analysis'
-import type { AnalysisQueue, EngineAnalysis } from '../engine'
-import { memorySql } from '#/testing'
+import { openDb } from './db.ts'
+import { Evaluator, storeEvaluation, storedEvaluation, storedEvaluations } from './analysis.ts'
+import { memorySql } from './testing.ts'
+import type { AnalysisQueue, EngineAnalysis } from './engine.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -34,7 +34,11 @@ function fakeQueue() {
 describe('evaluations (engine-analysis D1)', () => {
   it('answer a shorter request from a longer think, without the engine', async () => {
     const db = await testDb()
-    await storeEvaluation(db, KEY, { thinkMs: 10_000, depth: 30, lines: [line(25)] })
+    await storeEvaluation(db, KEY, {
+      thinkMs: 10_000,
+      depth: 30,
+      lines: [line(25)],
+    })
     const fake = fakeQueue()
     const answer = await new Evaluator(db, fake.queue).request({
       fen: STANDARD_START,
@@ -51,7 +55,10 @@ describe('evaluations (engine-analysis D1)', () => {
     const db = await testDb()
     const fake = fakeQueue()
     const evaluator = new Evaluator(db, fake.queue)
-    const first = await evaluator.request({ fen: STANDARD_START, think: 'quick' })
+    const first = await evaluator.request({
+      fen: STANDARD_START,
+      think: 'quick',
+    })
     expect(first.ok && first.view.evaluation).toBeNull()
     await evaluator.request({ fen: STANDARD_START, think: 'quick' })
     expect(fake.asked).toEqual([{ thinkMs: 1000, priority: 'board' }])
@@ -62,17 +69,37 @@ describe('evaluations (engine-analysis D1)', () => {
 
   it('keep the deeper of two answers at one think time', async () => {
     const db = await testDb()
-    await storeEvaluation(db, KEY, { thinkMs: 1000, depth: 22, lines: [line(10)] })
-    await storeEvaluation(db, KEY, { thinkMs: 1000, depth: 18, lines: [line(99)] })
+    await storeEvaluation(db, KEY, {
+      thinkMs: 1000,
+      depth: 22,
+      lines: [line(10)],
+    })
+    await storeEvaluation(db, KEY, {
+      thinkMs: 1000,
+      depth: 18,
+      lines: [line(99)],
+    })
     expect((await storedEvaluation(db, KEY))?.lines[0]?.cp).toBe(10)
-    await storeEvaluation(db, KEY, { thinkMs: 1000, depth: 24, lines: [line(12)] })
+    await storeEvaluation(db, KEY, {
+      thinkMs: 1000,
+      depth: 24,
+      lines: [line(12)],
+    })
     expect((await storedEvaluation(db, KEY))?.lines[0]?.cp).toBe(12)
   })
 
   it('give the longest evaluation of each position asked', async () => {
     const db = await testDb()
-    await storeEvaluation(db, KEY, { thinkMs: 1000, depth: 18, lines: [line(10)] })
-    await storeEvaluation(db, KEY, { thinkMs: 3000, depth: 24, lines: [line(15)] })
+    await storeEvaluation(db, KEY, {
+      thinkMs: 1000,
+      depth: 18,
+      lines: [line(10)],
+    })
+    await storeEvaluation(db, KEY, {
+      thinkMs: 3000,
+      depth: 24,
+      lines: [line(15)],
+    })
     const all = await storedEvaluations(db, [KEY, 'other'])
     expect([...all.keys()]).toEqual([KEY])
     expect(all.get(KEY)?.thinkMs).toBe(3000)

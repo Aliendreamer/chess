@@ -30,14 +30,18 @@ import {
   useMoveTree,
   useOpeningName,
 } from '@chess/ui'
-import type { ParsedGame, StudyMove } from '@chess/core'
-import type { EvaluationShown } from '@chess/ui'
+import {
+  PERSON_NAME,
+  createStudies,
+  libraryGame,
+  libraryPosition,
+  loadGame,
+  openingNames,
+  updatePreferences,
+} from '@chess/local'
 import type { AppServices } from '#/lib/app'
-import { PERSON_NAME, loadGame } from '#/lib/data/play'
-import { openingNames } from '#/lib/data/openings'
-import { createStudies } from '#/lib/data/studies'
-import { libraryGame, libraryPosition } from '#/lib/data/library'
-import { updatePreferences } from '#/lib/data/settings'
+import type { EvaluationShown } from '@chess/ui'
+import type { ParsedGame, StudyMove } from '@chess/core'
 
 interface Start {
   startFen: string

@@ -10,9 +10,9 @@ import {
   EngineTimeout,
   UciEngine,
   parseInfo,
-} from './engine'
-import type { UciChannel } from './engine'
-import { processChannel } from '#/testing'
+} from './engine.ts'
+import { processChannel } from './testing.ts'
+import type { UciChannel } from './engine.ts'
 
 /**
  * A scripted UCI engine (as `Chess.Engine.Tests` does): it answers the handshake, prints two lines and a best move for
@@ -86,7 +86,10 @@ describe('the UCI conversation (StockfishTests)', () => {
     await exiting.initialize()
     await expect(exiting.bestMove(STANDARD_START, [], 10)).rejects.toBeInstanceOf(EngineExited)
     expect(exiting.alive).toBe(false)
-    const silent = new UciEngine(fakeEngine({ silent: true }).channel, { hashMb: 16, slackMs: 0 })
+    const silent = new UciEngine(fakeEngine({ silent: true }).channel, {
+      hashMb: 16,
+      slackMs: 0,
+    })
     const started = Date.now()
     await expect(
       Promise.race([

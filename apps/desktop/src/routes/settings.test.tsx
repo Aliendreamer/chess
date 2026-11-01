@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
+import { getSetting } from '@chess/local'
 import { fakeServices, renderApp } from '#/testing'
-import { getSetting } from '#/lib/data/settings'
 
 const services: Array<{ close: () => void }> = []
 afterEach(() => {
@@ -43,7 +43,7 @@ describe('backup and restore on the settings page (desktop-app D10)', () => {
     const { mkdtempSync, existsSync } = await import('node:fs')
     const { tmpdir } = await import('node:os')
     const { join } = await import('node:path')
-    const { createStudies, listStudies } = await import('#/lib/data/studies')
+    const { createStudies, listStudies } = await import('@chess/local')
     const s = await fakeServices()
     services.push(s)
     const path = join(mkdtempSync(join(tmpdir(), 'chess-ui-backup-')), 'mine.chessbackup')

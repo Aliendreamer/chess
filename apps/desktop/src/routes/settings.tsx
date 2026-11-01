@@ -11,10 +11,16 @@ import {
   SettingsForm,
   useCommand,
 } from '@chess/ui'
+import {
+  FEEDS,
+  backupTo,
+  enabledSources,
+  getSetting,
+  restoreFrom,
+  setSetting,
+  setSourceEnabled,
+} from '@chess/local'
 import type { Preferences } from '@chess/core'
-import { FEEDS, enabledSources, setSourceEnabled } from '#/lib/data/news'
-import { getSetting, setSetting } from '#/lib/data/settings'
-import { backupTo, restoreFrom } from '#/lib/data/backup'
 
 /** The app's settings (user-preferences, desktop-app): applied at once and kept between starts. */
 export const Route = createFileRoute('/settings')({

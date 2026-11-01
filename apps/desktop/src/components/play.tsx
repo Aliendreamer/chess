@@ -1,8 +1,8 @@
 import { ENGINE_LEVELS, THINK_SECONDS, engineName, reasonLabel } from '@chess/core'
 import { AppLink, Button, Chip, ColourPicker, ErrorText, OptionTile, Panel } from '@chess/ui'
+import { PERSON_NAME } from '@chess/local'
 import type { ColourChoice, EngineLevel, ThinkSeconds } from '@chess/core'
-import type { DesktopGame, GameListItem } from '#/lib/data/play'
-import { PERSON_NAME } from '#/lib/data/play'
+import type { DesktopGame, GameListItem } from '@chess/local'
 
 /** A level, your colour and the engine's think time, then an untimed game against Stockfish (desktop-app D5). */
 export function EngineForm({

@@ -1,0 +1,33 @@
+{
+  "name": "@chess/local",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The offline apps' storage and engine code, shared by the desktop and the mobile app.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint",
+    "check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@tanstack/eslint-config": "0.4.0",
+    "@types/node": "25.9.2",
+    "@vitest/coverage-v8": "4.1.8",
+    "eslint": "10.4.1",
+    "prettier": "3.8.4",
+    "typescript": "6.0.3",
+    "vitest": "4.1.8"
+  },
+  "dependencies": {
+    "@chess/core": "workspace:*",
+    "chess.js": "1.4.0",
+    "fflate": "0.8.3"
+  }
+}

@@ -10,7 +10,7 @@ import {
   useAdoptTyped,
   useCommand,
 } from '@chess/ui'
-import { createStudies, listStudies } from '#/lib/data/studies'
+import { createStudies, listStudies } from '@chess/local'
 
 /** Your studies, a new one, and the PGN import (studies D3). */
 export const Route = createFileRoute('/studies/')({

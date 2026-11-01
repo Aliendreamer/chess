@@ -1,10 +1,17 @@
 import { Chess } from 'chess.js'
 import { parsePgn, positionKey, prepareImport, toImportGame } from '@chess/core'
-import { newId } from './db'
-import { openingNames } from './openings'
-import type { LibraryGame, LibraryGamePosition, ParsedGame } from '@chess/core'
-import type { ExplorerMove, LibraryGameItem, LibraryGameView, LibraryPosition } from '@chess/ui'
-import type { Db, Statement } from './db'
+import { newId } from './db.ts'
+import { openingNames } from './openings.ts'
+import type {
+  ExplorerMove,
+  LibraryGame,
+  LibraryGameItem,
+  LibraryGamePosition,
+  LibraryGameView,
+  LibraryPosition,
+  ParsedGame,
+} from '@chess/core'
+import type { Db, Statement } from './db.ts'
 
 /**
  * The game library (game-library, library-explorer, desktop-app): the PGN collections the player imports — moves and
@@ -48,16 +55,22 @@ export async function importLibrary(
   now = new Date(),
 ): Promise<LibraryImportReport> {
   const parsed = parsePgn(pgn)
-  const openingRows = await db.select<{ position_key: string; eco: string; name: string }>(
-    'SELECT position_key, eco, name FROM openings',
-  )
+  const openingRows = await db.select<{
+    position_key: string
+    eco: string
+    name: string
+  }>('SELECT position_key, eco, name FROM openings')
   const openings = new Map(openingRows.map((o) => [o.position_key, { eco: o.eco, name: o.name }]))
   const existing = new Set(
     (await db.select<{ dedupe_key: string }>('SELECT dedupe_key FROM library_games')).map(
       (r) => r.dedupe_key,
     ),
   )
-  const report: LibraryImportReport = { imported: 0, duplicates: 0, refused: [] }
+  const report: LibraryImportReport = {
+    imported: 0,
+    duplicates: 0,
+    refused: [],
+  }
   for (const [index, game] of parsed.entries()) {
     if (!game.ok) {
       report.refused.push({ index: index + 1, error: game.error })
@@ -209,7 +222,11 @@ export async function libraryPosition(db: Db, fen: string, items = 20): Promise<
   const first = `WITH first AS (
       SELECT game_id, MIN(ply) AS ply FROM library_positions WHERE position_key = ? GROUP BY game_id
     )`
-  const rows = await db.select<{ next_uci: string | null; result: string; n: number }>(
+  const rows = await db.select<{
+    next_uci: string | null
+    result: string
+    n: number
+  }>(
     `${first} SELECT lp.next_uci, lp.result, count(*) AS n FROM first f
      JOIN library_positions lp ON lp.game_id = f.game_id AND lp.ply = f.ply GROUP BY lp.next_uci, lp.result`,
     [key],

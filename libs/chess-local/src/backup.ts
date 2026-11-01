@@ -1,6 +1,6 @@
-import { MIGRATIONS, literal, schemaVersion } from './db'
+import { MIGRATIONS, literal, schemaVersion } from './db.ts'
 import type { CommandOutcome } from '@chess/core'
-import type { Db, Sql } from './db'
+import type { Db, Sql } from './db.ts'
 
 /**
  * Backup and restore (desktop-app D10): a backup is the whole database copied with `VACUUM INTO` (consistent while the
@@ -56,7 +56,10 @@ export async function checkBackup(
       error: 'That backup was made by a newer version of the app: update the app first.',
     }
   if (version < MIGRATIONS.length)
-    return { ok: false, error: 'That backup was made by an older version of the app.' }
+    return {
+      ok: false,
+      error: 'That backup was made by an older version of the app.',
+    }
   return { ok: true }
 }
 
@@ -66,7 +69,10 @@ export async function checkBackup(
  */
 export async function restoreFrom(
   db: Db,
-  backup: { path: string; open: () => Promise<Sql & { close?: () => Promise<void> | void }> },
+  backup: {
+    path: string
+    open: () => Promise<Sql & { close?: () => Promise<void> | void }>
+  },
   asideTo: string,
 ): Promise<CommandOutcome<true>> {
   const other = await backup.open()

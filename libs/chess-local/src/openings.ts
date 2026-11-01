@@ -1,6 +1,7 @@
 import { readOpenings, sha256 } from '@chess/core'
 import type { Opening } from '@chess/core'
-import type { Db } from './db'
+import type { Db } from './db.ts'
+import type { LocalAssets } from './assets.ts'
 
 /**
  * The openings list (game-library D4, desktop-app D4): lichess's `chess-openings` (CC0), the same TSV files the backend
@@ -10,23 +11,10 @@ import type { Db } from './db'
 
 const VERSION_KEY = 'openings.version'
 
-/** The list as bundled: the backend's TSV files, read lazily so they stay out of the first screen's code. */
-export async function embeddedOpenings(): Promise<Array<string>> {
-  const files = import.meta.glob<string>('../../../../backend/Library/Openings/*.tsv', {
-    query: '?raw',
-    import: 'default',
-  })
-  return Promise.all(
-    Object.keys(files)
-      .sort()
-      .map((path) => files[path]!()),
-  )
-}
-
 /** Loads the list when it is missing or changed; says which it did. */
 export async function ensureOpenings(
   db: Db,
-  files: () => Promise<Array<string>> = embeddedOpenings,
+  files: LocalAssets['openings'],
 ): Promise<'loaded' | 'current'> {
   const texts = await files()
   const version = hex(sha256(new TextEncoder().encode(texts.join('\n'))))
@@ -71,7 +59,11 @@ export async function openingNames(
   keys: ReadonlyArray<string>,
 ): Promise<Map<string, { eco: string; name: string }>> {
   if (keys.length === 0) return new Map()
-  const rows = await db.select<{ position_key: string; eco: string; name: string }>(
+  const rows = await db.select<{
+    position_key: string
+    eco: string
+    name: string
+  }>(
     `SELECT position_key, eco, name FROM openings WHERE position_key IN (${keys.map(() => '?').join(', ')})`,
     keys,
   )

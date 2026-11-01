@@ -21,6 +21,7 @@ import {
   useAnswerBoard,
   useCommand,
 } from '@chess/ui'
+import { answerTraining, nextTraining, trainingSummary } from '@chess/local'
 import type {
   PreviewState,
   TrainingItem,
@@ -28,7 +29,6 @@ import type {
   TrainingSettings,
   TrainingVerdict,
 } from '@chess/ui'
-import { answerTraining, nextTraining, trainingSummary } from '#/lib/data/training'
 
 /**
  * Training (training D5): the member's own mistakes or critical moments from master games, one position at a time.

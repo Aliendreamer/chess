@@ -1,0 +1,24 @@
+{
+  "name": "chess-local",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/chess-local/src",
+  "tags": ["scope:libs", "lang:ts"],
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/chess-local",
+        "command": "pnpm test"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "libs/chess-local",
+        "commands": ["pnpm typecheck", "pnpm lint", "pnpm check"],
+        "parallel": false
+      }
+    }
+  }
+}

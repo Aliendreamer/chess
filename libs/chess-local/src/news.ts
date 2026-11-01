@@ -1,8 +1,7 @@
 import { parseBroadcasts, parseFeed, shownEvents } from '@chess/core'
-import { getSetting, setSetting } from './settings'
-import type { BroadcastEvent } from '@chess/core'
-import type { ChessEvent, NewsItem, NewsSource } from '@chess/ui'
-import type { Db } from './db'
+import { getSetting, setSetting } from './settings.ts'
+import type { BroadcastEvent, ChessEvent, NewsItem, NewsSource } from '@chess/core'
+import type { Db } from './db.ts'
 
 /**
  * Chess news (chess-news, desktop-app D7): the club's feeds and lichess's list of tournaments being played, fetched by
@@ -19,7 +18,11 @@ export interface FeedSource extends NewsSource {
 export const FEEDS: ReadonlyArray<FeedSource> = [
   { id: 'fide', name: 'FIDE', url: 'https://www.fide.com/feed/' },
   { id: 'chessbase', name: 'ChessBase', url: 'https://en.chessbase.com/feed' },
-  { id: 'lichess', name: 'Lichess', url: 'https://lichess.org/@/Lichess/blog.atom' },
+  {
+    id: 'lichess',
+    name: 'Lichess',
+    url: 'https://lichess.org/@/Lichess/blog.atom',
+  },
   {
     id: 'twic',
     name: 'The Week in Chess',
@@ -93,7 +96,9 @@ export async function eventsRound(
   if (!(await enabledSources(db)).includes('events')) return 'off'
   let events: Array<BroadcastEvent>
   try {
-    const answer = await fetchText(BROADCAST_URL, { Accept: 'application/json' })
+    const answer = await fetchText(BROADCAST_URL, {
+      Accept: 'application/json',
+    })
     if (answer.status === 429) return 'paused'
     if (answer.status !== 200 || answer.text.length > MAX_BYTES) return 'failed'
     events = parseBroadcasts(answer.text, now)

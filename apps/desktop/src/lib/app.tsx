@@ -1,16 +1,22 @@
 import { levelOptions } from '@chess/core'
-import { openDb, tauriSql } from './data/db'
-import { ensureBundledLibrary } from './data/bundled'
-import { ensureOpenings } from './data/openings'
-import { AnalysisQueue, EngineSupervisor, sidecarChannel } from './engine'
-import { Evaluator } from './data/analysis'
-import { reviewsToRun, runReview } from './data/review'
-import { getSetting } from './data/settings'
-import { mineRound } from './data/training'
-import { EVENTS_EVERY_MS, NEWS_EVERY_MS, eventsRound, newsRound } from './data/news'
-import type { Db, Sql } from './data/db'
-import type { EnginePlayer } from './data/play'
-import type { FetchText } from './data/news'
+import {
+  AnalysisQueue,
+  EVENTS_EVERY_MS,
+  EngineSupervisor,
+  Evaluator,
+  NEWS_EVERY_MS,
+  ensureBundledLibrary,
+  ensureOpenings,
+  eventsRound,
+  getSetting,
+  mineRound,
+  newsRound,
+  openDb,
+  reviewsToRun,
+  runReview,
+} from '@chess/local'
+import { embeddedLibrary, embeddedOpenings, sidecarChannel, tauriSql } from './platform'
+import type { Db, EnginePlayer, FetchText, Sql } from '@chess/local'
 import type { WindowChange } from './window'
 
 /** How often the miner looks for critical moments in the library. */
@@ -66,7 +72,7 @@ export async function startServices(): Promise<AppServices> {
   // The plugin keeps `sqlite:chess.db` in the app data directory; the copy before a migration goes beside it.
   const file = await join(await appDataDir(), 'chess.db')
   const db = await openDb(await tauriSql('sqlite:chess.db'), (v) => `${file}.before-v${v}`)
-  await ensureOpenings(db)
+  await ensureOpenings(db, embeddedOpenings)
   const play = new EngineSupervisor(sidecarChannel)
   const analysis = new EngineSupervisor(sidecarChannel)
   const queue = new AnalysisQueue(analysis)
@@ -84,7 +90,7 @@ export async function startServices(): Promise<AppServices> {
   }
   // The bundled library (desktop-app D12) loads behind the first screen; the miner starts after it, so it never asks
   // a position the club's Stockfish has already judged.
-  void ensureBundledLibrary(db)
+  void ensureBundledLibrary(db, embeddedLibrary)
     .catch(() => undefined)
     .then(() => setTimeout(() => void mine(), MINE_EVERY_MS))
   // News (desktop-app D7): fetched while the app runs; a round that fails (offline) leaves what is kept.

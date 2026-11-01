@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { BROADCAST_URL, FEEDS } from '#/lib/data/news'
+import { BROADCAST_URL, FEEDS } from '@chess/local'
 
 /**
  * Offline by construction (desktop-app: "MUST NOT contact any host except the news sources"): the capability's HTTP

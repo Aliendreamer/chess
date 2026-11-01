@@ -1,8 +1,7 @@
 import { positionKey } from '@chess/core'
-import type { CommandOutcome, Evaluation, EvaluationLine, Think } from '@chess/core'
-import type { AnalysisView } from '@chess/ui'
-import type { AnalysisPriority, AnalysisQueue } from '../engine'
-import type { Db } from './db'
+import type { AnalysisView, CommandOutcome, Evaluation, EvaluationLine, Think } from '@chess/core'
+import type { AnalysisPriority, AnalysisQueue } from './engine.ts'
+import type { Db } from './db.ts'
 
 /**
  * Evaluations (engine-analysis D1, desktop-app D5): one store per position and think time, `position_evaluations`. A
@@ -10,7 +9,11 @@ import type { Db } from './db'
  * once (later requests for it wait for that one) and the answer stored, keeping the deeper of two.
  */
 
-export const THINK_MS: Record<Think, number> = { quick: 1000, normal: 3000, deep: 10000 }
+export const THINK_MS: Record<Think, number> = {
+  quick: 1000,
+  normal: 3000,
+  deep: 10000,
+}
 export const ANALYSIS_LINES = 3
 
 /** The best stored evaluation of a position at `minThinkMs` or longer, the longest first. */
@@ -19,7 +22,11 @@ export async function storedEvaluation(
   key: string,
   minThinkMs = 0,
 ): Promise<Evaluation | null> {
-  const [row] = await db.select<{ think_ms: number; depth: number; lines: string }>(
+  const [row] = await db.select<{
+    think_ms: number
+    depth: number
+    lines: string
+  }>(
     'SELECT think_ms, depth, lines FROM position_evaluations WHERE position_key = ? AND think_ms >= ? ORDER BY think_ms DESC LIMIT 1',
     [key, minThinkMs],
   )
@@ -72,7 +79,11 @@ export async function storedEvaluations(
   return new Map(
     rows.map((r) => [
       r.position_key,
-      { thinkMs: r.think_ms, depth: r.depth, lines: JSON.parse(r.lines) as Array<EvaluationLine> },
+      {
+        thinkMs: r.think_ms,
+        depth: r.depth,
+        lines: JSON.parse(r.lines) as Array<EvaluationLine>,
+      },
     ]),
   )
 }
@@ -97,7 +108,13 @@ export class Evaluator {
     if (!stored) void this.evaluate(input.fen, thinkMs, 'board').catch(() => undefined)
     return {
       ok: true,
-      view: { key, fen: input.fen, think: input.think, thinkMs, evaluation: stored },
+      view: {
+        key,
+        fen: input.fen,
+        think: input.think,
+        thinkMs,
+        evaluation: stored,
+      },
     }
   }
 
@@ -112,7 +129,11 @@ export class Evaluator {
       running = this.queue
         .analyse(fen, thinkMs, ANALYSIS_LINES, priority)
         .then(async (analysis) => {
-          const evaluation = { thinkMs, depth: analysis.depth, lines: analysis.lines }
+          const evaluation = {
+            thinkMs,
+            depth: analysis.depth,
+            lines: analysis.lines,
+          }
           await storeEvaluation(this.db, key, evaluation)
           return evaluation
         })

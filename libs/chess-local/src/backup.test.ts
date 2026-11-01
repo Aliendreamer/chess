@@ -2,12 +2,12 @@ import { existsSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { openDb } from './db'
-import { backupTo, restoreFrom } from './backup'
-import { createGame, listGames } from './play'
-import { createStudies, listStudies } from './studies'
-import { getSetting, setSetting } from './settings'
-import { memorySql } from '#/testing'
+import { openDb } from './db.ts'
+import { backupTo, restoreFrom } from './backup.ts'
+import { createGame, listGames } from './play.ts'
+import { createStudies, listStudies } from './studies.ts'
+import { getSetting, setSetting } from './settings.ts'
+import { memorySql } from './testing.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -32,13 +32,18 @@ describe('backup and restore (desktop-app D10)', () => {
     await createStudies(there, [{ title: 'Will be replaced', tree: [] }])
     const restored = await restoreFrom(
       there,
-      { path: join(d, 'backup.chessbackup'), open: opener(join(d, 'backup.chessbackup')) },
+      {
+        path: join(d, 'backup.chessbackup'),
+        open: opener(join(d, 'backup.chessbackup')),
+      },
       join(d, 'there.before-restore'),
     )
     expect(restored.ok).toBe(true)
     expect((await listGames(there, 10)).items).toHaveLength(1)
     expect((await listStudies(there)).map((s) => s.title)).toEqual(['Rep'])
-    expect(await getSetting(there, 'preferences', {})).toEqual({ siteTheme: 'light' })
+    expect(await getSetting(there, 'preferences', {})).toEqual({
+      siteTheme: 'light',
+    })
     expect(existsSync(join(d, 'there.before-restore'))).toBe(true)
   })
 
@@ -53,7 +58,10 @@ describe('backup and restore (desktop-app D10)', () => {
       { path: join(d, 'other.db'), open: () => Promise.resolve(other) },
       join(d, 'aside-1'),
     )
-    expect(notOurs).toMatchObject({ ok: false, error: 'That file is not a backup of this app.' })
+    expect(notOurs).toMatchObject({
+      ok: false,
+      error: 'That file is not a backup of this app.',
+    })
     const newer = file(join(d, 'newer.db'))
     await openDb(newer)
     await newer.execute('PRAGMA user_version = 99')
@@ -62,7 +70,10 @@ describe('backup and restore (desktop-app D10)', () => {
       { path: join(d, 'newer.db'), open: () => Promise.resolve(newer) },
       join(d, 'aside-2'),
     )
-    expect(fromNewer).toMatchObject({ ok: false, error: expect.stringContaining('newer version') })
+    expect(fromNewer).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('newer version'),
+    })
     expect((await listStudies(db)).map((s) => s.title)).toEqual(['Kept'])
     expect(existsSync(join(d, 'aside-1'))).toBe(false)
   })
