@@ -142,6 +142,23 @@ describe('the bundled library (desktop-app D12)', () => {
     expect(await count(d, 'training_positions')).toBe(1)
   })
 
+  it('says how far it has got, games done of all, and nothing while it is current', async () => {
+    const d = await testDb()
+    const seen: Array<[number, number]> = []
+    await ensureBundledLibrary(d, file(LIBRARY), new Date(), (done, total) =>
+      seen.push([done, total]),
+    )
+    expect(seen).toEqual([
+      [0, 2],
+      [2, 2],
+    ])
+    seen.length = 0
+    await ensureBundledLibrary(d, file(LIBRARY), new Date(), (done, total) =>
+      seen.push([done, total]),
+    )
+    expect(seen).toEqual([])
+  })
+
   it('takes the file already unzipped, as the development server hands it over', async () => {
     const d = await testDb()
     const unzipped = async () => new Uint8Array(gunzipSync(await file(LIBRARY)()))

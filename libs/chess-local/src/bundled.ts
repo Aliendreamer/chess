@@ -74,11 +74,15 @@ export interface BundledLibrary {
   positions: Array<BundledPosition>
 }
 
-/** Loads the bundled library when it is missing or changed; says which, and how many games it added. */
+/**
+ * Loads the bundled library when it is missing or changed; says which, and how many games it added. `onProgress` hears
+ * the games looked at of all, at the start and after each batch (the phone shows "Preparing the library … n %").
+ */
 export async function ensureBundledLibrary(
   db: Db,
   file: LocalAssets['bundledLibrary'],
   now = new Date(),
+  onProgress?: (done: number, total: number) => void,
 ): Promise<{ state: 'loaded' | 'current'; games: number }> {
   const bytes = await file()
   const version = hex(sha256(bytes))
@@ -104,16 +108,21 @@ export async function ensureBundledLibrary(
     ).map((r) => [r.dedupe_key, r.id]),
   )
   let added = 0
+  let seen = 0
+  const total = library.games.length
+  onProgress?.(0, total)
   let batch: Array<Statement> = []
   let inBatch = 0
   const flush = async () => {
     if (batch.length) await db.batch(batch)
     batch = []
     inBatch = 0
+    onProgress?.(seen, total)
     // Let the window paint and the player act between batches.
     await new Promise((resolve) => setTimeout(resolve, 0))
   }
   for (const g of library.games) {
+    seen++
     const prepared = prepareImport(
       { ...g, moves: g.moves.split(' ').filter(Boolean), startFen: null },
       { source: g.source, licence: g.licence, sourceRef: g.sourceRef },
