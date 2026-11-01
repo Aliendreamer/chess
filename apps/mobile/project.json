@@ -73,6 +73,14 @@
         "cwd": "apps/mobile",
         "command": "scripts/build-android.sh release"
       }
+    },
+    "ipa": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "apps/mobile",
+        "command": "scripts/build-ios.sh"
+      }
     }
   }
 }

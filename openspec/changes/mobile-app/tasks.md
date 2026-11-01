@@ -174,6 +174,8 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       `mobile:apk-release`, arm64-v8a only, and the README's keystore section; the box waits for the owner's build.)
 - [ ] 6.3 `ipa` target and README "Building on a Mac" (Xcode, CocoaPods, `nx run mobile:ipa`, installing with a free
       Apple ID, the 7-day expiry). **[human, Mac]** The friend builds the .ipa.
+      (Code done: `scripts/build-ios.sh`, unsigned `xcodebuild archive` into `build/Chess-<version>.ipa`, and the README
+      section; the names were checked against an iOS prebuild here. The box waits for the friend's build.)
 - [ ] 6.4 `tools/mobile/publish.sh` (create or upload, changelog notes, the APK and an .ipa when present).
       Test first: `publish.test.mjs` with a stubbed `gh` expects `release create mobile@1.0.0` then
       `release upload`, and fails.

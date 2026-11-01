@@ -8,7 +8,7 @@ app's twin (OpenSpec `mobile-app`), built with Expo; see `CLAUDE.md` here for ho
 
 - **Android** (WSL or Linux): `apps/mobile/scripts/setup-android.sh` once, then `pnpm exec nx run mobile:apk`. The
   build downloads the pinned Stockfish source and network the first time (about 100 MB).
-- **iOS** needs a Mac; see "Building on a Mac" (task 6.3).
+- **iOS** needs a Mac: see "Building on a Mac" below.
 
 ## The release APK and its keystore
 
@@ -76,3 +76,27 @@ Install the APK (`adb install -r apps/mobile/build/<profile>.apk`, or open it on
 
 With the network **on**: News fills within a minute or so of the start; a headline opens in the browser, not the app;
 the tournaments show under "Events now".
+
+## Building on a Mac
+
+For whoever builds the iPhone version (mobile-app D11). No paid Apple account is needed; the app is built unsigned and
+signed on install with the installer's own free Apple ID.
+
+1. Install Node 24 and run `corepack enable`; Xcode from the App Store (open it once, and select its command line
+   tools: `sudo xcode-select -s /Applications/Xcode.app`); CocoaPods (`brew install cocoapods`).
+2. Clone the repository, check out the release (`git checkout mobile@<version>`), and run `pnpm install`.
+3. `pnpm exec nx run mobile:ipa`. It downloads the pinned Stockfish source and network the first time (about 100 MB),
+   then builds `apps/mobile/build/Chess-<version>.ipa`; the log is `apps/mobile/build/ios.log`.
+4. Hand the .ipa to the owner, or with push rights run `gh release upload mobile@<version>
+apps/mobile/build/Chess-<version>.ipa`.
+
+Installing it, either way:
+
+- **From Xcode, on your own iPhone:** after step 3, open `apps/mobile/ios/Chess.xcworkspace`, choose the Chess target →
+  Signing & Capabilities → Team: your Apple ID ("Personal Team"), plug the phone in and press Run. On the phone, allow
+  it under Settings → General → VPN & Device Management, and turn on Developer Mode (iOS 16 and later) when asked.
+- **The .ipa, on anyone's iPhone:** install it with [Sideloadly](https://sideloadly.io) or
+  [AltStore](https://altstore.io), signed with that person's own Apple ID.
+
+A free Apple ID's install runs for **7 days**; install it again to renew it (the app's data stays). A free ID may have
+at most 3 such apps on a phone at once.
