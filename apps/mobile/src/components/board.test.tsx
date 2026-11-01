@@ -232,3 +232,13 @@ describe('the last move slides in', () => {
     expect(timing).not.toHaveBeenCalled()
   })
 })
+
+test('draws the arrows it is given, from square to square as the board is turned', async () => {
+  await show({ arrows: [{ from: 'g1', to: 'f3' }] })
+  const arrow = screen.getByTestId('arrow-g1-f3')
+  // g1's centre on a white board of 320: column 6, row 7.
+  expect(arrow.props.x1).toBe(String(6 * CELL + CELL / 2))
+  await screen.unmount()
+  await show({ orientation: 'black', arrows: [{ from: 'g1', to: 'f3' }] })
+  expect(screen.getByTestId('arrow-g1-f3').props.x1).toBe(String(1 * CELL + CELL / 2))
+})

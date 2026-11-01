@@ -34,6 +34,11 @@ export function LearnHome() {
     <Screen title="Learn">
       <Section title="Your work">
         <Row
+          label="Trainer"
+          detail="Opening lines and your studies, until you know them"
+          onPress={() => router.push('/learn/trainer')}
+        />
+        <Row
           label="Studies"
           detail="Your analyses and imported games, with variations"
           onPress={() => router.push('/learn/studies')}

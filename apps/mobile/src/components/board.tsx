@@ -9,7 +9,7 @@ import {
   type AccessibilityActionEvent,
   type GestureResponderEvent,
 } from 'react-native'
-import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg'
+import Svg, { Circle, Defs, G, Line, Polygon, RadialGradient, Rect, Stop } from 'react-native-svg'
 import {
   animationMs,
   checkSquare,
@@ -46,6 +46,8 @@ export interface BoardProps {
   onPremove?: (premove: SquarePair | null) => void
   lastMove?: SquarePair | null
   premove?: SquarePair | null
+  /** Arrows the screen draws: a hint, the review's better move, a training answer. */
+  arrows?: ReadonlyArray<SquarePair>
 }
 
 type Promo = 'q' | 'r' | 'b' | 'n'
@@ -108,6 +110,7 @@ export function Board({
   onPremove,
   lastMove,
   premove,
+  arrows = [],
 }: BoardProps) {
   const { board, preferences } = useTheme()
   const cell = size / 8
@@ -355,6 +358,9 @@ export function Board({
             </View>
           )
         })}
+        {arrows.length > 0 ? (
+          <Arrows arrows={arrows} size={size} orientation={orientation} />
+        ) : null}
         {dragFrom && pieces[dragFrom] ? (
           <Animated.View
             style={[
@@ -380,6 +386,61 @@ export function Board({
         />
       ) : null}
     </View>
+  )
+}
+
+// Lichess's green.
+const ARROW = 'rgba(21, 120, 27, 0.8)'
+
+/** Arrows from square centre to square centre, the head short of the centre so the piece shows. */
+function Arrows({
+  arrows,
+  size,
+  orientation,
+}: {
+  arrows: ReadonlyArray<SquarePair>
+  size: number
+  orientation: Color
+}) {
+  const cell = size / 8
+  const centre = (square: string) => {
+    const at = offsetOf(square, size, orientation)
+    return { x: at.x + cell / 2, y: at.y + cell / 2 }
+  }
+  return (
+    <Svg width={size} height={size} style={StyleSheet.absoluteFill} pointerEvents="none">
+      {arrows.map(({ from, to }) => {
+        const a = centre(from)
+        const b = centre(to)
+        const length = Math.hypot(b.x - a.x, b.y - a.y)
+        if (length === 0) return null
+        const ux = (b.x - a.x) / length
+        const uy = (b.y - a.y) / length
+        const head = cell * 0.4
+        // The shaft stops where the head starts; the head's tip stops a little short of the centre.
+        const tip = { x: b.x - ux * cell * 0.15, y: b.y - uy * cell * 0.15 }
+        const base = { x: tip.x - ux * head, y: tip.y - uy * head }
+        const wing = { x: -uy * head * 0.6, y: ux * head * 0.6 }
+        return (
+          <G key={`${from}${to}`}>
+            <Line
+              testID={`arrow-${from}-${to}`}
+              x1={String(a.x)}
+              y1={String(a.y)}
+              x2={String(base.x)}
+              y2={String(base.y)}
+              stroke={ARROW}
+              strokeWidth={cell * 0.18}
+              strokeLinecap="round"
+            />
+            <Polygon
+              points={`${tip.x},${tip.y} ${base.x + wing.x},${base.y + wing.y} ${base.x - wing.x},${base.y - wing.y}`}
+              fill={ARROW}
+            />
+          </G>
+        )
+      })}
+    </Svg>
   )
 }
 
