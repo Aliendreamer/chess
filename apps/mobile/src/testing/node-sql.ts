@@ -2,8 +2,8 @@ import { DatabaseSync } from 'node:sqlite'
 import type { ExpoDatabase } from '@/platform/sql'
 
 /** expo-sqlite's async database played by Node's own SQLite, for tests: the adapter runs against a real engine. */
-export function nodeDatabase(): ExpoDatabase & { close: () => void } {
-  const db = new DatabaseSync(':memory:')
+export function nodeDatabase(path = ':memory:'): ExpoDatabase & { close: () => void } {
+  const db = new DatabaseSync(path)
   return {
     getAllAsync: <T>(sql: string, params: Array<string | number | null>) =>
       Promise.resolve(db.prepare(sql).all(...params) as Array<T>),
@@ -13,6 +13,8 @@ export function nodeDatabase(): ExpoDatabase & { close: () => void } {
       db.exec(sql)
       return Promise.resolve()
     },
-    close: () => db.close(),
+    close: () => {
+      if (db.isOpen) db.close()
+    },
   }
 }

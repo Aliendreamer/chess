@@ -107,7 +107,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       engine off. Show the `stuck` message on every engine feature.
       Test first: `crash-recovery.test.tsx` with a faked crash file for a game expects the notice and the two choices,
       and the engine not asked. It fails.
-- [ ] 4.5 Backup/restore and PGN import/export through `expo-sharing` + `expo-document-picker`.
+- [x] 4.5 Backup/restore and PGN import/export through `expo-sharing` + `expo-document-picker`.
       Test first: restoring a backup written by `@chess/local` under `node:sqlite` (a desktop backup) succeeds in
       the mobile restore path, and fails until wired.
 
