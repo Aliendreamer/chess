@@ -115,9 +115,12 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
 
 - [x] 5.1 **[human]** Mockups of the tab layout (D5), the game screen, analysis and the trainer, shown to the owner.
       Adjust D5 with the owner's answers before 5.3.
-- [ ] 5.2 Tokens (`src/theme/tokens.ts`) with the drift test against `theme.css`, the primitives (buttons, rows,
+- [x] 5.2 Tokens (`src/theme/tokens.ts`) with the drift test against `theme.css`, the primitives (buttons, rows,
       sheets, empty states), the Cburnett pieces as SVG components, and `MobileLink` for `LinkContext`.
       Test first: the drift test fails on a changed colour.
+      (Done as: hex tokens, since React Native takes no oklch(); `ThemeProvider` from the preferences; the pieces as
+      `SvgXml` text checked against `@chess/ui`'s files. The app has no `LinkContext` (it does not use `@chess/ui`), so
+      `MobileLink` takes the desktop's paths and `mobileRoute` maps them under their tab.)
 - [ ] 5.3 The board: tap-tap, drag, legal targets, last move, check, promotion picker, flip, coordinates, themes,
       reduced animation. Test first: `board.test.tsx` taps e2 then e4 and expects `onMove('e2e4')`, and fails.
 - [ ] 5.4 Tabs and shell: Expo Router tabs, safe areas, Club dark / Parchment light, and the first-start library
