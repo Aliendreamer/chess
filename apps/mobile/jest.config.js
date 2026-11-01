@@ -10,6 +10,7 @@ module.exports = {
     'node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|react-native-svg|standard-navigation|@chess/.*))',
   ],
   moduleNameMapper: {
+    '\\.(tsv|gz)$': '<rootDir>/scripts/asset-stub.js',
     '^react$': own('react'),
     '^react/(.*)$': `${own('react')}/$1`,
   },

@@ -94,7 +94,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
 
 - [x] 4.1 `src/platform/sql.ts` (`expo-sqlite` → `Sql`). Test first: `sql.test.ts` with jest-expo's SQLite mock
       expects `select`/`execute`/multi-statement scripts, and fails.
-- [ ] 4.2 `src/platform/assets.ts` (`LocalAssets` over `expo-asset` + `expo-file-system`; `library.json.gz` and the
+- [x] 4.2 `src/platform/assets.ts` (`LocalAssets` over `expo-asset` + `expo-file-system`; `library.json.gz` and the
       openings as assets), `fetch` as `FetchText`, `Linking.openURL` for links.
       Test first: an asset test expects the bundled library's bytes and fails.
 - [ ] 4.3 `src/lib/app.ts`: build the services (database, one-channel scheduler, review queue, miner off by default,
