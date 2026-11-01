@@ -176,7 +176,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       Apple ID, the 7-day expiry). **[human, Mac]** The friend builds the .ipa.
       (Code done: `scripts/build-ios.sh`, unsigned `xcodebuild archive` into `build/Chess-<version>.ipa`, and the README
       section; the names were checked against an iOS prebuild here. The box waits for the friend's build.)
-- [ ] 6.4 `tools/mobile/publish.sh` (create or upload, changelog notes, the APK and an .ipa when present).
+- [x] 6.4 `tools/mobile/publish.sh` (create or upload, changelog notes, the APK and an .ipa when present).
       Test first: `publish.test.mjs` with a stubbed `gh` expects `release create mobile@1.0.0` then
       `release upload`, and fails.
 - [ ] 6.5 Update CLAUDE.md (root and `apps/mobile/CLAUDE.md`). **[human]** First release: `nx release version 1.0.0

@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint .",
     "check": "prettier --check .",
-    "test": "jest && node --test ../../tools/mobile/fetch-stockfish-src.test.mjs",
+    "test": "jest && node --test ../../tools/mobile/fetch-stockfish-src.test.mjs ../../tools/mobile/publish.test.mjs",
     "check:pins": "node scripts/check-pins.js",
     "expo:doctor": "node scripts/expo-doctor.js",
     "doctor:android": "node scripts/doctor-android.js",
