@@ -170,6 +170,8 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       is missing. Test first: a plugin test without the variables expects the error naming the variable, and fails.
       **[human]** Create the keystore, back it up, and run `nx run mobile:apk`;
       `apksigner verify --print-certs` shows the owner's certificate.
+      (Code done: `plugins/with-release-signing.js` (from SpanishGameApp's), `build-android.sh release` and
+      `mobile:apk-release`, arm64-v8a only, and the README's keystore section; the box waits for the owner's build.)
 - [ ] 6.3 `ipa` target and README "Building on a Mac" (Xcode, CocoaPods, `nx run mobile:ipa`, installing with a free
       Apple ID, the 7-day expiry). **[human, Mac]** The friend builds the .ipa.
 - [ ] 6.4 `tools/mobile/publish.sh` (create or upload, changelog notes, the APK and an .ipa when present).

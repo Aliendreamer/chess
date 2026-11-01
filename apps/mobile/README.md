@@ -10,6 +10,27 @@ app's twin (OpenSpec `mobile-app`), built with Expo; see `CLAUDE.md` here for ho
   build downloads the pinned Stockfish source and network the first time (about 100 MB).
 - **iOS** needs a Mac; see "Building on a Mac" (task 6.3).
 
+## The release APK and its keystore
+
+The release APK is signed with the owner's own key (mobile-app D11). Make the keystore once, outside the repository:
+
+```bash
+keytool -genkeypair -v -keystore ~/keys/chess-release.jks -alias chess -keyalg RSA -keysize 4096 -validity 36500
+```
+
+**Back it up** (and its password) somewhere safe: an update must be signed with the same key, so losing it means
+every friend has to uninstall the app, and lose its data, to install the next version. Then:
+
+```bash
+export CHESS_ANDROID_KEYSTORE=~/keys/chess-release.jks CHESS_ANDROID_KEY_ALIAS=chess
+read -rs CHESS_ANDROID_KEYSTORE_PASSWORD && export CHESS_ANDROID_KEYSTORE_PASSWORD
+pnpm exec nx run mobile:apk-release        # build/release.apk, arm64-v8a only
+apksigner verify --print-certs apps/mobile/build/release.apk   # names your certificate, not "Android Debug"
+```
+
+`CHESS_ANDROID_KEY_PASSWORD` is needed only when the key's password differs from the keystore's. Without the
+variables the build stops at once and names the one missing.
+
 ## Licence
 
 This app is free software under the **GNU General Public License, version 3 or later** (`LICENSE`). It contains

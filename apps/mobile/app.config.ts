@@ -73,6 +73,8 @@ export default function appConfig({ config }: ConfigContext): ExpoConfig {
           },
         },
       ],
+      // The release APK is signed with the owner's keystore (D11); a release build without it stops here.
+      './plugins/with-release-signing',
     ],
     experiments: { typedRoutes: true },
   }

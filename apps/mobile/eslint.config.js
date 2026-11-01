@@ -29,7 +29,7 @@ module.exports = defineConfig([
     languageOptions: { globals: globals.node },
   },
   {
-    files: ['scripts/**/*.test.js'],
+    files: ['scripts/**/*.test.js', 'plugins/**/*.test.js'],
     languageOptions: { globals: { ...globals.node, ...globals.jest } },
   },
 ])

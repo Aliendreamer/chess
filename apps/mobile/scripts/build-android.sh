@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 # Builds the Android app with plain Gradle: no Expo account, no EAS (mobile-app D4, D11; from SpanishGameApp).
 #   scripts/build-android.sh development   → the development build (debug-signed, the dev client), build/development.apk
-# The signed release APK (`release`) comes with mobile-app task 6.2. Run it outside the agent sandbox: Gradle writes to
-# /tmp and watches files, which the sandbox blocks. Never run two builds at once: they share android/.
+#   scripts/build-android.sh release       → the release APK (arm64-v8a, the owner's key), build/release.apk
+# A release needs CHESS_ANDROID_KEYSTORE, CHESS_ANDROID_KEYSTORE_PASSWORD and CHESS_ANDROID_KEY_ALIAS (and
+# CHESS_ANDROID_KEY_PASSWORD when the key's differs). Run it outside the agent sandbox: Gradle writes to /tmp and
+# watches files, which the sandbox blocks. Never run two builds at once: they share android/.
 set -euo pipefail
 
 profile="${1:-}"
 case "$profile" in
   development) task=assembleDebug; artifact=app/build/outputs/apk/debug/app-debug.apk ;;
-  *) echo "usage: $0 development" >&2; exit 2 ;;
+  release) task=assembleRelease; artifact=app/build/outputs/apk/release/app-release.apk ;;
+  *) echo "usage: $0 development|release" >&2; exit 2 ;;
 esac
 
 cd "$(dirname "$0")/.."
@@ -19,13 +22,27 @@ exec > >(tee "build/$profile.log") 2>&1
 node scripts/doctor-android.js >/dev/null || { node scripts/doctor-android.js; exit 1; }
 
 # Gradle reads the app config outside Expo CLI, which normally sets NODE_ENV.
-export NODE_ENV=development
 export EXPO_NO_TELEMETRY=1
+gradle_args=()
+if [ "$profile" = release ]; then
+  export NODE_ENV=production CHESS_BUILD_PROFILE=release
+  # Before anything is fetched or built: the keystore and its passwords (the plugin names what is missing).
+  node -e "try { require('./plugins/with-release-signing').signingFromEnv(process.env) } catch (e) { console.error(e.message); process.exit(1) }"
+  # Gradle reads ORG_GRADLE_PROJECT_* as project properties: the passwords never reach a file or the process list.
+  export ORG_GRADLE_PROJECT_CHESS_ANDROID_KEYSTORE="$CHESS_ANDROID_KEYSTORE"
+  export ORG_GRADLE_PROJECT_CHESS_ANDROID_KEYSTORE_PASSWORD="$CHESS_ANDROID_KEYSTORE_PASSWORD"
+  export ORG_GRADLE_PROJECT_CHESS_ANDROID_KEY_ALIAS="$CHESS_ANDROID_KEY_ALIAS"
+  export ORG_GRADLE_PROJECT_CHESS_ANDROID_KEY_PASSWORD="${CHESS_ANDROID_KEY_PASSWORD:-$CHESS_ANDROID_KEYSTORE_PASSWORD}"
+  # Phones only: the emulator's x86_64 would double the APK (Stockfish and its network are ~100 MB per ABI).
+  gradle_args+=(-PreactNativeArchitectures=arm64-v8a)
+else
+  export NODE_ENV=development
+fi
 
 # Stockfish's pinned source and network, compiled in by modules/stockfish (D6); reused when already in place.
 node ../../tools/mobile/fetch-stockfish-src.mjs
 pnpm exec expo prebuild --platform android --clean --no-install
-(cd android && ./gradlew "$task")
+(cd android && ./gradlew "$task" ${gradle_args[@]+"${gradle_args[@]}"})
 
 cp "android/$artifact" "build/$profile.apk"
 echo "Built apps/mobile/build/$profile.apk"
