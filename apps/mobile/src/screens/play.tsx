@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
+import {
+  AppState,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter, type Href } from 'expo-router'
 import {
   STANDARD_START,
   applyOptimistic,
   engineName,
+  playMove,
   resolvePremove,
   uciSquares,
 } from '@chess/core'
@@ -19,26 +28,44 @@ import {
   lastPersonPly,
   listGames,
   loadGame,
+  loadReview,
   offerDraw,
   personMove,
   resign,
   reviewable,
-  runReview,
   setSetting,
+  startReview,
   takeBack,
   toMove,
   versus,
 } from '@chess/local'
-import { useCommand } from '@chess/view'
+import {
+  REVIEW_POLL_MS,
+  previewLine,
+  useAnalysis,
+  useAutoEvaluate,
+  useCommand,
+  useReview,
+} from '@chess/view'
 import type { Color, ColourChoice, SquarePair, ThinkSeconds } from '@chess/core'
+import type { PreviewState } from '@chess/view'
 import type { DesktopGame, EngineStatus as EngineState, GameListItem } from '@chess/local'
+import {
+  EngineLines,
+  EvalBar,
+  EvaluationSwitches,
+  MoveNav,
+  type EvaluationShown,
+} from '@/components/analysis'
 import { Board } from '@/components/board'
 import { CrashNotice } from '@/components/crash-notice'
 import { EngineStatus } from '@/components/engine-status'
 import { EngineForm, ErrorLine, GameEnd, GameRows, MoveText, PlayerLine } from '@/components/play'
 import { Button, EmptyState, Row, Section, Sheet, TOUCH } from '@/components/primitives'
+import { ReviewPanel } from '@/components/review'
 import { Screen } from '@/components/screen'
 import { mobileRoute } from '@/lib/links'
+import { usePreferences } from '@/lib/preferences'
 import { useServices } from '@/lib/services-context'
 import { useTheme } from '@/theme/theme'
 import { FONTS, TEXT } from '@/theme/tokens'
@@ -233,10 +260,23 @@ function Game({ loaded }: { loaded: DesktopGame }) {
 
   useEffect(() => services.engine.subscribe(setEngine), [services])
 
-  // The review (game-review) runs by itself once the game has ended; the Analyse tab shows it.
+  // The review (game-review): run by itself once the game has ended, read while it runs (while the app is in front).
+  const ended = game.status === 'ended'
+  const loadReviewed = useCallback(() => loadReview(db, game.id), [db, game.id])
+  const startReviewing = useCallback(
+    () => startReview(db, evaluator, game.id),
+    [db, evaluator, game.id],
+  )
+  const reviewing = useReview(null, loadReviewed, startReviewing, REVIEW_POLL_MS, ended, inFront)
+  const reviewed = reviewing.view && reviewing.view.status !== 'none' ? reviewing.view : null
+  const [preview, setPreview] = useState<PreviewState | null>(null)
+  const canReview = reviewable(game)
+  // Started by itself once the game has ended (again on opening a game whose review was cut short).
+  const startOnce = useRef(reviewing.start)
+  startOnce.current = reviewing.start
   useEffect(() => {
-    if (reviewable(game)) void runReview(db, evaluator, game.id).catch(() => undefined)
-  }, [db, evaluator, game])
+    if (canReview) void startOnce.current()
+  }, [canReview])
 
   // The engine's turn: asked whenever it is to move, also for a game left in play when the app closed. Once it has
   // answered, the premove queued meanwhile is played if it is still legal, else dropped.
@@ -272,13 +312,38 @@ function Game({ loaded }: { loaded: DesktopGame }) {
   const fenAt = (ply: number) =>
     ply === 0 ? STANDARD_START : (game.moves[ply - 1]?.fenAfter ?? game.fen)
   const live = viewPly === null || viewPly === game.ply
-  const fen = pending && live ? pending.fen : fenAt(shownPly)
+  // The engine's better line, when one of its moves is tapped in the review, is shown on the board.
+  const previewMove = preview ? reviewed?.moves[preview.ply - 1] : undefined
+  const lined =
+    preview && previewMove
+      ? previewLine(fenAt(preview.ply - 1), previewMove.line, preview.upTo)
+      : null
+  const fen = lined?.fen ?? (pending && live ? pending.fen : fenAt(shownPly))
   const playing = game.status === 'playing'
   const side = game.personColor === 'white' ? 'w' : 'b'
-  const myTurn = playing && !pending && !command.busy && fen.split(' ')[1] === side
+  const myTurn = playing && !lined && !pending && !command.busy && fen.split(' ')[1] === side
   // On the engine's turn (or while the person's move is saved) a move is queued as a premove.
-  const premoves = playing && live && !myTurn
+  const premoves = playing && live && !lined && !myTurn
   const engineLabel = engineName(game.level)
+
+  // The evaluation while playing (the preferences' play switches, both off by default): the position shown, asked of
+  // the one Stockfish at the quick think once it settles.
+  const { preferences, update } = usePreferences()
+  const [shown, setShown] = useState<EvaluationShown>({
+    bar: preferences.playBar,
+    line: preferences.playLines,
+  })
+  const evaluating = shown.bar || shown.line
+  const [request] = useState(
+    () => (input: Parameters<typeof evaluator.request>[0]) => evaluator.request(input),
+  )
+  const analysis = useAnalysis(request, 'quick')
+  useAutoEvaluate(analysis, fen, evaluating)
+  const evaluation = evaluating ? analysis.evaluationOf(fen) : null
+  function show(next: EvaluationShown) {
+    setShown(next)
+    void update({ playBar: next.bar, playLines: next.line })
+  }
 
   // Back to the position looked at in the move list, or else to before the person's last move; always to the
   // person's turn (a position with the engine to move goes one further back).
@@ -291,6 +356,7 @@ function Game({ loaded }: { loaded: DesktopGame }) {
 
   async function play(uci: string, base = fen) {
     setDeclined(null)
+    setPreview(null)
     const branch = live ? undefined : backTo
     const after = applyOptimistic(base, uci)
     if (after) setPending({ fen: after, uci })
@@ -364,7 +430,14 @@ function Game({ loaded }: { loaded: DesktopGame }) {
             ? 'Your move.'
             : 'Your move from here: the later moves will be gone.'
           : null
-  const step = (ply: number) => setViewPly(ply >= game.ply ? null : Math.max(0, ply))
+  const step = (ply: number) => {
+    setPreview(null)
+    setViewPly(ply >= game.ply ? null : Math.max(0, ply))
+  }
+  const select = (ply: number) => {
+    setPreview(null)
+    setViewPly(ply === game.ply ? null : ply)
+  }
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.surfacePage, paddingTop: insets.top }]}>
@@ -391,12 +464,21 @@ function Game({ loaded }: { loaded: DesktopGame }) {
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 12 }}>
         <PlayerLine name={nameOf(top)} color={top} toMove={playing && toMove(game) === top} />
+        {shown.bar ? (
+          <View style={styles.evalBar}>
+            <EvalBar evaluation={evaluation} orientation={orientation} />
+          </View>
+        ) : null}
         <Board
           fen={fen}
           orientation={orientation}
           size={width}
           side={game.personColor}
-          lastMove={uciSquares(pending && live ? pending.uci : game.moves[shownPly - 1]?.uci)}
+          lastMove={
+            lined
+              ? lined.lastMove
+              : uciSquares(pending && live ? pending.uci : game.moves[shownPly - 1]?.uci)
+          }
           premove={premove}
           {...(myTurn || premoves ? { onMove: (uci: string) => void play(uci) } : {})}
           {...(premoves ? { onPremove: queue } : {})}
@@ -420,17 +502,21 @@ function Game({ loaded }: { loaded: DesktopGame }) {
           ) : null}
           {engineError ? <ErrorLine text={engineError} /> : null}
           {command.error ? <ErrorLine text={command.error} /> : null}
-          <MoveText
-            sans={game.moves.map((m) => m.san)}
-            viewPly={viewPly}
-            onSelect={(ply) => setViewPly(ply === game.ply ? null : ply)}
+          {shown.line ? (
+            <EngineLines
+              fen={fen}
+              evaluation={evaluation}
+              error={analysis.error}
+              {...(myTurn ? { onPlay: (line) => line[0] && void play(line[0].uci) } : {})}
+            />
+          ) : null}
+          <MoveText sans={game.moves.map((m) => m.san)} viewPly={viewPly} onSelect={select} />
+          <MoveNav
+            onFirst={() => step(0)}
+            onPrevious={() => step(shownPly - 1)}
+            onNext={() => step(shownPly + 1)}
+            onLast={() => setViewPly(null)}
           />
-          <View style={styles.nav}>
-            <NavButton label="First move" glyph="⏮" onPress={() => step(0)} />
-            <NavButton label="Previous move" glyph="‹" onPress={() => step(shownPly - 1)} />
-            <NavButton label="Next move" glyph="›" onPress={() => step(shownPly + 1)} />
-            <NavButton label="Last move" glyph="⏭" onPress={() => setViewPly(null)} />
-          </View>
           {playing ? null : (
             <GameEnd
               game={game}
@@ -439,6 +525,19 @@ function Game({ loaded }: { loaded: DesktopGame }) {
               onAnalyse={() => router.push(mobileRoute(`/analysis?game=${game.id}`) as Href)}
             />
           )}
+          {ended ? (
+            <ReviewPanel
+              review={reviewing.view}
+              mine={game.personColor}
+              busy={reviewing.busy}
+              error={reviewing.error}
+              onStart={() => void reviewing.start()}
+              current={shownPly}
+              onSelect={select}
+              preview={preview}
+              onPreview={setPreview}
+            />
+          ) : null}
           <View style={styles.commands}>
             {playing ? (
               <>
@@ -469,6 +568,13 @@ function Game({ loaded }: { loaded: DesktopGame }) {
               onPress={() => setOrientation(orientation === 'white' ? 'black' : 'white')}
             />
           </View>
+          {playing ? (
+            <EvaluationSwitches
+              shown={shown}
+              onChange={show}
+              note="These ask the Stockfish you play between its moves: it works harder, which costs battery."
+            />
+          ) : null}
         </View>
       </ScrollView>
       <Sheet visible={menu} title="Game" onClose={() => setMenu(false)}>
@@ -497,33 +603,12 @@ function Game({ loaded }: { loaded: DesktopGame }) {
   )
 }
 
-function NavButton({
-  label,
-  glyph,
-  onPress,
-}: {
-  label: string
-  glyph: string
-  onPress: () => void
-}) {
-  const { colors } = useTheme()
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.navButton,
-        { backgroundColor: pressed ? colors.surfaceHover : colors.surfaceRaised },
-      ]}
-    >
-      <Text style={[styles.navGlyph, { color: colors.fgPrimary }]}>{glyph}</Text>
-    </Pressable>
-  )
-}
+/** Whether the app is in front: a review is read again only then. */
+const inFront = () => AppState.currentState !== 'background'
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  evalBar: { paddingHorizontal: 12, paddingBottom: 6 },
   inset: { paddingHorizontal: 14 },
   bar: { flexDirection: 'row', alignItems: 'center', minHeight: TOUCH, paddingHorizontal: 4 },
   barButton: { minWidth: TOUCH, minHeight: TOUCH, alignItems: 'center', justifyContent: 'center' },
@@ -537,14 +622,5 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 16, paddingTop: 8, gap: 12 },
   status: { minHeight: TEXT.sm.lineHeight, fontFamily: FONTS.sans, fontSize: TEXT.sm.size },
   note: { fontFamily: FONTS.sans, fontSize: TEXT.sm.size, lineHeight: TEXT.sm.lineHeight },
-  nav: { flexDirection: 'row', gap: 8 },
-  navButton: {
-    flex: 1,
-    minHeight: TOUCH,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navGlyph: { fontSize: 18 },
   commands: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 })

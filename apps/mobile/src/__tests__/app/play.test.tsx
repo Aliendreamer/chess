@@ -1,7 +1,15 @@
 import { join } from 'node:path'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react-native'
 import { renderRouter } from 'expo-router/testing-library'
-import { createGame, engineMove, personMove, resign } from '@chess/local'
+import { STANDARD_START, positionKey } from '@chess/core'
+import {
+  createGame,
+  engineMove,
+  getPreferences,
+  personMove,
+  resign,
+  storeEvaluation,
+} from '@chess/local'
 import { startApp, tapSquare, testApp } from '@/testing/app'
 import type { TestApp } from '@/testing/app'
 
@@ -283,6 +291,109 @@ describe('playing the computer (mobile-app 5.5)', () => {
     await waitFor(() => expect(router.getPathname()).toBe('/play/games'))
     await fireEvent.press((await screen.findAllByTestId('game-row'))[0]!)
     await waitFor(() => expect(router.getPathname()).toMatch(/^\/play\/games\/[\w-]+$/))
+  })
+})
+
+describe('the engine while playing (mobile-app 5.6)', () => {
+  test('shows the evaluation bar and the best moves only when switched on, saying what they cost', async () => {
+    const { services } = await startApp()
+    await storeEvaluation(services.db, positionKey(STANDARD_START), {
+      thinkMs: 10_000,
+      depth: 20,
+      lines: [
+        { cp: 35, mate: null, pv: ['e2e4', 'e7e5', 'g1f3'] },
+        { cp: 30, mate: null, pv: ['d2d4', 'd7d5'] },
+      ],
+    })
+    const { id } = await createGame(services.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    await open(`/play/games/${id}`)
+    const bar = await screen.findByRole('switch', { name: 'Evaluation bar' })
+    const lines = screen.getByRole('switch', { name: 'Best moves' })
+    expect([bar.props.value, lines.props.value]).toEqual([false, false])
+    expect(screen.queryByTestId('eval-bar')).toBeNull()
+    expect(screen.queryByTestId('engine-lines')).toBeNull()
+    expect(screen.queryByTestId('evaluation-warning')).toBeNull()
+
+    await fireEvent(bar, 'valueChange', true)
+    expect(await screen.findByLabelText('Evaluation +0.35')).toBeTruthy()
+    expect(screen.getByTestId('evaluation-warning')).toBeTruthy()
+    await fireEvent(lines, 'valueChange', true)
+    await waitFor(() =>
+      expect(screen.getAllByTestId('engine-line').map((l) => l.props.accessibilityLabel)).toEqual([
+        'Play the line e4 e5 Nf3, +0.35',
+        'Play the line d4 d5, +0.30',
+      ]),
+    )
+    // A line plays its first move.
+    await fireEvent.press(screen.getAllByTestId('engine-line')[1]!)
+    await waitFor(() => expect(moves().getByText('d4')).toBeTruthy())
+    await waitFor(async () =>
+      expect(await getPreferences(services.db)).toMatchObject({ playBar: true, playLines: true }),
+    )
+  })
+})
+
+describe('the review of a finished game (mobile-app 5.6)', () => {
+  test('shows its graph, the move on the board as it sees it, and the marks per player', async () => {
+    const { services } = await startApp({ answers: ['e7e5', 'd8h4'] })
+    services.evaluator.evaluate = async (fen) => {
+      const evaluation = { thinkMs: 1000, depth: 20, lines: [{ cp: 0, mate: null, pv: [] }] }
+      await storeEvaluation(services.db, positionKey(fen), evaluation)
+      return evaluation
+    }
+    const { id } = await createGame(services.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    await personMove(services.db, id, 'f2f3')
+    await engineMove(services.db, services.player, id)
+    await personMove(services.db, id, 'g2g4')
+    await engineMove(services.db, services.player, id)
+    await open(`/play/games/${id}`)
+    const panel = await screen.findByTestId('review-panel')
+    expect(
+      await within(panel).findByLabelText(/^Evaluation graph: \d of 4 moves evaluated$/),
+    ).toBeTruthy()
+    await waitFor(() => expect(within(panel).getByLabelText('Marks per player')).toBeTruthy(), {
+      timeout: 4000,
+    })
+    expect(within(panel).getByText('2...Qh4#')).toBeTruthy()
+    await fireEvent.press(moves().getByText('g4'))
+    expect(within(panel).getByText('2.g4')).toBeTruthy()
+    expect(within(panel).getByTestId('review-training')).toBeTruthy()
+  })
+})
+
+describe('the better line of a marked move', () => {
+  test('is shown on the board a move at a time, and back to the game', async () => {
+    const { services } = await startApp({ answers: ['e7e5', 'd8h4'] })
+    const AFTER_E5 = 'rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2'
+    services.evaluator.evaluate = async (fen) => {
+      // Level until g4, which lets Black mate at once; d4 instead keeps it level.
+      const line =
+        positionKey(fen) === positionKey(AFTER_E5)
+          ? { cp: 0, mate: null, pv: ['d2d4', 'd8h4'] }
+          : fen.split(' ')[1] === 'b' && fen.includes('6P1')
+            ? { cp: null, mate: -1, pv: ['d8h4'] }
+            : { cp: 0, mate: null, pv: [] }
+      const evaluation = { thinkMs: 1000, depth: 20, lines: [line] }
+      await storeEvaluation(services.db, positionKey(fen), evaluation)
+      return evaluation
+    }
+    const { id } = await createGame(services.db, { level: '1320', color: 'white', thinkSeconds: 5 })
+    await personMove(services.db, id, 'f2f3')
+    await engineMove(services.db, services.player, id)
+    await personMove(services.db, id, 'g2g4')
+    await engineMove(services.db, services.player, id)
+    await open(`/play/games/${id}`)
+    const panel = await screen.findByTestId('review-panel')
+    await waitFor(() => expect(within(panel).getByLabelText('Marks per player')).toBeTruthy(), {
+      timeout: 4000,
+    })
+    await fireEvent.press(moves().getByText('g4'))
+    expect(within(panel).getByText('2.g4 is a blunder.')).toBeTruthy()
+    await fireEvent.press(within(panel).getByRole('button', { name: '2.d4' }))
+    expect(screen.getByLabelText('d4, white pawn')).toBeTruthy()
+    await fireEvent.press(within(panel).getByRole('button', { name: 'Back to the game' }))
+    expect(screen.getByLabelText('g4, white pawn')).toBeTruthy()
+    expect(screen.queryByLabelText('d4, white pawn')).toBeNull()
   })
 })
 

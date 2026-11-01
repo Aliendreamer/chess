@@ -137,7 +137,10 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       (Done as: `src/screens/play.tsx`; the game at `/play/games/[id]` over the tabs. Resign asks first (a phone is
       easy to mistap); ask to resign and Save PGN are in the ⋯ menu. The engine with no move for a position says so
       once, where desktop asks again in a loop. The play-time evaluation switches and the review panel come with 5.6.)
-- [ ] 5.6 Analysis board with lines, eval bar, move tree, opening name and "In the library", and the review view.
+- [x] 5.6 Analysis board with lines, eval bar, move tree, opening name and "In the library", and the review view.
+      (Done as: `src/screens/analysis.tsx` on the Analyse tab, "In the library" a line above the bar that opens the
+      explorer in a sheet; the review panel under a finished game, as on desktop; the play-time evaluation switches
+      on the game screen. `analysisStart` and `useAutoEvaluate` moved into the libraries.)
 - [ ] 5.7 Studies: list, editor with variations, import/export.
 - [ ] 5.8 Trainer (families, learn then test, study lines) and training sessions.
 - [ ] 5.9 Library: search, game view, explorer, openings.
