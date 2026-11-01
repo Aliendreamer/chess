@@ -31,6 +31,7 @@ import {
 import type { ParsedGame } from '@chess/core'
 import type { AnalysisStart } from '@chess/local'
 import { LibraryPanel, type EvaluationShown } from '@/components/analysis'
+import { MobileLink } from '@/components/mobile-link'
 import { ErrorLine } from '@/components/play'
 import { Button, Section, Sheet, TOUCH } from '@/components/primitives'
 import { Screen } from '@/components/screen'
@@ -189,6 +190,7 @@ function AnalysisBoard({ start }: { start: AnalysisStart }) {
   return (
     <Screen title="Analysis">
       <View style={styles.head}>
+        <MobileLink to="/library">Library</MobileLink>
         <Text style={[styles.small, { color: colors.fgSecondary }]}>
           {players
             ? `${players.white} vs ${players.black}`

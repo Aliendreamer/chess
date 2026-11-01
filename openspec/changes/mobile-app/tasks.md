@@ -149,7 +149,10 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       (Done as: `src/screens/trainer.tsx` and `src/screens/training.tsx` under Learn; Learn/Test is a switch above the
       board (Learn shows the whole line), with the line's box and the count beside whose move it is; the board draws
       the hint and the answers as arrows.)
-- [ ] 5.9 Library: search, game view, explorer, openings.
+- [x] 5.9 Library: search, game view, explorer, openings.
+      (Done as: `src/screens/library.tsx` at `/analyse/library`, import through the picker, search by player, event
+      and years; a game opens on the analysis board, whose "In the library" is the explorer and whose opening name is
+      the openings, as on desktop.)
 - [ ] 5.10 News and tournaments, Settings (incl. the miner switch), About (licences, source link), Backup.
 - [ ] 5.11 Write the manual smoke list in `apps/mobile/README.md`. **[human]** Run it on an Android phone.
 
