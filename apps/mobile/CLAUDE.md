@@ -9,6 +9,9 @@ Loaded when working under `apps/mobile`. Cross-app rules live in the root `CLAUD
 pnpm exec nx run-many -t lint test build -p mobile   # typecheck, expo lint, prettier, pins, expo-doctor; jest; export
 pnpm exec nx run mobile:start                        # dev server over an Expo tunnel, for the development build
 pnpm exec nx run mobile:apk                          # build/development.apk: prebuild + Gradle, outside the sandbox
+pnpm exec nx run mobile:apk-release                  # build/release.apk, arm64-v8a, needs CHESS_ANDROID_KEYSTORE* (README)
+pnpm exec nx run mobile:ipa                          # build/Chess-<version>.ipa, unsigned, on a Mac only
+tools/mobile/publish.sh <version> [--dry-run]        # the APK (and an .ipa) to the GitHub Release mobile@<version>
 pnpm exec nx run mobile:test-native                  # the Stockfish bridge on the host (g++, real sf_19)
 pnpm --dir apps/mobile doctor:android                # JDK 17, SDK 36, build-tools, NDK 27, CMake 3.22.1
 ```
@@ -46,3 +49,21 @@ Inside the agent sandbox run Expo commands with `EXPO_NO_TELEMETRY=1` (telemetry
   folder; `expo-module.config.json` points at it), `ios/SFBridge.{h,mm}` (Objective-C++ over the C++ bridge, the only
   public header) and `ios/StockfishModule.swift`. Not buildable here; a Mac runs `pnpm fetch-stockfish` before
   `pod install`. Unverified until the friend's first build (task 3.5).
+
+## Screens and tests
+
+- Routes only in `src/app` (thin files); each screen is in `src/screens/<feature>.tsx`, its pieces in
+  `src/components/`. Tabs are `src/app/(tabs)/<tab>/` with a stack each; a game in play is `src/app/play/games/[id]`
+  over the tabs (D5). Desktop paths map to the phone's through `mobileRoute` (`MobileLink`); external links go through
+  `ExternalLink` (the browser, never the app).
+- The board (`components/board.tsx`) owns picking, drags, promotion, premoves (`onPremove`) and arrows, and hands up
+  UCI; `TreeBoard` is the analysis board and a study's. One responder over the board (`pointerEvents="box-only"`): put
+  anything pressable over it beside that layer, not in it.
+- Theme: `ThemeProvider` from `PreferencesProvider` (the database's preferences); colours are hex tokens checked
+  against `theme.css` by `tokens.test.ts`.
+- Route tests (`src/__tests__/app/*.test.tsx`) render the real `src/app` with `renderRouter`, on services over Node's
+  SQLite: `jest.mock('@/lib/app', …)` → `testing/app.ts#startTestServices`. Start the app with `startApp()` (scripted
+  engine answers, platform overrides) and write data before rendering; `reopen()` renders on the same database;
+  `tapSquare()` taps the board. expo-router's testing library turns fake timers on: never wait on a raw `setTimeout`,
+  and never put a database read in `waitFor` (overlapping `act()` breaks the rest of the file) — wait on the screen,
+  then read the database once.

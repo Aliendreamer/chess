@@ -180,4 +180,5 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       Test first: `publish.test.mjs` with a stubbed `gh` expects `release create mobile@1.0.0` then
       `release upload`, and fails.
 - [ ] 6.5 Update CLAUDE.md (root and `apps/mobile/CLAUDE.md`). **[human]** First release: `nx release version 1.0.0
---projects mobile`, `nx run mobile:apk`, `tools/mobile/publish.sh 1.0.0`.
+--projects mobile`, `nx run mobile:apk-release`, `tools/mobile/publish.sh 1.0.0`.
+      (CLAUDE.md done, both; the box waits for the first release. The release APK's target is `mobile:apk-release`.)

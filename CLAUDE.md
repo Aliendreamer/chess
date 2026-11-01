@@ -20,10 +20,12 @@ An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding six apps an
   Stockfish (bundled sidecar), analysis, review, studies, trainer, training, library, news; SQLite on the machine.
   Windows + Linux installers built locally and published to GitHub Releases by the owner (no CI); macOS as one universal
   .dmg built on a friend's Mac (`nx run desktop:bundle-macos`). See its README.
-- `apps/mobile` — the same app for phones, in progress (`chess-mobile`, OpenSpec `mobile-app`): Expo SDK 57 + Expo
-  Router + React Native 0.86, set up like the owner's `SpanishGameApp`; the data layer is `@chess/local`, the view
-  state `@chess/view`, Stockfish 19 a local Expo module (to come). Android APK built locally, iOS on a friend's Mac;
-  GPLv3 (Stockfish is linked in).
+- `apps/mobile` — the same app for phones (`chess-mobile`, OpenSpec `mobile-app`): Expo SDK 57 + Expo Router + React
+  Native 0.86, set up like the owner's `SpanishGameApp`; five tabs (Play, Learn, Analyse, News, More), the data layer
+  `@chess/local`, the view state `@chess/view`, its own React Native screens (it does not use `@chess/ui`), Stockfish 19
+  compiled in as a local Expo module. Android APK built locally (`nx run mobile:apk-release`, the owner's keystore),
+  iOS unsigned on a friend's Mac (`nx run mobile:ipa`), both published by `tools/mobile/publish.sh`; GPLv3 (Stockfish
+  is linked in).
 - `libs/chess-core` (`@chess/core`) — pure TypeScript chess logic both TS apps use (rules feedback, move tree and PGN,
   review, Leitner schedule, trainer families, training judge, library import, feed parsers) and the view shapes
   (`views.ts`: what the data layers return and the screens take); no React, DOM or router.
