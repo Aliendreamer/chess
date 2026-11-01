@@ -4,7 +4,7 @@ import { Evaluator } from './analysis.ts'
 import { importLibrary } from './library.ts'
 import { answerTraining, mineRound, nextTraining, trainingSummary } from './training.ts'
 import { memorySql } from './testing.ts'
-import type { AnalysisQueue, EngineAnalysis } from './engine.ts'
+import type { EngineAnalysis, EngineScheduler } from './engine.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -45,7 +45,7 @@ function twoLines(cpGap: number) {
         ],
       })
     },
-  } as unknown as AnalysisQueue
+  } as unknown as EngineScheduler
   return { queue, asked: () => asked }
 }
 

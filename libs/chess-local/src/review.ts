@@ -66,7 +66,7 @@ export async function runReview(
     [gameId, now.toISOString()],
   )
   for (const position of missing(await inputOf(db, game))) {
-    await evaluator.evaluate(position.fen, REVIEW_THINK_MS, 'background')
+    await evaluator.evaluate(position.fen, REVIEW_THINK_MS, 'review')
   }
   await db.execute('UPDATE reviews SET complete = 1 WHERE game_id = ?', [gameId])
   await syncDrills(db, game, now)

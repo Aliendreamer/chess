@@ -212,7 +212,7 @@ export async function resign(
 
 /** What judges a draw offer or a request to resign: the analysis engine (`Evaluator#evaluate`). */
 export interface PositionJudge {
-  evaluate: (fen: string, thinkMs: number, priority: 'board') => Promise<Evaluation>
+  evaluate: (fen: string, thinkMs: number, priority: 'judgement') => Promise<Evaluation>
 }
 
 /** How long the analysis engine looks at the position before the engine answers an offer. */
@@ -272,7 +272,10 @@ async function answerOffer(
   if (!game) return { ok: false, status: 404, error: 'There is no such game.' }
   if (game.status !== 'playing') return { ok: false, status: 409, error: 'The game is over.' }
   const engineColor: Color = game.personColor === 'white' ? 'black' : 'white'
-  const score = engineScore(await judge.evaluate(game.fen, OFFER_THINK_MS, 'board'), engineColor)
+  const score = engineScore(
+    await judge.evaluate(game.fen, OFFER_THINK_MS, 'judgement'),
+    engineColor,
+  )
   // The game may have moved on (or ended) while the position was judged: the answer was about another one.
   const current = await loadGame(db, id)
   if (!current || current.status !== 'playing' || current.fen !== game.fen)

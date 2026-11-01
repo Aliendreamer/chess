@@ -22,7 +22,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       of `DecompressionStream`. Desktop keeps `tauriSql`, `sidecarChannel`, Vite asset loaders and `app.tsx`.
       Test first: desktop's data and engine tests, moved, fail with "module not found". A fixture importing
       `@tauri-apps/plugin-sql` fails the lint.
-- [ ] 1.5 Add `EngineScheduler` to `@chess/local`: priorities (game move > board > judgement > review > miner),
+- [x] 1.5 Add `EngineScheduler` to `@chess/local`: priorities (game move > board > judgement > review > miner),
       pre-emption with `stop` and a later re-ask, `setoption` only while idle, `hold()`/`resume()`, and one channel or
       one per role. Desktop wires it with its two processes.
       Test first: against the fake engine, a review search is stopped by a board request, and a `setoption` is sent

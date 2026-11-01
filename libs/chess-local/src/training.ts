@@ -107,7 +107,7 @@ export async function mineRound(
        ON CONFLICT (position_key) DO NOTHING`,
       [spot.positionKey, spot.gameId, spot.ply, fen, spot.nextUci, at],
     )
-    const evaluation = await evaluator.evaluate(fen, REVIEW_THINK_MS, 'background')
+    const evaluation = await evaluator.evaluate(fen, REVIEW_THINK_MS, 'miner')
     const moment = judgeCritical(fen, evaluation.lines, options.minGap)
     const statements: Array<{
       sql: string

@@ -1,7 +1,7 @@
 import { levelOptions } from '@chess/core'
 import {
-  AnalysisQueue,
   EVENTS_EVERY_MS,
+  EngineScheduler,
   EngineSupervisor,
   Evaluator,
   NEWS_EVERY_MS,
@@ -30,8 +30,8 @@ export interface AppServices {
   db: Db
   /** The engine that plays the games, at the game's level. */
   player: EnginePlayer
-  /** The full-strength engine: the board first, review and mining behind it. */
-  analysis: AnalysisQueue
+  /** The engines' requests (mobile-app D7): games on their own engine; the board, judgements, review and mining in order. */
+  analysis: EngineScheduler
   /** Evaluations from the store, or asked of the analysis engine once. */
   evaluator: Evaluator
   /** Status of the two engine processes, for "engine restarting". */
@@ -75,7 +75,7 @@ export async function startServices(): Promise<AppServices> {
   await ensureOpenings(db, embeddedOpenings)
   const play = new EngineSupervisor(sidecarChannel)
   const analysis = new EngineSupervisor(sidecarChannel)
-  const queue = new AnalysisQueue(analysis)
+  const queue = new EngineScheduler({ play, analysis })
   const evaluator = new Evaluator(db, queue)
   // Reviews left unfinished (the app closed while one ran, or a game ended without one) run again, behind the board.
   void (async () => {
@@ -84,7 +84,10 @@ export async function startServices(): Promise<AppServices> {
   })()
   // The miner (training D3): a round every little while, behind the board and the reviews; off in Settings.
   const mine = async () => {
-    if ((await getSetting(db, 'training.miner', true)) && queue.pending('background') === 0)
+    if (
+      (await getSetting(db, 'training.miner', true)) &&
+      queue.pending('review') + queue.pending('miner') === 0
+    )
       await mineRound(db, evaluator).catch(() => undefined)
     setTimeout(() => void mine(), MINE_EVERY_MS)
   }
@@ -112,8 +115,7 @@ export async function startServices(): Promise<AppServices> {
     db,
     fetchText,
     player: {
-      bestMove: (fen, level, thinkMs) =>
-        play.run((engine) => engine.bestMove(fen, levelOptions(level), thinkMs)),
+      bestMove: (fen, level, thinkMs) => queue.bestMove(fen, levelOptions(level), thinkMs),
     },
     analysis: queue,
     evaluator,

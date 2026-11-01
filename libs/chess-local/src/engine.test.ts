@@ -4,8 +4,8 @@ import { Chess } from 'chess.js'
 import { describe, expect, it } from 'vitest'
 import { STANDARD_START, findLevel, levelOptions } from '@chess/core'
 import {
-  AnalysisQueue,
   EngineExited,
+  EngineScheduler,
   EngineSupervisor,
   EngineTimeout,
   UciEngine,
@@ -23,12 +23,15 @@ function fakeEngine(script: { searchMs?: number; exitOnSearch?: number; silent?:
   let lineListener: (line: string) => void = () => {}
   let exitListener: () => void = () => {}
   let searches = 0
+  let searching = false
+  let optionsWhileSearching = 0
   let pending: ReturnType<typeof setTimeout> | null = null
   const say = (...lines: Array<string>) =>
     queueMicrotask(() => lines.forEach((l) => lineListener(l)))
   const finish = () => {
     if (pending) clearTimeout(pending)
     pending = null
+    searching = false
     say(
       'info depth 12 multipv 1 score cp 35 nodes 1000 pv e2e4 e7e5',
       'info depth 12 multipv 2 score mate -3 nodes 1000 pv d2d4 d7d5',
@@ -39,12 +42,16 @@ function fakeEngine(script: { searchMs?: number; exitOnSearch?: number; silent?:
     write: (line) => {
       sent.push(line)
       if (script.silent) return Promise.resolve()
+      if (line.startsWith('setoption') && searching) optionsWhileSearching++
       if (line === 'uci') say('id name Fake', 'uciok')
       else if (line === 'isready') say('readyok')
       else if (line.startsWith('go')) {
         searches++
         if (searches === script.exitOnSearch) queueMicrotask(() => exitListener())
-        else pending = setTimeout(finish, script.searchMs ?? 0)
+        else {
+          searching = true
+          pending = setTimeout(finish, script.searchMs ?? 0)
+        }
       } else if (line === 'stop' && pending) finish()
       return Promise.resolve()
     },
@@ -52,7 +59,12 @@ function fakeEngine(script: { searchMs?: number; exitOnSearch?: number; silent?:
     onExit: (l) => (exitListener = l),
     kill: () => Promise.resolve(),
   }
-  return { channel, sent, searches: () => searches }
+  return {
+    channel,
+    sent,
+    searches: () => searches,
+    optionsWhileSearching: () => optionsWhileSearching,
+  }
 }
 
 const AFTER_E4 = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'
@@ -149,26 +161,102 @@ describe('the supervisor (desktop-app D5)', () => {
   })
 })
 
-describe('the analysis queue (desktop-app D5)', () => {
-  it('stops background work for the board, answers the board first, then asks the background again', async () => {
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+const supervisor = (fake: ReturnType<typeof fakeEngine>) =>
+  new EngineSupervisor(() => Promise.resolve(fake.channel))
+const CASUAL = levelOptions(findLevel('1320')!)
+
+describe('the engine scheduler (desktop-app D5, mobile-app D7)', () => {
+  it('stops a review for the board, answers the board first, then asks the review again', async () => {
     const fake = fakeEngine({ searchMs: 200 })
-    const queue = new AnalysisQueue(new EngineSupervisor(() => Promise.resolve(fake.channel)))
+    const scheduler = new EngineScheduler({ analysis: supervisor(fake) })
     const order: Array<string> = []
-    const review = queue
-      .analyse(STANDARD_START, 200, 1, 'background')
+    const review = scheduler
+      .analyse(STANDARD_START, 200, 1, 'review')
       .then(() => order.push('review'))
-    await new Promise((r) => setTimeout(r, 30)) // the review's search has started
-    const board = queue.analyse(AFTER_E4, 200, 3, 'board').then(() => order.push('board'))
+    await wait(30) // the review's search has started
+    const board = scheduler.analyse(AFTER_E4, 200, 3, 'board').then(() => order.push('board'))
     await Promise.all([review, board])
     expect(order).toEqual(['board', 'review'])
     expect(fake.sent).toContain('stop')
     expect(fake.searches()).toBe(3) // the review, stopped; the board; the review again
-    expect(queue.pending('background')).toBe(0)
+    expect(scheduler.pending('review')).toBe(0)
+  })
+
+  it('serves one engine in priority order: game, board, judgement, review, miner', async () => {
+    const fake = fakeEngine({ searchMs: 50 })
+    const scheduler = new EngineScheduler({ analysis: supervisor(fake) })
+    const order: Array<string> = []
+    const miner = scheduler.analyse(STANDARD_START, 50, 1, 'miner').then(() => order.push('miner'))
+    await wait(20) // the miner's search has started
+    const all = [
+      scheduler.analyse(STANDARD_START, 50, 1, 'review').then(() => order.push('review')),
+      scheduler.analyse(STANDARD_START, 50, 1, 'judgement').then(() => order.push('judgement')),
+      scheduler.analyse(AFTER_E4, 50, 3, 'board').then(() => order.push('board')),
+      scheduler.bestMove(STANDARD_START, CASUAL, 50).then(() => order.push('game')),
+    ]
+    await Promise.all([miner, ...all])
+    expect(order).toEqual(['game', 'board', 'judgement', 'review', 'miner'])
+  })
+
+  it('changes options only while the engine is idle, game strength then full strength', async () => {
+    const fake = fakeEngine({ searchMs: 100 })
+    const scheduler = new EngineScheduler({ analysis: supervisor(fake) })
+    const review = scheduler.analyse(STANDARD_START, 100, 3, 'review')
+    await wait(30)
+    const move = scheduler.bestMove(AFTER_E4, CASUAL, 100)
+    await Promise.all([review, move])
+    expect(fake.optionsWhileSearching()).toBe(0)
+    const limit = fake.sent.lastIndexOf('setoption name UCI_LimitStrength value true')
+    const full = fake.sent.lastIndexOf('setoption name UCI_LimitStrength value false')
+    expect(limit).toBeGreaterThan(-1)
+    expect(full).toBeGreaterThan(limit) // the review, asked again after the game's move
+  })
+
+  it('holds: stops the search, starts nothing, and asks it again on resume', async () => {
+    const fake = fakeEngine({ searchMs: 100 })
+    const scheduler = new EngineScheduler({ analysis: supervisor(fake) })
+    let answered = false
+    const board = scheduler.analyse(AFTER_E4, 100, 3, 'board').then((a) => {
+      answered = true
+      return a
+    })
+    await wait(30)
+    await scheduler.hold()
+    const review = scheduler.analyse(STANDARD_START, 100, 1, 'review')
+    await wait(150)
+    expect(answered).toBe(false)
+    expect(fake.searches()).toBe(1)
+    scheduler.resume()
+    const analysis = await board
+    await review
+    expect(analysis.lines).toHaveLength(2)
+    expect(fake.searches()).toBe(3) // the board, stopped; the board again; the review
+  })
+
+  it('plays on its own engine when it has one, beside the analysis', async () => {
+    const play = fakeEngine({ searchMs: 50 })
+    const analysis = fakeEngine({ searchMs: 50 })
+    const scheduler = new EngineScheduler({
+      play: supervisor(play),
+      analysis: supervisor(analysis),
+    })
+    const [move] = await Promise.all([
+      scheduler.bestMove(STANDARD_START, CASUAL, 50),
+      scheduler.analyse(AFTER_E4, 50, 3, 'board'),
+    ])
+    expect(move).toBe('e2e4')
+    expect(play.searches()).toBe(1)
+    expect(analysis.searches()).toBe(1)
+    expect(analysis.sent).not.toContain('stop')
   })
 })
 
-// vitest runs from the app's root (jsdom has no file: import.meta.url).
-const STOCKFISH = join(process.cwd(), 'src-tauri', 'binaries', 'stockfish-x86_64-unknown-linux-gnu')
+// The desktop's fetched sidecar (`nx run desktop:dev` fetches it once).
+const STOCKFISH = join(
+  import.meta.dirname,
+  '../../../apps/desktop/src-tauri/binaries/stockfish-x86_64-unknown-linux-gnu',
+)
 
 describe.skipIf(!existsSync(STOCKFISH))('the fetched Stockfish', () => {
   it('plays a legal move at Casual and analyses with three lines', async () => {

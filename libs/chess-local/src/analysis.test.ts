@@ -3,7 +3,7 @@ import { STANDARD_START, positionKey } from '@chess/core'
 import { openDb } from './db.ts'
 import { Evaluator, storeEvaluation, storedEvaluation, storedEvaluations } from './analysis.ts'
 import { memorySql } from './testing.ts'
-import type { AnalysisQueue, EngineAnalysis } from './engine.ts'
+import type { EngineAnalysis, EngineScheduler } from './engine.ts'
 
 const opened: Array<{ close: () => void }> = []
 afterEach(() => opened.splice(0).forEach((db) => db.close()))
@@ -27,7 +27,7 @@ function fakeQueue() {
         release = () => resolve({ depth: 20, lines: [line(30)] })
       })
     },
-  } as unknown as AnalysisQueue
+  } as unknown as EngineScheduler
   return { queue, asked, release: () => release() }
 }
 
@@ -108,10 +108,10 @@ describe('evaluations (engine-analysis D1)', () => {
   it('let background work wait for the answer', async () => {
     const db = await testDb()
     const fake = fakeQueue()
-    const evaluating = new Evaluator(db, fake.queue).evaluate(STANDARD_START, 800, 'background')
+    const evaluating = new Evaluator(db, fake.queue).evaluate(STANDARD_START, 800, 'review')
     await new Promise((r) => setTimeout(r, 0))
     fake.release()
     expect((await evaluating).depth).toBe(20)
-    expect(fake.asked).toEqual([{ thinkMs: 800, priority: 'background' }])
+    expect(fake.asked).toEqual([{ thinkMs: 800, priority: 'review' }])
   })
 })

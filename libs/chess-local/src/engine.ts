@@ -279,68 +279,119 @@ export class EngineSupervisor {
   }
 }
 
-export type AnalysisPriority = 'board' | 'background'
+/**
+ * Who is asking, most urgent first (mobile-app D7): the engine's move in a game, the board's analysis, a draw or resign
+ * judgement, a game's review, the training miner.
+ */
+export const ENGINE_PRIORITIES = ['game', 'board', 'judgement', 'review', 'miner'] as const
+export type EnginePriority = (typeof ENGINE_PRIORITIES)[number]
+/** An analysis's priority: everything but a game's move. */
+export type AnalysisPriority = Exclude<EnginePriority, 'game'>
 
-interface AnalysisRequest {
-  fen: string
-  thinkMs: number
-  lines: number
-  priority: AnalysisPriority
-  resolve: (analysis: EngineAnalysis) => void
+interface EngineRequest {
+  priority: EnginePriority
+  work: (engine: UciEngine) => Promise<unknown>
+  resolve: (answer: unknown) => void
   reject: (error: unknown) => void
 }
 
 /**
- * The analysis engine's requests (desktop-app D5): the board's first, in order; background work (review, mining) when
- * the board asks for nothing. A board request arriving during a background search stops it, and that search is asked
- * again later — a stopped search's partial answer is never kept.
+ * The engines' requests (desktop-app D5, mobile-app D7), served one at a time in priority order. A request more urgent
+ * than the search running stops it, and the stopped one is asked again later: a stopped search's answer is never kept.
+ * Options change only between searches, since each search sets its own before its `go` and searches never overlap.
+ *
+ * The desktop gives the games their own engine (`play`), so a move never waits for the analysis; the mobile app has one
+ * engine for everything (Stockfish's state is process-wide), so the game's move comes first in the one queue.
  */
-export class AnalysisQueue {
-  private readonly board: Array<AnalysisRequest> = []
-  private readonly background: Array<AnalysisRequest> = []
-  private running: AnalysisRequest | null = null
+export class EngineScheduler {
+  private readonly waiting = new Map<EnginePriority, Array<EngineRequest>>(
+    ENGINE_PRIORITIES.map((p) => [p, []]),
+  )
+  private running: EngineRequest | null = null
+  private stopped = false
+  private held = false
 
-  constructor(private readonly supervisor: EngineSupervisor) {}
+  constructor(private readonly engines: { analysis: EngineSupervisor; play?: EngineSupervisor }) {}
 
+  /** The engine's move at a strength (`levelOptions`) after thinking `thinkMs`; null when it has none. */
+  bestMove(fen: string, strength: ReadonlyArray<string>, thinkMs: number): Promise<string | null> {
+    const work = (engine: UciEngine) => engine.bestMove(fen, strength, thinkMs)
+    return this.engines.play ? this.engines.play.run(work) : this.enqueue('game', work)
+  }
+
+  /** Full-strength analysis: `lines` best lines after `thinkMs`. */
   analyse(
     fen: string,
     thinkMs: number,
     lines: number,
     priority: AnalysisPriority,
   ): Promise<EngineAnalysis> {
-    return new Promise((resolve, reject) => {
-      const request = { fen, thinkMs, lines, priority, resolve, reject }
-      ;(priority === 'board' ? this.board : this.background).push(request)
-      if (priority === 'board' && this.running?.priority === 'background') {
-        void this.supervisor.current().then((engine) => engine?.stop())
-      }
+    return this.enqueue(priority, (engine) => engine.analyse(fen, thinkMs, lines))
+  }
+
+  /** Requests waiting at a priority: the miner tops up only while little background work waits. */
+  pending(priority: EnginePriority): number {
+    return this.waiting.get(priority)!.length
+  }
+
+  /**
+   * Stops the search running (asked again on {@link resume}) and starts nothing until then: the mobile app going to the
+   * background, where the system may suspend it mid-search.
+   */
+  async hold(): Promise<void> {
+    this.held = true
+    await this.stopRunning()
+  }
+
+  resume(): void {
+    this.held = false
+    this.pump()
+  }
+
+  private enqueue<T>(
+    priority: EnginePriority,
+    work: (engine: UciEngine) => Promise<T>,
+  ): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      this.waiting
+        .get(priority)!
+        .push({ priority, work, resolve: resolve as (answer: unknown) => void, reject })
+      if (this.running && rank(priority) < rank(this.running.priority)) void this.stopRunning()
       this.pump()
     })
   }
 
-  /** Requests waiting, by priority: the miner tops up only while little background work waits. */
-  pending(priority: AnalysisPriority): number {
-    return (priority === 'board' ? this.board : this.background).length
+  private async stopRunning(): Promise<void> {
+    if (!this.running || this.stopped) return
+    this.stopped = true
+    const engine = await this.engines.analysis.current()
+    await engine?.stop()
   }
 
   private pump() {
-    if (this.running) return
-    const next = this.board.shift() ?? this.background.shift()
+    if (this.running || this.held) return
+    const next = ENGINE_PRIORITIES.map((p) => this.waiting.get(p)!)
+      .find((q) => q.length > 0)
+      ?.shift()
     if (!next) return
     this.running = next
-    void this.supervisor
-      .run((engine) => engine.analyse(next.fen, next.thinkMs, next.lines))
+    this.stopped = false
+    void this.engines.analysis
+      .run(next.work)
       .then(
-        (analysis) => {
-          // A background search the board stopped is asked again rather than kept half-done.
-          if (next.priority === 'background' && this.board.length > 0) this.background.unshift(next)
-          else next.resolve(analysis)
+        (answer) => {
+          // A search that was stopped is asked again rather than kept half-done.
+          if (this.stopped) this.waiting.get(next.priority)!.unshift(next)
+          else next.resolve(answer)
         },
         (error: unknown) => next.reject(error),
       )
       .finally(() => {
         this.running = null
+        this.stopped = false
         this.pump()
       })
   }
 }
+
+const rank = (priority: EnginePriority) => ENGINE_PRIORITIES.indexOf(priority)

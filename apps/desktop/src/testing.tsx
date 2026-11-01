@@ -13,14 +13,14 @@ export async function fakeServices(moves: Array<string> = []): Promise<
   }
 > {
   const { openDb } = await import('@chess/local')
-  const { AnalysisQueue, EngineSupervisor } = await import('@chess/local')
+  const { EngineScheduler, EngineSupervisor } = await import('@chess/local')
   const sql = memorySql()
   const db = await openDb(sql)
   const idle = new EngineSupervisor(() => Promise.reject(new Error('no engine in this test')))
   const saved: Array<{ name: string; text: string }> = []
   const opened: Array<string> = []
   const { Evaluator } = await import('@chess/local')
-  const queue = new AnalysisQueue(idle)
+  const queue = new EngineScheduler({ play: idle, analysis: idle })
   return {
     db,
     player: { bestMove: () => Promise.resolve(moves.shift() ?? null) },

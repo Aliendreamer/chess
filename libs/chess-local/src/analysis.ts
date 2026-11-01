@@ -1,6 +1,6 @@
 import { positionKey } from '@chess/core'
 import type { AnalysisView, CommandOutcome, Evaluation, EvaluationLine, Think } from '@chess/core'
-import type { AnalysisPriority, AnalysisQueue } from './engine.ts'
+import type { AnalysisPriority, EngineScheduler } from './engine.ts'
 import type { Db } from './db.ts'
 
 /**
@@ -94,7 +94,7 @@ export class Evaluator {
 
   constructor(
     private readonly db: Db,
-    private readonly queue: AnalysisQueue,
+    private readonly queue: EngineScheduler,
   ) {}
 
   /**

@@ -5,7 +5,7 @@ import { Evaluator, storeEvaluation } from './analysis.ts'
 import { createGame, engineMove, personMove, resign } from './play.ts'
 import { loadReview, reviewsToRun, runReview, startReview } from './review.ts'
 import { memorySql } from './testing.ts'
-import type { AnalysisQueue, EngineAnalysis } from './engine.ts'
+import type { EngineAnalysis, EngineScheduler } from './engine.ts'
 import type { Db } from './db.ts'
 
 const opened: Array<{ close: () => void }> = []
@@ -40,7 +40,7 @@ function scoringQueue(score: (fen: string) => EngineAnalysis) {
       asked.push({ thinkMs, priority })
       return Promise.resolve(score(fen))
     },
-  } as unknown as AnalysisQueue
+  } as unknown as EngineScheduler
   return { queue, asked }
 }
 
@@ -66,7 +66,7 @@ describe('game review (game-review, desktop-app)', () => {
     )
     expect((await loadReview(db, id))?.status).toBe('none')
     await runReview(db, new Evaluator(db, queue), id)
-    expect(asked.every((a) => a.thinkMs === 800 && a.priority === 'background')).toBe(true)
+    expect(asked.every((a) => a.thinkMs === 800 && a.priority === 'review')).toBe(true)
     const reviewed = await loadReview(db, id)
     expect(reviewed?.status).toBe('complete')
     expect(reviewed?.moves[2]?.class).toBe('blunder')
