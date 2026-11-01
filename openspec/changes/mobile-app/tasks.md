@@ -87,7 +87,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
 - [ ] 3.5 iOS: the podspec compiling the same C++ with Obj-C++ glue. **[human, Mac]** `npx expo run:ios` on a
       simulator shows the smoke screen's `bestmove`. If this fails, record it and fall back to D6's WASM WebView
       before group 5.
-- [ ] 3.6 Add `stockfish` licence files (`Copying.txt`, `AUTHORS`) to the module, `apps/mobile/LICENSE` (GPLv3), and
+- [x] 3.6 Add `stockfish` licence files (`Copying.txt`, `AUTHORS`) to the module, `apps/mobile/LICENSE` (GPLv3), and
       the README section on the licence (D10).
 
 ## 4. Platform adapters
