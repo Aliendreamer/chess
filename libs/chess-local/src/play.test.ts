@@ -1,3 +1,4 @@
+import { findLevel } from '@chess/core'
 import { afterEach, describe, expect, it } from 'vitest'
 import { newId, openDb } from './db.ts'
 import {
@@ -11,9 +12,12 @@ import {
   listGames,
   loadGame,
   offerDraw,
+  outcome,
   personMove,
   resign,
+  resultMark,
   takeBack,
+  versus,
 } from './play.ts'
 import { memorySql } from './testing.ts'
 import type { EnginePlayer, PositionJudge } from './play.ts'
@@ -346,5 +350,24 @@ describe('ids (D11)', () => {
     const b = newId(new Date(2_000))
     expect(a).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
     expect(a < b).toBe(true)
+  })
+})
+
+describe('a game as the screens write it', () => {
+  it('writes results as people do, and the person’s outcome', () => {
+    expect([resultMark('1-0'), resultMark('0-1'), resultMark('1/2-1/2'), resultMark(null)]).toEqual(
+      ['1–0', '0–1', '½–½', '…'],
+    )
+    expect(outcome({ result: '1-0', personColor: 'white' })).toBe('win')
+    expect(outcome({ result: '1-0', personColor: 'black' })).toBe('loss')
+    expect(outcome({ result: '0-1', personColor: 'black' })).toBe('win')
+    expect(outcome({ result: '1/2-1/2', personColor: 'black' })).toBe('draw')
+    expect(outcome({ result: null, personColor: 'white' })).toBeNull()
+  })
+
+  it('names the players with White first', () => {
+    const level = findLevel('max')!
+    expect(versus('white', level)).toBe('You – Stockfish (Maximum)')
+    expect(versus('black', level)).toBe('Stockfish (Maximum) – You')
   })
 })

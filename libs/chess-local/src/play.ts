@@ -64,6 +64,30 @@ interface GameRow {
 
 export const PERSON_NAME = 'You'
 
+/** "1–0", "0–1", "½–½" as people write a result; "…" while the game goes on. */
+export function resultMark(result: string | null): string {
+  if (result === '1-0') return '1–0'
+  if (result === '0-1') return '0–1'
+  if (result === '1/2-1/2') return '½–½'
+  return '…'
+}
+
+/** The person's outcome of a finished game: won, lost or drawn. */
+export function outcome(
+  game: Pick<DesktopGame, 'result' | 'personColor'>,
+): 'win' | 'loss' | 'draw' | null {
+  if (game.result === '1/2-1/2') return 'draw'
+  if (game.result === '1-0') return game.personColor === 'white' ? 'win' : 'loss'
+  if (game.result === '0-1') return game.personColor === 'black' ? 'win' : 'loss'
+  return null
+}
+
+/** "You – Stockfish (Casual)" with White first. */
+export function versus(personColor: Color, level: EngineLevel): string {
+  const engine = engineName(level)
+  return personColor === 'white' ? `${PERSON_NAME} – ${engine}` : `${engine} – ${PERSON_NAME}`
+}
+
 /** The side to move in a game. */
 export function toMove(game: Pick<DesktopGame, 'fen'>): Color {
   return game.fen.split(' ')[1] === 'b' ? 'black' : 'white'

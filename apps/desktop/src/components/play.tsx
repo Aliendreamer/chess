@@ -1,6 +1,6 @@
-import { ENGINE_LEVELS, THINK_SECONDS, engineName, reasonLabel } from '@chess/core'
+import { ENGINE_LEVELS, THINK_SECONDS, reasonLabel } from '@chess/core'
 import { AppLink, Button, Chip, ColourPicker, ErrorText, OptionTile, Panel } from '@chess/ui'
-import { PERSON_NAME } from '@chess/local'
+import { PERSON_NAME, outcome, resultMark, versus } from '@chess/local'
 import type { ColourChoice, EngineLevel, ThinkSeconds } from '@chess/core'
 import type { DesktopGame, GameListItem } from '@chess/local'
 
@@ -63,24 +63,6 @@ export function EngineForm({
       {error ? <ErrorText>{error}</ErrorText> : null}
     </Panel>
   )
-}
-
-/** "1–0", "0–1", "½–½" as people write a result. */
-export function resultMark(result: string | null): string {
-  if (result === '1-0') return '1–0'
-  if (result === '0-1') return '0–1'
-  if (result === '1/2-1/2') return '½–½'
-  return '…'
-}
-
-/** The person's outcome of a finished game: won, lost or drawn. */
-export function outcome(
-  game: Pick<DesktopGame, 'result' | 'personColor'>,
-): 'win' | 'loss' | 'draw' | null {
-  if (game.result === '1/2-1/2') return 'draw'
-  if (game.result === '1-0') return game.personColor === 'white' ? 'win' : 'loss'
-  if (game.result === '0-1') return game.personColor === 'black' ? 'win' : 'loss'
-  return null
 }
 
 const OUTCOME_TEXT = { win: 'You won', loss: 'You lost', draw: 'Drawn' } as const
@@ -186,10 +168,4 @@ export function GameRows({
       })}
     </ul>
   )
-}
-
-/** "You – Stockfish (Casual)" with White first. */
-export function versus(personColor: 'white' | 'black', level: EngineLevel): string {
-  const engine = engineName(level)
-  return personColor === 'white' ? `${PERSON_NAME} – ${engine}` : `${engine} – ${PERSON_NAME}`
 }
