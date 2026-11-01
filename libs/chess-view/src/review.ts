@@ -1,14 +1,8 @@
-import { useEffect, useState } from "react";
-import { Chess } from "chess.js";
-import type {
-  BookExit,
-  CommandOutcome,
-  ReviewResult,
-  ReviewView,
-  ReviewedMove,
-} from "@chess/core";
+import { useEffect, useState } from 'react'
+import { Chess } from 'chess.js'
+import type { BookExit, CommandOutcome, ReviewResult, ReviewView, ReviewedMove } from '@chess/core'
 
-export type { ReviewView } from "@chess/core";
+export type { ReviewView } from '@chess/core'
 
 /**
  * Game review (game-review): the API's shapes, the marks and scores as shown, the graph's points and the review's
@@ -16,17 +10,17 @@ export type { ReviewView } from "@chess/core";
  */
 
 /** How often a running review is asked again. */
-export const REVIEW_POLL_MS = 2000;
+export const REVIEW_POLL_MS = 2000
 
 /** Which of the engine's moves is on the board: the reviewed ply and how many of its line's moves are played. */
 export interface PreviewState {
-  ply: number;
-  upTo: number;
+  ply: number
+  upTo: number
 }
 
 export interface LinePreview {
-  fen: string;
-  lastMove: { from: string; to: string } | null;
+  fen: string
+  lastMove: { from: string; to: string } | null
 }
 
 /**
@@ -38,58 +32,56 @@ export function previewLine(
   line: ReadonlyArray<string>,
   upTo: number,
 ): LinePreview {
-  const board = new Chess(fenBefore);
-  let lastMove: LinePreview["lastMove"] = null;
+  const board = new Chess(fenBefore)
+  let lastMove: LinePreview['lastMove'] = null
   for (const san of line.slice(0, upTo)) {
     try {
-      const move = board.move(san);
-      lastMove = { from: move.from, to: move.to };
+      const move = board.move(san)
+      lastMove = { from: move.from, to: move.to }
     } catch {
-      break;
+      break
     }
   }
-  return { fen: board.fen(), lastMove };
+  return { fen: board.fen(), lastMove }
 }
 
 /** "White is better", "Black is winning", "Equal": the score in words, for the review's evaluation line. */
-export function advantageText(m: Pick<ReviewedMove, "cp" | "mate">): string {
-  if (m.mate !== null) return m.mate > 0 ? "White mates" : "Black mates";
-  if (m.cp === null) return "";
-  const side = m.cp > 0 ? "White" : "Black";
-  const pawns = Math.abs(m.cp);
-  if (pawns < 30) return "Equal";
-  if (pawns < 100) return `${side} is slightly better`;
-  if (pawns < 300) return `${side} is better`;
-  return `${side} is winning`;
+export function advantageText(m: Pick<ReviewedMove, 'cp' | 'mate'>): string {
+  if (m.mate !== null) return m.mate > 0 ? 'White mates' : 'Black mates'
+  if (m.cp === null) return ''
+  const side = m.cp > 0 ? 'White' : 'Black'
+  const pawns = Math.abs(m.cp)
+  if (pawns < 30) return 'Equal'
+  if (pawns < 100) return `${side} is slightly better`
+  if (pawns < 300) return `${side} is better`
+  return `${side} is winning`
 }
 
 /** A move as written in text: "7.Nf3", "7...Bd6". */
 export function moveLabel(ply: number, san: string): string {
-  const number = Math.ceil(ply / 2);
-  return ply % 2 === 1 ? `${number}.${san}` : `${number}...${san}`;
+  const number = Math.ceil(ply / 2)
+  return ply % 2 === 1 ? `${number}.${san}` : `${number}...${san}`
 }
 
-const minus = (n: number) => (n < 0 ? `−${Math.abs(n)}` : `${n}`);
+const minus = (n: number) => (n < 0 ? `−${Math.abs(n)}` : `${n}`)
 
 /** "+0.35", "−1.20", "#−2" from White's side; the result after a board ending; "…" while unknown. */
-export function scoreLabel(
-  m: Pick<ReviewedMove, "cp" | "mate" | "chances">,
-): string {
-  if (m.mate !== null) return `#${minus(m.mate)}`;
+export function scoreLabel(m: Pick<ReviewedMove, 'cp' | 'mate' | 'chances'>): string {
+  if (m.mate !== null) return `#${minus(m.mate)}`
   if (m.cp !== null) {
-    const pawns = (m.cp / 100).toFixed(2);
-    return m.cp > 0 ? `+${pawns}` : m.cp < 0 ? `−${pawns.slice(1)}` : "0.00";
+    const pawns = (m.cp / 100).toFixed(2)
+    return m.cp > 0 ? `+${pawns}` : m.cp < 0 ? `−${pawns.slice(1)}` : '0.00'
   }
-  if (m.chances === 1) return "1–0";
-  if (m.chances === -1) return "0–1";
-  if (m.chances === 0) return "½–½";
-  return "…";
+  if (m.chances === 1) return '1–0'
+  if (m.chances === -1) return '0–1'
+  if (m.chances === 0) return '½–½'
+  return '…'
 }
 
 export interface GraphPoint {
-  ply: number;
-  x: number;
-  y: number;
+  ply: number
+  x: number
+  y: number
 }
 
 /** The evaluation graph: White's chances up, the start at the middle, moves not evaluated yet left out. */
@@ -98,28 +90,27 @@ export function graphPoints(
   width: number,
   height: number,
 ): Array<GraphPoint> {
-  const step = moves.length === 0 ? 0 : width / moves.length;
-  const y = (chances: number) =>
-    Math.round(((1 - chances) / 2) * height * 100) / 100;
-  const points: Array<GraphPoint> = [{ ply: 0, x: 0, y: y(0) }];
+  const step = moves.length === 0 ? 0 : width / moves.length
+  const y = (chances: number) => Math.round(((1 - chances) / 2) * height * 100) / 100
+  const points: Array<GraphPoint> = [{ ply: 0, x: 0, y: y(0) }]
   for (const m of moves) {
-    if (m.chances === null) continue;
+    if (m.chances === null) continue
     points.push({
       ply: m.ply,
       x: Math.round(m.ply * step * 100) / 100,
       y: y(m.chances),
-    });
+    })
   }
-  return points;
+  return points
 }
 
 /** The trainer for the opening the member left (opening-trainer), or null when the other player left it. */
 export function bookLink(
   exit: BookExit,
-  mine: "white" | "black" | null,
-): { family: string; color: "white" | "black" } | null {
-  if (exit.color !== mine) return null;
-  return { family: exit.name.split(":")[0]!.trim(), color: exit.color };
+  mine: 'white' | 'black' | null,
+): { family: string; color: 'white' | 'black' } | null {
+  if (exit.color !== mine) return null
+  return { family: exit.name.split(':')[0]!.trim(), color: exit.color }
 }
 
 /**
@@ -135,61 +126,61 @@ export function useReview(
   enabled = true,
   isVisible: () => boolean = () => true,
 ): {
-  view: ReviewView | null;
-  busy: boolean;
-  error: string | null;
-  start: () => Promise<void>;
+  view: ReviewView | null
+  busy: boolean
+  error: string | null
+  start: () => Promise<void>
 } {
-  const [view, setView] = useState(initial);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const running = view?.status === "running";
-  const missing = view === null;
+  const [view, setView] = useState(initial)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const running = view?.status === 'running'
+  const missing = view === null
 
   useEffect(() => {
-    if (!enabled || !missing) return;
-    let live = true;
+    if (!enabled || !missing) return
+    let live = true
     load()
       .then((next) => {
-        if (live && next) setView(next);
+        if (live && next) setView(next)
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
     return () => {
-      live = false;
-    };
-  }, [enabled, missing, load]);
+      live = false
+    }
+  }, [enabled, missing, load])
 
   useEffect(() => {
-    if (!running) return;
-    let live = true;
+    if (!running) return
+    let live = true
     const timer = setInterval(() => {
-      if (!isVisible()) return;
+      if (!isVisible()) return
       load()
         .then((next) => {
-          if (live && next) setView(next);
+          if (live && next) setView(next)
         })
-        .catch(() => undefined);
-    }, pollMs);
+        .catch(() => undefined)
+    }, pollMs)
     return () => {
-      live = false;
-      clearInterval(timer);
-    };
-  }, [running, load, pollMs, isVisible]);
+      live = false
+      clearInterval(timer)
+    }
+  }, [running, load, pollMs, isVisible])
 
   return {
     view,
     busy,
     error,
     start: async () => {
-      setBusy(true);
-      setError(null);
+      setBusy(true)
+      setError(null)
       try {
-        const outcome = await start();
-        if (outcome.ok) setView(outcome.view);
-        else setError(outcome.error);
+        const outcome = await start()
+        if (outcome.ok) setView(outcome.view)
+        else setError(outcome.error)
       } finally {
-        setBusy(false);
+        setBusy(false)
       }
     },
-  };
+  }
 }
