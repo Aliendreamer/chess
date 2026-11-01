@@ -47,7 +47,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       the route-test folder rule. A placeholder screen imports `@chess/core` and `@chess/local`.
       Test first: `EXPO_NO_TELEMETRY=1 CI=1 pnpm exec expo export --platform android` fails to resolve
       `@chess/core` (or its `.ts` imports) until Metro is configured (D4).
-- [ ] 2.2 `app.config.ts`: name, id `io.github.aliendreamer.chess`, scheme, portrait, version from `package.json` and
+- [x] 2.2 `app.config.ts`: name, id `io.github.aliendreamer.chess`, scheme, portrait, version from `package.json` and
       the derived `versionCode` (D11), the icon and splash from the desktop icon, fonts through `@expo-google-fonts`,
       `expo-dev-client`, `expo-sqlite`, `expo-build-properties` (SDK 36).
       Test first: `app-config.test.ts` expects `versionCode` 10203 for version 1.2.3, and fails.
