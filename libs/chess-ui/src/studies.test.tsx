@@ -3,11 +3,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_PREFERENCES, STANDARD_START, playMove } from '@chess/core'
 import { PreferencesContext } from './board.tsx'
 import { AnalysisBoard, EngineLines, EvalBar, MoveTree, StudyList } from './studies.tsx'
-import { useMoveTree } from './studies-model.ts'
+import { useMoveTree } from './dom.ts'
 import type { EvaluationShown } from './studies.tsx'
 import type { ReactNode } from 'react'
 import type { StudyMove } from '@chess/core'
-import type { Analysis } from './analysis.ts'
+import type { Analysis } from '@chess/view'
 
 afterEach(cleanup)
 

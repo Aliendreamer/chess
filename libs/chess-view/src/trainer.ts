@@ -1,7 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
-import { Chess } from 'chess.js'
-import { STANDARD_START, clickSquare, legalTargets, needsPromotion } from '@chess/core'
-import type { TrainerLine } from '@chess/core'
+import { useEffect, useRef, useState } from "react";
+import { Chess } from "chess.js";
+import {
+  STANDARD_START,
+  clickSquare,
+  legalTargets,
+  needsPromotion,
+} from "@chess/core";
+import type { TrainerLine } from "@chess/core";
 
 export type {
   TrainerLine,
@@ -12,7 +17,7 @@ export type {
   StudyLineState as StudyLine,
   StudyDrill,
   NextStudyLine,
-} from '@chess/core'
+} from "@chess/core";
 
 /**
  * The opening trainer (opening-trainer): its API shapes and the drill — the board plays the other side of a named line,
@@ -20,46 +25,55 @@ export type {
  * `lib/server/trainer.ts`.
  */
 
-export type TrainerColor = 'white' | 'black'
+export type TrainerColor = "white" | "black";
 
 export interface TrainedFamily {
-  name: string
-  color: TrainerColor
-  lines: number
-  learned: number
+  name: string;
+  color: TrainerColor;
+  lines: number;
+  learned: number;
 }
 
 /** From box 3 a line counts as learned (the server's rule, mirrored for the labels). */
-export const LEARNED_BOX = 3
+export const LEARNED_BOX = 3;
 
-export function lineState(line: Pick<TrainerLine, 'box'>): 'new' | 'learning' | 'learned' {
-  if (line.box === null) return 'new'
-  return line.box >= LEARNED_BOX ? 'learned' : 'learning'
+export function lineState(
+  line: Pick<TrainerLine, "box">,
+): "new" | "learning" | "learned" {
+  if (line.box === null) return "new";
+  return line.box >= LEARNED_BOX ? "learned" : "learning";
 }
 
 export function isColor(value: unknown): value is TrainerColor {
-  return value === 'white' || value === 'black'
+  return value === "white" || value === "black";
 }
 
 /** The side to move and the move number at a start position (a study may start anywhere). */
 function startOf(startFen: string): { whiteFirst: boolean; number: number } {
-  const [, side, , , , full] = startFen.split(' ')
-  return { whiteFirst: side !== 'b', number: Number(full) > 0 ? Number(full) : 1 }
+  const [, side, , , , full] = startFen.split(" ");
+  return {
+    whiteFirst: side !== "b",
+    number: Number(full) > 0 ? Number(full) : 1,
+  };
 }
 
 /** Whether ply `ply` (0 = the first move from the start) is White's. */
 function whiteMoves(ply: number, startFen: string): boolean {
-  return (ply % 2 === 0) === startOf(startFen).whiteFirst
+  return (ply % 2 === 0) === startOf(startFen).whiteFirst;
 }
 
 /** Whose move each ply is: White plays the even plies from the standard start. */
-export function isMemberMove(ply: number, color: TrainerColor, startFen = STANDARD_START): boolean {
-  return whiteMoves(ply, startFen) === (color === 'white')
+export function isMemberMove(
+  ply: number,
+  color: TrainerColor,
+  startFen = STANDARD_START,
+): boolean {
+  return whiteMoves(ply, startFen) === (color === "white");
 }
 
 /** A move is the line's when its UCI is, promotion piece included. */
 export function matches(played: string, expected: string): boolean {
-  return played.toLowerCase() === expected.toLowerCase()
+  return played.toLowerCase() === expected.toLowerCase();
 }
 
 /** The position after the line's first `ply` moves. */
@@ -68,34 +82,39 @@ export function fenAfter(
   ply: number,
   startFen = STANDARD_START,
 ): string {
-  const board = new Chess(startFen)
+  const board = new Chess(startFen);
   for (const uci of moves.slice(0, ply)) {
-    const promotion = uci[4]
-    board.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), ...(promotion ? { promotion } : {}) })
+    const promotion = uci[4];
+    board.move({
+      from: uci.slice(0, 2),
+      to: uci.slice(2, 4),
+      ...(promotion ? { promotion } : {}),
+    });
   }
-  return board.fen()
+  return board.fen();
 }
 
 /** A move of the line in notation, numbered (`3...Nf6`), for the feedback. */
 export function sanAt(
   moves: ReadonlyArray<string>,
   ply: number,
-  uci = moves[ply] ?? '',
+  uci = moves[ply] ?? "",
   startFen = STANDARD_START,
 ): string {
   try {
-    const board = new Chess(fenAfter(moves, ply, startFen))
-    const promotion = uci[4]
+    const board = new Chess(fenAfter(moves, ply, startFen));
+    const promotion = uci[4];
     const m = board.move({
       from: uci.slice(0, 2),
       to: uci.slice(2, 4),
       ...(promotion ? { promotion } : {}),
-    })
-    const start = startOf(startFen)
-    const number = start.number + Math.floor((ply + (start.whiteFirst ? 0 : 1)) / 2)
-    return `${number}${whiteMoves(ply, startFen) ? '.' : '...'}${m.san}`
+    });
+    const start = startOf(startFen);
+    const number =
+      start.number + Math.floor((ply + (start.whiteFirst ? 0 : 1)) / 2);
+    return `${number}${whiteMoves(ply, startFen) ? "." : "..."}${m.san}`;
   } catch {
-    return uci
+    return uci;
   }
 }
 
@@ -105,7 +124,7 @@ export function lineText(
   ply: number,
   startFen = STANDARD_START,
 ): string {
-  return movesText(moves, 0, ply, startFen)
+  return movesText(moves, 0, ply, startFen);
 }
 
 /** Moves `from`–`to` in numbered notation; the first one shown keeps its number even when it is Black's. */
@@ -115,12 +134,16 @@ export function movesText(
   to: number,
   startFen: string,
 ): string {
-  const shown: Array<string> = []
+  const shown: Array<string> = [];
   for (let i = from; i < to; i++) {
-    const san = sanAt(moves, i, moves[i], startFen)
-    shown.push(i === from || whiteMoves(i, startFen) ? san : san.replace(/^\d+\.\.\./, ''))
+    const san = sanAt(moves, i, moves[i], startFen);
+    shown.push(
+      i === from || whiteMoves(i, startFen)
+        ? san
+        : san.replace(/^\d+\.\.\./, ""),
+    );
   }
-  return shown.join(' ')
+  return shown.join(" ");
 }
 
 /**
@@ -139,7 +162,7 @@ export function otherLineMove(
       other.length > ply &&
       matches(other[ply]!, uci) &&
       other.slice(0, ply).every((m, i) => m === line[i]),
-  )
+  );
 }
 
 /** A study line named by its moves from where it leaves the main line: "… 2...Nf6 3.Nxe5", or "Main line". */
@@ -148,48 +171,48 @@ export function studyLineLabel(
   moves: ReadonlyArray<string>,
   startFen = STANDARD_START,
 ): string {
-  let i = 0
-  while (i < moves.length && i < main.length && moves[i] === main[i]) i++
-  if (i === moves.length && i === main.length) return 'Main line'
+  let i = 0;
+  while (i < moves.length && i < main.length && moves[i] === main[i]) i++;
+  if (i === moves.length && i === main.length) return "Main line";
   // A line that is the main line cut short shows its last move.
-  const from = Math.min(i, moves.length - 1)
-  return `… ${movesText(moves, from, moves.length, startFen)}`
+  const from = Math.min(i, moves.length - 1);
+  return `… ${movesText(moves, from, moves.length, startFen)}`;
 }
 
 /** What a drill runs through: a line's moves, from the standard start unless it is a study's. */
 export interface DrillLine {
-  key: string
-  moves: Array<string>
+  key: string;
+  moves: Array<string>;
   /** Start with the whole line shown: a named line the member never trained (its first run is for learning it). */
-  learn?: boolean
+  learn?: boolean;
 }
 
 export interface Drill {
-  ply: number
-  fen: string
-  yourMove: boolean
-  wrong: { played: string; expected: string } | null
+  ply: number;
+  fen: string;
+  yourMove: boolean;
+  wrong: { played: string; expected: string } | null;
   /** The member played another line of the study here: not a mistake, but this line goes on with `expected`. */
-  otherLine: { played: string; expected: string } | null
-  mistakes: number
-  done: boolean
+  otherLine: { played: string; expected: string } | null;
+  mistakes: number;
+  done: boolean;
   /** The whole line is on view; a run that had it on view counts at least one mistake, so the line comes back next. */
-  lineShown: boolean
-  showLine: () => void
-  hideLine: () => void
+  lineShown: boolean;
+  showLine: () => void;
+  hideLine: () => void;
   /** The move the hint points at (UCI) while it is the member's turn; null without a hint. */
-  hint: string | null
+  hint: string | null;
   /** Points at the line's move on the board; counts one mistake per move. */
-  askHint: () => void
+  askHint: () => void;
   /** The member's move, as UCI; ignored while it is not their turn. */
-  play: (uci: string) => void
+  play: (uci: string) => void;
   /** Board input, as on the study board: click-to-move, drag, and the promotion choice. */
-  selected: string | null
-  promotion: { from: string; to: string } | null
-  onSquareClick: (square: string) => void
-  onDrop: (from: string, to: string) => boolean
-  pickPromotion: (piece: 'q' | 'r' | 'b' | 'n') => void
-  cancelPromotion: () => void
+  selected: string | null;
+  promotion: { from: string; to: string } | null;
+  onSquareClick: (square: string) => void;
+  onDrop: (from: string, to: string) => boolean;
+  pickPromotion: (piece: "q" | "r" | "b" | "n") => void;
+  cancelPromotion: () => void;
 }
 
 /**
@@ -207,51 +230,51 @@ export function useDrill(
   startFen = STANDARD_START,
   otherLines: ReadonlyArray<ReadonlyArray<string>> = [],
 ): Drill {
-  const [ply, setPly] = useState(0)
-  const [wrong, setWrong] = useState<Drill['wrong']>(null)
-  const [otherLine, setOtherLine] = useState<Drill['otherLine']>(null)
-  const [mistakes, setMistakes] = useState(0)
-  const [selected, setSelected] = useState<string | null>(null)
-  const [promotion, setPromotion] = useState<Drill['promotion']>(null)
-  const [lineShown, setLineShown] = useState(line.learn === true)
-  const [seen, setSeen] = useState(line.learn === true)
-  const [hintAt, setHintAt] = useState<number | null>(null)
-  const finished = useRef(false)
-  const done = ply >= line.moves.length
-  const yourMove = !done && isMemberMove(ply, color, startFen)
+  const [ply, setPly] = useState(0);
+  const [wrong, setWrong] = useState<Drill["wrong"]>(null);
+  const [otherLine, setOtherLine] = useState<Drill["otherLine"]>(null);
+  const [mistakes, setMistakes] = useState(0);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [promotion, setPromotion] = useState<Drill["promotion"]>(null);
+  const [lineShown, setLineShown] = useState(line.learn === true);
+  const [seen, setSeen] = useState(line.learn === true);
+  const [hintAt, setHintAt] = useState<number | null>(null);
+  const finished = useRef(false);
+  const done = ply >= line.moves.length;
+  const yourMove = !done && isMemberMove(ply, color, startFen);
 
   useEffect(() => {
-    if (done || yourMove) return
-    const timer = setTimeout(() => setPly((p) => p + 1), delayMs)
-    return () => clearTimeout(timer)
-  }, [ply, done, yourMove, delayMs])
+    if (done || yourMove) return;
+    const timer = setTimeout(() => setPly((p) => p + 1), delayMs);
+    return () => clearTimeout(timer);
+  }, [ply, done, yourMove, delayMs]);
 
   useEffect(() => {
     if (done && !finished.current) {
-      finished.current = true
-      onDone(seen ? Math.max(mistakes, 1) : mistakes)
+      finished.current = true;
+      onDone(seen ? Math.max(mistakes, 1) : mistakes);
     }
-  }, [done, mistakes, seen, onDone])
+  }, [done, mistakes, seen, onDone]);
 
   function play(uci: string) {
-    if (!yourMove) return
-    const expected = line.moves[ply]!
+    if (!yourMove) return;
+    const expected = line.moves[ply]!;
     if (matches(uci, expected)) {
-      setWrong(null)
-      setOtherLine(null)
-      setPly(ply + 1)
+      setWrong(null);
+      setOtherLine(null);
+      setPly(ply + 1);
     } else if (otherLineMove(otherLines, line.moves, ply, uci)) {
-      setWrong(null)
-      setOtherLine({ played: uci, expected })
+      setWrong(null);
+      setOtherLine({ played: uci, expected });
     } else {
-      setOtherLine(null)
-      setWrong({ played: uci, expected })
-      setMistakes((m) => m + 1)
+      setOtherLine(null);
+      setWrong({ played: uci, expected });
+      setMistakes((m) => m + 1);
     }
   }
 
-  const fen = fenAfter(line.moves, ply, startFen)
-  const mine = color === 'white' ? 'w' : 'b'
+  const fen = fenAfter(line.moves, ply, startFen);
+  const mine = color === "white" ? "w" : "b";
 
   return {
     ply,
@@ -263,43 +286,44 @@ export function useDrill(
     done,
     lineShown,
     showLine: () => {
-      setLineShown(true)
-      setSeen(true)
+      setLineShown(true);
+      setSeen(true);
     },
     hideLine: () => setLineShown(false),
     hint: yourMove && hintAt === ply ? line.moves[ply]! : null,
     askHint: () => {
-      if (!yourMove || hintAt === ply) return
-      setHintAt(ply)
-      setMistakes((m) => m + 1)
+      if (!yourMove || hintAt === ply) return;
+      setHintAt(ply);
+      setMistakes((m) => m + 1);
     },
     play,
     selected,
     promotion,
     onSquareClick: (square) => {
-      if (!yourMove) return
-      const result = clickSquare(fen, mine, selected, square)
-      setSelected(result.selected)
-      if (!result.move) return
-      if (needsPromotion(fen, result.move.from, result.move.to)) setPromotion(result.move)
-      else play(`${result.move.from}${result.move.to}`)
+      if (!yourMove) return;
+      const result = clickSquare(fen, mine, selected, square);
+      setSelected(result.selected);
+      if (!result.move) return;
+      if (needsPromotion(fen, result.move.from, result.move.to))
+        setPromotion(result.move);
+      else play(`${result.move.from}${result.move.to}`);
     },
     onDrop: (from, to) => {
-      setSelected(null)
-      if (!yourMove || !legalTargets(fen, from).includes(to)) return false
+      setSelected(null);
+      if (!yourMove || !legalTargets(fen, from).includes(to)) return false;
       if (needsPromotion(fen, from, to)) {
-        setPromotion({ from, to })
-        return false
+        setPromotion({ from, to });
+        return false;
       }
-      play(`${from}${to}`)
+      play(`${from}${to}`);
       // A wrong move goes back: the board keeps the line's position.
-      return matches(`${from}${to}`, line.moves[ply]!)
+      return matches(`${from}${to}`, line.moves[ply]!);
     },
     pickPromotion: (piece) => {
-      if (!promotion) return
-      setPromotion(null)
-      play(`${promotion.from}${promotion.to}${piece}`)
+      if (!promotion) return;
+      setPromotion(null);
+      play(`${promotion.from}${promotion.to}${piece}`);
     },
     cancelPromotion: () => setPromotion(null),
-  }
+  };
 }

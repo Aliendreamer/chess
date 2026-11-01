@@ -17,8 +17,8 @@
     "check": "prettier --check ."
   },
   "peerDependencies": {
-    "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react": ">=19.2.3 <19.3.0",
+    "react-dom": ">=19.2.3 <19.3.0"
   },
   "devDependencies": {
     "@tanstack/eslint-config": "0.4.0",
@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "@chess/core": "workspace:*",
+    "@chess/view": "workspace:*",
     "@fontsource/ibm-plex-mono": "5.3.0",
     "@fontsource/ibm-plex-sans": "5.3.0",
     "@fontsource/newsreader": "5.3.0",

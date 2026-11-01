@@ -18,6 +18,7 @@ COPY apps/frontend/otel/package.json apps/frontend/otel/package.json
 # The shared libraries (shared-chess-libraries): workspace packages the frontend compiles from source.
 COPY libs/chess-core/package.json libs/chess-core/package.json
 COPY libs/chess-ui/package.json libs/chess-ui/package.json
+COPY libs/chess-view/package.json libs/chess-view/package.json
 RUN pnpm install --frozen-lockfile --config.minimumReleaseAge=0
 
 EXPOSE 3000

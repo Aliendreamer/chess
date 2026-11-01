@@ -14,9 +14,8 @@ import { AppLink, Button, ErrorText, Panel } from './ui.tsx'
 import { Board, FlipIcon, PromotionPicker } from './board.tsx'
 import { MoveNav } from './game.tsx'
 import type { ReactNode } from 'react'
-import type { MoveTreeEditor, StudyListItem } from './studies-model.ts'
+import type { Analysis, MoveTreeEditor, StudyListItem } from '@chess/view'
 import type { Evaluation, EvaluationLine, StudyMove, TreePath } from '@chess/core'
-import type { Analysis } from './analysis.ts'
 
 /**
  * A study's moves (studies D7): the main line inline, each variation in parentheses right after the move it replaces,

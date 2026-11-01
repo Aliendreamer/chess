@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EvalGraph, ReviewPanel } from './review.tsx'
 import type { ReactNode } from 'react'
-import type { ReviewView } from './review-model.ts'
+import type { ReviewView } from '@chess/view'
 import type { ReviewedMove } from '@chess/core'
 
 afterEach(cleanup)

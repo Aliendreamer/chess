@@ -12,7 +12,7 @@ import {
   TrainerStudyList,
 } from './trainer.tsx'
 import type { ReactNode } from 'react'
-import type { TrainerLine } from './trainer-model.ts'
+import type { TrainerLine } from '@chess/view'
 
 afterEach(cleanup)
 

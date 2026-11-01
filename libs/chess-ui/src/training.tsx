@@ -1,6 +1,4 @@
 import { legalTargets, lineSans } from '@chess/core'
-import { AppLink, Button, Chip, ErrorText, Panel, href, useAdoptTyped } from './ui.tsx'
-import { Board, PromotionPicker } from './board.tsx'
 import {
   SET_SIZE,
   firstMoveLabel,
@@ -10,13 +8,15 @@ import {
   scoreText,
   sourceText,
   verdictText,
-} from './training-model.ts'
+} from '@chess/view'
+import { AppLink, Button, Chip, ErrorText, Panel, href, useAdoptTyped } from './ui.tsx'
+import { Board, PromotionPicker } from './board.tsx'
 import type { ReactNode } from 'react'
 import type { SquarePair } from '@chess/core'
-import type { PreviewState } from './review-model.ts'
 import type {
   AnswerBoard,
   Mark,
+  PreviewState,
   TrainingAnswer,
   TrainingFilters,
   TrainingItem,
@@ -24,7 +24,7 @@ import type {
   TrainingSettings,
   TrainingSummary,
   TrainingVerdict,
-} from './training-model.ts'
+} from '@chess/view'
 
 /**
  * Training sessions (training D5): the start panel, the board and its panel while answering, the summary after a set,

@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LibraryList, PositionPanel } from './library.tsx'
 import type { ReactNode } from 'react'
-import type { LibraryGameItem } from './library-model.ts'
+import type { LibraryGameItem } from '@chess/view'
 
 afterEach(cleanup)
 

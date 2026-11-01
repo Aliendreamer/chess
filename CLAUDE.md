@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding five apps and two shared libraries:
+An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding five apps and three shared libraries (more planned: OpenSpec `mobile-app`):
 
 - `apps/backend` — .NET 10 API (`Chess.Backend`): FastEndpoints + EF Core/Npgsql, Keycloak PKCE login,
   **server-owned opaque cookie session** (`mp_sid`; tokens never leave the server; logout revokes).
@@ -21,7 +21,11 @@ An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding five apps a
   Windows + Linux installers built locally and published to GitHub Releases by the owner (no CI); macOS as one universal
   .dmg built on a friend's Mac (`nx run desktop:bundle-macos`). See its README.
 - `libs/chess-core` (`@chess/core`) — pure TypeScript chess logic both TS apps use (rules feedback, move tree and PGN,
-  review, Leitner schedule, trainer families, training judge, library import, feed parsers); no React, DOM or router.
+  review, Leitner schedule, trainer families, training judge, library import, feed parsers) and the view shapes
+  (`views.ts`: what the data layers return and the screens take); no React, DOM or router.
+- `libs/chess-view` (`@chess/view`) — React view state with no DOM (OpenSpec `mobile-app` D1): per feature the hooks
+  and the helpers its screens show (`useMoveTree`, `useReview`, `useDrill`, the training session…). The platform's keys
+  and visibility are passed in; `@chess/ui` re-exports it all, with DOM wrappers (`dom.ts`) under the same names.
 - `libs/chess-ui` (`@chess/ui`) — presentational React both apps show (board, move list/tree, review, analysis,
   trainer, training, library, news, settings, the Club tokens and themes in `theme.css`, the Cburnett pieces). Links go
   through `LinkContext`/`AppLink` (the club provides `ClubLink`, the desktop `DesktopLink`); no router imports.

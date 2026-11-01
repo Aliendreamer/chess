@@ -1,0 +1,40 @@
+{
+  "name": "@chess/view",
+  "version": "0.0.0",
+  "private": true,
+  "description": "React view state with no DOM, shared by the club, the desktop app and the mobile app.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "lint": "eslint",
+    "check": "prettier --check ."
+  },
+  "peerDependencies": {
+    "react": ">=19.2.3 <19.3.0"
+  },
+  "devDependencies": {
+    "@tanstack/eslint-config": "0.4.0",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "25.9.2",
+    "@types/react": "19.2.17",
+    "@vitest/coverage-v8": "4.1.8",
+    "eslint": "10.4.1",
+    "jsdom": "29.1.1",
+    "prettier": "3.8.4",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "typescript": "6.0.3",
+    "vitest": "4.1.8"
+  },
+  "dependencies": {
+    "@chess/core": "workspace:*",
+    "chess.js": "1.4.0"
+  }
+}

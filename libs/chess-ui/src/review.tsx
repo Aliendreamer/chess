@@ -1,6 +1,6 @@
+import { advantageText, bookLink, graphPoints, moveLabel, scoreLabel } from '@chess/view'
 import { AppLink, Button, ErrorText, Panel, href } from './ui.tsx'
-import { advantageText, bookLink, graphPoints, moveLabel, scoreLabel } from './review-model.ts'
-import type { PreviewState, ReviewView } from './review-model.ts'
+import type { PreviewState, ReviewView } from '@chess/view'
 import type { MoveClass, ReviewCounts, ReviewedMove } from '@chess/core'
 
 /**

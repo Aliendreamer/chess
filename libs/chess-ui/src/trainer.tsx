@@ -1,7 +1,7 @@
 import { STANDARD_START, groupFamilies, legalTargets, uciSquares } from '@chess/core'
+import { lineState, lineText, movesText, sanAt, studyLineLabel } from '@chess/view'
 import { AppLink, Button, Panel, href } from './ui.tsx'
 import { Board, PromotionPicker } from './board.tsx'
-import { lineState, lineText, movesText, sanAt, studyLineLabel } from './trainer-model.ts'
 import type { ReactNode } from 'react'
 import type {
   Drill,
@@ -12,7 +12,7 @@ import type {
   TrainedFamily,
   TrainerColor,
   TrainerLine,
-} from './trainer-model.ts'
+} from '@chess/view'
 
 /**
  * The opening trainer (opening-trainer): families with their progress, the drill's feedback, a family's lines, and the

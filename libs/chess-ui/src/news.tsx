@@ -1,6 +1,6 @@
+import { ageText, hostOf, timeControlLabel } from '@chess/view'
 import { AppLink, Panel, href } from './ui.tsx'
-import { ageText, hostOf, timeControlLabel } from './news-model.ts'
-import type { ChessEvent, NewsItem, NewsSource } from './news-model.ts'
+import type { ChessEvent, NewsItem, NewsSource } from '@chess/view'
 
 /**
  * Chess news and the tournaments being played (chess-news): headlines that open the article on its own site, and

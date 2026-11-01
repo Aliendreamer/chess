@@ -16,7 +16,7 @@ import type {
   TrainingSettings,
   TrainingSummary,
   TrainingVerdict,
-} from './training-model.ts'
+} from '@chess/view'
 
 afterEach(cleanup)
 

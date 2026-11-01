@@ -1,4 +1,4 @@
-export type { NewsItem, NewsSource, ChessEvent } from '@chess/core'
+export type { NewsItem, NewsSource, ChessEvent } from "@chess/core";
 
 /**
  * Chess news and the tournaments being played now (chess-news): the API's shapes and how they read. Client-safe; the
@@ -7,31 +7,31 @@ export type { NewsItem, NewsSource, ChessEvent } from '@chess/core'
 
 /** "just now", "45 min ago", "5 h ago", "2 days ago". */
 export function ageText(iso: string, nowMs: number): string {
-  const minutes = Math.max(0, Math.floor((nowMs - Date.parse(iso)) / 60_000))
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes} min ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} h ago`
-  const days = Math.floor(hours / 24)
-  return days === 1 ? '1 day ago' : `${days} days ago`
+  const minutes = Math.max(0, Math.floor((nowMs - Date.parse(iso)) / 60_000));
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? "1 day ago" : `${days} days ago`;
 }
 
 /** The site a link leads to, for "opens en.chessbase.com". */
 export function hostOf(url: string): string {
   try {
-    return new URL(url).host
+    return new URL(url).host;
   } catch {
-    return ''
+    return "";
   }
 }
 
 const TIME_CONTROLS: Record<string, string> = {
-  standard: 'Classical',
-  rapid: 'Rapid',
-  blitz: 'Blitz',
-}
+  standard: "Classical",
+  rapid: "Rapid",
+  blitz: "Blitz",
+};
 
 /** lichess's `fideTC` in the club's words. */
 export function timeControlLabel(fideTc: string | null): string {
-  return fideTc ? (TIME_CONTROLS[fideTc] ?? fideTc) : ''
+  return fideTc ? (TIME_CONTROLS[fideTc] ?? fideTc) : "";
 }

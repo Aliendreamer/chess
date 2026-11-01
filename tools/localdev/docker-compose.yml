@@ -472,6 +472,7 @@ services:
       - /app/apps/frontend/otel/node_modules
       - /app/libs/chess-core/node_modules
       - /app/libs/chess-ui/node_modules
+      - /app/libs/chess-view/node_modules
     extra_hosts:
       - "keycloak.chess.localhost:host-gateway"
     depends_on:

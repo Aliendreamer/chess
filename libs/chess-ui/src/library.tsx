@@ -1,18 +1,13 @@
 import { playMove, scoreShare } from '@chess/core'
-import { AppLink, Chip, Panel, href } from './ui.tsx'
 import {
   BROADCAST_POSITION_MOVES,
   BROADCAST_SOURCE,
   LIBRARY_SOURCES,
   creditsFor,
   lichessUrl,
-} from './library-model.ts'
-import type {
-  ExplorerMove,
-  LibraryGameItem,
-  LibraryPosition,
-  LibrarySource,
-} from './library-model.ts'
+} from '@chess/view'
+import { AppLink, Chip, Panel, href } from './ui.tsx'
+import type { ExplorerMove, LibraryGameItem, LibraryPosition, LibrarySource } from '@chess/view'
 
 /**
  * The game library (game-library): search results, and the games at the analysis board's position. Every game opens

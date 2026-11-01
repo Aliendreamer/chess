@@ -10,7 +10,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
 - [x] 1.2 Move the view shapes (types) from `@chess/ui`'s `<feature>-model.ts` files into `@chess/core`
       (`views.ts`). `@chess/ui` re-exports them, so no importer changes yet.
       Test first: a type test in `libs/chess-core` importing `ReviewView` fails to compile.
-- [ ] 1.3 Create `libs/chess-view` (`@chess/view`): Nx project, pnpm package, vitest, ESLint ban on
+- [x] 1.3 Create `libs/chess-view` (`@chess/view`): Nx project, pnpm package, vitest, ESLint ban on
       `react-dom`/router/Tauri/React Native, and a tsconfig without the DOM lib. Move the hooks from
       `<feature>-model.ts` and `analysis.ts`, with `useKeys`/`isVisible` passed in (D1). Set the `react` peer range
       to `>=19.2.3 <19.3.0` here and in `@chess/ui` (D3).

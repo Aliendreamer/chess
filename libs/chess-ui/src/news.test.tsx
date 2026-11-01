@@ -2,7 +2,7 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EventsNow, NewsColumns, NewsGrid, NewsList } from './news.tsx'
 import type { ReactNode } from 'react'
-import type { ChessEvent, NewsItem } from './news-model.ts'
+import type { ChessEvent, NewsItem } from '@chess/view'
 
 afterEach(cleanup)
 
