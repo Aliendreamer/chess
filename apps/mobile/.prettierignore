@@ -4,3 +4,4 @@ dist/
 android/
 ios/
 modules/stockfish/vendor/
+build/

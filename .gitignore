@@ -72,6 +72,7 @@ apps/mobile/android/
 apps/mobile/ios/
 apps/mobile/.expo/
 apps/mobile/dist/
+apps/mobile/build/
 apps/mobile/expo-env.d.ts
 apps/mobile/modules/stockfish/vendor/
 *.jks

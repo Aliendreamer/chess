@@ -8,12 +8,18 @@
     "start": {
       "executor": "nx:run-commands",
       "cache": false,
-      "options": { "cwd": "apps/mobile", "command": "pnpm start" }
+      "options": {
+        "cwd": "apps/mobile",
+        "command": "pnpm start"
+      }
     },
     "android": {
       "executor": "nx:run-commands",
       "cache": false,
-      "options": { "cwd": "apps/mobile", "command": "pnpm android" }
+      "options": {
+        "cwd": "apps/mobile",
+        "command": "pnpm android"
+      }
     },
     "build": {
       "executor": "nx:run-commands",
@@ -25,7 +31,10 @@
     },
     "test": {
       "executor": "nx:run-commands",
-      "options": { "cwd": "apps/mobile", "command": "pnpm test" }
+      "options": {
+        "cwd": "apps/mobile",
+        "command": "pnpm test"
+      }
     },
     "lint": {
       "executor": "nx:run-commands",
@@ -39,6 +48,14 @@
           "pnpm expo:doctor"
         ],
         "parallel": false
+      }
+    },
+    "apk": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "apps/mobile",
+        "command": "scripts/build-android.sh development"
       }
     }
   }

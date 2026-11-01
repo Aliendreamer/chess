@@ -13,7 +13,9 @@
     "check": "prettier --check .",
     "test": "jest",
     "check:pins": "node scripts/check-pins.js",
-    "expo:doctor": "node scripts/expo-doctor.js"
+    "expo:doctor": "node scripts/expo-doctor.js",
+    "doctor:android": "node scripts/doctor-android.js",
+    "build:development": "scripts/build-android.sh development"
   },
   "dependencies": {
     "@chess/core": "workspace:*",
