@@ -4,7 +4,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
 
 ## 1. Library split (desktop and club unchanged)
 
-- [ ] 1.1 Add scope `mobile` to commitlint and `openspec/config.yaml`. Add `apps/mobile/{android,ios}`,
+- [x] 1.1 Add scope `mobile` to commitlint and `openspec/config.yaml`. Add `apps/mobile/{android,ios}`,
       `apps/mobile/modules/stockfish/vendor/` and `*.jks`/`*.keystore` to `.gitignore`.
       Test first: `echo "feat(mobile): x" | pnpm commitlint` fails with `scope-enum`.
 - [ ] 1.2 Move the view shapes (types) from `@chess/ui`'s `<feature>-model.ts` files into `@chess/core`

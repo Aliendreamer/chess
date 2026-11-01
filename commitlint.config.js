@@ -14,6 +14,7 @@ export default {
         "backend",
         "engine",
         "desktop",
+        "mobile",
         "libs",
         "repo",
         "deps",
