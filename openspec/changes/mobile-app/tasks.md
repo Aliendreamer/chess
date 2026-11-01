@@ -153,7 +153,11 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       (Done as: `src/screens/library.tsx` at `/analyse/library`, import through the picker, search by player, event
       and years; a game opens on the analysis board, whose "In the library" is the explorer and whose opening name is
       the openings, as on desktop.)
-- [ ] 5.10 News and tournaments, Settings (incl. the miner switch), About (licences, source link), Backup.
+- [x] 5.10 News and tournaments, Settings (incl. the miner switch), About (licences, source link), Backup.
+      (Done as: `src/screens/news.tsx` (headlines and events open in the browser) and `src/screens/more.tsx`: Settings
+      with a preview board, the miner off until switched on (D8); Backup through the share sheet and the picker, a
+      restore confirmed first; About with the GPLv3, the source at the `mobile@<version>` tag and every licence,
+      the icons' and fonts' too.)
 - [ ] 5.11 Write the manual smoke list in `apps/mobile/README.md`. **[human]** Run it on an Android phone.
 
 ## 6. Release
