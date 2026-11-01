@@ -113,7 +113,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
 
 ## 5. Screens
 
-- [ ] 5.1 **[human]** Mockups of the tab layout (D5), the game screen, analysis and the trainer, shown to the owner.
+- [x] 5.1 **[human]** Mockups of the tab layout (D5), the game screen, analysis and the trainer, shown to the owner.
       Adjust D5 with the owner's answers before 5.3.
 - [ ] 5.2 Tokens (`src/theme/tokens.ts`) with the drift test against `theme.css`, the primitives (buttons, rows,
       sheets, empty states), the Cburnett pieces as SVG components, and `MobileLink` for `LinkContext`.

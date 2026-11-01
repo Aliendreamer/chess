@@ -107,7 +107,7 @@ Identity: name "Chess", `io.github.aliendreamer.chess` (as desktop), scheme `che
 
 ### D5. Navigation
 
-These are the agent's calls; the owner reviews them on the mockups before task 5.
+The agent proposed these; the owner approved them on the mockups (task 5.1, 2026-11-01).
 
 - Expo Router with a bottom tab bar of five tabs:
   - **Play:** home, new game, game list, and the game screen.
@@ -119,6 +119,11 @@ These are the agent's calls; the owner reviews them on the mockups before task 5
   shared code (`LinkContext` → `MobileLink`) maps one to one.
 - A game in play takes the full screen, with the board edge to edge on the phone's width and the move list and
   controls below it.
+- The game's moves wrap as text under the board (not one line scrolled sideways); take back, offer draw, resign and
+  flip sit at the bottom, Save PGN in the ⋯ menu.
+- The analysis board's evaluation bar is horizontal, above the board, so the board keeps the full width; the opening
+  name and "In the library" go above it, the engine's three lines and the move tree below.
+- The trainer shows Learn/Test as a switch above the board, the line count and Leitner box beside "White to play".
 
 ### D6. Stockfish 19 compiled into the app: a local Expo module
 
@@ -378,4 +383,4 @@ The refactor rolls back by revert. A bad mobile release is replaced by the next 
 
 ## Open Questions
 
-None blocking. The owner reviews the D5 navigation on mockups before the screens are built (task 5.1).
+None blocking. The owner approved the D5 navigation on the mockups (task 5.1).
