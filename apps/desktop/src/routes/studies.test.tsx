@@ -75,4 +75,25 @@ describe('studies (desktop-app)', () => {
     await screen.findByRole('button', { name: 'Saved' })
     expect(await getSetting(s.db, DRAFTS.study(id), null)).toBeNull()
   })
+
+  it('stays on a move made the main line, so Delete move deletes that one', async () => {
+    const s = await app()
+    const { created } = await createStudies(s.db, [
+      { title: 'Mine', startFen: STANDARD_START, tree: [] },
+    ])
+    const { container } = await renderApp(`/studies/${created[0]!.id}`, s)
+    await screen.findByLabelText('Title')
+    const click = (name: string) =>
+      fireEvent.click(container.querySelector(`[data-square="${name}"]`) as Element)
+    click('e2')
+    click('e4')
+    fireEvent.click(screen.getByRole('button', { name: 'Start' }))
+    click('d2')
+    click('d4')
+    fireEvent.click(screen.getByRole('button', { name: 'Make main line' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete move' }))
+    const tree = screen.getByTestId('move-tree').textContent
+    expect(tree).toContain('e4')
+    expect(tree).not.toContain('d4')
+  })
 })

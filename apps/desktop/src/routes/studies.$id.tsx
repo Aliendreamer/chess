@@ -92,7 +92,11 @@ function Study({ loaded, draft }: { loaded: StudyView; draft: StudyDraft | null 
       <div className="flex flex-wrap gap-2">
         <Button
           disabled={!current || !hasVariations}
-          onClick={() => editor.setTree(promote(tree, path))}
+          onClick={() => {
+            // The move goes first among its siblings; the board stays on it.
+            editor.setTree(promote(tree, path))
+            editor.setPath([...path.slice(0, -1), 0])
+          }}
         >
           Make main line
         </Button>
