@@ -1,0 +1,45 @@
+{
+  "name": "mobile",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/mobile/src",
+  "tags": ["scope:mobile", "lang:ts"],
+  "targets": {
+    "start": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": { "cwd": "apps/mobile", "command": "pnpm start" }
+    },
+    "android": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": { "cwd": "apps/mobile", "command": "pnpm android" }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "cwd": "apps/mobile",
+        "command": "EXPO_NO_TELEMETRY=1 CI=1 pnpm exec expo export --platform android --platform ios --output-dir dist"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": { "cwd": "apps/mobile", "command": "pnpm test" }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/mobile",
+        "commands": [
+          "pnpm typecheck",
+          "pnpm lint",
+          "pnpm check",
+          "pnpm check:pins",
+          "pnpm expo:doctor"
+        ],
+        "parallel": false
+      }
+    }
+  }
+}

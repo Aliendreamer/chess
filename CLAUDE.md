@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding five apps and four shared libraries:
+An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding six apps and four shared libraries:
 
 - `apps/backend` — .NET 10 API (`Chess.Backend`): FastEndpoints + EF Core/Npgsql, Keycloak PKCE login,
   **server-owned opaque cookie session** (`mp_sid`; tokens never leave the server; logout revokes).
@@ -20,6 +20,10 @@ An Nx + pnpm monorepo (the `nx-monorepo` workspace skeleton) holding five apps a
   Stockfish (bundled sidecar), analysis, review, studies, trainer, training, library, news; SQLite on the machine.
   Windows + Linux installers built locally and published to GitHub Releases by the owner (no CI); macOS as one universal
   .dmg built on a friend's Mac (`nx run desktop:bundle-macos`). See its README.
+- `apps/mobile` — the same app for phones, in progress (`chess-mobile`, OpenSpec `mobile-app`): Expo SDK 57 + Expo
+  Router + React Native 0.86, set up like the owner's `SpanishGameApp`; the data layer is `@chess/local`, the view
+  state `@chess/view`, Stockfish 19 a local Expo module (to come). Android APK built locally, iOS on a friend's Mac;
+  GPLv3 (Stockfish is linked in).
 - `libs/chess-core` (`@chess/core`) — pure TypeScript chess logic both TS apps use (rules feedback, move tree and PGN,
   review, Leitner schedule, trainer families, training judge, library import, feed parsers) and the view shapes
   (`views.ts`: what the data layers return and the screens take); no React, DOM or router.
@@ -84,7 +88,7 @@ another app depends on:
   conventions, journal outbox, and every feature (games, engine play, members, studies, library, trainer, review,
   training, news, engine analysis) with the endpoints and frontend files that go with it; actor tracing rules.
 - `apps/frontend/CLAUDE.md` — the BFF cookie contract, the live relay, UI tokens, themes, responsive rules, e2e.
-- `apps/desktop/CLAUDE.md`, `apps/engine/CLAUDE.md`, `apps/proxy/CLAUDE.md`.
+- `apps/desktop/CLAUDE.md`, `apps/mobile/CLAUDE.md`, `apps/engine/CLAUDE.md`, `apps/proxy/CLAUDE.md`.
 - `tools/localdev/CLAUDE.md` — verify scripts, data plane, local stack, observability stack.
 
 ## Rules that span apps

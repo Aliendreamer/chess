@@ -41,7 +41,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
 
 ## 2. Expo app scaffold
 
-- [ ] 2.1 Create `apps/mobile` with Expo SDK 57 + Expo Router + RN 0.86 (pins from `SpanishGameApp`):
+- [x] 2.1 Create `apps/mobile` with Expo SDK 57 + Expo Router + RN 0.86 (pins from `SpanishGameApp`):
       `project.json` targets `start`/`android`/`test`/`lint`/`build`, `metro.config.js` with the workspace root in
       `watchFolders`, `check:pins`, `expo-doctor`, jest-expo, `@/` imports, the `src/app` + `src/screens` layout and
       the route-test folder rule. A placeholder screen imports `@chess/core` and `@chess/local`.

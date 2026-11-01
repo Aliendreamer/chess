@@ -1,0 +1,6 @@
+coverage/
+.expo/
+dist/
+android/
+ios/
+modules/stockfish/vendor/
