@@ -1,4 +1,15 @@
-import { fromInput, toInput } from '@chess/core'
+import {
+  STANDARD_START,
+  engineName,
+  fromGame,
+  fromInput,
+  isFen,
+  lineEnd,
+  toInput,
+  uciLine,
+} from '@chess/core'
+import { libraryGame } from './library.ts'
+import { PERSON_NAME, loadGame } from './play.ts'
 import { getSetting, setSetting } from './settings.ts'
 import type { StudyMove, StudyMoveInput, TreePath } from '@chess/core'
 import type { Db } from './db.ts'
@@ -112,4 +123,62 @@ function board(s: Stored): BoardDraft {
     path: s.path,
     ...(s.players ? { players: s.players } : {}),
   }
+}
+
+/** Where the analysis board starts, and why it could not start where it was asked to. */
+export interface AnalysisStart extends BoardDraft {
+  error: string | null
+}
+
+/**
+ * Where the analysis board starts (analysis-board): a library game at a ply, a finished game, a FEN, or else where the
+ * player left it (the draft) or the standard position. A game still in play, a missing one or a bad FEN say why.
+ */
+export async function analysisStart(
+  db: Db,
+  from: {
+    fen?: string | undefined
+    game?: string | undefined
+    library?: string | undefined
+    ply?: number | undefined
+  },
+): Promise<AnalysisStart> {
+  const empty = { startFen: STANDARD_START, tree: [], path: [] }
+  if (from.library) {
+    const found = await libraryGame(db, from.library)
+    if (!found) return { ...empty, error: 'There is no such library game.' }
+    const tree = fromInput(STANDARD_START, uciLine(found.moves))
+    const plies = Math.min(from.ply ?? found.moves.length, found.moves.length)
+    return {
+      startFen: STANDARD_START,
+      tree,
+      path: Array.from({ length: plies }, () => 0),
+      players: { white: found.game.white, black: found.game.black },
+      error: null,
+    }
+  }
+  if (from.game) {
+    const game = await loadGame(db, from.game)
+    if (!game || game.status !== 'ended')
+      return { ...empty, error: 'That game can be analysed once it has ended.' }
+    const engine = engineName(game.level)
+    const tree = fromGame(game.moves)
+    return {
+      startFen: STANDARD_START,
+      tree,
+      path: lineEnd(tree, []),
+      players: {
+        white: game.personColor === 'white' ? PERSON_NAME : engine,
+        black: game.personColor === 'black' ? PERSON_NAME : engine,
+      },
+      error: null,
+    }
+  }
+  if (from.fen === undefined) {
+    const draft = await loadBoardDraft(db)
+    if (draft) return { ...draft, path: [...draft.path], error: null }
+  }
+  if (from.fen !== undefined && !isFen(from.fen))
+    return { ...empty, error: 'That is not a legal position.' }
+  return { ...empty, startFen: from.fen ?? STANDARD_START, error: null }
 }

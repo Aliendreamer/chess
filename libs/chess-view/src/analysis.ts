@@ -82,3 +82,20 @@ export function useAnalysis(
     error,
   }
 }
+
+/** How long a position must stay on the board before the engine is asked: stepping through a game asks only once. */
+const SETTLE_MS = 300
+
+/**
+ * Asks the engine for the position on the board once it settles, and again when the think time changes. Positions
+ * already known answer from the shared cache, so stepping back and forth costs nothing. `enabled` false asks nothing.
+ */
+export function useAutoEvaluate(analysis: Analysis, fen: string, enabled = true) {
+  const ask = useRef(analysis.analyse)
+  ask.current = analysis.analyse
+  useEffect(() => {
+    if (!enabled) return
+    const timer = setTimeout(() => ask.current(fen), SETTLE_MS)
+    return () => clearTimeout(timer)
+  }, [fen, analysis.think, enabled])
+}

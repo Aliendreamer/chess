@@ -2,9 +2,7 @@ import { use, useEffect, useState } from 'react'
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import {
   STANDARD_START,
-  engineName,
   fenAt,
-  fromGame,
   fromInput,
   isFen,
   lineEnd,
@@ -12,7 +10,6 @@ import {
   playMove,
   positionKey,
   toInput,
-  uciLine,
 } from '@chess/core'
 import {
   AnalysisBoard,
@@ -32,27 +29,16 @@ import {
 } from '@chess/ui'
 import {
   DRAFTS,
-  PERSON_NAME,
+  analysisStart,
   createStudies,
   draftWriter,
-  libraryGame,
   libraryPosition,
-  loadBoardDraft,
-  loadGame,
   openingNames,
   updatePreferences,
 } from '@chess/local'
-import type { AppServices } from '#/lib/app'
+import type { AnalysisStart } from '@chess/local'
 import type { EvaluationShown } from '@chess/ui'
 import type { ParsedGame, StudyMove } from '@chess/core'
-
-interface Start {
-  startFen: string
-  tree: Array<StudyMove>
-  path?: Array<number>
-  players?: { white: string; black: string }
-  error: string | null
-}
 
 /**
  * The analysis board (analysis-board, desktop-app): any position or game with the move tree and the bundled engine,
@@ -71,63 +57,9 @@ export const Route = createFileRoute('/analysis')({
       : {}),
   }),
   loaderDeps: ({ search: { fen, game, library, ply } }) => ({ fen, game, library, ply }),
-  loader: ({ context: { app }, deps }) => startOf(app, deps),
+  loader: ({ context: { app }, deps }) => analysisStart(app.db, deps),
   component: AnalysisPage,
 })
-
-/** Where the board starts: a library game, a finished game, a FEN, or the standard position. */
-async function startOf(
-  app: AppServices,
-  deps: {
-    fen?: string | undefined
-    game?: string | undefined
-    library?: string | undefined
-    ply?: number | undefined
-  },
-): Promise<Start> {
-  {
-    if (deps.library) {
-      const found = await libraryGame(app.db, deps.library)
-      if (!found)
-        return { startFen: STANDARD_START, tree: [], error: 'There is no such library game.' }
-      const tree = fromInput(STANDARD_START, uciLine(found.moves))
-      const plies = Math.min(deps.ply ?? found.moves.length, found.moves.length)
-      return {
-        startFen: STANDARD_START,
-        tree,
-        path: Array.from({ length: plies }, () => 0),
-        players: { white: found.game.white, black: found.game.black },
-        error: null,
-      }
-    }
-    if (deps.game) {
-      const game = await loadGame(app.db, deps.game)
-      if (!game || game.status !== 'ended')
-        return {
-          startFen: STANDARD_START,
-          tree: [],
-          error: 'That game can be analysed once it has ended.',
-        }
-      const engine = engineName(game.level)
-      return {
-        startFen: STANDARD_START,
-        tree: fromGame(game.moves),
-        players: {
-          white: game.personColor === 'white' ? PERSON_NAME : engine,
-          black: game.personColor === 'black' ? PERSON_NAME : engine,
-        },
-        error: null,
-      }
-    }
-    if (deps.fen === undefined) {
-      const draft = await loadBoardDraft(app.db)
-      if (draft) return { ...draft, path: [...draft.path], error: null }
-    }
-    if (deps.fen !== undefined && !isFen(deps.fen))
-      return { startFen: STANDARD_START, tree: [], error: 'That is not a legal position.' }
-    return { startFen: deps.fen ?? STANDARD_START, tree: [], error: null }
-  }
-}
 
 function AnalysisPage() {
   const start = Route.useLoaderData()
@@ -140,7 +72,7 @@ function AnalysisPage() {
   )
 }
 
-function Analysis({ start }: { start: Start }) {
+function Analysis({ start }: { start: AnalysisStart }) {
   const { app } = Route.useRouteContext()
   // The evaluation bar and the best moves (the preferences' analysis switches, both on by default).
   const prefs = use(PreferencesContext)
@@ -155,7 +87,7 @@ function Analysis({ start }: { start: Start }) {
       router.invalidate(),
     )
   }
-  const editor = useMoveTree(start.startFen, start.tree, start.path ?? lineEnd(start.tree, []))
+  const editor = useMoveTree(start.startFen, start.tree, start.path)
   // The line's positions (start excluded) name the opening.
   const keys = editor.path.map((_, i) =>
     positionKey(fenAt(editor.startFen, editor.tree, editor.path.slice(0, i + 1))),
