@@ -306,7 +306,7 @@ crash closes the app and nothing can show a dialog at that moment. The handling 
 
 - **The request marker.** Before passing a `go` line to Stockfish, the bridge writes `engine-request.json`. Its
   content was set by the last `send("# request {json}")`, a comment line the bridge keeps and never passes to
-  Stockfish. It holds the kind (game / board / judgement / review / miner), the FEN and the game id for a game move.
+  Stockfish. It holds the kind (game / board / judgement / review / miner) and the FEN; a game move's game is the one in play.
   The bridge deletes the file when `bestmove` arrives. The scheduler sends the comment before each `go`.
 - **The signal handler.** It is installed by `start()` for `SIGSEGV`, `SIGABRT`, `SIGILL`, `SIGBUS` and `SIGFPE`.
   When a signal arrives **on the engine thread**, it writes `engine-crash.json` with the signal, the time and the
