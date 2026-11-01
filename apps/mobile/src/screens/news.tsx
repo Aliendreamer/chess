@@ -21,15 +21,18 @@ export function NewsScreen() {
   const { db } = useServices()
   const { colors } = useTheme()
   const [source, setSource] = useState<string | null>(null)
-  const [read, setRead] = useState<{ items: Array<NewsItem>; events: Array<ChessEvent> } | null>(
-    null,
-  )
+  const [read, setRead] = useState<{
+    items: Array<NewsItem>
+    events: Array<ChessEvent>
+    /** When it was read: the ages are counted from then. */
+    at: number
+  } | null>(null)
 
   useFocusEffect(
     useCallback(() => {
       let live = true
       void Promise.all([latestNews(db, SHOWN, source ?? undefined), currentEvents(db, 5)]).then(
-        ([items, events]) => live && setRead({ items, events }),
+        ([items, events]) => live && setRead({ items, events, at: Date.now() }),
       )
       return () => {
         live = false
@@ -37,7 +40,6 @@ export function NewsScreen() {
     }, [db, source]),
   )
 
-  const now = Date.now()
   return (
     <Screen title="News">
       <Text style={[styles.small, { color: colors.fgSecondary }]}>
@@ -108,7 +110,7 @@ export function NewsScreen() {
                 {n.title}
               </ExternalLink>
               <Text style={[styles.xs, { color: colors.fgSecondary }]}>
-                {`${n.sourceName} · ${ageText(n.publishedAt, now)}`}
+                {`${n.sourceName} · ${ageText(n.publishedAt, read.at)}`}
               </Text>
             </View>
           ))}

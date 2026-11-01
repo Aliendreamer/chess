@@ -199,7 +199,7 @@ export function SettingsScreen() {
       <Section title="Training">
         <View style={styles.inset}>
           <Text style={[styles.small, { color: colors.fgSecondary }]}>
-            The app can look for critical moments in your library's games while it is open and the
+            The app can look for critical moments in your library’s games while it is open and the
             engine is free. It keeps a processor core busy, so it is off until you turn it on.
           </Text>
           {miner === null ? null : (
@@ -293,7 +293,7 @@ export function BackupScreen() {
       {working.error ? <ErrorLine text={working.error} /> : null}
       <Sheet visible={confirming} title="Restore a backup?" onClose={() => setConfirming(false)}>
         <Text style={[styles.small, { color: colors.fgPrimary }]}>
-          This replaces all your data with the backup's. Your current data is kept aside first. Pick
+          This replaces all your data with the backup’s. Your current data is kept aside first. Pick
           the file next.
         </Text>
         <Button label="Replace my data" kind="primary" onPress={() => void restore()} />
@@ -334,7 +334,7 @@ export function AboutScreen() {
         <Text style={p}>
           <Text style={styles.strong}>Stockfish 19</Text>, the unmodified official source, compiled
           into the app, under the GNU General Public License v3; its licence (Copying.txt) and
-          authors ship with the app's source:{' '}
+          authors ship with the app’s source:{' '}
           <ExternalLink url="https://github.com/official-stockfish/Stockfish/tree/sf_19">
             github.com/official-stockfish/Stockfish
           </ExternalLink>
@@ -345,7 +345,7 @@ export function AboutScreen() {
           (Wikimedia Commons), under the 3-clause BSD licence.
         </Text>
         <Text style={p}>
-          The opening names come from lichess's{' '}
+          The opening names come from lichess’s{' '}
           <ExternalLink url="https://github.com/lichess-org/chess-openings">
             chess-openings
           </ExternalLink>{' '}
@@ -365,13 +365,13 @@ export function AboutScreen() {
           .
         </Text>
         <Text style={p}>
-          The tab icons are <ExternalLink url="https://lucide.dev">Lucide</ExternalLink>'s, under
+          The tab icons are <ExternalLink url="https://lucide.dev">Lucide</ExternalLink>’s, under
           the ISC licence. The fonts are <Text style={styles.strong}>IBM Plex</Text> Sans and Mono
           and <Text style={styles.strong}>Newsreader</Text>, under the SIL Open Font License 1.1.
         </Text>
         <Text style={p}>
           News headlines link to their publishers: FIDE, ChessBase, Lichess and The Week in Chess;
-          the tournaments come from lichess's broadcast list.
+          the tournaments come from lichess’s broadcast list.
         </Text>
       </View>
     </Screen>
