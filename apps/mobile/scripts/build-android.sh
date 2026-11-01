@@ -12,6 +12,10 @@ case "$profile" in
 esac
 
 cd "$(dirname "$0")/.."
+
+# The whole build's output also goes to build/<profile>.log, to read or hand over when it fails.
+mkdir -p build
+exec > >(tee "build/$profile.log") 2>&1
 node scripts/doctor-android.js >/dev/null || { node scripts/doctor-android.js; exit 1; }
 
 # Gradle reads the app config outside Expo CLI, which normally sets NODE_ENV.
@@ -23,6 +27,5 @@ node ../../tools/mobile/fetch-stockfish-src.mjs
 pnpm exec expo prebuild --platform android --clean --no-install
 (cd android && ./gradlew "$task")
 
-mkdir -p build
 cp "android/$artifact" "build/$profile.apk"
 echo "Built apps/mobile/build/$profile.apk"

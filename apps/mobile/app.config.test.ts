@@ -17,3 +17,11 @@ test('the app takes its version from package.json, which Nx Release writes', () 
   expect(config.android?.package).toBe('io.github.aliendreamer.chess')
   expect(config.ios?.bundleIdentifier).toBe('io.github.aliendreamer.chess')
 })
+
+test('Android builds 64-bit only: Stockfish 19 needs __int128, which 32-bit ABIs lack', () => {
+  const config = appConfig({ config: {} } as never)
+  const buildProperties = config.plugins?.find(
+    (plugin) => Array.isArray(plugin) && plugin[0] === 'expo-build-properties',
+  ) as [string, { android: { buildArchs: Array<string> } }]
+  expect(buildProperties[1].android.buildArchs).toEqual(['arm64-v8a', 'x86_64'])
+})

@@ -62,7 +62,17 @@ export default function appConfig({ config }: ConfigContext): ExpoConfig {
           ],
         },
       ],
-      ['expo-build-properties', { android: { compileSdkVersion: 36, targetSdkVersion: 36 } }],
+      // 64-bit only: Stockfish 19 uses __int128, which 32-bit ABIs lack; arm64-v8a is phones, x86_64 the emulator.
+      [
+        'expo-build-properties',
+        {
+          android: {
+            compileSdkVersion: 36,
+            targetSdkVersion: 36,
+            buildArchs: ['arm64-v8a', 'x86_64'],
+          },
+        },
+      ],
     ],
     experiments: { typedRoutes: true },
   }
