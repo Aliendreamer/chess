@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { ANIMATIONS, DEFAULT_PREFERENCES, animationMs, isPreferences, withDefaults } from '@chess/core'
+import {
+  ANIMATIONS,
+  DEFAULT_PREFERENCES,
+  animationMs,
+  isPreferences,
+  withDefaults,
+} from '@chess/core'
 import { LOGIN_HREF, LOGOUT_HREF, loginHref } from './auth'
 
 describe('session hrefs', () => {
