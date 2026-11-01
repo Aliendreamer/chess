@@ -123,11 +123,16 @@ export class UciEngine {
   }
 
   /**
-   * Tells the native bridge what the next search is for (mobile-app D13): a comment line it keeps for the crash
-   * record and never passes to Stockfish.
+   * A comment line for the native bridge (mobile-app D13): `# <text>`, which it keeps for itself and never passes to
+   * Stockfish (`request {json}` for the crash record; `crash-test` in development builds).
    */
+  note(text: string): Promise<void> {
+    return this.channel.write(`# ${text}`)
+  }
+
+  /** Tells the native bridge what the next search is for: kept for the crash record if the search crashes. */
   mark(request: { kind: string; fen: string }): Promise<void> {
-    return this.channel.write(`# request ${JSON.stringify(request)}`)
+    return this.note(`request ${JSON.stringify(request)}`)
   }
 
   /** Ends the search in progress: the engine answers `bestmove` at once with what it has. */

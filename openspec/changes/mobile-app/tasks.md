@@ -101,7 +101,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
       news timers) and hook `AppState` to `hold`/`resume` (D8).
       Test first: `app.test.ts` sends `AppState` → `background` and expects `hold()` on the scheduler and a stopped
       news timer, and fails.
-- [ ] 4.4 Start-up crash recovery: read and remove `engine-crash.json`/`engine-request.json` before the engine starts,
+- [x] 4.4 Start-up crash recovery: read and remove `engine-crash.json`/`engine-request.json` before the engine starts,
       then show the D13 notice with _Share a report_ (versions, phone model and OS, signal, FEN, through the share
       sheet), the game screen's _Try again_ / _Take back my last move_, and the analysis board opening its draft with the
       engine off. Show the `stuck` message on every engine feature.

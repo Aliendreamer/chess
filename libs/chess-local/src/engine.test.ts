@@ -271,6 +271,13 @@ describe('the engine scheduler (desktop-app D5, mobile-app D7)', () => {
     expect(fake.searches()).toBe(3) // the board, stopped; the board again; the review
   })
 
+  it('writes the bridge’s own comment lines, which Stockfish never sees', async () => {
+    const fake = fakeEngine()
+    const engine = new UciEngine(fake.channel)
+    await engine.note('crash-test')
+    expect(fake.sent).toEqual(['# crash-test'])
+  })
+
   it('marks each search with its request when asked to, for the crash record', async () => {
     const fake = fakeEngine({ searchMs: 10 })
     const scheduler = new EngineScheduler({ analysis: supervisor(fake) }, { markRequests: true })

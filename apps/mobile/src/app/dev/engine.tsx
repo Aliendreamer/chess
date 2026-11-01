@@ -1,11 +1,17 @@
-import { useState } from 'react'
 import { Redirect } from 'expo-router'
+import { STANDARD_START, findLevel } from '@chess/core'
+import { useServices } from '@/lib/services-context'
 import { EngineSmoke } from '@/screens/engine-smoke'
-import { nativeChannel, takeCrashFiles } from '@/platform/engine'
 
-/** The engine check, in development builds only (mobile-app task 3.4). */
+/** The engine check, in development builds only (mobile-app task 3.4), on the app's one Stockfish. */
 export default function EngineCheck() {
-  const [left] = useState(() => (__DEV__ ? takeCrashFiles() : { crash: null, marker: null }))
+  const services = useServices()
   if (!__DEV__) return <Redirect href="/" />
-  return <EngineSmoke open={() => nativeChannel()} left={left} />
+  return (
+    <EngineSmoke
+      left={services.crash}
+      bestMove={() => services.player.bestMove(STANDARD_START, findLevel('max')!, 1000)}
+      crashTest={() => services.engine.run((engine) => engine.note('crash-test'))}
+    />
+  )
 }
