@@ -57,10 +57,10 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
 
 ## 3. Stockfish module
 
-- [x] 3.1 `tools/mobile/fetch-stockfish-src.mjs` + `stockfish.json` (`sf_19` source archive and both nets, SHA-256
+- [x] 3.1 `tools/mobile/fetch-stockfish-src.mjs` + `stockfish.json` (`sf_19` source archive and its one net, SHA-256
       each) → `modules/stockfish/vendor/`, refusing a mismatch.
       Test first: `fetch-stockfish-src.test.mjs` with a wrong hash expects a rejection and no files written.
-- [ ] 3.2 C++ bridge (`cpp/bridge.cpp`), with Stockfish's own sources unmodified:
+- [x] 3.2 C++ bridge (`cpp/bridge.cpp`), with Stockfish's own sources unmodified:
   - the UCI loop on its own thread, with `cin`/`cout` stream buffers swapped;
   - `start`, `send` and `quit`;
   - the coalescing batcher: last `info` per `multipv`, and any other line flushes at once (D6).
@@ -69,7 +69,7 @@ with a Mac) runs, with the command that proves it: a phone, Gradle outside the s
   MultiPV 3 and `go depth 12`, it expects `bestmove` as the last line of its batch, and at most one `info` per
   `multipv` per batch. It fails until the bridge exists.
 
-- [ ] 3.3 The bridge's crash record (D13):
+- [x] 3.3 The bridge's crash record (D13):
   - `# request {json}` kept and never passed to Stockfish;
   - `engine-request.json` written on `go` and removed on `bestmove`;
   - the chained signal handler writing `engine-crash.json` only for a signal on the engine thread, then re-raising.

@@ -57,6 +57,14 @@
         "cwd": "apps/mobile",
         "command": "scripts/build-android.sh development"
       }
+    },
+    "test-native": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "command": "tools/mobile/bridge-test.sh"
+      },
+      "inputs": ["{projectRoot}/modules/stockfish/cpp/**/*", "{workspaceRoot}/tools/mobile/**/*"]
     }
   }
 }

@@ -77,3 +77,4 @@ apps/mobile/expo-env.d.ts
 apps/mobile/modules/stockfish/vendor/
 *.jks
 *.keystore
+apps/mobile/modules/stockfish/.host-build/
