@@ -4,6 +4,7 @@
     "modules": ["expo.modules.stockfish.StockfishModule"]
   },
   "apple": {
-    "modules": ["StockfishModule"]
+    "modules": ["StockfishModule"],
+    "podspecPath": "ChessStockfish.podspec"
   }
 }

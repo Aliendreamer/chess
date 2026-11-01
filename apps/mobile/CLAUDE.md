@@ -40,3 +40,7 @@ Inside the agent sandbox run Expo commands with `EXPO_NO_TELEMETRY=1` (telemetry
   crash test is compiled into Debug only. Cross-compiling with the NDK's clang works in the sandbox (Gradle does not).
 - `/dev/engine` (development builds only, linked from home) is the engine check: what the last run left, a move with
   its time, and the crash test.
+- The iOS side: `modules/stockfish/ChessStockfish.podspec` (at the module root: CocoaPods takes no source outside its
+  folder; `expo-module.config.json` points at it), `ios/SFBridge.{h,mm}` (Objective-C++ over the C++ bridge, the only
+  public header) and `ios/StockfishModule.swift`. Not buildable here; a Mac runs `pnpm fetch-stockfish` before
+  `pod install`. Unverified until the friend's first build (task 3.5).
