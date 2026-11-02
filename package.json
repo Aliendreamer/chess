@@ -14,7 +14,7 @@
     "desktop:release": "nx run desktop:start",
     "desktop:bundle": "nx run desktop:bundle",
     "apk": "apps/mobile/scripts/build-android.sh release",
-    "apk:install": "adb install -r apps/mobile/build/release.apk",
+    "apk:install": "adb install -r --user current apps/mobile/build/release.apk",
     "lint:md": "markdownlint-cli2",
     "lint:md:fix": "markdownlint-cli2 --fix",
     "release:dry": "nx release --skip-publish --dry-run",

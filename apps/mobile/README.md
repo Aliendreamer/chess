@@ -24,7 +24,7 @@ version; and whoever has it can sign an APK their phones take as an update. Then
 
 ```bash
 pnpm apk                 # build/release.apk, arm64-v8a only; asks for the keystore password and checks it first
-pnpm apk:install         # adb install -r of it, on the phone adb is connected to (e.g. wireless debugging)
+pnpm apk:install         # adb install of it, on the phone adb is connected to; your own profile only, not Dual Apps
 apksigner verify --print-certs apps/mobile/build/release.apk   # names your certificate, not "Android Debug"
 ```
 
