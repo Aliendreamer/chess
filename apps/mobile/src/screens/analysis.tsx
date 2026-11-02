@@ -74,7 +74,7 @@ export function AnalysisScreen() {
       live = false
     }
   }, [db, fen, game, library, ply, key])
-  if (!start || start.key !== key) return <Screen title="Analysis">{null}</Screen>
+  if (!start || start.key !== key) return <Screen>{null}</Screen>
   // A new starting point starts a new board.
   return <AnalysisBoard key={key} start={start.start} />
 }
@@ -188,29 +188,37 @@ function AnalysisBoard({ start }: { start: AnalysisStart }) {
   }
 
   return (
-    <Screen title="Analysis">
+    <Screen>
+      {/* No page title: two short lines, so the board, its buttons and the lines fit one screen. */}
       <View style={styles.head}>
-        <MobileLink to="/library">Library</MobileLink>
-        <Text style={[styles.small, { color: colors.fgSecondary }]}>
-          {players
-            ? `${players.white} vs ${players.black}`
-            : 'Not kept until you save it as a study.'}
-        </Text>
-        {opening ? (
-          <Text style={[styles.small, { color: colors.fgAccent }]}>
-            {`${opening.eco} ${opening.name}`}
-          </Text>
-        ) : null}
-        {atPosition && atPosition.games > 0 ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setLibraryOpen(true)}
-            style={styles.libraryLine}
+        <View style={styles.headRow}>
+          <Text
+            numberOfLines={1}
+            style={[styles.small, styles.grow, { color: colors.fgSecondary }]}
           >
-            <Text style={[styles.small, { color: colors.fgAccent }]}>
-              {`In the library · ${atPosition.games} ${atPosition.games === 1 ? 'game' : 'games'} ›`}
+            {players
+              ? `${players.white} vs ${players.black}`
+              : 'Not kept until you save it as a study.'}
+          </Text>
+          <MobileLink to="/library">Library</MobileLink>
+        </View>
+        {opening || (atPosition && atPosition.games > 0) ? (
+          <View style={styles.headRow}>
+            <Text numberOfLines={1} style={[styles.small, styles.grow, { color: colors.fgAccent }]}>
+              {opening ? `${opening.eco} ${opening.name}` : ''}
             </Text>
-          </Pressable>
+            {atPosition && atPosition.games > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setLibraryOpen(true)}
+                style={styles.libraryLine}
+              >
+                <Text style={[styles.small, { color: colors.fgAccent }]}>
+                  {`In the library · ${atPosition.games} ${atPosition.games === 1 ? 'game' : 'games'} ›`}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
         ) : null}
       </View>
       {pasteError ? <ErrorLine text={pasteError} /> : null}
@@ -279,7 +287,9 @@ function AnalysisBoard({ start }: { start: AnalysisStart }) {
 }
 
 const styles = StyleSheet.create({
-  head: { gap: 2 },
+  head: { gap: 2, marginBottom: -8 },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  grow: { flex: 1 },
   libraryLine: { minHeight: TOUCH - 12, justifyContent: 'center' },
   start: { padding: 12, gap: 10 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

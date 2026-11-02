@@ -307,6 +307,8 @@ describe('the engine while playing (mobile-app 5.6)', () => {
     })
     const { id } = await createGame(services.db, { level: '1320', color: 'white', thinkSeconds: 5 })
     await open(`/play/games/${id}`)
+    // The switches are in the game's menu: the screen keeps its room for the board and the lines.
+    await fireEvent.press(await screen.findByRole('button', { name: 'More' }))
     const bar = await screen.findByRole('switch', { name: 'Evaluation bar' })
     const lines = screen.getByRole('switch', { name: 'Best moves' })
     expect([bar.props.value, lines.props.value]).toEqual([false, false])
@@ -325,6 +327,7 @@ describe('the engine while playing (mobile-app 5.6)', () => {
       ]),
     )
     // A line plays its first move.
+    await fireEvent.press(screen.getByRole('button', { name: 'Close' }))
     await fireEvent.press(screen.getAllByTestId('engine-line')[1]!)
     await waitFor(() => expect(moves().getByText('d4')).toBeTruthy())
     await waitFor(async () =>

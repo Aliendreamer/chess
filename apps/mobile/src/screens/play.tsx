@@ -54,6 +54,7 @@ import {
   EvalBar,
   EvaluationSwitches,
   MoveNav,
+  NavButton,
   type EvaluationShown,
 } from '@/components/analysis'
 import { Board } from '@/components/board'
@@ -486,15 +487,9 @@ function Game({ loaded }: { loaded: DesktopGame }) {
           name={nameOf(orientation)}
           color={orientation}
           toMove={playing && toMove(game) === orientation}
+          status={status}
         />
         <View style={styles.body}>
-          <Text
-            accessibilityRole="text"
-            testID="game-status"
-            style={[styles.status, { color: colors.fgSecondary }]}
-          >
-            {status ?? ''}
-          </Text>
           <EngineStatus engine={services.engine} />
           {declined ? (
             <Text style={[styles.note, { color: colors.fgPrimary }]}>{declined}</Text>
@@ -515,7 +510,13 @@ function Game({ loaded }: { loaded: DesktopGame }) {
             onPrevious={() => step(shownPly - 1)}
             onNext={() => step(shownPly + 1)}
             onLast={() => setViewPly(null)}
-          />
+          >
+            <NavButton
+              label="Flip board"
+              glyph="⇅"
+              onPress={() => setOrientation(orientation === 'white' ? 'black' : 'white')}
+            />
+          </MoveNav>
           {playing ? null : (
             <GameEnd
               game={game}
@@ -537,55 +538,44 @@ function Game({ loaded }: { loaded: DesktopGame }) {
               onPreview={setPreview}
             />
           ) : null}
-          <View style={styles.commands}>
-            {playing ? (
-              <>
-                <Button
-                  label={backTo === undefined ? 'Take back' : 'Play from here'}
-                  disabled={
-                    command.busy ||
-                    pending !== null ||
-                    (backTo === undefined && lastPersonPly(game) === 0)
-                  }
-                  onPress={() => void back()}
-                />
-                <Button
-                  label="Offer draw"
-                  disabled={command.busy}
-                  onPress={() => void offer('draw')}
-                />
-                <Button
-                  label="Resign"
-                  disabled={command.busy}
-                  onPress={() => setConfirmResign(true)}
-                />
-              </>
-            ) : null}
-            <Button
-              label="Flip board"
-              kind="ghost"
-              onPress={() => setOrientation(orientation === 'white' ? 'black' : 'white')}
-            />
-          </View>
           {playing ? (
-            <EvaluationSwitches
-              shown={shown}
-              onChange={show}
-              note="These ask the Stockfish you play between its moves: it works harder, which costs battery."
-            />
+            <View style={styles.commands}>
+              <Button
+                label={backTo === undefined ? 'Take back' : 'Play from here'}
+                grow
+                disabled={
+                  command.busy ||
+                  pending !== null ||
+                  (backTo === undefined && lastPersonPly(game) === 0)
+                }
+                onPress={() => void back()}
+              />
+              <Button
+                label="Offer draw"
+                grow
+                disabled={command.busy}
+                onPress={() => void offer('draw')}
+              />
+              <Button
+                label="Resign"
+                grow
+                disabled={command.busy}
+                onPress={() => setConfirmResign(true)}
+              />
+            </View>
           ) : null}
         </View>
       </ScrollView>
       <Sheet visible={menu} title="Game" onClose={() => setMenu(false)}>
+        {playing ? (
+          <EvaluationSwitches
+            shown={shown}
+            onChange={show}
+            note="These ask the Stockfish you play between its moves: it works harder, which costs battery."
+          />
+        ) : null}
         {playing ? <Row label="Ask to resign" onPress={() => void offer('resign')} /> : null}
         {game.pgn ? <Row label="Save PGN" onPress={() => void savePgn()} /> : null}
-        <Row
-          label="Flip board"
-          onPress={() => {
-            setMenu(false)
-            setOrientation(orientation === 'white' ? 'black' : 'white')
-          }}
-        />
       </Sheet>
       <Sheet
         visible={confirmResign}
@@ -607,7 +597,7 @@ const inFront = () => AppState.currentState !== 'background'
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  evalBar: { paddingHorizontal: 12, paddingBottom: 6 },
+  evalBar: { paddingHorizontal: 12, paddingBottom: 4 },
   inset: { paddingHorizontal: 14 },
   bar: { flexDirection: 'row', alignItems: 'center', minHeight: TOUCH, paddingHorizontal: 4 },
   barButton: { minWidth: TOUCH, minHeight: TOUCH, alignItems: 'center', justifyContent: 'center' },
@@ -618,8 +608,7 @@ const styles = StyleSheet.create({
     fontSize: TEXT.base.size,
     textAlign: 'center',
   },
-  body: { paddingHorizontal: 16, paddingTop: 8, gap: 12 },
-  status: { minHeight: TEXT.sm.lineHeight, fontFamily: FONTS.sans, fontSize: TEXT.sm.size },
+  body: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
   note: { fontFamily: FONTS.sans, fontSize: TEXT.sm.size, lineHeight: TEXT.sm.lineHeight },
-  commands: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  commands: { flexDirection: 'row', gap: 8 },
 })

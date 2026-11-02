@@ -385,13 +385,13 @@ export function LibraryPanel({
 }
 
 const styles = StyleSheet.create({
-  bar: { height: 20, borderRadius: RADIUS.control, overflow: 'hidden', justifyContent: 'center' },
+  bar: { height: 16, borderRadius: RADIUS.control, overflow: 'hidden', justifyContent: 'center' },
   barScore: { position: 'absolute', fontFamily: FONTS.monoMedium, fontSize: TEXT['2xs'].size },
   lines: { gap: 2, minHeight: TEXT.sm.lineHeight },
   line: {
     flexDirection: 'row',
     gap: 10,
-    minHeight: TOUCH - 8,
+    minHeight: 32,
     alignItems: 'center',
     paddingHorizontal: 4,
     borderRadius: RADIUS.control,

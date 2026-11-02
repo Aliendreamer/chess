@@ -17,7 +17,8 @@ import { Board } from './board'
 /**
  * A board with its move tree and the engine (analysis-board), as the analysis board and a study both show it: the
  * horizontal evaluation bar, the board edge to edge (mobile-app D5), the move buttons and flip, the engine's lines,
- * the tree. Moves played go into the tree. With `shown` the bar and the lines follow the player's switches; without,
+ * the tree, then the think time and the switches. Packed close so the board, the bar, the buttons and the lines fit
+ * one screen. Moves played go into the tree. With `shown` the bar and the lines follow the player's switches; without,
  * the lines always show (a study, as on desktop).
  */
 export function TreeBoard({
@@ -42,10 +43,10 @@ export function TreeBoard({
     return best ? scoreText(best) : null
   }
   return (
-    <>
+    <View style={styles.stack}>
       {bar ? <EvalBar evaluation={evaluation} orientation={editor.orientation} /> : null}
       {/* Edge to edge: the screen's 16pt gutter is given back. */}
-      <View style={styles.bleed}>
+      <View style={[styles.bleed, bar && styles.underBar]}>
         <Board
           fen={fen}
           orientation={editor.orientation}
@@ -66,15 +67,12 @@ export function TreeBoard({
         <NavButton label="Flip board" glyph="⇅" onPress={editor.flip} />
       </MoveNav>
       {lines ? (
-        <View style={styles.engine}>
-          <EngineLines
-            fen={fen}
-            evaluation={evaluation}
-            error={analysis.error}
-            onPlay={editor.playLine}
-          />
-          <ThinkChips analysis={analysis} />
-        </View>
+        <EngineLines
+          fen={fen}
+          evaluation={evaluation}
+          error={analysis.error}
+          onPlay={editor.playLine}
+        />
       ) : null}
       <MoveTree
         tree={tree}
@@ -83,12 +81,14 @@ export function TreeBoard({
         onSelect={editor.setPath}
         scoreOf={scoreOf}
       />
+      {lines ? <ThinkChips analysis={analysis} /> : null}
       {shown && onShown ? <EvaluationSwitches shown={shown} onChange={onShown} /> : null}
-    </>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  stack: { gap: 8 },
   bleed: { marginHorizontal: -16 },
-  engine: { gap: 8 },
+  underBar: { marginTop: -4 },
 })

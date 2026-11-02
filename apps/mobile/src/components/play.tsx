@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useRef } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { ENGINE_LEVELS, THINK_SECONDS, pairMoves, reasonLabel } from '@chess/core'
 import { outcome, resultMark, versus } from '@chess/local'
 import type { ColourChoice, ThinkSeconds } from '@chess/core'
@@ -137,15 +138,20 @@ export function GameRows({
   )
 }
 
-/** A player's line above or below the board: the name and colour, the side to move marked. */
+/**
+ * A player's line above or below the board: the name and colour, the side to move marked, and with `status` the game's
+ * state at its end (the line below the board carries it, so it takes no row of its own).
+ */
 export function PlayerLine({
   name,
   color,
   toMove,
+  status,
 }: {
   name: string
   color: 'white' | 'black'
   toMove: boolean
+  status?: string | null
 }) {
   const { colors } = useTheme()
   return (
@@ -155,13 +161,24 @@ export function PlayerLine({
         {color}
         {toMove ? ' · to move' : ''}
       </Text>
+      {status === undefined ? null : (
+        <Text
+          accessibilityRole="text"
+          testID="game-status"
+          numberOfLines={1}
+          style={[styles.xs, styles.status, { color: colors.fgSecondary }]}
+        >
+          {status ?? ''}
+        </Text>
+      )}
     </View>
   )
 }
 
 /**
- * The game's moves as text that wraps under the board (mobile-app D5), numbered by move; a tap on a move shows the
- * position after it. `viewPly` is the move looked at, or null for the last.
+ * The game's moves on one line under the board that scrolls sideways (mobile-app D5; one row, so the board, the lines
+ * and the buttons fit the screen), numbered by move and kept at the end while the game goes on; a tap on a move shows
+ * the position after it. `viewPly` is the move looked at, or null for the last.
  */
 export function MoveText({
   sans,
@@ -174,8 +191,18 @@ export function MoveText({
 }) {
   const { colors } = useTheme()
   const current = viewPly ?? sans.length
+  const scroller = useRef<ScrollView>(null)
   return (
-    <View testID="move-list" style={styles.moves}>
+    <ScrollView
+      ref={scroller}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      onContentSizeChange={() => {
+        if (viewPly === null) scroller.current?.scrollToEnd({ animated: false })
+      }}
+      testID="move-list"
+      contentContainerStyle={styles.moves}
+    >
       {sans.length === 0 ? (
         <Text style={[styles.small, { color: colors.fgMuted }]}>No moves yet.</Text>
       ) : (
@@ -202,7 +229,7 @@ export function MoveText({
           </View>
         ))
       )}
-    </View>
+    </ScrollView>
   )
 }
 
@@ -267,7 +294,8 @@ const styles = StyleSheet.create({
   mark: { width: 40, fontFamily: FONTS.mono, fontSize: TEXT.sm.size },
   player: { flexDirection: 'row', alignItems: 'baseline', gap: 8, paddingHorizontal: 12 },
   playerName: { fontFamily: FONTS.sansMedium, fontSize: TEXT.base.size },
-  moves: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 10, rowGap: 2 },
+  status: { flex: 1, textAlign: 'right' },
+  moves: { flexDirection: 'row', alignItems: 'center', columnGap: 10 },
   pair: { flexDirection: 'row', alignItems: 'center' },
   number: { fontFamily: FONTS.mono, fontSize: TEXT.sm.size, marginRight: 2 },
   move: { paddingHorizontal: 4, paddingVertical: 6, borderRadius: RADIUS.control },

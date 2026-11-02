@@ -9,17 +9,22 @@ export const TOUCH = 48
 
 type ButtonKind = 'primary' | 'secondary' | 'ghost'
 
-/** A labelled button: `primary` (brass, one per screen), `secondary` (the default) or `ghost` (text only). */
+/**
+ * A labelled button: `primary` (brass, one per screen), `secondary` (the default) or `ghost` (text only). With `grow` it
+ * takes an equal share of its row (a row of commands).
+ */
 export function Button({
   label,
   onPress,
   kind = 'secondary',
   disabled = false,
+  grow = false,
 }: {
   label: string
   onPress: () => void
   kind?: ButtonKind
   disabled?: boolean
+  grow?: boolean
 }) {
   const { colors } = useTheme()
   const look = {
@@ -43,6 +48,7 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
+        grow && styles.grow,
         { backgroundColor: look.backgroundColor, borderColor: look.borderColor },
         (pressed || disabled) && { opacity: disabled ? 0.45 : 0.8 },
       ]}
@@ -247,6 +253,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  grow: { flex: 1, paddingHorizontal: 8 },
   buttonText: { fontFamily: FONTS.sansSemiBold, fontSize: TEXT.base.size },
   chip: {
     minHeight: TOUCH,
