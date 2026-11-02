@@ -1,5 +1,6 @@
 import { createContext, use, useEffect, useState } from 'react'
 import { Text, View } from 'react-native'
+import * as SplashScreen from 'expo-splash-screen'
 import type { ReactNode } from 'react'
 import type { MobileServices } from './services'
 
@@ -13,8 +14,8 @@ export function useServices(): MobileServices {
 }
 
 /**
- * Starts the services once for the whole app and hands them to every screen; until they are ready a quiet "Starting…"
- * (the splash covers most of it), and a failure is said in words rather than a blank screen.
+ * Starts the services once for the whole app and hands them to every screen; until they are ready the splash stays
+ * (the root layout hides it), and a failure is said in words, the splash gone, rather than a blank screen.
  */
 export function ServicesProvider({
   start,
@@ -41,6 +42,9 @@ export function ServicesProvider({
       started?.dispose()
     }
   }, [start])
+  useEffect(() => {
+    if (error) void SplashScreen.hideAsync()
+  }, [error])
   if (error)
     return (
       <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>

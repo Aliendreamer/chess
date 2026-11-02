@@ -1,6 +1,13 @@
 import { join } from 'node:path'
 import { fireEvent, screen } from '@testing-library/react-native'
 import { renderRouter } from 'expo-router/testing-library'
+import * as SplashScreen from 'expo-splash-screen'
+
+jest.mock('expo-splash-screen', () => ({
+  preventAutoHideAsync: jest.fn(() => Promise.resolve(true)),
+  hideAsync: jest.fn(() => Promise.resolve(true)),
+  setOptions: jest.fn(),
+}))
 
 // The real routes and layouts, on services over Node's SQLite instead of the phone's.
 jest.mock('@/lib/app', () => ({
@@ -22,6 +29,15 @@ test('the app opens on Play, under five tabs', async () => {
   expect(router.getPathname()).toBe('/play')
   for (const tab of ['Play', 'Learn', 'Analyse', 'News', 'More'])
     expect(screen.getByLabelText(new RegExp(`^${tab}, tab`))).toBeTruthy()
+})
+
+test('the splash stays until the app is ready, then goes', async () => {
+  // Kept from the moment the app is loaded: no blank "Starting…" between the splash and Play.
+  expect(SplashScreen.preventAutoHideAsync).toHaveBeenCalled()
+  const router = renderRouter(APP, { initialUrl: '/' })
+  await router
+  await screen.findByRole('header', { name: 'Play' })
+  expect(SplashScreen.hideAsync).toHaveBeenCalled()
 })
 
 test('a tab opens its page', async () => {

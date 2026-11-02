@@ -1,7 +1,10 @@
 import { Text } from 'react-native'
 import { render, screen } from '@testing-library/react-native'
+import * as SplashScreen from 'expo-splash-screen'
 import { ServicesProvider, useServices } from './services-context'
 import type { MobileServices } from './services'
+
+jest.mock('expo-splash-screen', () => ({ hideAsync: jest.fn(() => Promise.resolve(true)) }))
 
 function Shows() {
   const { crash } = useServices()
@@ -32,4 +35,6 @@ test('says when the app could not start, instead of a blank screen', async () =>
     </ServicesProvider>,
   )
   expect(await screen.findByText(/newer version of the app/)).toBeTruthy()
+  // The splash would hide it: it goes for the message.
+  expect(SplashScreen.hideAsync).toHaveBeenCalled()
 })
