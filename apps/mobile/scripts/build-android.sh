@@ -9,6 +9,9 @@
 # share android/.
 set -euo pipefail
 
+# Read whole before it runs (the braces): an edit to this file during a build cannot derail the build.
+{
+
 profile="${1:-}"
 case "$profile" in
   development) task=assembleDebug; artifact=app/build/outputs/apk/debug/app-debug.apk ;;
@@ -65,3 +68,5 @@ pnpm exec expo prebuild --platform android --clean --no-install
 
 cp "android/$artifact" "build/$profile.apk"
 echo "Built apps/mobile/build/$profile.apk"
+exit
+}
