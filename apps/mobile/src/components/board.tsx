@@ -126,17 +126,21 @@ export function Board({
   const [dragAt] = useState(() => new Animated.ValueXY())
   const press = useRef<{ square: string; x: number; y: number } | null>(null)
 
+  // The last move slides in, unless it was dropped there by hand or the system asks for less motion. Each position has
+  // a value of its own: with the native driver a shared one stayed tied to the piece slid before, and the next slide
+  // sent that piece back to the square it came from.
+  const reduced = useReducedMotion()
+  const [slide, setSlide] = useState(() => new Animated.Value(1))
+
   // A new position drops what was picked.
   const [seen, setSeen] = useState(fen)
   if (seen !== fen) {
     setSeen(fen)
     setSelected(null)
     setPromotion(null)
+    setSlide(new Animated.Value(1))
   }
 
-  // The last move slides in, unless it was dropped there by hand or the system asks for less motion.
-  const reduced = useReducedMotion()
-  const [slide] = useState(() => new Animated.Value(1))
   const dropped = useRef<string | null>(null)
   const ms = reduced ? 0 : animationMs(preferences.animation)
   const sliding = lastMove && pieces[lastMove.to] ? lastMove : null
@@ -329,7 +333,9 @@ export function Board({
                 </Text>
               ) : null}
               {piece && dragFrom !== square ? (
+                // A sliding piece is a view of its own (keyed by the position), so no slide is left on it after.
                 <Animated.View
+                  key={slidingHere ? `slide ${fen}` : 'piece'}
                   style={
                     offset && here
                       ? {

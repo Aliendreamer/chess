@@ -208,6 +208,20 @@ describe('the last move slides in', () => {
     )
   })
 
+  test('with a value of its own each move, so the piece before stays where it went', async () => {
+    // On a phone the native driver kept the engine's last piece tied to the shared value: the next slide set it back
+    // to 0 and that piece jumped back to the square it came from.
+    const timing = await replay()
+    const AFTER_E5 = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2'
+    await screen.rerender(
+      <ThemeProvider preferences={DEFAULT_PREFERENCES}>
+        <Board orientation="white" size={SIZE} fen={AFTER_E5} lastMove={{ from: 'e7', to: 'e5' }} />
+      </ThemeProvider>,
+    )
+    expect(timing).toHaveBeenCalledTimes(2)
+    expect(timing.mock.calls[1]![0]).not.toBe(timing.mock.calls[0]![0])
+  })
+
   test('not at all with animation off', async () => {
     const timing = await replay({ ...DEFAULT_PREFERENCES, animation: 'off' })
     expect(timing).not.toHaveBeenCalled()
