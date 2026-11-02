@@ -18,18 +18,20 @@ The release APK is signed with the owner's own key (mobile-app D11). Make the ke
 keytool -genkeypair -v -keystore ~/keys/chess-release.jks -alias chess -keyalg RSA -keysize 4096 -validity 36500
 ```
 
-**Back it up** (and its password) somewhere safe: an update must be signed with the same key, so losing it means
-every friend has to uninstall the app, and lose its data, to install the next version. Then:
+**Back it up** (and its password) somewhere safe and private, never in the repository: an update must be signed with
+the same key, so losing it means every friend has to uninstall the app, and lose its data, to install the next
+version; and whoever has it can sign an APK their phones take as an update. Then, from the repository's root:
 
 ```bash
-export CHESS_ANDROID_KEYSTORE=~/keys/chess-release.jks CHESS_ANDROID_KEY_ALIAS=chess
-read -rs CHESS_ANDROID_KEYSTORE_PASSWORD && export CHESS_ANDROID_KEYSTORE_PASSWORD
-pnpm exec nx run mobile:apk-release        # build/release.apk, arm64-v8a only
+pnpm apk                 # build/release.apk, arm64-v8a only; asks for the keystore password and checks it first
+pnpm apk:install         # adb install -r of it, on the phone adb is connected to (e.g. wireless debugging)
 apksigner verify --print-certs apps/mobile/build/release.apk   # names your certificate, not "Android Debug"
 ```
 
-`CHESS_ANDROID_KEY_PASSWORD` is needed only when the key's password differs from the keystore's. Without the
-variables the build stops at once and names the one missing.
+The keystore is `~/keys/chess-release.jks` with the alias `chess` unless `CHESS_ANDROID_KEYSTORE` /
+`CHESS_ANDROID_KEY_ALIAS` say otherwise; `CHESS_ANDROID_KEYSTORE_PASSWORD`, when set, is used instead of asking, and
+`CHESS_ANDROID_KEY_PASSWORD` is needed only when the key's password differs from the keystore's.
+`pnpm exec nx run mobile:apk-release` is the same build.
 
 ## Licence
 
@@ -46,7 +48,7 @@ The source of every release is this repository at the tag `mobile@<version>`. Th
 
 ## Smoke list (before each release, on an Android phone)
 
-Install the APK (`adb install -r apps/mobile/build/<profile>.apk`, or open it on the phone). With the network **off**:
+Install the release APK (`pnpm apk:install`, or open it on the phone). With the network **off**:
 
 1. First start: the splash, then Play; "Preparing the library … n %" runs along the top and goes when it is done.
    News says it has nothing yet.

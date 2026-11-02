@@ -2,9 +2,11 @@
 # Builds the Android app with plain Gradle: no Expo account, no EAS (mobile-app D4, D11; from SpanishGameApp).
 #   scripts/build-android.sh development   → the development build (debug-signed, the dev client), build/development.apk
 #   scripts/build-android.sh release       → the release APK (arm64-v8a, the owner's key), build/release.apk
-# A release needs CHESS_ANDROID_KEYSTORE, CHESS_ANDROID_KEYSTORE_PASSWORD and CHESS_ANDROID_KEY_ALIAS (and
-# CHESS_ANDROID_KEY_PASSWORD when the key's differs). Run it outside the agent sandbox: Gradle writes to /tmp and
-# watches files, which the sandbox blocks. Never run two builds at once: they share android/.
+# A release signs with the owner's keystore: CHESS_ANDROID_KEYSTORE (default ~/keys/chess-release.jks),
+# CHESS_ANDROID_KEY_ALIAS (default chess), CHESS_ANDROID_KEYSTORE_PASSWORD (asked for when not set, and checked
+# against the keystore before the build) and CHESS_ANDROID_KEY_PASSWORD when the key's differs. Run it outside the
+# agent sandbox: Gradle writes to /tmp and watches files, which the sandbox blocks. Never run two builds at once: they
+# share android/.
 set -euo pipefail
 
 profile="${1:-}"
@@ -15,6 +17,23 @@ case "$profile" in
 esac
 
 cd "$(dirname "$0")/.."
+
+if [ "$profile" = release ]; then
+  export CHESS_ANDROID_KEYSTORE="${CHESS_ANDROID_KEYSTORE:-$HOME/keys/chess-release.jks}"
+  export CHESS_ANDROID_KEY_ALIAS="${CHESS_ANDROID_KEY_ALIAS:-chess}"
+  if [ -z "${CHESS_ANDROID_KEYSTORE_PASSWORD:-}" ] && [ -t 0 ]; then
+    read -rsp "Keystore password ($CHESS_ANDROID_KEYSTORE): " CHESS_ANDROID_KEYSTORE_PASSWORD
+    echo
+  fi
+  export CHESS_ANDROID_KEYSTORE_PASSWORD="${CHESS_ANDROID_KEYSTORE_PASSWORD:-}"
+  # A wrong password fails here in a second, not at the end of the build (read from the environment, never argv).
+  if [ -f "$CHESS_ANDROID_KEYSTORE" ] && [ -n "$CHESS_ANDROID_KEYSTORE_PASSWORD" ] &&
+    ! keytool -list -keystore "$CHESS_ANDROID_KEYSTORE" -alias "$CHESS_ANDROID_KEY_ALIAS" \
+      -storepass:env CHESS_ANDROID_KEYSTORE_PASSWORD >/dev/null 2>&1; then
+    echo "The keystore password is wrong, or $CHESS_ANDROID_KEYSTORE has no key '$CHESS_ANDROID_KEY_ALIAS'." >&2
+    exit 1
+  fi
+fi
 
 # The whole build's output also goes to build/<profile>.log, to read or hand over when it fails.
 mkdir -p build

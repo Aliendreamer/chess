@@ -9,7 +9,8 @@ Loaded when working under `apps/mobile`. Cross-app rules live in the root `CLAUD
 pnpm exec nx run-many -t lint test build -p mobile   # typecheck, expo lint, prettier, pins, expo-doctor; jest; export
 pnpm exec nx run mobile:start                        # dev server over an Expo tunnel, for the development build
 pnpm exec nx run mobile:apk                          # build/development.apk: prebuild + Gradle, outside the sandbox
-pnpm exec nx run mobile:apk-release                  # build/release.apk, arm64-v8a, needs CHESS_ANDROID_KEYSTORE* (README)
+pnpm exec nx run mobile:apk-release                  # build/release.apk, arm64-v8a, the owner's keystore (README)
+pnpm apk && pnpm apk:install                         # the same from the root (asks for the password), then adb install
 pnpm exec nx run mobile:ipa                          # build/Chess-<version>.ipa, unsigned, on a Mac only
 tools/mobile/publish.sh <version> [--dry-run]        # the APK (and an .ipa) to the GitHub Release mobile@<version>
 pnpm exec nx run mobile:test-native                  # the Stockfish bridge on the host (g++, real sf_19)
